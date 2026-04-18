@@ -1,39 +1,58 @@
-import Image, { type ImageProps } from "next/image";
 import { Button } from "@repo/ui/button";
-import styles from "./page.module.css";
+import styles from "./App.module.css";
 
-type Props = Omit<ImageProps, "src"> & {
+type ThemeImageProps = {
+  className?: string;
   srcLight: string;
   srcDark: string;
+  alt: string;
+  width: number;
+  height: number;
 };
 
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
-
+function ThemeImage({
+  className,
+  srcLight,
+  srcDark,
+  alt,
+  width,
+  height,
+}: ThemeImageProps) {
   return (
     <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
+      <img
+        className={`imgLight ${className ?? ""}`}
+        src={srcLight}
+        alt={alt}
+        width={width}
+        height={height}
+      />
+      <img
+        className={`imgDark ${className ?? ""}`}
+        src={srcDark}
+        alt={alt}
+        width={width}
+        height={height}
+      />
     </>
   );
-};
+}
 
-export default function Home() {
+export default function App() {
   return (
     <div className={styles.page}>
       <main className={styles.main}>
         <ThemeImage
           className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
+          srcLight="/turborepo-dark.svg"
+          srcDark="/turborepo-light.svg"
           alt="Turborepo logo"
           width={180}
           height={38}
-          priority
         />
         <ol>
           <li>
-            Get started by editing <code>apps/web/app/page.tsx</code>
+            Get started by editing <code>apps/web/src/App.tsx</code>
           </li>
           <li>Save and see your changes instantly.</li>
         </ol>
@@ -45,7 +64,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Image
+            <img
               className={styles.logo}
               src="/vercel.svg"
               alt="Vercel logomark"
@@ -73,7 +92,7 @@ export default function Home() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Image
+          <img
             aria-hidden
             src="/window.svg"
             alt="Window icon"
@@ -87,7 +106,7 @@ export default function Home() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Image
+          <img
             aria-hidden
             src="/globe.svg"
             alt="Globe icon"
