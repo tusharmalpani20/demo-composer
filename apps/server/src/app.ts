@@ -14,10 +14,16 @@ import { cookieConfig } from "./config/cookie.config.js";
 import { initialize_event_emitter } from './config/event.config.js';
 import requestDec from './config/fastify_decoder.config.js';
 import { configure_passport } from './config/passport.config.js';
+import { build_first_run_setup_routes } from './modules/setup/first-run-setup.routes.js';
 import { index_root_routes } from './root_router/index.root_router.js';
 
-export const build = (opts = {}) => {
-  const app = fastify(opts);
+type BuildOptions = Parameters<typeof fastify>[0] & {
+  first_run_setup_service?: Parameters<typeof build_first_run_setup_routes>[0];
+};
+
+export const build = (opts: BuildOptions = {}) => {
+  const { first_run_setup_service, ...fastify_options } = opts;
+  const app = fastify(fastify_options);
 
   // Register request decorators first
   app.register(requestDec);
@@ -181,6 +187,12 @@ export const build = (opts = {}) => {
   app.register(index_root_routes, {
       prefix: "/api/v1"
   });
+
+  if (first_run_setup_service) {
+      app.register(build_first_run_setup_routes(first_run_setup_service), {
+          prefix: "/api/v1/setup",
+      });
+  }
 
   return app;
 };
