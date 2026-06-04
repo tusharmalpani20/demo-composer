@@ -1,0 +1,23 @@
+{
+  "name": "@repo/constants",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup ./src/index.ts --format esm,cjs --dts",
+    "dev": "tsup ./src/index.ts --format esm,cjs --watch --dts",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "eslint": "^9.39.1",
+    "typescript": "5.9.2"
+  }
+}

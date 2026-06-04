@@ -1,0 +1,26 @@
+node_modules
+dist
+
+.vscode
+.git
+
+#environment variables
+.env-cmdrc
+#pm2.config.js
+
+#generate them using generateKeypair.js file
+id_rsa_priv.pem
+id_rsa_pub.pem
+
+#folder which will hold the uploaded files
+uploaded_folder
+
+##deployment script
+deploy.sh
+
+##other files and folders
+public
+temp_folder
+
+##Server Agent Documentation
+.server-patterns
