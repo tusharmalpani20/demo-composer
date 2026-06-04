@@ -62,6 +62,31 @@ export class FirstRunSetupAlreadyCompletedError extends Error {
   }
 }
 
+export class UnsafeOwnerPasswordError extends Error {
+  constructor(message = "Owner password is too weak") {
+    super(message);
+  }
+}
+
+const unsafe_passwords = new Set([
+  "admin",
+  "changeme",
+  "demo",
+  "democomposer",
+  "password",
+]);
+
+const assert_safe_owner_password = (password: string) => {
+  const normalized = password.toLowerCase().replaceAll(/\s/g, "");
+  if (unsafe_passwords.has(normalized)) {
+    throw new UnsafeOwnerPasswordError();
+  }
+
+  if (password.length < 12) {
+    throw new UnsafeOwnerPasswordError("Owner password must be at least 12 characters");
+  }
+};
+
 const build_display_name = (input: {
   first_name?: string | null;
   last_name?: string | null;
@@ -87,6 +112,8 @@ export const build_first_run_setup_service = (repository: FirstRunSetupRepositor
       token_hash: string;
     };
   }) => {
+    assert_safe_owner_password(input.owner.password);
+
     if (await repository.owner_exists()) {
       throw new FirstRunSetupAlreadyCompletedError();
     }

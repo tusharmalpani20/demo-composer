@@ -105,4 +105,28 @@ describe("first-run setup service", () => {
     expect(result.auth.organization.name).toBe("Acme");
     expect(result.auth.org_user.role).toBe("owner");
   });
+
+  it("rejects unsafe owner passwords before creating setup records", async () => {
+    const repository = build_repository();
+    const service = build_first_run_setup_service(repository);
+
+    await expect(service.complete_first_run_setup({
+      owner: {
+        email: "owner@example.com",
+        password: "password",
+      },
+      organization: {
+        name: "Acme",
+      },
+      session: {
+        raw_token: "session-token",
+        token_hash: "hashed-session-token",
+      },
+    })).rejects.toThrow("Owner password is too weak");
+
+    expect(repository.users).toHaveLength(0);
+    expect(repository.organizations).toHaveLength(0);
+    expect(repository.org_users).toHaveLength(0);
+    expect(repository.sessions).toHaveLength(0);
+  });
 });
