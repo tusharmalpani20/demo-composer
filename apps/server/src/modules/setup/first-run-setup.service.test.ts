@@ -8,12 +8,12 @@ const build_repository = (): FirstRunSetupRepository & {
   users: Array<{ id: string; email: string; password_hash: string }>;
   organizations: Array<{ id: string; name: string }>;
   org_users: Array<{ id: string; user_id: string; organization_id: string; role: string }>;
-  sessions: Array<{ id: string; user_id: string; organization_id: string; org_user_id: string }>;
+  sessions: Array<{ id: string; user_id: string; organization_id: string; org_user_id: string; token_hash: string }>;
 } => {
   const users: Array<{ id: string; email: string; password_hash: string }> = [];
   const organizations: Array<{ id: string; name: string }> = [];
   const org_users: Array<{ id: string; user_id: string; organization_id: string; role: string }> = [];
-  const sessions: Array<{ id: string; user_id: string; organization_id: string; org_user_id: string }> = [];
+  const sessions: Array<{ id: string; user_id: string; organization_id: string; org_user_id: string; token_hash: string }> = [];
 
   return {
     users,
@@ -49,6 +49,7 @@ const build_repository = (): FirstRunSetupRepository & {
         user_id: input.user_id,
         organization_id: input.organization_id,
         org_user_id: input.org_user_id,
+        token_hash: input.token_hash,
       };
       sessions.push(session);
       return session;
@@ -74,10 +75,6 @@ describe("first-run setup service", () => {
       organization: {
         name: "Acme",
       },
-      session: {
-        raw_token: "session-token",
-        token_hash: "hashed-session-token",
-      },
     });
 
     expect(repository.users).toHaveLength(1);
@@ -92,15 +89,18 @@ describe("first-run setup service", () => {
         role: "owner",
       },
     ]);
-    expect(repository.sessions).toEqual([
-      {
-        id: "session_1",
-        user_id: "user_1",
-        organization_id: "organization_1",
-        org_user_id: "org_user_1",
-      },
-    ]);
-    expect(result.session_token).toBe("session-token");
+    expect(repository.sessions).toHaveLength(1);
+    expect(repository.sessions[0]).toMatchObject({
+      id: "session_1",
+      user_id: "user_1",
+      organization_id: "organization_1",
+      org_user_id: "org_user_1",
+    });
+    expect(result.session_token).toEqual(expect.any(String));
+    expect(repository.sessions[0]).toMatchObject({
+      token_hash: expect.any(String),
+    });
+    expect(repository.sessions[0]?.token_hash).not.toBe(result.session_token);
     expect(result.auth.user.email).toBe("owner@example.com");
     expect(result.auth.organization.name).toBe("Acme");
     expect(result.auth.org_user.role).toBe("owner");
@@ -117,10 +117,6 @@ describe("first-run setup service", () => {
       },
       organization: {
         name: "Acme",
-      },
-      session: {
-        raw_token: "session-token",
-        token_hash: "hashed-session-token",
       },
     })).rejects.toThrow("Owner password is too weak");
 

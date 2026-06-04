@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from "node:crypto";
 import { Password } from "../../common/services/password.common.service";
 
 type SetupUser = {
@@ -23,6 +24,7 @@ type SetupSession = {
   user_id: string;
   organization_id: string;
   org_user_id: string;
+  token_hash?: string;
 };
 
 type FirstRunSetupTransactionalRepository = {
@@ -68,6 +70,12 @@ export class UnsafeOwnerPasswordError extends Error {
   }
 }
 
+export const generate_session_token = () => randomBytes(32).toString("base64url");
+
+export const hash_session_token = (token: string) => (
+  createHash("sha256").update(token).digest("hex")
+);
+
 const unsafe_passwords = new Set([
   "admin",
   "changeme",
@@ -107,10 +115,6 @@ export const build_first_run_setup_service = (repository: FirstRunSetupRepositor
     organization: {
       name: string;
     };
-    session: {
-      raw_token: string;
-      token_hash: string;
-    };
   }) => {
     assert_safe_owner_password(input.owner.password);
 
@@ -137,15 +141,16 @@ export const build_first_run_setup_service = (repository: FirstRunSetupRepositor
         organization_id: organization.id,
         role: "owner",
       });
+      const session_token = generate_session_token();
       const session = await transaction_repository.create_session({
         user_id: user.id,
         organization_id: organization.id,
         org_user_id: org_user.id,
-        token_hash: input.session.token_hash,
+        token_hash: hash_session_token(session_token),
       });
 
       return {
-        session_token: input.session.raw_token,
+        session_token,
         auth: {
           user: {
             id: user.id,
