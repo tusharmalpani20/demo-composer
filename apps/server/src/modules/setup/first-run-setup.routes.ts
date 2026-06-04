@@ -1,8 +1,21 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 
 export const web_session_cookie_name = "demo_composer_session";
 
-type FirstRunSetupRouteService = {
+const first_run_setup_body_schema = z.object({
+  owner: z.object({
+    email: z.string().min(1),
+    password: z.string().min(1),
+    first_name: z.string().nullable().optional(),
+    last_name: z.string().nullable().optional(),
+  }),
+  organization: z.object({
+    name: z.string().min(1),
+  }),
+});
+
+export type FirstRunSetupRouteService = {
   complete_first_run_setup: (input: {
     owner: {
       email: string;
@@ -35,7 +48,11 @@ export const build_first_run_setup_routes = (
           name: string;
         };
       };
-    }>("/first-run", async (request, reply) => {
+    }>("/first-run", {
+      schema: {
+        body: first_run_setup_body_schema,
+      },
+    }, async (request, reply) => {
       const result = await service.complete_first_run_setup(request.body);
 
       reply.setCookie(web_session_cookie_name, result.session_token, {

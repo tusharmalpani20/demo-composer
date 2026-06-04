@@ -1,12 +1,40 @@
 import cookie from "@fastify/cookie";
 import fastify from "fastify";
+import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { describe, expect, it } from "vitest";
 import { build_first_run_setup_routes } from "./first-run-setup.routes";
 
+const build_test_app = async () => {
+  const app = fastify();
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+  await app.register(cookie);
+  return app;
+};
+
 describe("first-run setup routes", () => {
+  it("rejects invalid setup payloads before calling the service", async () => {
+    let service_called = false;
+    const app = await build_test_app();
+    await app.register(build_first_run_setup_routes({
+      complete_first_run_setup: async () => {
+        service_called = true;
+        throw new Error("service should not be called");
+      },
+    }), { prefix: "/api/v1/setup" });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/setup/first-run",
+      payload: {},
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(service_called).toBe(false);
+  });
+
   it("creates setup through the service and sets the web session cookie", async () => {
-    const app = fastify();
-    await app.register(cookie);
+    const app = await build_test_app();
     await app.register(build_first_run_setup_routes({
       complete_first_run_setup: async (input) => ({
         session_token: "session-token",

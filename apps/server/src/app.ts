@@ -3,22 +3,28 @@ import fastifyCors from "@fastify/cors";
 import fastifyMultipart from "@fastify/multipart";
 import fastifySwagger from '@fastify/swagger';
 import fastifyApiReference from "@scalar/fastify-api-reference";
-import fastify, { FastifyError, FastifyReply, FastifyRequest } from "fastify";
+import fastify, { type FastifyError, type FastifyServerOptions } from "fastify";
 import { jsonSchemaTransform, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import fs from "fs";
-import { pipeline } from "stream";
-import { ulid } from "zod";
+import { pipeline } from "stream/promises";
+import { ulid } from "ulid";
 import { common_temp_folder } from "./common/constants/common.constant.js";
 import { error_handler } from './common/helper_function/error_handler.helper.js';
 import { cookieConfig } from "./config/cookie.config.js";
 import { initialize_event_emitter } from './config/event.config.js';
 import requestDec from './config/fastify_decoder.config.js';
 import { configure_passport } from './config/passport.config.js';
-import { build_first_run_setup_routes } from './modules/setup/first-run-setup.routes.js';
+import { pool } from './config/database.config.js';
+import {
+  build_first_run_setup_routes,
+  type FirstRunSetupRouteService,
+} from './modules/setup/first-run-setup.routes.js';
+import { build_first_run_setup_repository } from './modules/setup/first-run-setup.repository.js';
+import { build_first_run_setup_service } from './modules/setup/first-run-setup.service.js';
 import { index_root_routes } from './root_router/index.root_router.js';
 
-type BuildOptions = Parameters<typeof fastify>[0] & {
-  first_run_setup_service?: Parameters<typeof build_first_run_setup_routes>[0];
+type BuildOptions = FastifyServerOptions & {
+  first_run_setup_service?: FirstRunSetupRouteService;
 };
 
 export const build = (opts: BuildOptions = {}) => {
@@ -95,8 +101,8 @@ export const build = (opts: BuildOptions = {}) => {
       }
   });
 
-  app.setErrorHandler(async (error: FastifyError, request: FastifyRequest, response: FastifyReply) => {
-      error_handler(error, request, response)
+  app.setErrorHandler(async (error, request, response) => {
+      error_handler(error as FastifyError, request, response)
   });
 
   // Then register authentication/security plugins
@@ -188,11 +194,13 @@ export const build = (opts: BuildOptions = {}) => {
       prefix: "/api/v1"
   });
 
-  if (first_run_setup_service) {
-      app.register(build_first_run_setup_routes(first_run_setup_service), {
-          prefix: "/api/v1/setup",
-      });
-  }
+  app.register(build_first_run_setup_routes(
+      first_run_setup_service ?? build_first_run_setup_service(
+          build_first_run_setup_repository(pool)
+      )
+  ), {
+      prefix: "/api/v1/setup",
+  });
 
   return app;
 };

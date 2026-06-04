@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest";
 import { build } from "../../app";
 
 describe("first-run setup app route", () => {
+  it("mounts first-run setup in the default app build", async () => {
+    const app = build({ logger: false });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/setup/first-run",
+      payload: {},
+    });
+
+    expect(response.statusCode).not.toBe(404);
+  });
+
   it("mounts first-run setup under the versioned API", async () => {
     const app = build({
       logger: false,
