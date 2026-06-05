@@ -10,6 +10,7 @@ import {
   CaptureSessionNotFoundError,
   FileStorageKeyConflictError,
   InvalidCaptureAssetInputError,
+  ProjectNotFoundError,
   UnsupportedCaptureAssetTypeError,
   type CaptureAsset,
   type CaptureAssetAuthContext,
@@ -169,6 +170,12 @@ export const build_capture_asset_routes = (
       if (error instanceof CaptureSessionNotFoundError) {
         return reply.status(404).send(
           error_response("capture_session_not_found", "Capture session was not found")
+        );
+      }
+
+      if (error instanceof ProjectNotFoundError) {
+        return reply.status(404).send(
+          error_response("project_not_found", "Project was not found")
         );
       }
 

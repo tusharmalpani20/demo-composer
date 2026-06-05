@@ -248,6 +248,36 @@ describe("DB-backed capture asset API", () => {
         },
       },
     });
+    const missing_project_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/missing_project/capture-sessions/${capture_session_id}/assets`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      payload: {
+        asset_type: "screenshot",
+        file: {
+          storage_key: "captures/acme/project/session/missing-project.png",
+          mime_type: "image/png",
+          size_bytes: 123456,
+        },
+      },
+    });
+    const missing_capture_session_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/missing_capture_session/assets`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      payload: {
+        asset_type: "screenshot",
+        file: {
+          storage_key: "captures/acme/project/session/missing-session.png",
+          mime_type: "image/png",
+          size_bytes: 123456,
+        },
+      },
+    });
     const delete_response = await app.inject({
       method: "DELETE",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${capture_asset_id}`,
@@ -264,6 +294,10 @@ describe("DB-backed capture asset API", () => {
     expect(duplicate_response.json().error.type).toBe("file_storage_key_conflict");
     expect(unsupported_response.statusCode).toBe(400);
     expect(unsupported_response.json().error.type).toBe("unsupported_capture_asset_type");
+    expect(missing_project_response.statusCode).toBe(404);
+    expect(missing_project_response.json().error.type).toBe("project_not_found");
+    expect(missing_capture_session_response.statusCode).toBe(404);
+    expect(missing_capture_session_response.json().error.type).toBe("capture_session_not_found");
     expect(delete_response.statusCode).toBe(204);
     expect(delete_response.body).toBe("");
 

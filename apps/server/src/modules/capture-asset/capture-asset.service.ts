@@ -85,6 +85,10 @@ export type CaptureAssetRepository = {
 } & CaptureAssetTransactionalRepository;
 
 export type CaptureAssetTransactionalRepository = {
+  project_exists: (input: {
+    organization_id: string;
+    project_id: string;
+  }) => Promise<boolean>;
   capture_session_exists: (input: {
     organization_id: string;
     project_id: string;
@@ -121,6 +125,12 @@ export type CaptureAssetTransactionalRepository = {
 export class CaptureSessionNotFoundError extends Error {
   constructor() {
     super("Capture session was not found");
+  }
+}
+
+export class ProjectNotFoundError extends Error {
+  constructor() {
+    super("Project was not found");
   }
 }
 
@@ -206,6 +216,21 @@ const normalize_create_capture_asset = (
 };
 
 export const build_capture_asset_service = (repository: CaptureAssetRepository) => {
+  const ensure_project_exists = async (input: {
+    repository: CaptureAssetTransactionalRepository;
+    organization_id: string;
+    project_id: string;
+  }) => {
+    const exists = await input.repository.project_exists({
+      organization_id: input.organization_id,
+      project_id: input.project_id,
+    });
+
+    if (!exists) {
+      throw new ProjectNotFoundError();
+    }
+  };
+
   const ensure_capture_session_exists = async (input: {
     repository: CaptureAssetTransactionalRepository;
     organization_id: string;
@@ -232,6 +257,12 @@ export const build_capture_asset_service = (repository: CaptureAssetRepository) 
     const data = normalize_create_capture_asset(input.data);
 
     return repository.transaction(async (transactional_repository) => {
+      await ensure_project_exists({
+        repository: transactional_repository,
+        organization_id: input.auth.organization_id,
+        project_id: input.project_id,
+      });
+
       await ensure_capture_session_exists({
         repository: transactional_repository,
         organization_id: input.auth.organization_id,
@@ -255,6 +286,12 @@ export const build_capture_asset_service = (repository: CaptureAssetRepository) 
     capture_session_id: string;
     asset_type?: CaptureAssetType;
   }) => {
+    await ensure_project_exists({
+      repository,
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    });
+
     await ensure_capture_session_exists({
       repository,
       organization_id: input.auth.organization_id,
@@ -276,6 +313,12 @@ export const build_capture_asset_service = (repository: CaptureAssetRepository) 
     capture_session_id: string;
     capture_asset_id: string;
   }) => {
+    await ensure_project_exists({
+      repository,
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    });
+
     await ensure_capture_session_exists({
       repository,
       organization_id: input.auth.organization_id,
@@ -303,6 +346,12 @@ export const build_capture_asset_service = (repository: CaptureAssetRepository) 
     capture_session_id: string;
     capture_asset_id: string;
   }) => repository.transaction(async (transactional_repository) => {
+    await ensure_project_exists({
+      repository: transactional_repository,
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    });
+
     await ensure_capture_session_exists({
       repository: transactional_repository,
       organization_id: input.auth.organization_id,

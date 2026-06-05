@@ -8,6 +8,7 @@ import {
   CaptureSessionNotFoundError,
   FileStorageKeyConflictError,
   InvalidCaptureAssetInputError,
+  ProjectNotFoundError,
   UnsupportedCaptureAssetTypeError,
   type CaptureAsset,
 } from "./capture-asset.service";
@@ -300,6 +301,11 @@ describe("capture asset routes", () => {
 
   it("maps capture asset domain errors to stable responses", async () => {
     const cases = [
+      {
+        error: new ProjectNotFoundError(),
+        status: 404,
+        type: "project_not_found",
+      },
       {
         error: new CaptureSessionNotFoundError(),
         status: 404,

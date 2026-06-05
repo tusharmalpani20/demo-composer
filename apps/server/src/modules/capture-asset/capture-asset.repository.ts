@@ -101,6 +101,26 @@ const is_storage_key_conflict = (error: unknown) => {
 };
 
 const build_transactional_repository = (db: Queryable) => ({
+  async project_exists(input: {
+    organization_id: string;
+    project_id: string;
+  }) {
+    const result = await db.query<{ exists: boolean }>(`
+      SELECT EXISTS (
+        SELECT 1
+        FROM project_schema.project
+        WHERE id = $1
+        AND organization_id = $2
+        AND is_deleted = FALSE
+      ) AS exists
+    `, [
+      input.project_id,
+      input.organization_id,
+    ]);
+
+    return Boolean(result.rows[0]?.exists);
+  },
+
   async capture_session_exists(input: {
     organization_id: string;
     project_id: string;

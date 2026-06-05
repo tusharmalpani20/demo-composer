@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, it } from "vitest";
+import { ulid } from "ulid";
 import { pool } from "../config/database.config";
 
 const schema_exists = async (schema_name: string) => {
@@ -59,6 +60,55 @@ const table_comment = async (schema_name: string, table_name: string) => {
   `, [schema_name, table_name]);
 
   return result.rows[0]?.comment ?? null;
+};
+
+const insert_constraint_test_context = async () => {
+  const user_id = ulid();
+  const organization_id = ulid();
+  const org_user_id = ulid();
+  const project_id = ulid();
+  const capture_session_id = ulid();
+
+  await pool.query(`
+    INSERT INTO user_schema.user (id, email, password_hash, display_name)
+    VALUES ($1, $2, 'hash.salt', 'Constraint Owner')
+  `, [user_id, `constraint-${user_id}@example.com`]);
+  await pool.query(`
+    INSERT INTO organization_schema.organization (id, name)
+    VALUES ($1, 'Constraint Org')
+  `, [organization_id]);
+  await pool.query(`
+    INSERT INTO organization_schema.org_user (id, user_id, organization_id, role)
+    VALUES ($1, $2, $3, 'owner')
+  `, [org_user_id, user_id, organization_id]);
+  await pool.query(`
+    INSERT INTO project_schema.project (
+      id,
+      organization_id,
+      name,
+      created_by_id,
+      updated_by_id
+    )
+    VALUES ($1, $2, 'Constraint Project', $3, $3)
+  `, [project_id, organization_id, org_user_id]);
+  await pool.query(`
+    INSERT INTO capture_schema.capture_session (
+      id,
+      organization_id,
+      project_id,
+      name,
+      created_by_id,
+      updated_by_id
+    )
+    VALUES ($1, $2, $3, 'Constraint Capture', $4, $4)
+  `, [capture_session_id, organization_id, project_id, org_user_id]);
+
+  return {
+    organization_id,
+    org_user_id,
+    project_id,
+    capture_session_id,
+  };
 };
 
 describe("foundation schema migrations on postgres", () => {
@@ -163,5 +213,80 @@ describe("foundation schema migrations on postgres", () => {
     await expect(index_exists("capture_schema", "idx_capture_asset_project_type")).resolves.toBe(true);
     await expect(table_comment("file_schema", "file")).resolves.toMatch(/storage metadata/i);
     await expect(table_comment("capture_schema", "capture_asset")).resolves.toMatch(/product meaning/i);
+  });
+
+  it("enforces file and capture asset metadata constraints", async () => {
+    const context = await insert_constraint_test_context();
+    const file_id = ulid();
+
+    await expect(pool.query(`
+      INSERT INTO file_schema.file (
+        id,
+        organization_id,
+        storage_provider,
+        storage_key,
+        mime_type,
+        size_bytes,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, 'memory', 'constraint/invalid-provider.png', 'image/png', 1, $3, $3)
+    `, [ulid(), context.organization_id, context.org_user_id])).rejects.toMatchObject({
+      code: "23514",
+      constraint: "chk_file_storage_provider",
+    });
+
+    await expect(pool.query(`
+      INSERT INTO file_schema.file (
+        id,
+        organization_id,
+        storage_key,
+        mime_type,
+        size_bytes,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, 'constraint/negative-size.png', 'image/png', -1, $3, $3)
+    `, [ulid(), context.organization_id, context.org_user_id])).rejects.toMatchObject({
+      code: "23514",
+      constraint: "chk_file_size_bytes_non_negative",
+    });
+
+    await pool.query(`
+      INSERT INTO file_schema.file (
+        id,
+        organization_id,
+        storage_key,
+        mime_type,
+        size_bytes,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, 'constraint/valid.png', 'image/png', 1, $3, $3)
+    `, [file_id, context.organization_id, context.org_user_id]);
+
+    await expect(pool.query(`
+      INSERT INTO capture_schema.capture_asset (
+        id,
+        organization_id,
+        project_id,
+        capture_session_id,
+        file_id,
+        asset_type,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, $5, 'video', $6, $6)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      context.capture_session_id,
+      file_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23514",
+      constraint: "chk_capture_asset_type",
+    });
   });
 });

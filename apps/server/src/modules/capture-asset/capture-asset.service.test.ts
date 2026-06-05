@@ -5,6 +5,7 @@ import {
   CaptureSessionNotFoundError,
   FileStorageKeyConflictError,
   InvalidCaptureAssetInputError,
+  ProjectNotFoundError,
   UnsupportedCaptureAssetTypeError,
   type CaptureAsset,
   type CaptureAssetRepository,
@@ -80,6 +81,9 @@ const build_repository = (): CaptureAssetRepository & {
     async capture_session_exists(input) {
       session_checks.push(input);
       return input.capture_session_id === "capture_session_1";
+    },
+    async project_exists(input) {
+      return input.project_id === "project_1" && input.organization_id === "organization_1";
     },
     async create_capture_asset(input) {
       creates.push(input);
@@ -231,6 +235,48 @@ describe("capture asset service", () => {
         },
       },
     })).rejects.toBeInstanceOf(FileStorageKeyConflictError);
+  });
+
+  it("rejects operations when the project is missing before checking capture sessions", async () => {
+    const repository = build_repository();
+    const service = build_capture_asset_service(repository);
+
+    await expect(service.create_capture_asset({
+      auth,
+      project_id: "missing_project",
+      capture_session_id: "capture_session_1",
+      data: {
+        asset_type: "screenshot",
+        file: {
+          storage_key: "capture.png",
+          mime_type: "image/png",
+          size_bytes: 1,
+        },
+      },
+    })).rejects.toBeInstanceOf(ProjectNotFoundError);
+    await expect(service.list_capture_assets({
+      auth,
+      project_id: "missing_project",
+      capture_session_id: "capture_session_1",
+    })).rejects.toBeInstanceOf(ProjectNotFoundError);
+    await expect(service.get_capture_asset({
+      auth,
+      project_id: "missing_project",
+      capture_session_id: "capture_session_1",
+      capture_asset_id: "capture_asset_1",
+    })).rejects.toBeInstanceOf(ProjectNotFoundError);
+    await expect(service.delete_capture_asset({
+      auth,
+      project_id: "missing_project",
+      capture_session_id: "capture_session_1",
+      capture_asset_id: "capture_asset_1",
+    })).rejects.toBeInstanceOf(ProjectNotFoundError);
+
+    expect(repository.session_checks).toEqual([]);
+    expect(repository.creates).toEqual([]);
+    expect(repository.lists).toEqual([]);
+    expect(repository.finds).toEqual([]);
+    expect(repository.deletes).toEqual([]);
   });
 
   it("lists gets and deletes capture assets in scope after checking the capture session", async () => {
