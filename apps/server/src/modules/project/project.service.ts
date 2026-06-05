@@ -28,7 +28,6 @@ export type CreateProjectInput = {
   color?: string | null;
   icon?: string | null;
   metadata?: unknown;
-  status?: ProjectStatus;
 };
 
 export type UpdateProjectInput = Partial<{
@@ -107,7 +106,6 @@ const normalize_create_project = (input: CreateProjectInput): CreateProjectInput
   color: compact_optional_string(input.color),
   icon: compact_optional_string(input.icon),
   metadata: input.metadata,
-  status: input.status,
 });
 
 const normalize_update_project = (input: UpdateProjectInput): UpdateProjectInput => {

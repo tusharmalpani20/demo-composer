@@ -133,6 +133,7 @@ describe("project routes", () => {
       payload: {
         name: "Onboarding Demo",
         description: "Internal onboarding demo flow",
+        status: "archived",
         organization_id: "attacker_org",
         created_by_id: "attacker_org_user",
       },
@@ -263,5 +264,35 @@ describe("project routes", () => {
     await slug_conflict_app.close();
     await not_found_app.close();
     await empty_update_app.close();
+  });
+
+  it("rejects blank project names", async () => {
+    const app = await build_test_app();
+
+    const create_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+      payload: {
+        name: "   ",
+      },
+    });
+    const update_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+      payload: {
+        name: "   ",
+      },
+    });
+
+    expect(create_response.statusCode).toBe(400);
+    expect(update_response.statusCode).toBe(400);
+
+    await app.close();
   });
 });

@@ -43,17 +43,16 @@ export type ProjectRouteDependencies = {
 };
 
 const project_body_schema = z.object({
-  name: z.string().min(1),
+  name: z.string().trim().min(1),
   description: z.string().nullable().optional(),
   slug: z.string().nullable().optional(),
   color: z.string().nullable().optional(),
   icon: z.string().nullable().optional(),
   metadata: z.unknown().optional(),
-  status: z.enum(["active", "archived"]).optional(),
 }).passthrough();
 
 const update_project_body_schema = z.object({
-  name: z.string().min(1).optional(),
+  name: z.string().trim().min(1).optional(),
   description: z.string().nullable().optional(),
   slug: z.string().nullable().optional(),
   color: z.string().nullable().optional(),
@@ -85,15 +84,29 @@ const project_auth_context = (auth: AuthContext) => ({
   actor_org_user_id: auth.org_user.id,
 });
 
-const pick_create_project_data = (body: CreateProjectInput): CreateProjectInput => ({
-  name: body.name,
-  description: body.description,
-  slug: body.slug,
-  color: body.color,
-  icon: body.icon,
-  metadata: body.metadata,
-  status: body.status,
-});
+const pick_create_project_data = (body: CreateProjectInput): CreateProjectInput => {
+  const data: CreateProjectInput = {
+    name: body.name,
+  };
+
+  if (body.description !== undefined) {
+    data.description = body.description;
+  }
+  if (body.slug !== undefined) {
+    data.slug = body.slug;
+  }
+  if (body.color !== undefined) {
+    data.color = body.color;
+  }
+  if (body.icon !== undefined) {
+    data.icon = body.icon;
+  }
+  if (body.metadata !== undefined) {
+    data.metadata = body.metadata;
+  }
+
+  return data;
+};
 
 const pick_update_project_data = (body: UpdateProjectInput): UpdateProjectInput => ({
   name: body.name,

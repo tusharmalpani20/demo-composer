@@ -199,7 +199,7 @@ describe("DB-backed project foundation API", () => {
     const session_token = await setup_owner();
     const app = build({ logger: false });
 
-    await app.inject({
+    const first_project_response = await app.inject({
       method: "POST",
       url: "/api/v1/projects",
       cookies: {
@@ -210,6 +210,7 @@ describe("DB-backed project foundation API", () => {
         slug: "onboarding-demo",
       },
     });
+    const first_project_id = first_project_response.json().project.id as string;
 
     const duplicate_name_response = await app.inject({
       method: "POST",
@@ -238,7 +239,17 @@ describe("DB-backed project foundation API", () => {
     expect(duplicate_slug_response.statusCode).toBe(409);
     expect(duplicate_slug_response.json().error.type).toBe("project_slug_conflict");
 
-    const archived_duplicate_name_response = await app.inject({
+    const archive_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${first_project_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      payload: {
+        status: "archived",
+      },
+    });
+    const active_same_name_response = await app.inject({
       method: "POST",
       url: "/api/v1/projects",
       cookies: {
@@ -247,10 +258,10 @@ describe("DB-backed project foundation API", () => {
       payload: {
         name: "Onboarding Demo",
         slug: "archived-name-demo",
-        status: "archived",
       },
     });
-    expect(archived_duplicate_name_response.statusCode).toBe(201);
+    expect(archive_response.statusCode).toBe(200);
+    expect(active_same_name_response.statusCode).toBe(201);
 
     const cross_org_project_id = await insert_cross_org_project();
     const cross_org_get_response = await app.inject({

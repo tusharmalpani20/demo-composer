@@ -149,7 +149,7 @@ export const build_project_repository = (db: Queryable): ProjectRepository => ({
           created_by_id,
           updated_by_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 'active'), $10, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', $9, $9)
         RETURNING ${project_select}
       `, [
         ulid(),
@@ -160,7 +160,6 @@ export const build_project_repository = (db: Queryable): ProjectRepository => ({
         input.data.color ?? null,
         input.data.icon ?? null,
         input.data.metadata ?? null,
-        "status" in input.data ? input.data.status ?? "active" : "active",
         input.actor_org_user_id,
       ]);
       const row = first_row(result);
