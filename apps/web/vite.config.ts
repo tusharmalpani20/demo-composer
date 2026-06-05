@@ -1,13 +1,15 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
+const apiProxyTarget = process.env.VITE_DEMO_COMPOSER_API_URL ?? "http://localhost:4021";
+
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: apiProxyTarget,
         changeOrigin: true,
       },
     },
