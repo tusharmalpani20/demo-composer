@@ -39,6 +39,10 @@ export type ProjectRouteDependencies = {
       project_id: string;
       data: UpdateProjectInput;
     }) => Promise<Project>;
+    delete_project: (input: {
+      auth: ProjectAuthContext;
+      project_id: string;
+    }) => Promise<void>;
   };
 };
 
@@ -235,6 +239,23 @@ export const build_project_routes = (
           data: pick_update_project_data(request.body),
         });
         return reply.status(200).send({ project });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.delete<{
+      Params: {
+        id: string;
+      };
+    }>("/:id", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        await dependencies.project_service.delete_project({
+          auth,
+          project_id: request.params.id,
+        });
+        return reply.status(204).send();
       } catch (error) {
         return handle_domain_error(error, reply);
       }

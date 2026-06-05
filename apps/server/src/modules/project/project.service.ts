@@ -60,6 +60,11 @@ export type ProjectRepository = {
     actor_org_user_id: string;
     data: UpdateProjectInput;
   }) => Promise<Project | null>;
+  delete_project: (input: {
+    organization_id: string;
+    project_id: string;
+    actor_org_user_id: string;
+  }) => Promise<boolean>;
 };
 
 export class ProjectNameConflictError extends Error {
@@ -195,10 +200,26 @@ export const build_project_service = (repository: ProjectRepository) => {
     return project;
   };
 
+  const delete_project = async (input: {
+    auth: ProjectAuthContext;
+    project_id: string;
+  }) => {
+    const deleted = await repository.delete_project({
+      organization_id: input.auth.organization_id,
+      actor_org_user_id: input.auth.actor_org_user_id,
+      project_id: input.project_id,
+    });
+
+    if (!deleted) {
+      throw new ProjectNotFoundError();
+    }
+  };
+
   return {
     create_project,
     list_projects,
     get_project,
     update_project,
+    delete_project,
   };
 };

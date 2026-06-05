@@ -56,6 +56,9 @@ describe("project app routes", () => {
         update_project: async () => {
           throw new Error("not used");
         },
+        delete_project: async () => {
+          throw new Error("not used");
+        },
       },
     });
 

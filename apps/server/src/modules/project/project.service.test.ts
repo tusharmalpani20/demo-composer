@@ -33,17 +33,20 @@ const build_repository = (): ProjectRepository & {
   lists: unknown[];
   finds: unknown[];
   updates: unknown[];
+  deletes: unknown[];
 } => {
   const creates: unknown[] = [];
   const lists: unknown[] = [];
   const finds: unknown[] = [];
   const updates: unknown[] = [];
+  const deletes: unknown[] = [];
 
   return {
     creates,
     lists,
     finds,
     updates,
+    deletes,
     async create_project(input) {
       creates.push(input);
       return project;
@@ -69,6 +72,10 @@ const build_repository = (): ProjectRepository & {
         version: 2,
         updated_at: "2026-06-05T00:00:01.000Z",
       };
+    },
+    async delete_project(input) {
+      deletes.push(input);
+      return input.project_id === "project_1";
     },
   };
 };
@@ -184,6 +191,33 @@ describe("project service", () => {
         data: {
           name: "Updated Demo",
         },
+      },
+    ]);
+  });
+
+  it("soft deletes projects using the current organization and actor org user", async () => {
+    const repository = build_repository();
+    const service = build_project_service(repository);
+
+    await expect(service.delete_project({
+      auth,
+      project_id: "project_1",
+    })).resolves.toBeUndefined();
+    await expect(service.delete_project({
+      auth,
+      project_id: "missing",
+    })).rejects.toBeInstanceOf(ProjectNotFoundError);
+
+    expect(repository.deletes).toEqual([
+      {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+        project_id: "project_1",
+      },
+      {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+        project_id: "missing",
       },
     ]);
   });

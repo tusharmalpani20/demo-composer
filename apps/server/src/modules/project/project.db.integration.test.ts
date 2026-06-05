@@ -72,6 +72,21 @@ const insert_cross_org_project = async () => {
   return project_id;
 };
 
+const get_owner_context = async () => {
+  const owner_context = await pool.query<{
+    organization_id: string;
+    org_user_id: string;
+  }>(`
+    SELECT organization_id, id AS org_user_id
+    FROM organization_schema.org_user
+    WHERE role = 'owner'
+  `);
+
+  const row = owner_context.rows[0];
+  expect(row).toBeDefined();
+  return row;
+};
+
 describe("DB-backed project foundation API", () => {
   beforeEach(async () => {
     await reset_foundation_tables();
@@ -176,19 +191,12 @@ describe("DB-backed project foundation API", () => {
       FROM project_schema.project
       WHERE id = $1
     `, [project_id]);
-    const owner_context = await pool.query<{
-      organization_id: string;
-      org_user_id: string;
-    }>(`
-      SELECT organization_id, id AS org_user_id
-      FROM organization_schema.org_user
-      WHERE role = 'owner'
-    `);
+    const owner_context = await get_owner_context();
 
     expect(persisted.rows[0]).toMatchObject({
-      organization_id: owner_context.rows[0]?.organization_id,
-      created_by_id: owner_context.rows[0]?.org_user_id,
-      updated_by_id: owner_context.rows[0]?.org_user_id,
+      organization_id: owner_context?.organization_id,
+      created_by_id: owner_context?.org_user_id,
+      updated_by_id: owner_context?.org_user_id,
       version: 2,
     });
 
@@ -284,6 +292,113 @@ describe("DB-backed project foundation API", () => {
 
     expect(cross_org_get_response.statusCode).toBe(404);
     expect(cross_org_update_response.statusCode).toBe(404);
+
+    await app.close();
+  });
+
+  it("soft deletes projects and hides them from normal project workflows", async () => {
+    const session_token = await setup_owner();
+    const app = build({ logger: false });
+
+    const create_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects",
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      payload: {
+        name: "Disposable Demo",
+        slug: "disposable-demo",
+      },
+    });
+    expect(create_response.statusCode).toBe(201);
+    const project_id = create_response.json().project.id as string;
+    const owner_context = await get_owner_context();
+
+    const delete_response = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/projects/${project_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    expect(delete_response.statusCode).toBe(204);
+    expect(delete_response.body).toBe("");
+
+    const persisted = await pool.query<{
+      is_deleted: boolean;
+      deleted_at: Date | null;
+      deleted_by_id: string | null;
+      updated_by_id: string;
+      version: number;
+    }>(`
+      SELECT is_deleted, deleted_at, deleted_by_id, updated_by_id, version
+      FROM project_schema.project
+      WHERE id = $1
+    `, [project_id]);
+
+    expect(persisted.rows[0]).toMatchObject({
+      is_deleted: true,
+      deleted_by_id: owner_context?.org_user_id,
+      updated_by_id: owner_context?.org_user_id,
+      version: 2,
+    });
+    expect(persisted.rows[0]?.deleted_at).toBeInstanceOf(Date);
+
+    const list_response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects",
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    const get_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    const update_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      payload: {
+        name: "Should Not Update",
+      },
+    });
+    const repeat_delete_response = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/projects/${project_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+
+    expect(list_response.statusCode).toBe(200);
+    expect(list_response.json().projects).toEqual([]);
+    expect(JSON.stringify(list_response.json())).not.toContain("is_deleted");
+    expect(JSON.stringify(list_response.json())).not.toContain("deleted_at");
+    expect(JSON.stringify(list_response.json())).not.toContain("deleted_by_id");
+    expect(get_response.statusCode).toBe(404);
+    expect(get_response.json().error.type).toBe("project_not_found");
+    expect(update_response.statusCode).toBe(404);
+    expect(update_response.json().error.type).toBe("project_not_found");
+    expect(repeat_delete_response.statusCode).toBe(404);
+    expect(repeat_delete_response.json().error.type).toBe("project_not_found");
+
+    const cross_org_project_id = await insert_cross_org_project();
+    const cross_org_delete_response = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/projects/${cross_org_project_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    expect(cross_org_delete_response.statusCode).toBe(404);
+    expect(cross_org_delete_response.json().error.type).toBe("project_not_found");
 
     await app.close();
   });

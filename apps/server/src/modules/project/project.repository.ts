@@ -234,4 +234,27 @@ export const build_project_repository = (db: Queryable): ProjectRepository => ({
       return map_unique_error(error);
     }
   },
+
+  async delete_project(input) {
+    const result = await db.query<ProjectRow>(`
+      UPDATE project_schema.project
+      SET
+        is_deleted = TRUE,
+        deleted_at = CURRENT_TIMESTAMP,
+        deleted_by_id = $1,
+        updated_by_id = $1,
+        updated_at = CURRENT_TIMESTAMP,
+        version = version + 1
+      WHERE id = $2
+      AND organization_id = $3
+      AND is_deleted = FALSE
+      RETURNING ${project_select}
+    `, [
+      input.actor_org_user_id,
+      input.project_id,
+      input.organization_id,
+    ]);
+
+    return result.rows.length > 0;
+  },
 });

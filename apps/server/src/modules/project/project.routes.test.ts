@@ -75,6 +75,7 @@ const build_test_app = async (
         updated_by_id: "org_user_1",
         updated_at: "2026-06-05T00:00:01.000Z",
       }),
+      delete_project: async () => undefined,
       ...overrides.project_service,
     },
   }), { prefix: "/api/v1/projects" });
@@ -197,6 +198,37 @@ describe("project routes", () => {
     await app.close();
   });
 
+  it("soft deletes a project with auth context derived organization and actor", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      project_service: {
+        delete_project: async (input) => {
+          seen_inputs.push(input);
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "DELETE",
+      url: "/api/v1/projects/project_1",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(response.body).toBe("");
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+    }]);
+
+    await app.close();
+  });
+
   it("maps project domain errors to stable responses", async () => {
     const name_conflict_app = await build_test_app({
       project_service: {
@@ -226,6 +258,13 @@ describe("project routes", () => {
         },
       },
     });
+    const delete_not_found_app = await build_test_app({
+      project_service: {
+        delete_project: async () => {
+          throw new ProjectNotFoundError();
+        },
+      },
+    });
 
     const name_conflict_response = await name_conflict_app.inject({
       method: "POST",
@@ -250,6 +289,11 @@ describe("project routes", () => {
       cookies: { demo_composer_session: "session-token" },
       payload: {},
     });
+    const delete_not_found_response = await delete_not_found_app.inject({
+      method: "DELETE",
+      url: "/api/v1/projects/missing",
+      cookies: { demo_composer_session: "session-token" },
+    });
 
     expect(name_conflict_response.statusCode).toBe(409);
     expect(name_conflict_response.json().error.type).toBe("project_name_conflict");
@@ -259,11 +303,19 @@ describe("project routes", () => {
     expect(not_found_response.json().error.type).toBe("project_not_found");
     expect(empty_update_response.statusCode).toBe(400);
     expect(empty_update_response.json().error.type).toBe("empty_project_update");
+    expect(delete_not_found_response.statusCode).toBe(404);
+    expect(delete_not_found_response.json()).toEqual({
+      error: {
+        type: "project_not_found",
+        message: "Project was not found",
+      },
+    });
 
     await name_conflict_app.close();
     await slug_conflict_app.close();
     await not_found_app.close();
     await empty_update_app.close();
+    await delete_not_found_app.close();
   });
 
   it("rejects blank project names", async () => {
