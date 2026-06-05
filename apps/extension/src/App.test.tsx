@@ -1,8 +1,9 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ApiClientError, type AuthResponse, type Project } from "./lib/api";
+import { ApiClientError, type AuthResponse, type CaptureAssetResponse, type Project } from "./lib/api";
 import { App } from "./App";
 import type { ExtensionSettings } from "./lib/settings";
+import type { ScreenshotCapture } from "./lib/screenshot";
 
 const auth: AuthResponse["auth"] = {
   user: {
@@ -75,6 +76,30 @@ const captureSessionResponse = {
   },
 };
 
+const screenshotCapture: ScreenshotCapture = {
+  blob: new Blob(["fake png bytes"], { type: "image/png" }),
+  mimeType: "image/png",
+  width: 1440,
+  height: 900,
+  devicePixelRatio: 2,
+  capturedAt: "2026-06-05T10:00:00.000Z",
+};
+
+const captureAssetResponse: CaptureAssetResponse = {
+  capture_asset: {
+    id: "capture_asset_1",
+    project_id: "project_1",
+    capture_session_id: "capture_session_1",
+    asset_type: "screenshot",
+    width: 1440,
+    height: 900,
+    device_pixel_ratio: 2,
+    page_url: "https://example.com/path",
+    page_title: "Example Page",
+    captured_at: "2026-06-05T10:00:00.000Z",
+  },
+};
+
 const renderApp = (overrides: {
   settings?: ExtensionSettings;
   getCurrentAuth?: (instanceUrl: string, sessionToken: string) => Promise<AuthResponse>;
@@ -92,6 +117,24 @@ const renderApp = (overrides: {
     }
   ) => Promise<typeof captureSessionResponse>;
   getCurrentTabSnapshot?: () => Promise<{ url: string | null; title: string | null }>;
+  captureVisibleTabScreenshot?: () => Promise<ScreenshotCapture>;
+  uploadCaptureAsset?: (
+    instanceUrl: string,
+    sessionToken: string,
+    projectId: string,
+    captureSessionId: string,
+    data: {
+      file: Blob;
+      fileName: string;
+      width?: number | null;
+      height?: number | null;
+      devicePixelRatio?: number | null;
+      pageUrl?: string | null;
+      pageTitle?: string | null;
+      capturedAt?: string | null;
+      metadata?: Record<string, unknown>;
+    }
+  ) => Promise<CaptureAssetResponse>;
   saveInstanceUrl?: (instanceUrl: string) => Promise<void>;
   saveSessionToken?: (sessionToken: string | null) => Promise<void>;
   saveSelectedProjectId?: (projectId: string | null) => Promise<void>;
@@ -114,6 +157,8 @@ const renderApp = (overrides: {
       url: "https://example.com/path",
       title: "Example Page",
     }))),
+    captureVisibleTabScreenshot: vi.fn(overrides.captureVisibleTabScreenshot ?? (async () => screenshotCapture)),
+    uploadCaptureAsset: vi.fn(overrides.uploadCaptureAsset ?? (async () => captureAssetResponse)),
     saveActiveCapture: vi.fn(overrides.saveActiveCapture ?? (async () => {})),
     clearActiveCapture: vi.fn(overrides.clearActiveCapture ?? (async () => {})),
     logout: vi.fn(overrides.logout ?? (async () => {})),
@@ -372,6 +417,97 @@ describe("extension popup App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Discard local capture state" }));
 
     await waitFor(() => expect(dependencies.clearActiveCapture).toHaveBeenCalled());
+  });
+
+  it("uploads a screenshot for the active capture session", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Capture screenshot" }));
+
+    await waitFor(() => expect(dependencies.uploadCaptureAsset).toHaveBeenCalledWith(
+      "https://demo.example.com",
+      "extension-session-token",
+      "project_1",
+      "capture_session_1",
+      expect.objectContaining({
+        file: screenshotCapture.blob,
+        fileName: "screenshot-2026-06-05T10-00-00-000Z.png",
+        width: 1440,
+        height: 900,
+        devicePixelRatio: 2,
+        pageUrl: "https://example.com/path",
+        pageTitle: "Example Page",
+        capturedAt: "2026-06-05T10:00:00.000Z",
+        metadata: expect.objectContaining({
+          extension_version: "0.1.0",
+          capture_source: "extension_popup",
+        }),
+      })
+    ));
+    expect(await screen.findByText("Screenshot captured: capture_asset_1")).toBeInTheDocument();
+  });
+
+  it("renders screenshot upload errors without clearing active capture", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+      },
+      uploadCaptureAsset: async () => {
+        throw new ApiClientError({
+          status: 413,
+          type: "capture_asset_too_large",
+          message: "Capture asset upload is too large",
+        });
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Capture screenshot" }));
+
+    expect(await screen.findByText("Capture asset upload is too large")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    expect(dependencies.clearActiveCapture).not.toHaveBeenCalled();
+  });
+
+  it("disables active capture actions while a screenshot is uploading", async () => {
+    let resolveUpload: (value: CaptureAssetResponse) => void = () => {};
+    const uploadPromise = new Promise<CaptureAssetResponse>((resolve) => {
+      resolveUpload = resolve;
+    });
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+      },
+      uploadCaptureAsset: async () => uploadPromise,
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Capture screenshot" }));
+
+    expect(await screen.findByRole("button", { name: "Capturing..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Discard local capture state" })).toBeDisabled();
+
+    resolveUpload(captureAssetResponse);
+
+    expect(await screen.findByText("Screenshot captured: capture_asset_1")).toBeInTheDocument();
+    expect(dependencies.uploadCaptureAsset).toHaveBeenCalledTimes(1);
   });
 
   it("clears the local session when sign out cannot reach the server", async () => {

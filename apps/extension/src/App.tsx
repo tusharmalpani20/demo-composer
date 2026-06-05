@@ -7,13 +7,17 @@ import {
   login,
   logout,
   type AuthResponse,
+  type CaptureAssetResponse,
   type CaptureSessionResponse,
   type CreateCaptureSessionInput,
   type LoginResponse,
   type Project,
   type ProjectListResponse,
+  type UploadCaptureAssetInput,
+  uploadCaptureAsset,
 } from "./lib/api";
 import { getCurrentTabSnapshot, type CurrentTabSnapshot } from "./lib/current-tab";
+import { captureVisibleTabScreenshot, type ScreenshotCapture } from "./lib/screenshot";
 import {
   chromeLocalStorage,
   clearActiveCapture,
@@ -48,6 +52,14 @@ type Dependencies = {
     data: CreateCaptureSessionInput
   ) => Promise<CaptureSessionResponse>;
   getCurrentTabSnapshot: () => Promise<CurrentTabSnapshot>;
+  captureVisibleTabScreenshot: () => Promise<ScreenshotCapture>;
+  uploadCaptureAsset: (
+    instanceUrl: string,
+    sessionToken: string,
+    projectId: string,
+    captureSessionId: string,
+    data: UploadCaptureAssetInput
+  ) => Promise<CaptureAssetResponse>;
   logout: (instanceUrl: string, sessionToken: string) => Promise<void>;
 };
 
@@ -83,6 +95,8 @@ const buildDefaultDependencies = (): Dependencies => {
     listProjects,
     createCaptureSession,
     getCurrentTabSnapshot,
+    captureVisibleTabScreenshot,
+    uploadCaptureAsset,
     logout,
   };
 };
@@ -322,6 +336,34 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
             },
           });
         }}
+        onCaptureScreenshot={async (input) => {
+          const [screenshot, tab] = await Promise.all([
+            dependencies.captureVisibleTabScreenshot(),
+            dependencies.getCurrentTabSnapshot(),
+          ]);
+          const result = await dependencies.uploadCaptureAsset(
+            state.settings.instanceUrl,
+            state.settings.sessionToken,
+            input.projectId,
+            input.captureSessionId,
+            {
+              file: screenshot.blob,
+              fileName: screenshotFileName(screenshot.capturedAt),
+              width: screenshot.width,
+              height: screenshot.height,
+              devicePixelRatio: screenshot.devicePixelRatio,
+              pageUrl: tab.url,
+              pageTitle: tab.title,
+              capturedAt: screenshot.capturedAt,
+              metadata: {
+                extension_version: "0.1.0",
+                capture_source: "extension_popup",
+              },
+            }
+          );
+
+          return result;
+        }}
         onChangeInstance={async () => {
           await dependencies.clearSettings();
           reload();
@@ -386,6 +428,10 @@ const buildCaptureSessionInput = (input: {
     },
   };
 };
+
+const screenshotFileName = (capturedAt: string) => (
+  `screenshot-${capturedAt.replace(/[:.]/g, "-")}.png`
+);
 
 const Shell = ({ children }: { children: React.ReactNode }) => (
   <main className="popup">
@@ -524,6 +570,7 @@ const ProjectPicker = ({
   onSelect,
   onStartCapture,
   onDiscardActiveCapture,
+  onCaptureScreenshot,
   onChangeInstance,
   onSignOut,
 }: {
@@ -535,11 +582,18 @@ const ProjectPicker = ({
   onSelect: (projectId: string) => Promise<void>;
   onStartCapture: (projectId: string) => Promise<void>;
   onDiscardActiveCapture: () => Promise<void>;
+  onCaptureScreenshot: (input: {
+    projectId: string;
+    captureSessionId: string;
+  }) => Promise<CaptureAssetResponse>;
   onChangeInstance: () => Promise<void>;
   onSignOut: () => Promise<void>;
 }) => {
   const [starting, setStarting] = useState(false);
+  const [capturingScreenshot, setCapturingScreenshot] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const [screenshotError, setScreenshotError] = useState<string | null>(null);
+  const [lastCaptureAssetId, setLastCaptureAssetId] = useState<string | null>(null);
   const selectedProject = selectedProjectId
     ? projects.find((project) => project.id === selectedProjectId) ?? null
     : null;
@@ -547,6 +601,7 @@ const ProjectPicker = ({
     ? projects.find((project) => project.id === activeCaptureProjectId) ?? null
     : null;
   const hasActiveCapture = Boolean(activeCaptureSessionId && activeCaptureProjectId);
+  const busy = starting || capturingScreenshot;
 
   const heading = hasActiveCapture
     ? "Capture active"
@@ -555,7 +610,7 @@ const ProjectPicker = ({
       : "Select project";
 
   const handleStartCapture = async () => {
-    if (!selectedProject || starting) {
+    if (!selectedProject || busy) {
       return;
     }
 
@@ -571,6 +626,28 @@ const ProjectPicker = ({
     }
   };
 
+  const handleCaptureScreenshot = async () => {
+    if (!activeCaptureProjectId || !activeCaptureSessionId || busy) {
+      return;
+    }
+
+    setCapturingScreenshot(true);
+    setScreenshotError(null);
+    setLastCaptureAssetId(null);
+
+    try {
+      const result = await onCaptureScreenshot({
+        projectId: activeCaptureProjectId,
+        captureSessionId: activeCaptureSessionId,
+      });
+      setLastCaptureAssetId(result.capture_asset.id);
+      setCapturingScreenshot(false);
+    } catch (error: unknown) {
+      setScreenshotError(errorMessage(error, "Could not capture screenshot."));
+      setCapturingScreenshot(false);
+    }
+  };
+
   return (
     <section className="panel" aria-labelledby="project-heading">
       <div className="toolbar">
@@ -580,10 +657,10 @@ const ProjectPicker = ({
           <p className="instance">{auth.organization.name}</p>
         </div>
         <div className="toolbarActions">
-          <button type="button" className="secondary" disabled={starting} onClick={() => void onChangeInstance()}>
+          <button type="button" className="secondary" disabled={busy} onClick={() => void onChangeInstance()}>
             Change instance
           </button>
-          <button type="button" className="secondary" disabled={starting} onClick={() => void onSignOut()}>
+          <button type="button" className="secondary" disabled={busy} onClick={() => void onSignOut()}>
             Sign out
           </button>
         </div>
@@ -593,9 +670,16 @@ const ProjectPicker = ({
         <div className="captureState">
           <p className="captureProject">{activeProject?.name ?? "Project unavailable"}</p>
           <p className="captureSession">Session {activeCaptureSessionId}</p>
-          <button type="button" className="secondary" onClick={() => void onDiscardActiveCapture()}>
-            Discard local capture state
-          </button>
+          {screenshotError ? <div className="error">{screenshotError}</div> : null}
+          {lastCaptureAssetId ? <p className="success">Screenshot captured: {lastCaptureAssetId}</p> : null}
+          <div className="actions">
+            <button type="button" disabled={capturingScreenshot} onClick={() => void handleCaptureScreenshot()}>
+              {capturingScreenshot ? "Capturing..." : "Capture screenshot"}
+            </button>
+            <button type="button" className="secondary" disabled={busy} onClick={() => void onDiscardActiveCapture()}>
+              Discard local capture state
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -603,7 +687,7 @@ const ProjectPicker = ({
         <div className="captureState">
           <p className="captureProject">{selectedProject.name}</p>
           {startError ? <div className="error">{startError}</div> : null}
-          <button type="button" disabled={starting} onClick={() => void handleStartCapture()}>
+          <button type="button" disabled={busy} onClick={() => void handleStartCapture()}>
             {starting ? "Starting..." : "Start capture"}
           </button>
         </div>
@@ -619,7 +703,7 @@ const ProjectPicker = ({
             <button
               type="button"
               className={project.id === selectedProjectId ? "project selected" : "project"}
-              disabled={starting}
+              disabled={busy}
               key={project.id}
               onClick={() => void onSelect(project.id)}
             >

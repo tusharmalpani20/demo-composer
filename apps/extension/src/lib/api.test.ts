@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createCaptureSession, getCurrentAuth, listProjects, login, logout } from "./api";
+import {
+  createCaptureSession,
+  getCurrentAuth,
+  listProjects,
+  login,
+  logout,
+  uploadCaptureAsset,
+} from "./api";
 
 const auth = {
   user: {
@@ -64,6 +71,19 @@ const captureSession = {
   updated_at: "2026-06-05T10:00:00.000Z",
 };
 
+const captureAsset = {
+  id: "capture_asset_1",
+  project_id: "project_1",
+  capture_session_id: "capture_session_1",
+  asset_type: "screenshot",
+  width: 1440,
+  height: 900,
+  device_pixel_ratio: 2,
+  page_url: "https://example.com/path",
+  page_title: "Example Page",
+  captured_at: "2026-06-05T10:00:00.000Z",
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -71,7 +91,7 @@ afterEach(() => {
 describe("extension API client", () => {
   it("logs in against the configured instance and returns the extension token", async () => {
     const response = { auth, session_token: "extension-session-token" };
-    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(JSON.stringify(response), {
       status: 200,
       headers: {
         "content-type": "application/json",
@@ -153,7 +173,7 @@ describe("extension API client", () => {
 
   it("creates capture sessions with bearer auth and extension attribution", async () => {
     const response = { capture_session: captureSession };
-    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(JSON.stringify(response), {
       status: 201,
       headers: {
         "content-type": "application/json",
@@ -196,6 +216,72 @@ describe("extension API client", () => {
         }),
       }
     );
+  });
+
+  it("uploads capture assets as bearer-authenticated multipart form data", async () => {
+    const response = { capture_asset: captureAsset };
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(JSON.stringify(response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+    const file = new Blob(["fake png bytes"], { type: "image/png" });
+
+    await expect(uploadCaptureAsset(
+      "https://demo.example.com/",
+      "extension-session-token",
+      "project with spaces",
+      "capture session with spaces",
+      {
+        file,
+        fileName: "screenshot-2026-06-05T10-00-00-000Z.png",
+        width: 1440,
+        height: 900,
+        devicePixelRatio: 2,
+        pageUrl: "https://example.com/path",
+        pageTitle: "Example Page",
+        capturedAt: "2026-06-05T10:00:00.000Z",
+        metadata: {
+          extension_version: "0.1.0",
+          capture_source: "extension_popup",
+        },
+      }
+    )).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const [url, init] = fetch.mock.calls[0]!;
+    expect(url).toBe(
+      "https://demo.example.com/api/v1/projects/project%20with%20spaces/capture-sessions/capture%20session%20with%20spaces/assets/upload"
+    );
+    expect(init).toMatchObject({
+      method: "POST",
+      credentials: "include",
+      headers: {
+        accept: "application/json",
+        authorization: "Bearer extension-session-token",
+        "x-demo-composer-client": "extension",
+      },
+    });
+    expect((init as RequestInit).headers).not.toHaveProperty("content-type");
+    const body = (init as RequestInit).body;
+    expect(body).toBeInstanceOf(FormData);
+    const formData = body as FormData;
+    expect(formData.get("width")).toBe("1440");
+    expect(formData.get("height")).toBe("900");
+    expect(formData.get("device_pixel_ratio")).toBe("2");
+    expect(formData.get("page_url")).toBe("https://example.com/path");
+    expect(formData.get("page_title")).toBe("Example Page");
+    expect(formData.get("captured_at")).toBe("2026-06-05T10:00:00.000Z");
+    expect(formData.get("metadata")).toBe(JSON.stringify({
+      extension_version: "0.1.0",
+      capture_source: "extension_popup",
+    }));
+    const uploadedFile = formData.get("file");
+    expect(uploadedFile).toBeInstanceOf(File);
+    expect((uploadedFile as File).name).toBe("screenshot-2026-06-05T10-00-00-000Z.png");
+    expect((uploadedFile as File).type).toBe("image/png");
   });
 
   it("maps backend errors", async () => {

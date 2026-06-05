@@ -71,6 +71,35 @@ export type CaptureSessionResponse = {
   capture_session: CaptureSession;
 };
 
+export type CaptureAsset = {
+  id: string;
+  project_id: string;
+  capture_session_id: string;
+  asset_type: "screenshot" | "html_snapshot" | "thumbnail" | "redacted_screenshot";
+  width: number | null;
+  height: number | null;
+  device_pixel_ratio: number | null;
+  page_url: string | null;
+  page_title: string | null;
+  captured_at: string | null;
+};
+
+export type CaptureAssetResponse = {
+  capture_asset: CaptureAsset;
+};
+
+export type UploadCaptureAssetInput = {
+  file: Blob;
+  fileName: string;
+  width?: number | null;
+  height?: number | null;
+  devicePixelRatio?: number | null;
+  pageUrl?: string | null;
+  pageTitle?: string | null;
+  capturedAt?: string | null;
+  metadata?: Record<string, unknown>;
+};
+
 type ApiErrorBody = {
   error?: {
     type?: string;
@@ -135,6 +164,18 @@ const requestJson = async <Result>(
   }
 
   return await response.json() as Result;
+};
+
+const appendOptionalFormValue = (
+  formData: FormData,
+  name: string,
+  value: string | number | null | undefined
+) => {
+  if (value === null || value === undefined) {
+    return;
+  }
+
+  formData.append(name, String(value));
 };
 
 export const login = async (
@@ -206,3 +247,37 @@ export const createCaptureSession = async (
     }
   )
 );
+
+export const uploadCaptureAsset = async (
+  instanceUrl: string,
+  sessionToken: string,
+  projectId: string,
+  captureSessionId: string,
+  data: UploadCaptureAssetInput
+): Promise<CaptureAssetResponse> => {
+  const formData = new FormData();
+  formData.append("file", data.file, data.fileName);
+  appendOptionalFormValue(formData, "width", data.width);
+  appendOptionalFormValue(formData, "height", data.height);
+  appendOptionalFormValue(formData, "device_pixel_ratio", data.devicePixelRatio);
+  appendOptionalFormValue(formData, "page_url", data.pageUrl);
+  appendOptionalFormValue(formData, "page_title", data.pageTitle);
+  appendOptionalFormValue(formData, "captured_at", data.capturedAt);
+
+  if (data.metadata !== undefined) {
+    formData.append("metadata", JSON.stringify(data.metadata));
+  }
+
+  return requestJson<CaptureAssetResponse>(
+    instanceUrl,
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}/assets/upload`,
+    {
+      method: "POST",
+      headers: {
+        ...authHeaders(sessionToken),
+        "x-demo-composer-client": "extension",
+      },
+      body: formData,
+    }
+  );
+};
