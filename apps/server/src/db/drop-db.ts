@@ -1,4 +1,5 @@
 import pg from "pg";
+import { quote_database_identifier } from "./identifier";
 
 const db_name = process.env.DB_NAME;
 const node_env = process.env.NODE_ENV;
@@ -34,8 +35,6 @@ const client = new pg.Client({
   database: "postgres",
 });
 
-const quote_identifier = (identifier: string) => `"${identifier.replaceAll('"', '""')}"`;
-
 async function run() {
   try {
     await client.connect();
@@ -45,7 +44,7 @@ async function run() {
       WHERE datname = $1
       AND pid <> pg_backend_pid()
     `, [test_db_name]);
-    await client.query(`DROP DATABASE IF EXISTS ${quote_identifier(test_db_name)}`);
+    await client.query(`DROP DATABASE IF EXISTS ${quote_database_identifier(test_db_name)}`);
     console.log(`Database "${test_db_name}" dropped`);
   } catch (error) {
     console.error("Error dropping database:", error);

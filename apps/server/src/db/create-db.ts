@@ -1,4 +1,5 @@
 import pg from "pg";
+import { quote_database_identifier } from "./identifier";
 
 const dbName = process.env.DB_NAME;
 
@@ -6,6 +7,8 @@ if (!dbName) {
     console.error("❌ DB_NAME is not set in environment variables");
     process.exit(1);
 }
+
+const database_name = dbName;
 
 const client = new pg.Client({
     user: process.env.DB_USER,
@@ -21,14 +24,14 @@ async function run() {
 
         const result = await client.query(
             "SELECT 1 FROM pg_database WHERE datname = $1",
-            [dbName]
+            [database_name]
         );
 
         if (result.rowCount && result.rowCount > 0) {
-            console.log(`✅ Database "${dbName}" already exists`);
+            console.log(`✅ Database "${database_name}" already exists`);
         } else {
-            await client.query(`CREATE DATABASE "${dbName}"`);
-            console.log(`✅ Database "${dbName}" created successfully`);
+            await client.query(`CREATE DATABASE ${quote_database_identifier(database_name)}`);
+            console.log(`✅ Database "${database_name}" created successfully`);
         }
     } catch (error) {
         console.error("❌ Error creating database:", error);
