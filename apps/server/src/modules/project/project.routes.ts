@@ -4,7 +4,7 @@ import {
   UnauthenticatedSessionError,
   type AuthContext,
 } from "../authentication/session.service";
-import { web_session_cookie_name } from "../authentication/session-cookie";
+import { session_token_from_request } from "../authentication/request-session-token";
 import {
   EmptyProjectUpdateError,
   ProjectNameConflictError,
@@ -172,7 +172,7 @@ export const build_project_routes = (
       },
     }, async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const project = await dependencies.project_service.create_project({
           auth,
           data: pick_create_project_data(request.body),
@@ -193,7 +193,7 @@ export const build_project_routes = (
       },
     }, async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const projects = await dependencies.project_service.list_projects({
           auth,
           status: request.query.status,
@@ -210,7 +210,7 @@ export const build_project_routes = (
       };
     }>("/:id", async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const project = await dependencies.project_service.get_project({
           auth,
           project_id: request.params.id,
@@ -232,7 +232,7 @@ export const build_project_routes = (
       },
     }, async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const project = await dependencies.project_service.update_project({
           auth,
           project_id: request.params.id,
@@ -250,7 +250,7 @@ export const build_project_routes = (
       };
     }>("/:id", async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         await dependencies.project_service.delete_project({
           auth,
           project_id: request.params.id,

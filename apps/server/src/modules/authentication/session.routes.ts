@@ -3,8 +3,11 @@ import { z } from "zod";
 import {
   clear_web_session_cookie,
   set_web_session_cookie,
-  web_session_cookie_name,
 } from "./session-cookie";
+import {
+  is_extension_client_request,
+  session_token_from_request,
+} from "./request-session-token";
 import {
   InvalidCredentialsError,
   UnauthenticatedSessionError,
@@ -47,7 +50,7 @@ export const build_authentication_session_routes = (
     fastify.get("/me", async (request, reply) => {
       try {
         const auth = await service.get_current_auth_context(
-          request.cookies[web_session_cookie_name]
+          session_token_from_request(request)
         );
 
         return reply.status(200).send({ auth });
@@ -75,7 +78,10 @@ export const build_authentication_session_routes = (
       try {
         const result = await service.login(request.body);
         set_web_session_cookie(reply, result.session_token);
-        return reply.status(200).send({ auth: result.auth });
+        return reply.status(200).send({
+          auth: result.auth,
+          ...(is_extension_client_request(request) ? { session_token: result.session_token } : {}),
+        });
       } catch (error) {
         if (error instanceof InvalidCredentialsError) {
           return reply.status(401).send(
@@ -88,7 +94,7 @@ export const build_authentication_session_routes = (
     });
 
     fastify.post("/logout", async (request, reply) => {
-      await service.logout(request.cookies[web_session_cookie_name]);
+      await service.logout(session_token_from_request(request));
       clear_web_session_cookie(reply);
       return reply.status(204).send();
     });

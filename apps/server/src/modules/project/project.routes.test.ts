@@ -209,6 +209,30 @@ describe("project routes", () => {
     await app.close();
   });
 
+  it("lists projects with a bearer session token", async () => {
+    const app = await build_test_app({
+      auth_service: {
+        get_current_auth_context: async (session_token) => {
+          expect(session_token).toBe("extension-session-token");
+          return auth_context;
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects",
+      headers: {
+        authorization: "Bearer extension-session-token",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ projects: [project] });
+
+    await app.close();
+  });
+
   it("soft deletes a project with auth context derived organization and actor", async () => {
     const seen_inputs: unknown[] = [];
     const app = await build_test_app({

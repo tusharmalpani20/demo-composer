@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "vitest run --exclude \"src/**/*.db.integration.test.ts\"",
+    "test": "vitest run --exclude \"src/**/*.db.integration.test.ts\" --exclude \"dist/**\"",
     "test:watch": "vitest",
     "test:db:create": "env-cmd -f .env-cmdrc -e testing -- tsx src/db/create-db.ts",
     "test:migrate": "env-cmd -f .env-cmdrc -e testing -- tsx src/db/migrate.ts up",

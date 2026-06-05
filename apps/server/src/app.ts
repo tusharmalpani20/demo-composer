@@ -133,7 +133,7 @@ export const build = (opts: BuildOptions = {}) => {
       },
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       credentials: true,
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Demo-Composer-Client'],
       preflight: true,
       preflightContinue: false
   });

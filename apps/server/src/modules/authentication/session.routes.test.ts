@@ -174,6 +174,163 @@ describe("authentication session routes", () => {
     await app.close();
   });
 
+  it("returns an extension session token when login is marked as an extension request", async () => {
+    const app = await build_test_app({
+      get_current_auth_context: async () => {
+        throw new Error("not used");
+      },
+      login: async (input) => ({
+        session_token: "extension-session-token",
+        auth: {
+          user: {
+            id: "user_1",
+            email: input.email,
+            display_name: "Owner User",
+          },
+          organization: {
+            id: "organization_1",
+            name: "Acme",
+          },
+          org_user: {
+            id: "org_user_1",
+            role: "owner",
+          },
+          session: {
+            id: "session_2",
+            session_type: "web",
+            expires_at: "2026-07-05T00:00:00.000Z",
+          },
+        },
+      }),
+      logout: async () => {
+        throw new Error("not used");
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/authentication/login",
+      headers: {
+        "x-demo-composer-client": "extension",
+      },
+      payload: {
+        email: "owner@example.com",
+        password: "safe local password",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      session_token: "extension-session-token",
+      auth: {
+        user: {
+          email: "owner@example.com",
+        },
+      },
+    });
+    expect(response.cookies).toContainEqual(expect.objectContaining({
+      name: "demo_composer_session",
+      value: "extension-session-token",
+    }));
+
+    await app.close();
+  });
+
+  it("does not expose the session token for normal portal login", async () => {
+    const app = await build_test_app({
+      get_current_auth_context: async () => {
+        throw new Error("not used");
+      },
+      login: async () => ({
+        session_token: "web-session-token",
+        auth: {
+          user: {
+            id: "user_1",
+            email: "owner@example.com",
+            display_name: "Owner User",
+          },
+          organization: {
+            id: "organization_1",
+            name: "Acme",
+          },
+          org_user: {
+            id: "org_user_1",
+            role: "owner",
+          },
+          session: {
+            id: "session_2",
+            session_type: "web",
+            expires_at: "2026-07-05T00:00:00.000Z",
+          },
+        },
+      }),
+      logout: async () => {
+        throw new Error("not used");
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/authentication/login",
+      payload: {
+        email: "owner@example.com",
+        password: "safe local password",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).not.toHaveProperty("session_token");
+
+    await app.close();
+  });
+
+  it("returns current auth context for a bearer session token", async () => {
+    const app = await build_test_app({
+      get_current_auth_context: async (session_token) => {
+        expect(session_token).toBe("extension-session-token");
+        return {
+          user: {
+            id: "user_1",
+            email: "owner@example.com",
+            display_name: "Owner User",
+          },
+          organization: {
+            id: "organization_1",
+            name: "Acme",
+          },
+          org_user: {
+            id: "org_user_1",
+            role: "owner",
+          },
+          session: {
+            id: "session_1",
+            session_type: "web",
+            expires_at: "2026-07-05T00:00:00.000Z",
+          },
+        };
+      },
+      login: async () => {
+        throw new Error("not used");
+      },
+      logout: async () => {
+        throw new Error("not used");
+      },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/authentication/me",
+      headers: {
+        authorization: "Bearer extension-session-token",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().auth.user.email).toBe("owner@example.com");
+
+    await app.close();
+  });
+
   it("maps invalid login credentials to unauthorized", async () => {
     const { InvalidCredentialsError } = await import("./session.routes");
     const app = await build_test_app({
@@ -237,6 +394,34 @@ describe("authentication session routes", () => {
       value: "",
       path: "/",
     }));
+
+    await app.close();
+  });
+
+  it("logs out through the service with a bearer session token", async () => {
+    const seen_session_tokens: Array<string | undefined> = [];
+    const app = await build_test_app({
+      get_current_auth_context: async () => {
+        throw new Error("not used");
+      },
+      login: async () => {
+        throw new Error("not used");
+      },
+      logout: async (session_token) => {
+        seen_session_tokens.push(session_token);
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/authentication/logout",
+      headers: {
+        authorization: "Bearer extension-session-token",
+      },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(seen_session_tokens).toEqual(["extension-session-token"]);
 
     await app.close();
   });

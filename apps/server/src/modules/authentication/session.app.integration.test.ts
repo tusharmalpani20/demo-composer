@@ -2,6 +2,25 @@ import { describe, expect, it } from "vitest";
 import { build } from "../../app";
 
 describe("authentication session app routes", () => {
+  it("allows extension login request headers during CORS preflight", async () => {
+    const app = build({ logger: false });
+
+    const response = await app.inject({
+      method: "OPTIONS",
+      url: "/api/v1/authentication/login",
+      headers: {
+        origin: "chrome-extension://extension-id",
+        "access-control-request-method": "POST",
+        "access-control-request-headers": "content-type,x-demo-composer-client",
+      },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(String(response.headers["access-control-allow-headers"]).toLowerCase()).toContain("x-demo-composer-client");
+
+    await app.close();
+  });
+
   it("mounts authentication session routes under the versioned API", async () => {
     const app = build({
       logger: false,
