@@ -1,6 +1,7 @@
 import { ulid } from "ulid";
 import {
   type CaptureAsset,
+  type CaptureAssetFile,
   type CaptureAssetRepository,
   type CaptureAssetType,
   FileStorageKeyConflictError,
@@ -38,6 +39,10 @@ type CaptureAssetRow = {
   file_size_bytes: string | number;
   file_original_name: string | null;
   file_checksum_sha256: string | null;
+};
+
+type CaptureAssetFileRow = CaptureAssetRow & {
+  file_storage_key: string;
 };
 
 const first_row = <Row>(result: QueryResult<Row>) => result.rows[0] ?? null;
@@ -92,6 +97,11 @@ const capture_asset_select = `
   app_file.size_bytes AS file_size_bytes,
   app_file.original_name AS file_original_name,
   app_file.checksum_sha256 AS file_checksum_sha256
+`;
+
+const capture_asset_file_select = `
+  ${capture_asset_select},
+  app_file.storage_key AS file_storage_key
 `;
 
 const is_storage_key_conflict = (error: unknown) => {
@@ -152,6 +162,22 @@ const build_transactional_repository = (db: Queryable) => ({
     capture_session_id: string;
     actor_org_user_id: string;
     data: Parameters<CaptureAssetRepository["create_capture_asset"]>[0]["data"];
+  }) {
+    return this.create_uploaded_capture_asset({
+      ...input,
+      file_id: ulid(),
+      capture_asset_id: ulid(),
+    });
+  },
+
+  async create_uploaded_capture_asset(input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+    actor_org_user_id: string;
+    file_id: string;
+    capture_asset_id: string;
+    data: Parameters<CaptureAssetRepository["create_uploaded_capture_asset"]>[0]["data"];
   }) {
     try {
       const result = await db.query<CaptureAssetRow>(`
@@ -242,7 +268,7 @@ const build_transactional_repository = (db: Queryable) => ({
         FROM inserted_asset
         INNER JOIN inserted_file ON inserted_file.id = inserted_asset.file_id
       `, [
-        ulid(),
+        input.file_id,
         input.organization_id,
         input.data.file.storage_provider,
         input.data.file.storage_key,
@@ -252,7 +278,7 @@ const build_transactional_repository = (db: Queryable) => ({
         input.data.file.checksum_sha256 ?? null,
         input.data.file.metadata ?? null,
         input.actor_org_user_id,
-        ulid(),
+        input.capture_asset_id,
         input.project_id,
         input.capture_session_id,
         input.data.asset_type,
@@ -339,6 +365,47 @@ const build_transactional_repository = (db: Queryable) => ({
     const row = first_row(result);
 
     return row ? map_capture_asset(row) : null;
+  },
+
+  async find_capture_asset_file(input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+    capture_asset_id: string;
+  }): Promise<CaptureAssetFile | null> {
+    const result = await db.query<CaptureAssetFileRow>(`
+      SELECT ${capture_asset_file_select}
+      FROM capture_schema.capture_asset capture_asset
+      INNER JOIN file_schema.file app_file ON app_file.id = capture_asset.file_id
+      WHERE capture_asset.id = $1
+      AND capture_asset.capture_session_id = $2
+      AND capture_asset.project_id = $3
+      AND capture_asset.organization_id = $4
+      AND capture_asset.is_deleted = FALSE
+      AND app_file.is_deleted = FALSE
+      LIMIT 1
+    `, [
+      input.capture_asset_id,
+      input.capture_session_id,
+      input.project_id,
+      input.organization_id,
+    ]);
+    const row = first_row(result);
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      capture_asset: map_capture_asset(row),
+      file: {
+        id: row.file_id,
+        storage_provider: row.file_storage_provider,
+        storage_key: row.file_storage_key,
+        mime_type: row.file_mime_type,
+        size_bytes: Number(row.file_size_bytes),
+      },
+    };
   },
 
   async delete_capture_asset(input: {

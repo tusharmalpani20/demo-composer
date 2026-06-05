@@ -1,6 +1,10 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "DEMO_COMPOSER_LOCAL_STORAGE_ROOT",
+    "DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

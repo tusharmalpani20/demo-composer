@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   build_local_file_storage_provider,
   FileBytesNotFoundError,
+  FileStorageUploadTooLargeError,
   UnsafeStorageKeyError,
 } from "./local-file-storage.provider";
 
@@ -79,5 +80,23 @@ describe("local file storage provider", () => {
     await provider.delete_best_effort({ storage_key: stored.storage_key });
 
     await expect(provider.get({ storage_key: stored.storage_key })).rejects.toBeInstanceOf(FileBytesNotFoundError);
+  });
+
+  it("rejects oversized uploads without leaving partial bytes", async () => {
+    const provider = build_local_file_storage_provider({ root });
+
+    await expect(provider.put({
+      organization_id: "org_1",
+      project_id: "project_1",
+      capture_session_id: "session_1",
+      file_id: "file_1",
+      mime_type: "image/png",
+      stream: Readable.from(Buffer.from("fake png bytes")),
+      max_size_bytes: 4,
+    })).rejects.toBeInstanceOf(FileStorageUploadTooLargeError);
+
+    await expect(provider.get({
+      storage_key: "organizations/org_1/projects/project_1/capture-sessions/session_1/file_1.png",
+    })).rejects.toBeInstanceOf(FileBytesNotFoundError);
   });
 });

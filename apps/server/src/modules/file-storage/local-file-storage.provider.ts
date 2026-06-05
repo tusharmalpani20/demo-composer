@@ -29,6 +29,12 @@ export class FileStorageWriteFailedError extends Error {
   }
 }
 
+export class FileStorageUploadTooLargeError extends Error {
+  constructor() {
+    super("File storage upload is too large");
+  }
+}
+
 export class UnsafeStorageKeyError extends Error {
   constructor() {
     super("Storage key is unsafe");
@@ -83,6 +89,7 @@ export const build_local_file_storage_provider = (input: { root: string }) => {
     file_id: string;
     mime_type: string;
     stream: NodeJS.ReadableStream;
+    max_size_bytes?: number;
   }): Promise<StoredFile> => {
     const extension = file_extension_for_mime_type(file.mime_type);
     const storage_key = [
@@ -105,6 +112,10 @@ export const build_local_file_storage_provider = (input: { root: string }) => {
         hash.update(buffer);
         chunks.push(buffer);
         size_bytes += buffer.length;
+
+        if (file.max_size_bytes !== undefined && size_bytes > file.max_size_bytes) {
+          throw new FileStorageUploadTooLargeError();
+        }
       }
 
       await mkdir(path.dirname(storage_path), { recursive: true });
@@ -120,6 +131,10 @@ export const build_local_file_storage_provider = (input: { root: string }) => {
       await unlink(storage_path).catch(() => undefined);
 
       if (error instanceof UnsafeStorageKeyError) {
+        throw error;
+      }
+
+      if (error instanceof FileStorageUploadTooLargeError) {
         throw error;
       }
 

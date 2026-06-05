@@ -1,6 +1,44 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { build } from "../../app";
 import { pool } from "../../config/database.config";
+
+const multipart_payload = (parts: Array<{
+  name: string;
+  value: string | Buffer;
+  filename?: string;
+  content_type?: string;
+}>) => {
+  const boundary = "----demo-composer-db-test-boundary";
+  const chunks: Buffer[] = [];
+
+  for (const part of parts) {
+    chunks.push(Buffer.from(`--${boundary}\r\n`));
+    chunks.push(Buffer.from(
+      `Content-Disposition: form-data; name="${part.name}"${
+        part.filename ? `; filename="${part.filename}"` : ""
+      }\r\n`
+    ));
+    if (part.content_type) {
+      chunks.push(Buffer.from(`Content-Type: ${part.content_type}\r\n`));
+    }
+    chunks.push(Buffer.from("\r\n"));
+    chunks.push(Buffer.isBuffer(part.value) ? part.value : Buffer.from(part.value));
+    chunks.push(Buffer.from("\r\n"));
+  }
+
+  chunks.push(Buffer.from(`--${boundary}--\r\n`));
+
+  return {
+    headers: {
+      "content-type": `multipart/form-data; boundary=${boundary}`,
+    },
+    payload: Buffer.concat(chunks),
+  };
+};
 
 const reset_foundation_tables = async () => {
   await pool.query(`
@@ -96,12 +134,130 @@ const create_capture_session = async (session_token: string, project_id: string)
 };
 
 describe("DB-backed capture asset API", () => {
+  let storage_root: string;
+
   beforeEach(async () => {
+    storage_root = await mkdtemp(path.join(tmpdir(), "demo-composer-db-storage-"));
+    process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT = storage_root;
+    process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES = "1048576";
     await reset_foundation_tables();
+  });
+
+  afterEach(async () => {
+    delete process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT;
+    delete process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES;
+    await rm(storage_root, { recursive: true, force: true });
   });
 
   afterAll(async () => {
     await pool.end();
+  });
+
+  it("uploads screenshot bytes stores file metadata and streams bytes back", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const capture_session_id = await create_capture_session(session_token, project_id);
+    const owner_context = await get_owner_context();
+    const app = build({ logger: false });
+    const bytes = Buffer.from("fake png bytes");
+    const upload_body = multipart_payload([
+      {
+        name: "file",
+        filename: "screenshot.png",
+        content_type: "image/png",
+        value: bytes,
+      },
+      { name: "width", value: "1440" },
+      { name: "height", value: "900" },
+      { name: "device_pixel_ratio", value: "2" },
+      { name: "page_url", value: "https://example.internal/app/department" },
+      { name: "page_title", value: "Department" },
+      { name: "metadata", value: JSON.stringify({ step: 1 }) },
+    ]);
+
+    const upload_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/upload`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      ...upload_body,
+    });
+
+    expect(upload_response.statusCode).toBe(201);
+    expect(upload_response.json().capture_asset).toMatchObject({
+      organization_id: owner_context?.organization_id,
+      project_id,
+      capture_session_id,
+      asset_type: "screenshot",
+      width: 1440,
+      height: 900,
+      device_pixel_ratio: 2,
+      page_url: "https://example.internal/app/department",
+      page_title: "Department",
+      file: {
+        storage_provider: "local",
+        mime_type: "image/png",
+        size_bytes: bytes.length,
+        original_name: "screenshot.png",
+        checksum_sha256: createHash("sha256").update(bytes).digest("hex"),
+      },
+    });
+    expect(JSON.stringify(upload_response.json())).not.toContain("storage_key");
+
+    const capture_asset_id = upload_response.json().capture_asset.id as string;
+    const file_id = upload_response.json().capture_asset.file.id as string;
+    const persisted = await pool.query<{
+      storage_provider: string;
+      storage_key: string;
+      checksum_sha256: string;
+    }>(`
+      SELECT app_file.storage_provider, app_file.storage_key, app_file.checksum_sha256
+      FROM capture_schema.capture_asset capture_asset
+      INNER JOIN file_schema.file app_file ON app_file.id = capture_asset.file_id
+      WHERE capture_asset.id = $1
+    `, [capture_asset_id]);
+
+    expect(persisted.rows[0]).toEqual({
+      storage_provider: "local",
+      storage_key: `organizations/${owner_context?.organization_id}/projects/${project_id}/capture-sessions/${capture_session_id}/${file_id}.png`,
+      checksum_sha256: createHash("sha256").update(bytes).digest("hex"),
+    });
+
+    const read_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${capture_asset_id}/file`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+
+    expect(read_response.statusCode).toBe(200);
+    expect(read_response.headers["content-type"]).toBe("image/png");
+    expect(read_response.headers["content-length"]).toBe(String(bytes.length));
+    expect(read_response.headers["cache-control"]).toBe("private, max-age=300");
+    expect(read_response.body).toBe(bytes.toString());
+
+    const delete_response = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${capture_asset_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    expect(delete_response.statusCode).toBe(204);
+
+    const read_deleted_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${capture_asset_id}/file`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    expect(read_deleted_response.statusCode).toBe(404);
+    expect(read_deleted_response.json().error.type).toBe("capture_asset_not_found");
+
+    await app.close();
   });
 
   it("creates lists gets and soft deletes screenshot asset metadata under a capture session", async () => {

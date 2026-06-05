@@ -5,10 +5,6 @@ import fastifySwagger from '@fastify/swagger';
 import fastifyApiReference from "@scalar/fastify-api-reference";
 import fastify, { type FastifyError, type FastifyServerOptions } from "fastify";
 import { jsonSchemaTransform, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
-import fs from "fs";
-import { pipeline } from "stream/promises";
-import { ulid } from "ulid";
-import { common_temp_folder } from "./common/constants/common.constant.js";
 import { error_handler } from './common/helper_function/error_handler.helper.js';
 import { cookieConfig } from "./config/cookie.config.js";
 import { initialize_event_emitter } from './config/event.config.js';
@@ -51,6 +47,7 @@ import {
 } from './modules/capture-asset/capture-asset.routes.js';
 import { build_capture_asset_repository } from './modules/capture-asset/capture-asset.repository.js';
 import { build_capture_asset_service } from './modules/capture-asset/capture-asset.service.js';
+import { build_local_file_storage_provider } from "./modules/file-storage/local-file-storage.provider.js";
 import {
   build_capture_event_routes,
   type CaptureEventRouteDependencies,
@@ -69,6 +66,18 @@ type BuildOptions = FastifyServerOptions & {
   capture_event_service?: CaptureEventRouteDependencies["capture_event_service"];
 };
 
+const default_local_storage_root = () => (
+    process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT || "./storage"
+);
+
+const default_max_screenshot_upload_bytes = () => {
+    const configured = Number(process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES);
+
+    return Number.isFinite(configured) && configured > 0
+        ? configured
+        : 10 * 1024 * 1024;
+};
+
 export const build = (opts: BuildOptions = {}) => {
   const {
       public_instance_service,
@@ -81,6 +90,7 @@ export const build = (opts: BuildOptions = {}) => {
       ...fastify_options
   } = opts;
   const app = fastify(fastify_options);
+  const max_screenshot_upload_bytes = default_max_screenshot_upload_bytes();
 
   // Register request decorators first
   app.register(requestDec);
@@ -126,30 +136,9 @@ export const build = (opts: BuildOptions = {}) => {
   // Register Multipart right after CORS
   app.register(fastifyMultipart, {
       limits: {
-          fileSize: 1024 * 1024 * 1024, // 1GB
+          fileSize: max_screenshot_upload_bytes,
           files: 10
       },
-      attachFieldsToBody: true,
-      onFile: async (part: any) => {
-
-          // console.log(part.fields);
-          const file_id = ulid();
-          const file_extension = part.filename.split('.').pop();
-          const uniqueName = `${file_id}.${file_extension}`;
-          const tempPath = `./${common_temp_folder}/${uniqueName}`;
-          console.log(part.mimetype);
-          try {
-              await pipeline(part.file, fs.createWriteStream(tempPath));
-              (part as any).filepath = tempPath;
-              (part as any).generated_file_name = uniqueName;
-              (part as any).file_extension = file_extension;
-              (part as any).file_id = file_id;
-              console.log("File saved to:", tempPath);
-          } catch (err) {
-              console.error("Error saving file:", err);
-              throw err;
-          }
-      }
   });
 
   app.setErrorHandler(async (error, request, response) => {
@@ -272,6 +261,9 @@ export const build = (opts: BuildOptions = {}) => {
   const default_authentication_session_service = authentication_session_service ?? build_authentication_session_service(
       build_authentication_session_repository(pool)
   );
+  const default_capture_file_storage = build_local_file_storage_provider({
+      root: default_local_storage_root(),
+  });
 
   app.register(build_project_routes({
       auth_service: {
@@ -300,7 +292,11 @@ export const build = (opts: BuildOptions = {}) => {
           get_current_auth_context: default_authentication_session_service.get_current_auth_context,
       },
       capture_asset_service: capture_asset_service ?? build_capture_asset_service(
-          build_capture_asset_repository(pool)
+          build_capture_asset_repository(pool),
+          {
+              file_storage: default_capture_file_storage,
+              max_upload_bytes: max_screenshot_upload_bytes,
+          }
       ),
   }), {
       prefix: "/api/v1/projects",

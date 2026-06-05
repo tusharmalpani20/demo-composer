@@ -1,15 +1,23 @@
 import cookie from "@fastify/cookie";
+import multipart from "@fastify/multipart";
 import fastify from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
+import { Readable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { UnauthenticatedSessionError } from "../authentication/session.service";
 import {
   CaptureAssetNotFoundError,
   CaptureSessionNotFoundError,
+  FileBytesNotFoundError,
   FileStorageKeyConflictError,
+  FileStorageWriteFailedError,
   InvalidCaptureAssetInputError,
   ProjectNotFoundError,
+  UnsupportedCaptureAssetUploadTypeError,
+  UnsupportedFileStorageProviderError,
   UnsupportedCaptureAssetTypeError,
+  UploadFileRequiredError,
+  UploadTooLargeError,
   type CaptureAsset,
 } from "./capture-asset.service";
 import { build_capture_asset_routes } from "./capture-asset.routes";
@@ -72,6 +80,12 @@ const build_test_app = async (
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   await app.register(cookie);
+  await app.register(multipart, {
+    limits: {
+      files: 1,
+      fileSize: 20,
+    },
+  });
   await app.register(build_capture_asset_routes({
     auth_service: {
       get_current_auth_context: async () => auth_context,
@@ -79,13 +93,53 @@ const build_test_app = async (
     },
     capture_asset_service: {
       create_capture_asset: async () => capture_asset,
+      upload_capture_asset: async () => capture_asset,
       list_capture_assets: async () => [capture_asset],
       get_capture_asset: async () => capture_asset,
+      get_capture_asset_file: async () => ({
+        stream: Readable.from(Buffer.from("fake png bytes")),
+        mime_type: "image/png",
+        size_bytes: 14,
+      }),
       delete_capture_asset: async () => undefined,
       ...overrides.capture_asset_service,
     },
   }), { prefix: "/api/v1/projects" });
   return app;
+};
+
+const multipart_payload = (parts: Array<{
+  name: string;
+  value: string | Buffer;
+  filename?: string;
+  content_type?: string;
+}>) => {
+  const boundary = "----demo-composer-test-boundary";
+  const chunks: Buffer[] = [];
+
+  for (const part of parts) {
+    chunks.push(Buffer.from(`--${boundary}\r\n`));
+    chunks.push(Buffer.from(
+      `Content-Disposition: form-data; name="${part.name}"${
+        part.filename ? `; filename="${part.filename}"` : ""
+      }\r\n`
+    ));
+    if (part.content_type) {
+      chunks.push(Buffer.from(`Content-Type: ${part.content_type}\r\n`));
+    }
+    chunks.push(Buffer.from("\r\n"));
+    chunks.push(Buffer.isBuffer(part.value) ? part.value : Buffer.from(part.value));
+    chunks.push(Buffer.from("\r\n"));
+  }
+
+  chunks.push(Buffer.from(`--${boundary}--\r\n`));
+
+  return {
+    headers: {
+      "content-type": `multipart/form-data; boundary=${boundary}`,
+    },
+    payload: Buffer.concat(chunks),
+  };
 };
 
 describe("capture asset routes", () => {
@@ -113,6 +167,7 @@ describe("capture asset routes", () => {
       },
       { method: "GET", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets" },
       { method: "GET", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1" },
+      { method: "GET", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1/file" },
       { method: "DELETE", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1" },
     ] as const) {
       const response = await app.inject(request);
@@ -126,6 +181,162 @@ describe("capture asset routes", () => {
     }
 
     await app.close();
+  });
+
+  it("uploads screenshot bytes as multipart form data", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      capture_asset_service: {
+        upload_capture_asset: async (input) => {
+          seen_inputs.push(input);
+          return capture_asset;
+        },
+      },
+    });
+    const request_body = multipart_payload([
+      {
+        name: "file",
+        filename: "screenshot.png",
+        content_type: "image/png",
+        value: Buffer.from("fake png bytes"),
+      },
+      { name: "width", value: "1440" },
+      { name: "height", value: "900" },
+      { name: "device_pixel_ratio", value: "2" },
+      { name: "page_url", value: " https://example.internal " },
+      { name: "page_title", value: " Example " },
+      { name: "captured_at", value: "2026-06-05T10:00:00.000Z" },
+      { name: "metadata", value: JSON.stringify({ step: 1 }) },
+    ]);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/upload",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+      ...request_body,
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toEqual({ capture_asset });
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      file: {
+        stream: expect.any(Object),
+        mime_type: "image/png",
+        original_name: "screenshot.png",
+      },
+      data: {
+        width: 1440,
+        height: 900,
+        device_pixel_ratio: 2,
+        page_url: " https://example.internal ",
+        page_title: " Example ",
+        captured_at: "2026-06-05T10:00:00.000Z",
+        metadata: { step: 1 },
+      },
+    }]);
+    await app.close();
+  });
+
+  it("streams capture asset file bytes with private cache headers", async () => {
+    const app = await build_test_app();
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1/file",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["content-type"]).toBe("image/png");
+    expect(response.headers["content-length"]).toBe("14");
+    expect(response.headers["cache-control"]).toBe("private, max-age=300");
+    expect(response.body).toBe("fake png bytes");
+    await app.close();
+  });
+
+  it("maps capture asset upload and file read errors to stable responses", async () => {
+    const cases = [
+      {
+        service: "upload_capture_asset",
+        error: new UploadFileRequiredError(),
+        status: 400,
+        type: "upload_file_required",
+      },
+      {
+        service: "upload_capture_asset",
+        error: new UnsupportedCaptureAssetUploadTypeError(),
+        status: 400,
+        type: "unsupported_capture_asset_upload_type",
+      },
+      {
+        service: "upload_capture_asset",
+        error: new UploadTooLargeError(),
+        status: 413,
+        type: "upload_too_large",
+      },
+      {
+        service: "upload_capture_asset",
+        error: new FileStorageWriteFailedError(),
+        status: 500,
+        type: "file_storage_write_failed",
+      },
+      {
+        service: "get_capture_asset_file",
+        error: new FileBytesNotFoundError(),
+        status: 404,
+        type: "file_bytes_not_found",
+      },
+      {
+        service: "get_capture_asset_file",
+        error: new UnsupportedFileStorageProviderError(),
+        status: 500,
+        type: "unsupported_file_storage_provider",
+      },
+    ] as const;
+
+    for (const test_case of cases) {
+      const app = await build_test_app({
+        capture_asset_service: {
+          [test_case.service]: async () => {
+            throw test_case.error;
+          },
+        },
+      });
+      const request_body = multipart_payload([
+        {
+          name: "file",
+          filename: "screenshot.png",
+          content_type: "image/png",
+          value: Buffer.from("fake png bytes"),
+        },
+      ]);
+      const response = await app.inject(test_case.service === "upload_capture_asset"
+        ? {
+          method: "POST",
+          url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/upload",
+          cookies: { demo_composer_session: "session-token" },
+          ...request_body,
+        }
+        : {
+          method: "GET",
+          url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1/file",
+          cookies: { demo_composer_session: "session-token" },
+        });
+
+      expect(response.statusCode).toBe(test_case.status);
+      expect(response.json().error.type).toBe(test_case.type);
+      await app.close();
+    }
   });
 
   it("creates screenshot asset metadata with auth context and URL scope", async () => {

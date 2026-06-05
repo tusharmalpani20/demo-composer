@@ -8,14 +8,23 @@ import { web_session_cookie_name } from "../authentication/session-cookie";
 import {
   CaptureAssetNotFoundError,
   CaptureSessionNotFoundError,
+  FileBytesNotFoundError,
   FileStorageKeyConflictError,
+  FileStorageWriteFailedError,
+  InvalidCaptureAssetUploadError,
   InvalidCaptureAssetInputError,
   ProjectNotFoundError,
+  UnsupportedCaptureAssetUploadTypeError,
+  UnsupportedFileStorageProviderError,
   UnsupportedCaptureAssetTypeError,
+  UploadFileRequiredError,
+  UploadTooLargeError,
   type CaptureAsset,
   type CaptureAssetAuthContext,
+  type CaptureAssetFileRead,
   type CaptureAssetType,
   type CreateCaptureAssetInput,
+  type UploadCaptureAssetInput,
 } from "./capture-asset.service";
 
 export type CaptureAssetRouteDependencies = {
@@ -29,6 +38,17 @@ export type CaptureAssetRouteDependencies = {
       capture_session_id: string;
       data: CreateCaptureAssetInput;
     }) => Promise<CaptureAsset>;
+    upload_capture_asset: (input: {
+      auth: CaptureAssetAuthContext;
+      project_id: string;
+      capture_session_id: string;
+      file: {
+        stream: NodeJS.ReadableStream;
+        mime_type: string;
+        original_name?: string | null;
+      };
+      data: UploadCaptureAssetInput;
+    }) => Promise<CaptureAsset>;
     list_capture_assets: (input: {
       auth: CaptureAssetAuthContext;
       project_id: string;
@@ -41,6 +61,12 @@ export type CaptureAssetRouteDependencies = {
       capture_session_id: string;
       capture_asset_id: string;
     }) => Promise<CaptureAsset>;
+    get_capture_asset_file: (input: {
+      auth: CaptureAssetAuthContext;
+      project_id: string;
+      capture_session_id: string;
+      capture_asset_id: string;
+    }) => Promise<CaptureAssetFileRead>;
     delete_capture_asset: (input: {
       auth: CaptureAssetAuthContext;
       project_id: string;
@@ -152,6 +178,88 @@ const pick_create_capture_asset_data = (
   return data;
 };
 
+const multipart_field_value = (
+  fields: Record<string, unknown>,
+  name: string
+) => {
+  const field = fields[name] as { value?: unknown } | { value?: unknown }[] | undefined;
+  const first_field = Array.isArray(field) ? field[0] : field;
+  const value = first_field?.value;
+
+  return typeof value === "string" ? value : undefined;
+};
+
+const optional_positive_number_field = (
+  fields: Record<string, unknown>,
+  name: string,
+  integer: boolean
+) => {
+  const value = multipart_field_value(fields, name);
+
+  if (value === undefined || value.trim() === "") {
+    return undefined;
+  }
+
+  const number = Number(value);
+
+  if (!Number.isFinite(number) || number <= 0 || (integer && !Number.isInteger(number))) {
+    throw new InvalidCaptureAssetUploadError();
+  }
+
+  return number;
+};
+
+const optional_metadata_field = (fields: Record<string, unknown>) => {
+  const value = multipart_field_value(fields, "metadata");
+
+  if (value === undefined || value.trim() === "") {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    throw new InvalidCaptureAssetUploadError();
+  }
+};
+
+const pick_upload_capture_asset_data = (
+  fields: Record<string, unknown>
+): UploadCaptureAssetInput => {
+  const data: UploadCaptureAssetInput = {};
+  const width = optional_positive_number_field(fields, "width", true);
+  const height = optional_positive_number_field(fields, "height", true);
+  const device_pixel_ratio = optional_positive_number_field(fields, "device_pixel_ratio", false);
+  const page_url = multipart_field_value(fields, "page_url");
+  const page_title = multipart_field_value(fields, "page_title");
+  const captured_at = multipart_field_value(fields, "captured_at");
+  const metadata = optional_metadata_field(fields);
+
+  if (width !== undefined) {
+    data.width = width;
+  }
+  if (height !== undefined) {
+    data.height = height;
+  }
+  if (device_pixel_ratio !== undefined) {
+    data.device_pixel_ratio = device_pixel_ratio;
+  }
+  if (page_url !== undefined) {
+    data.page_url = page_url;
+  }
+  if (page_title !== undefined) {
+    data.page_title = page_title;
+  }
+  if (captured_at !== undefined) {
+    data.captured_at = captured_at;
+  }
+  if (metadata !== undefined) {
+    data.metadata = metadata;
+  }
+
+  return data;
+};
+
 export const build_capture_asset_routes = (
   dependencies: CaptureAssetRouteDependencies
 ): FastifyPluginAsync => {
@@ -200,6 +308,51 @@ export const build_capture_asset_routes = (
         );
       }
 
+      if (error instanceof InvalidCaptureAssetUploadError) {
+        return reply.status(400).send(
+          error_response("invalid_capture_asset_upload", "Capture asset upload input is invalid")
+        );
+      }
+
+      if (error instanceof UnsupportedCaptureAssetUploadTypeError) {
+        return reply.status(400).send(
+          error_response(
+            "unsupported_capture_asset_upload_type",
+            "Capture asset upload type is not supported"
+          )
+        );
+      }
+
+      if (error instanceof UploadFileRequiredError) {
+        return reply.status(400).send(
+          error_response("upload_file_required", "Upload file is required")
+        );
+      }
+
+      if (error instanceof UploadTooLargeError || (error as { code?: string }).code === "FST_REQ_FILE_TOO_LARGE") {
+        return reply.status(413).send(
+          error_response("upload_too_large", "Capture asset upload is too large")
+        );
+      }
+
+      if (error instanceof FileBytesNotFoundError) {
+        return reply.status(404).send(
+          error_response("file_bytes_not_found", "File bytes were not found")
+        );
+      }
+
+      if (error instanceof UnsupportedFileStorageProviderError) {
+        return reply.status(500).send(
+          error_response("unsupported_file_storage_provider", "File storage provider is not supported")
+        );
+      }
+
+      if (error instanceof FileStorageWriteFailedError) {
+        return reply.status(500).send(
+          error_response("file_storage_write_failed", "File storage write failed")
+        );
+      }
+
       if (error instanceof FileStorageKeyConflictError) {
         return reply.status(409).send(
           error_response("file_storage_key_conflict", "File storage key already exists")
@@ -227,6 +380,37 @@ export const build_capture_asset_routes = (
           project_id: request.params.project_id,
           capture_session_id: request.params.capture_session_id,
           data: pick_create_capture_asset_data(request.body),
+        });
+        return reply.status(201).send({ capture_asset });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.post<{
+      Params: {
+        project_id: string;
+        capture_session_id: string;
+      };
+    }>("/:project_id/capture-sessions/:capture_session_id/assets/upload", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const upload = await request.file();
+
+        if (!upload) {
+          throw new UploadFileRequiredError();
+        }
+
+        const capture_asset = await dependencies.capture_asset_service.upload_capture_asset({
+          auth,
+          project_id: request.params.project_id,
+          capture_session_id: request.params.capture_session_id,
+          file: {
+            stream: upload.file,
+            mime_type: upload.mimetype,
+            original_name: upload.filename,
+          },
+          data: pick_upload_capture_asset_data(upload.fields),
         });
         return reply.status(201).send({ capture_asset });
       } catch (error) {
@@ -277,6 +461,30 @@ export const build_capture_asset_routes = (
           capture_asset_id: request.params.id,
         });
         return reply.status(200).send({ capture_asset });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.get<{
+      Params: {
+        project_id: string;
+        capture_session_id: string;
+        id: string;
+      };
+    }>("/:project_id/capture-sessions/:capture_session_id/assets/:id/file", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const file = await dependencies.capture_asset_service.get_capture_asset_file({
+          auth,
+          project_id: request.params.project_id,
+          capture_session_id: request.params.capture_session_id,
+          capture_asset_id: request.params.id,
+        });
+        reply.header("Content-Type", file.mime_type);
+        reply.header("Content-Length", String(file.size_bytes));
+        reply.header("Cache-Control", "private, max-age=300");
+        return reply.status(200).send(file.stream);
       } catch (error) {
         return handle_domain_error(error, reply);
       }

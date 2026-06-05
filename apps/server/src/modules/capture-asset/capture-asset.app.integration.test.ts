@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { build } from "../../app";
 import { UnauthenticatedSessionError } from "../authentication/session.service";
@@ -62,8 +63,14 @@ describe("capture asset app integration", () => {
       },
       capture_asset_service: {
         create_capture_asset: async () => capture_asset,
+        upload_capture_asset: async () => capture_asset,
         list_capture_assets: async () => [capture_asset],
         get_capture_asset: async () => capture_asset,
+        get_capture_asset_file: async () => ({
+          stream: Readable.from(Buffer.from("file")),
+          mime_type: "image/png",
+          size_bytes: 4,
+        }),
         delete_capture_asset: async () => undefined,
       },
     });
