@@ -132,6 +132,7 @@ describe("foundation schema migrations on postgres", () => {
     await expect(table_exists("capture_schema", "capture_session")).resolves.toBe(true);
     await expect(table_exists("file_schema", "file")).resolves.toBe(true);
     await expect(table_exists("capture_schema", "capture_asset")).resolves.toBe(true);
+    await expect(table_exists("capture_schema", "capture_event")).resolves.toBe(true);
   });
 
   it("keeps user identity separate from organization membership", async () => {
@@ -215,6 +216,45 @@ describe("foundation schema migrations on postgres", () => {
     await expect(table_comment("capture_schema", "capture_asset")).resolves.toMatch(/product meaning/i);
   });
 
+  it("creates capture event source material schema", async () => {
+    for (const column_name of [
+      "organization_id",
+      "project_id",
+      "capture_session_id",
+      "capture_asset_id",
+      "event_type",
+      "event_index",
+      "occurred_at",
+      "page_url",
+      "page_title",
+      "target_label",
+      "target_selector",
+      "target_role",
+      "target_test_id",
+      "target_text",
+      "client_x",
+      "client_y",
+      "viewport_width",
+      "viewport_height",
+      "device_pixel_ratio",
+      "input_intent",
+      "input_value_redacted",
+      "note",
+      "metadata",
+      "created_by_id",
+      "updated_by_id",
+      "deleted_by_id",
+    ]) {
+      await expect(column_exists("capture_schema", "capture_event", column_name)).resolves.toBe(true);
+    }
+
+    await expect(index_exists("capture_schema", "uq_capture_event_session_index_active")).resolves.toBe(true);
+    await expect(index_exists("capture_schema", "idx_capture_event_session_order")).resolves.toBe(true);
+    await expect(index_exists("capture_schema", "idx_capture_event_asset")).resolves.toBe(true);
+    await expect(index_exists("capture_schema", "idx_capture_event_project_created")).resolves.toBe(true);
+    await expect(table_comment("capture_schema", "capture_event")).resolves.toMatch(/source event/i);
+  });
+
   it("enforces file and capture asset metadata constraints", async () => {
     const context = await insert_constraint_test_context();
     const file_id = ulid();
@@ -287,6 +327,80 @@ describe("foundation schema migrations on postgres", () => {
     ])).rejects.toMatchObject({
       code: "23514",
       constraint: "chk_capture_asset_type",
+    });
+  });
+
+  it("enforces capture event metadata constraints", async () => {
+    const context = await insert_constraint_test_context();
+
+    await expect(pool.query(`
+      INSERT INTO capture_schema.capture_event (
+        id,
+        organization_id,
+        project_id,
+        capture_session_id,
+        event_type,
+        event_index,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, 'video', 1, $5, $5)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      context.capture_session_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23514",
+      constraint: "chk_capture_event_type",
+    });
+
+    await expect(pool.query(`
+      INSERT INTO capture_schema.capture_event (
+        id,
+        organization_id,
+        project_id,
+        capture_session_id,
+        event_type,
+        event_index,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, 'note', 0, $5, $5)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      context.capture_session_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23514",
+      constraint: "chk_capture_event_index_positive",
+    });
+
+    await expect(pool.query(`
+      INSERT INTO capture_schema.capture_event (
+        id,
+        organization_id,
+        project_id,
+        capture_session_id,
+        event_type,
+        event_index,
+        input_value_redacted,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, 'input', 1, FALSE, $5, $5)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      context.capture_session_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23514",
+      constraint: "chk_capture_event_input_value_redacted_true",
     });
   });
 });
