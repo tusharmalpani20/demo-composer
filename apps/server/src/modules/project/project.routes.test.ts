@@ -96,9 +96,20 @@ describe("project routes", () => {
       method: "GET",
       url: "/api/v1/projects",
     });
+    const delete_response = await app.inject({
+      method: "DELETE",
+      url: "/api/v1/projects/project_1",
+    });
 
     expect(response.statusCode).toBe(401);
     expect(response.json()).toEqual({
+      error: {
+        type: "unauthenticated",
+        message: "Authentication is required",
+      },
+    });
+    expect(delete_response.statusCode).toBe(401);
+    expect(delete_response.json()).toEqual({
       error: {
         type: "unauthenticated",
         message: "Authentication is required",

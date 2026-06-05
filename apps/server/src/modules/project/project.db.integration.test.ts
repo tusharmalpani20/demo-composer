@@ -329,10 +329,11 @@ describe("DB-backed project foundation API", () => {
       is_deleted: boolean;
       deleted_at: Date | null;
       deleted_by_id: string | null;
+      status: string;
       updated_by_id: string;
       version: number;
     }>(`
-      SELECT is_deleted, deleted_at, deleted_by_id, updated_by_id, version
+      SELECT is_deleted, deleted_at, deleted_by_id, status, updated_by_id, version
       FROM project_schema.project
       WHERE id = $1
     `, [project_id]);
@@ -340,6 +341,7 @@ describe("DB-backed project foundation API", () => {
     expect(persisted.rows[0]).toMatchObject({
       is_deleted: true,
       deleted_by_id: owner_context?.org_user_id,
+      status: "active",
       updated_by_id: owner_context?.org_user_id,
       version: 2,
     });
