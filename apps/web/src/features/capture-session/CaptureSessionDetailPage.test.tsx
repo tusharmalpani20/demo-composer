@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
+import type { GuideDetail } from "../guide/types";
 import type { CaptureSessionDetail } from "./types";
 import { CaptureSessionDetailPage } from "./CaptureSessionDetailPage";
 
@@ -123,12 +124,34 @@ const detail: CaptureSessionDetail = {
   ],
 };
 
+const guideDetail: GuideDetail = {
+  guide: {
+    id: "guide_1",
+    organization_id: "organization_1",
+    project_id: "project_1",
+    source_capture_session_id: "capture_session_1",
+    title: "Create department workflow",
+    description: "Source capture for the department setup guide",
+    status: "draft",
+    created_by_id: "org_user_1",
+    updated_by_id: "org_user_1",
+    version: 1,
+    created_at: "2026-06-05T10:00:00.000Z",
+    updated_at: "2026-06-05T10:00:00.000Z",
+  },
+  guide_blocks: [],
+};
+
 const renderPage = (overrides: {
   loadDetail?: () => Promise<CaptureSessionDetail>;
   resolveAssetUrl?: (fileUrl: string) => string;
+  createGuide?: () => Promise<GuideDetail>;
+  redirectTo?: (path: string) => void;
 } = {}) => {
   const loadDetail = overrides.loadDetail ?? vi.fn(async () => detail);
   const resolveAssetUrl = overrides.resolveAssetUrl ?? ((fileUrl: string) => `https://api.example.com${fileUrl}`);
+  const createGuide = overrides.createGuide ?? vi.fn(async () => guideDetail);
+  const redirectTo = overrides.redirectTo ?? vi.fn();
 
   render(
     <CaptureSessionDetailPage
@@ -136,10 +159,12 @@ const renderPage = (overrides: {
       captureSessionId="capture_session_1"
       loadDetail={loadDetail}
       resolveAssetUrl={resolveAssetUrl}
+      createGuide={createGuide}
+      redirectTo={redirectTo}
     />
   );
 
-  return { loadDetail };
+  return { loadDetail, createGuide, redirectTo };
 };
 
 describe("CaptureSessionDetailPage", () => {
@@ -179,6 +204,101 @@ describe("CaptureSessionDetailPage", () => {
 
     expect(await screen.findByText("No capture events yet.")).toBeInTheDocument();
     expect(screen.getByText("No capture assets yet.")).toBeInTheDocument();
+  });
+
+  it("creates a guide from the loaded capture session and redirects to the editor", async () => {
+    const { createGuide, redirectTo } = renderPage();
+
+    await screen.findByRole("heading", { name: "Create department workflow" });
+    fireEvent.click(screen.getByRole("button", { name: "Create guide" }));
+
+    await waitFor(() => expect(createGuide).toHaveBeenCalledWith("project_1", "capture_session_1", {
+      title: "Create department workflow",
+      description: "Source capture for the department setup guide",
+    }));
+    expect(redirectTo).toHaveBeenCalledWith("/projects/project_1/guides/guide_1");
+  });
+
+  it("trims guide titles and sends null when the capture session has no description", async () => {
+    const createGuide = vi.fn(async () => guideDetail);
+    renderPage({
+      createGuide,
+      loadDetail: async () => ({
+        ...detail,
+        capture_session: {
+          ...detail.capture_session,
+          name: "  Create department workflow  ",
+          description: null,
+        },
+      }),
+    });
+
+    await screen.findByRole("heading", { name: "Create department workflow" });
+    fireEvent.click(screen.getByRole("button", { name: "Create guide" }));
+
+    await waitFor(() => expect(createGuide).toHaveBeenCalledWith("project_1", "capture_session_1", {
+      title: "Create department workflow",
+      description: null,
+    }));
+  });
+
+  it("prevents duplicate guide creation while a request is pending", async () => {
+    let resolveCreate: (detail: GuideDetail) => void = () => undefined;
+    const createGuide = vi.fn(() => new Promise<GuideDetail>((resolve) => {
+      resolveCreate = resolve;
+    }));
+    const redirectTo = vi.fn();
+
+    renderPage({ createGuide, redirectTo });
+
+    await screen.findByRole("heading", { name: "Create department workflow" });
+    const button = screen.getByRole("button", { name: "Create guide" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    expect(await screen.findByRole("button", { name: "Creating guide..." })).toBeDisabled();
+    expect(createGuide).toHaveBeenCalledTimes(1);
+
+    resolveCreate(guideDetail);
+    await waitFor(() => expect(redirectTo).toHaveBeenCalledWith("/projects/project_1/guides/guide_1"));
+  });
+
+  it("shows guide creation failures without clearing loaded capture detail", async () => {
+    const createGuide = vi.fn(async () => {
+      throw new ApiClientError({
+        kind: "validation",
+        status: 400,
+        type: "invalid_guide",
+        message: "Guide input is invalid",
+      });
+    });
+    const redirectTo = vi.fn();
+
+    renderPage({ createGuide, redirectTo });
+
+    await screen.findByRole("heading", { name: "Create department workflow" });
+    fireEvent.click(screen.getByRole("button", { name: "Create guide" }));
+
+    expect(await screen.findByText("Could not create guide.")).toBeInTheDocument();
+    expect(screen.getByText("Start from department list")).toBeInTheDocument();
+    expect(screen.getByText("department-list.png")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create guide" })).toBeEnabled();
+    expect(redirectTo).not.toHaveBeenCalled();
+  });
+
+  it("disables guide creation when the loaded capture session has an empty name", async () => {
+    renderPage({
+      loadDetail: async () => ({
+        ...detail,
+        capture_session: {
+          ...detail.capture_session,
+          name: "   ",
+        },
+      }),
+    });
+
+    expect(await screen.findByText("Capture session needs a name before creating a guide.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create guide" })).toBeDisabled();
   });
 
   it("renders unauthenticated and not-found states", async () => {

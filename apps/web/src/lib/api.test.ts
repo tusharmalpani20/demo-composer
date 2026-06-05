@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ApiClientError,
+  createGuideFromCaptureSession,
   deleteGuideBlock,
   getCaptureSessionDetail,
   getGuideDetail,
@@ -103,6 +104,37 @@ describe("api client", () => {
         headers: {
           accept: "application/json",
         },
+      }
+    );
+  });
+
+  it("creates a guide from a capture session with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(guide_response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(createGuideFromCaptureSession("project_1", "capture_session_1", {
+      title: "Create department workflow",
+      description: null,
+    })).resolves.toEqual(guide_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project_1/guides/from-capture-session/capture_session_1",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Create department workflow",
+          description: null,
+        }),
       }
     );
   });

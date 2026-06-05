@@ -113,6 +113,26 @@ export const getGuideDetail = async (
   )
 );
 
+export const createGuideFromCaptureSession = async (
+  projectId: string,
+  captureSessionId: string,
+  data: {
+    title: string;
+    description?: string | null;
+  }
+): Promise<GuideDetail> => (
+  requestJson<GuideDetail>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/from-capture-session/${encodeURIComponent(captureSessionId)}`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
 export const updateGuide = async (
   projectId: string,
   guideId: string,

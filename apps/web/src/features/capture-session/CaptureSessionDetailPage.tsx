@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { ApiClientError, getCaptureSessionDetail, resolveApiAssetUrl } from "../../lib/api";
+import {
+  ApiClientError,
+  createGuideFromCaptureSession,
+  getCaptureSessionDetail,
+  resolveApiAssetUrl,
+} from "../../lib/api";
+import type { GuideDetail } from "../guide/types";
 import type { CaptureAsset, CaptureEvent, CaptureSessionDetail } from "./types";
 import styles from "./CaptureSessionDetailPage.module.css";
 
@@ -15,6 +21,15 @@ type CaptureSessionDetailPageProps = {
   captureSessionId: string;
   loadDetail?: (projectId: string, captureSessionId: string) => Promise<CaptureSessionDetail>;
   resolveAssetUrl?: (fileUrl: string) => string;
+  createGuide?: (
+    projectId: string,
+    captureSessionId: string,
+    data: {
+      title: string;
+      description?: string | null;
+    }
+  ) => Promise<GuideDetail>;
+  redirectTo?: (path: string) => void;
 };
 
 const formatDateTime = (value: string | null) => {
@@ -90,6 +105,8 @@ export const CaptureSessionDetailPage = ({
   captureSessionId,
   loadDetail = getCaptureSessionDetail,
   resolveAssetUrl = resolveApiAssetUrl,
+  createGuide = createGuideFromCaptureSession,
+  redirectTo = (path) => window.location.assign(path),
 }: CaptureSessionDetailPageProps) => {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
@@ -158,6 +175,8 @@ export const CaptureSessionDetailPage = ({
       projectId={projectId}
       captureSessionId={captureSessionId}
       resolveAssetUrl={resolveAssetUrl}
+      createGuide={createGuide}
+      redirectTo={redirectTo}
     />
   );
 };
@@ -185,17 +204,42 @@ const CaptureSessionDetailView = ({
   projectId,
   captureSessionId,
   resolveAssetUrl,
+  createGuide,
+  redirectTo,
 }: {
   detail: CaptureSessionDetail;
   projectId: string;
   captureSessionId: string;
   resolveAssetUrl: (fileUrl: string) => string;
+  createGuide: NonNullable<CaptureSessionDetailPageProps["createGuide"]>;
+  redirectTo: NonNullable<CaptureSessionDetailPageProps["redirectTo"]>;
 }) => {
+  const [createState, setCreateState] = useState<"idle" | "creating" | "error">("idle");
   const assetById = useMemo(() => new Map(
     detail.capture_assets.map((asset) => [asset.id, asset])
   ), [detail.capture_assets]);
 
   const session = detail.capture_session;
+  const guideTitle = session.name.trim();
+  const canCreateGuide = guideTitle.length > 0 && createState !== "creating";
+
+  const handleCreateGuide = async () => {
+    if (!canCreateGuide) {
+      return;
+    }
+
+    setCreateState("creating");
+
+    try {
+      const guideDetail = await createGuide(projectId, captureSessionId, {
+        title: guideTitle,
+        description: session.description ?? null,
+      });
+      redirectTo(`/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideDetail.guide.id)}`);
+    } catch {
+      setCreateState("error");
+    }
+  };
 
   return (
     <PortalShell projectId={projectId} captureSessionId={captureSessionId}>
@@ -210,6 +254,22 @@ const CaptureSessionDetailView = ({
             <span className={styles.badge}>{session.status}</span>
             <span className={styles.badge}>{session.source_type}</span>
           </div>
+        </div>
+        <div className={styles.actionRow}>
+          <button
+            className={styles.primaryButton}
+            type="button"
+            disabled={!canCreateGuide}
+            onClick={handleCreateGuide}
+          >
+            {createState === "creating" ? "Creating guide..." : "Create guide"}
+          </button>
+          {guideTitle.length === 0 ? (
+            <div className={styles.actionMessage}>Capture session needs a name before creating a guide.</div>
+          ) : null}
+          {createState === "error" ? (
+            <div className={styles.actionMessage}>Could not create guide.</div>
+          ) : null}
         </div>
 
         <div className={styles.metrics}>
