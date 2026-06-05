@@ -220,6 +220,75 @@ const build_detail_from_rows = (
   };
 };
 
+const read_guide_blocks = async (
+  db: Queryable,
+  input: {
+    organization_id: string;
+    project_id: string;
+    guide_id: string;
+  }
+) => {
+  const blocks_result = await db.query<GuideBlockRow>(`
+    SELECT ${guide_block_select}
+    FROM guide_schema.guide_block
+    WHERE guide_id = $1
+    AND project_id = $2
+    AND organization_id = $3
+    AND is_deleted = FALSE
+    ORDER BY block_index ASC, created_at ASC, id ASC
+  `, [
+    input.guide_id,
+    input.project_id,
+    input.organization_id,
+  ]);
+
+  const steps_result = await db.query<GuideStepRow>(`
+    SELECT ${guide_step_select}
+    FROM guide_schema.guide_step
+    WHERE guide_id = $1
+    AND project_id = $2
+    AND organization_id = $3
+    AND is_deleted = FALSE
+    ORDER BY created_at ASC, id ASC
+  `, [
+    input.guide_id,
+    input.project_id,
+    input.organization_id,
+  ]);
+  const steps_by_block_id = new Map(
+    steps_result.rows.map((row) => [row.guide_block_id, map_step(row)])
+  );
+
+  return blocks_result.rows.map((row) => map_block(row, steps_by_block_id.get(row.id) ?? null));
+};
+
+const touch_guide = async (
+  db: Queryable,
+  input: {
+    organization_id: string;
+    project_id: string;
+    guide_id: string;
+    actor_org_user_id: string;
+  }
+) => {
+  await db.query(`
+    UPDATE guide_schema.guide
+    SET
+      updated_by_id = $1,
+      updated_at = CURRENT_TIMESTAMP,
+      version = version + 1
+    WHERE id = $2
+    AND project_id = $3
+    AND organization_id = $4
+    AND is_deleted = FALSE
+  `, [
+    input.actor_org_user_id,
+    input.guide_id,
+    input.project_id,
+    input.organization_id,
+  ]);
+};
+
 const with_transaction = async <Result>(
   db: TransactionCapable,
   work: (client: Queryable) => Promise<Result>
@@ -517,5 +586,275 @@ export const build_guide_repository = (db: TransactionCapable): GuideRepository 
     ]);
 
     return build_detail_from_rows(guide_row, blocks_result.rows, steps_result.rows);
+  },
+
+  async update_guide(input) {
+    const assignments: string[] = [];
+    const values: unknown[] = [];
+
+    const add_assignment = (column: string, value: unknown) => {
+      values.push(value);
+      assignments.push(`${column} = $${values.length}`);
+    };
+
+    if (input.data.title !== undefined) {
+      add_assignment("title", input.data.title);
+    }
+    if (input.data.description !== undefined) {
+      add_assignment("description", input.data.description);
+    }
+    if (input.data.status !== undefined) {
+      add_assignment("status", input.data.status);
+    }
+
+    values.push(
+      input.actor_org_user_id,
+      input.guide_id,
+      input.project_id,
+      input.organization_id
+    );
+    const actor_index = values.length - 3;
+    const guide_index = values.length - 2;
+    const project_index = values.length - 1;
+    const organization_index = values.length;
+
+    const result = await db.query<GuideRow>(`
+      UPDATE guide_schema.guide
+      SET ${[
+        ...assignments,
+        `updated_by_id = $${actor_index}`,
+        "updated_at = CURRENT_TIMESTAMP",
+        "version = version + 1",
+      ].join(", ")}
+      WHERE id = $${guide_index}
+      AND project_id = $${project_index}
+      AND organization_id = $${organization_index}
+      AND is_deleted = FALSE
+      RETURNING ${guide_select}
+    `, values);
+    const row = first_row(result);
+
+    if (!row) {
+      throw new Error("Failed to update guide");
+    }
+
+    return map_guide(row);
+  },
+
+  async find_guide_step(input) {
+    const result = await db.query<GuideStepRow>(`
+      SELECT ${guide_step_select}
+      FROM guide_schema.guide_step
+      WHERE id = $1
+      AND guide_id = $2
+      AND project_id = $3
+      AND organization_id = $4
+      AND is_deleted = FALSE
+      LIMIT 1
+    `, [
+      input.guide_step_id,
+      input.guide_id,
+      input.project_id,
+      input.organization_id,
+    ]);
+    const row = first_row(result);
+
+    return row ? map_step(row) : null;
+  },
+
+  async update_guide_step(input) {
+    return with_transaction(db, async (client) => {
+      const assignments: string[] = [];
+      const values: unknown[] = [];
+
+      const add_assignment = (column: string, value: unknown) => {
+        values.push(value);
+        assignments.push(`${column} = $${values.length}`);
+      };
+
+      if (input.data.title !== undefined) {
+        add_assignment("title", input.data.title);
+      }
+      if (input.data.body !== undefined) {
+        add_assignment("body", input.data.body);
+      }
+
+      values.push(
+        input.actor_org_user_id,
+        input.guide_step_id,
+        input.guide_id,
+        input.project_id,
+        input.organization_id
+      );
+      const actor_index = values.length - 4;
+      const step_index = values.length - 3;
+      const guide_index = values.length - 2;
+      const project_index = values.length - 1;
+      const organization_index = values.length;
+
+      const result = await client.query<GuideStepRow>(`
+        UPDATE guide_schema.guide_step
+        SET ${[
+          ...assignments,
+          `updated_by_id = $${actor_index}`,
+          "updated_at = CURRENT_TIMESTAMP",
+          "version = version + 1",
+        ].join(", ")}
+        WHERE id = $${step_index}
+        AND guide_id = $${guide_index}
+        AND project_id = $${project_index}
+        AND organization_id = $${organization_index}
+        AND is_deleted = FALSE
+        RETURNING ${guide_step_select}
+      `, values);
+      const row = first_row(result);
+
+      if (!row) {
+        throw new Error("Failed to update guide step");
+      }
+
+      await touch_guide(client, input);
+
+      return map_step(row);
+    });
+  },
+
+  async list_guide_blocks(input) {
+    return read_guide_blocks(db, input);
+  },
+
+  async reorder_guide_blocks(input) {
+    return with_transaction(db, async (client) => {
+      await client.query(`
+        UPDATE guide_schema.guide_block
+        SET
+          block_index = block_index + 1000000,
+          updated_by_id = $1,
+          updated_at = CURRENT_TIMESTAMP,
+          version = version + 1
+        WHERE guide_id = $2
+        AND project_id = $3
+        AND organization_id = $4
+        AND is_deleted = FALSE
+      `, [
+        input.actor_org_user_id,
+        input.guide_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+
+      for (const [index, block_id] of input.block_ids.entries()) {
+        await client.query(`
+          UPDATE guide_schema.guide_block
+          SET
+            block_index = $1,
+            updated_by_id = $2,
+            updated_at = CURRENT_TIMESTAMP,
+            version = version + 1
+          WHERE id = $3
+          AND guide_id = $4
+          AND project_id = $5
+          AND organization_id = $6
+          AND is_deleted = FALSE
+        `, [
+          index + 1,
+          input.actor_org_user_id,
+          block_id,
+          input.guide_id,
+          input.project_id,
+          input.organization_id,
+        ]);
+      }
+
+      await touch_guide(client, input);
+
+      return read_guide_blocks(client, input);
+    });
+  },
+
+  async delete_guide_block(input) {
+    return with_transaction(db, async (client) => {
+      const block_result = await client.query<GuideBlockRow>(`
+        UPDATE guide_schema.guide_block
+        SET
+          is_deleted = TRUE,
+          deleted_at = CURRENT_TIMESTAMP,
+          deleted_by_id = $1,
+          updated_by_id = $1,
+          updated_at = CURRENT_TIMESTAMP,
+          version = version + 1
+        WHERE id = $2
+        AND guide_id = $3
+        AND project_id = $4
+        AND organization_id = $5
+        AND is_deleted = FALSE
+        RETURNING ${guide_block_select}
+      `, [
+        input.actor_org_user_id,
+        input.guide_block_id,
+        input.guide_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+
+      if (block_result.rows.length === 0) {
+        return false;
+      }
+
+      await client.query(`
+        UPDATE guide_schema.guide_step
+        SET
+          is_deleted = TRUE,
+          deleted_at = CURRENT_TIMESTAMP,
+          deleted_by_id = $1,
+          updated_by_id = $1,
+          updated_at = CURRENT_TIMESTAMP,
+          version = version + 1
+        WHERE guide_block_id = $2
+        AND guide_id = $3
+        AND project_id = $4
+        AND organization_id = $5
+        AND is_deleted = FALSE
+      `, [
+        input.actor_org_user_id,
+        input.guide_block_id,
+        input.guide_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+
+      const remaining_blocks = await read_guide_blocks(client, input);
+
+      for (const [index, block] of remaining_blocks.entries()) {
+        if (block.block_index === index + 1) {
+          continue;
+        }
+
+        await client.query(`
+          UPDATE guide_schema.guide_block
+          SET
+            block_index = $1,
+            updated_by_id = $2,
+            updated_at = CURRENT_TIMESTAMP,
+            version = version + 1
+          WHERE id = $3
+          AND guide_id = $4
+          AND project_id = $5
+          AND organization_id = $6
+          AND is_deleted = FALSE
+        `, [
+          index + 1,
+          input.actor_org_user_id,
+          block.id,
+          input.guide_id,
+          input.project_id,
+          input.organization_id,
+        ]);
+      }
+
+      await touch_guide(client, input);
+
+      return true;
+    });
   },
 });

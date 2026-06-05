@@ -6,8 +6,13 @@ import { UnauthenticatedSessionError } from "../authentication/session.service";
 import {
   CaptureEventNotFoundError,
   CaptureSessionNotFoundError,
+  GuideBlockNotFoundError,
   GuideNotFoundError,
+  GuideNotEditableError,
+  GuideStepNotFoundError,
+  InvalidGuideBlockOrderError,
   InvalidGuideInputError,
+  InvalidGuideStepInputError,
   ProjectNotFoundError,
   type GuideDetail,
 } from "./guide.service";
@@ -83,6 +88,8 @@ const guide_detail: GuideDetail = {
     },
   }],
 };
+const guide_block = guide_detail.guide_blocks[0]!;
+const guide_step = guide_block.step!;
 
 const build_test_app = async (
   overrides: {
@@ -103,6 +110,10 @@ const build_test_app = async (
       create_guide_from_capture: async () => guide_detail,
       list_guides: async () => [guide_detail.guide],
       get_guide_detail: async () => guide_detail,
+      update_guide: async () => ({ ...guide_detail.guide, version: 2 }),
+      update_guide_step: async () => ({ ...guide_step, version: 2 }),
+      reorder_guide_blocks: async () => guide_detail.guide_blocks,
+      delete_guide_block: async () => undefined,
       ...overrides.guide_service,
     },
   }), { prefix: "/api/v1/projects" });
@@ -183,6 +194,130 @@ describe("guide routes", () => {
     await app.close();
   });
 
+  it("updates guide metadata with auth and URL scope while ignoring client-managed fields", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      guide_service: {
+        update_guide: async (input) => {
+          seen_inputs.push(input);
+          return { ...guide_detail.guide, title: "Updated", description: null, status: "archived", version: 2 };
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        title: "Updated",
+        description: null,
+        status: "archived",
+        organization_id: "attacker",
+        version: 999,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().guide).toMatchObject({ title: "Updated", status: "archived", version: 2 });
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      guide_id: "guide_1",
+      data: {
+        title: "Updated",
+        description: null,
+        status: "archived",
+      },
+    }]);
+  });
+
+  it("updates guide steps reorders blocks and deletes blocks through the service", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      guide_service: {
+        update_guide_step: async (input) => {
+          seen_inputs.push(input);
+          return { ...guide_step, title: "Updated step", body: "Details", version: 2 };
+        },
+        reorder_guide_blocks: async (input) => {
+          seen_inputs.push(input);
+          return [{ ...guide_block, id: "block_2", block_index: 1 }];
+        },
+        delete_guide_block: async (input) => {
+          seen_inputs.push(input);
+        },
+      },
+    });
+
+    const step_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/steps/step_1",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        title: "Updated step",
+        body: "Details",
+        source_capture_event_id: "attacker_event",
+      },
+    });
+    const reorder_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks/reorder",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        block_ids: ["block_2", "block_1"],
+      },
+    });
+    const delete_response = await app.inject({
+      method: "DELETE",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1",
+      cookies: { demo_composer_session: "session-token" },
+    });
+
+    expect(step_response.statusCode).toBe(200);
+    expect(step_response.json().guide_step).toMatchObject({ title: "Updated step", body: "Details", version: 2 });
+    expect(reorder_response.statusCode).toBe(200);
+    expect(reorder_response.json().guide_blocks).toEqual([{ ...guide_block, id: "block_2", block_index: 1 }]);
+    expect(delete_response.statusCode).toBe(204);
+    expect(delete_response.body).toBe("");
+    expect(seen_inputs).toEqual([
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        guide_id: "guide_1",
+        guide_step_id: "step_1",
+        data: {
+          title: "Updated step",
+          body: "Details",
+        },
+      },
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        guide_id: "guide_1",
+        block_ids: ["block_2", "block_1"],
+      },
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        guide_id: "guide_1",
+        guide_block_id: "block_1",
+      },
+    ]);
+  });
+
   it("maps auth and domain errors to stable responses", async () => {
     const unauthenticated_app = await build_test_app({
       auth_service: {
@@ -205,6 +340,11 @@ describe("guide routes", () => {
       { error: new CaptureEventNotFoundError(), status: 404, type: "capture_event_not_found" },
       { error: new GuideNotFoundError(), status: 404, type: "guide_not_found" },
       { error: new InvalidGuideInputError(), status: 400, type: "invalid_guide" },
+      { error: new GuideStepNotFoundError(), status: 404, type: "guide_step_not_found" },
+      { error: new GuideBlockNotFoundError(), status: 404, type: "guide_block_not_found" },
+      { error: new InvalidGuideBlockOrderError(), status: 400, type: "invalid_guide_block_order" },
+      { error: new InvalidGuideStepInputError(), status: 400, type: "invalid_guide_step" },
+      { error: new GuideNotEditableError(), status: 409, type: "guide_not_editable" },
     ];
 
     for (const test_case of cases) {

@@ -228,6 +228,106 @@ describe("DB-backed guide API", () => {
     expect(missing_event_response.statusCode).toBe(404);
     expect(missing_event_response.json().error.type).toBe("capture_event_not_found");
 
+    const first_step_id = created_body.guide_blocks[0].step.id as string;
+    const first_block_id = created_body.guide_blocks[0].id as string;
+    const second_block_id = created_body.guide_blocks[1].id as string;
+    const third_block_id = created_body.guide_blocks[2].id as string;
+
+    const update_guide_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        title: "Edited department setup guide",
+        description: "Internal onboarding draft",
+        organization_id: "attacker_org",
+        version: 999,
+      },
+    });
+    const update_step_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/steps/${first_step_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        title: "Start from the department list",
+        body: "Use the department list as the starting point.",
+        source_capture_event_id: "attacker_event",
+      },
+    });
+    const reorder_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/reorder`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        block_ids: [third_block_id, first_block_id, second_block_id],
+      },
+    });
+    const delete_response = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/${first_block_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
+    const after_delete_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
+    const archive_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        status: "archived",
+      },
+    });
+    const archived_step_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/steps/${first_step_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        title: "Cannot edit archived guide",
+      },
+    });
+
+    expect(update_guide_response.statusCode).toBe(200);
+    expect(update_guide_response.json().guide).toMatchObject({
+      id: guide_id,
+      title: "Edited department setup guide",
+      description: "Internal onboarding draft",
+      version: 2,
+    });
+    expect(update_step_response.statusCode).toBe(200);
+    expect(update_step_response.json().guide_step).toMatchObject({
+      id: first_step_id,
+      title: "Start from the department list",
+      body: "Use the department list as the starting point.",
+      source_capture_event_id: note_event_id,
+      version: 2,
+    });
+    expect(reorder_response.statusCode).toBe(200);
+    expect(reorder_response.json().guide_blocks.map((block: { id: string; block_index: number }) => ({
+      id: block.id,
+      block_index: block.block_index,
+    }))).toEqual([
+      { id: third_block_id, block_index: 1 },
+      { id: first_block_id, block_index: 2 },
+      { id: second_block_id, block_index: 3 },
+    ]);
+    expect(delete_response.statusCode).toBe(204);
+    expect(after_delete_response.statusCode).toBe(200);
+    expect(after_delete_response.json().guide_blocks.map((block: { id: string; block_index: number }) => ({
+      id: block.id,
+      block_index: block.block_index,
+    }))).toEqual([
+      { id: third_block_id, block_index: 1 },
+      { id: second_block_id, block_index: 2 },
+    ]);
+    expect(JSON.stringify(after_delete_response.json())).not.toContain(first_block_id);
+    expect(archive_response.statusCode).toBe(200);
+    expect(archive_response.json().guide.status).toBe("archived");
+    expect(archived_step_response.statusCode).toBe(409);
+    expect(archived_step_response.json().error.type).toBe("guide_not_editable");
+
     const capture_counts = await pool.query<{ count: string }>(`
       SELECT COUNT(*) AS count
       FROM capture_schema.capture_event

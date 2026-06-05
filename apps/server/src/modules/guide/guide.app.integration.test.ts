@@ -41,6 +41,12 @@ describe("guide app integration", () => {
         create_guide_from_capture: async () => guide_detail,
         list_guides: async () => [guide_detail.guide],
         get_guide_detail: async () => guide_detail,
+        update_guide: async () => ({ ...guide_detail.guide, version: 2 }),
+        update_guide_step: async () => {
+          throw new Error("not needed");
+        },
+        reorder_guide_blocks: async () => [],
+        delete_guide_block: async () => undefined,
       },
     });
 
