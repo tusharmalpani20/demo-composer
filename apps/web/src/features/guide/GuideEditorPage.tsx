@@ -478,6 +478,7 @@ const GuideBlockEditor = ({
   onDeleteBlock: (block: GuideBlock) => void;
 }) => {
   const step = block.step;
+  const actionLabel = step ? "step" : "block";
   const actionBusy = busyAction !== null;
 
   return (
@@ -494,7 +495,7 @@ const GuideBlockEditor = ({
           <button
             className={styles.iconButton}
             type="button"
-            aria-label={`Move step ${blockNumber} up`}
+            aria-label={`Move ${actionLabel} ${blockNumber} up`}
             disabled={readOnly || actionBusy || isFirst}
             onClick={() => onMoveBlock(block.id, -1)}
           >
@@ -503,7 +504,7 @@ const GuideBlockEditor = ({
           <button
             className={styles.iconButton}
             type="button"
-            aria-label={`Move step ${blockNumber} down`}
+            aria-label={`Move ${actionLabel} ${blockNumber} down`}
             disabled={readOnly || actionBusy || isLast}
             onClick={() => onMoveBlock(block.id, 1)}
           >
@@ -515,7 +516,7 @@ const GuideBlockEditor = ({
             disabled={readOnly || actionBusy}
             onClick={() => onDeleteBlock(block)}
           >
-            Delete step {blockNumber}
+            Delete {actionLabel} {blockNumber}
           </button>
         </div>
       </div>

@@ -176,6 +176,29 @@ describe("GuideEditorPage", () => {
     expect(screen.queryByText("organization_1")).not.toBeInTheDocument();
   });
 
+  it("renders non-step blocks with block-level actions", async () => {
+    renderPage({
+      detail: {
+        ...guideDetail,
+        guide_blocks: [
+          {
+            ...guideDetail.guide_blocks[0]!,
+            id: "block_header_1",
+            block_type: "header",
+            block_index: 1,
+            source_capture_asset_id: null,
+            step: null,
+          },
+        ],
+      },
+    });
+
+    expect(await screen.findByText("header")).toBeInTheDocument();
+    expect(screen.getByText("This block is not editable yet.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete block 1" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Delete step 1" })).not.toBeInTheDocument();
+  });
+
   it("saves guide metadata and step copy", async () => {
     const { saveGuide, saveStep } = renderPage();
 
