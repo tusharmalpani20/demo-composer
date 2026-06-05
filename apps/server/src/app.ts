@@ -27,15 +27,27 @@ import {
 } from './modules/setup/first-run-setup.routes.js';
 import { build_first_run_setup_repository } from './modules/setup/first-run-setup.repository.js';
 import { build_first_run_setup_service } from './modules/setup/first-run-setup.service.js';
+import {
+  build_authentication_session_routes,
+  type AuthenticationSessionRouteService,
+} from './modules/authentication/session.routes.js';
+import { build_authentication_session_repository } from './modules/authentication/session.repository.js';
+import { build_authentication_session_service } from './modules/authentication/session.service.js';
 import { index_root_routes } from './root_router/index.root_router.js';
 
 type BuildOptions = FastifyServerOptions & {
   public_instance_service?: PublicInstanceRouteService;
   first_run_setup_service?: FirstRunSetupRouteService;
+  authentication_session_service?: AuthenticationSessionRouteService;
 };
 
 export const build = (opts: BuildOptions = {}) => {
-  const { public_instance_service, first_run_setup_service, ...fastify_options } = opts;
+  const {
+      public_instance_service,
+      first_run_setup_service,
+      authentication_session_service,
+      ...fastify_options
+  } = opts;
   const app = fastify(fastify_options);
 
   // Register request decorators first
@@ -215,6 +227,14 @@ export const build = (opts: BuildOptions = {}) => {
       )
   ), {
       prefix: "/api/v1/setup",
+  });
+
+  app.register(build_authentication_session_routes(
+      authentication_session_service ?? build_authentication_session_service(
+          build_authentication_session_repository(pool)
+      )
+  ), {
+      prefix: "/api/v1/authentication",
   });
 
   return app;
