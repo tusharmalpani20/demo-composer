@@ -124,6 +124,32 @@ describe("ProjectCaptureSessionListPage", () => {
     );
   });
 
+  it("renders canceled sessions and invalid start URLs without private browser data", async () => {
+    renderPage({
+      loadCaptureSessions: async () => ({
+        capture_sessions: [{
+          ...captureSessions[0]!,
+          id: "capture_session_canceled",
+          name: "Canceled import capture",
+          status: "canceled",
+          source_type: "import",
+          start_url: "not a url",
+          canceled_at: "2026-06-05T11:30:00.000Z",
+          user_agent: "private canceled user agent",
+        }],
+      }),
+    });
+
+    expect(await screen.findByRole("heading", { name: "Canceled import capture" })).toBeInTheDocument();
+    expect(screen.getByText("canceled")).toBeInTheDocument();
+    expect(screen.getByText("import")).toBeInTheDocument();
+    expect(screen.getByText("not a url")).toBeInTheDocument();
+    expect(screen.getByText((content, element) => (
+      element?.tagName.toLowerCase() === "span" && content.startsWith("Canceled ")
+    ))).toBeInTheDocument();
+    expect(screen.queryByText("private canceled user agent")).not.toBeInTheDocument();
+  });
+
   it("renders empty capture session lists", async () => {
     renderPage({
       loadCaptureSessions: async () => ({ capture_sessions: [] }),
