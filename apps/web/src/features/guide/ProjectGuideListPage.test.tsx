@@ -36,13 +36,14 @@ const guides: Guide[] = [
 ];
 
 const renderPage = (overrides: {
+  projectId?: string;
   loadGuides?: () => Promise<{ guides: Guide[] }>;
 } = {}) => {
   const loadGuides = overrides.loadGuides ?? vi.fn(async () => ({ guides }));
 
   render(
     <ProjectGuideListPage
-      projectId="project_1"
+      projectId={overrides.projectId ?? "project_1"}
       loadGuides={loadGuides}
     />
   );
@@ -73,6 +74,24 @@ describe("ProjectGuideListPage", () => {
     expect(screen.queryByText("organization_1")).not.toBeInTheDocument();
     expect(screen.queryByText("org_user_1")).not.toBeInTheDocument();
     expect(screen.queryByText("version")).not.toBeInTheDocument();
+  });
+
+  it("URL-encodes project and guide IDs in editor links", async () => {
+    renderPage({
+      projectId: "project 1",
+      loadGuides: async () => ({
+        guides: [{
+          ...guides[0]!,
+          id: "guide / 1",
+          title: "Encoded guide",
+        }],
+      }),
+    });
+
+    expect(await screen.findByRole("link", { name: "Open guide Encoded guide" })).toHaveAttribute(
+      "href",
+      "/projects/project%201/guides/guide%20%2F%201"
+    );
   });
 
   it("renders empty guide lists", async () => {

@@ -327,6 +327,26 @@ describe("api client", () => {
     });
   });
 
+  it("maps project not found errors while listing guides", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        type: "project_not_found",
+        message: "Project was not found",
+      },
+    }), {
+      status: 404,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    await expect(listProjectGuides("missing")).rejects.toMatchObject({
+      kind: "not_found",
+      type: "project_not_found",
+      message: "Project was not found",
+    });
+  });
+
   it("resolves relative asset URLs against optional API base URLs", () => {
     expect(resolveApiAssetUrl("/api/v1/projects/project_1/file")).toBe("/api/v1/projects/project_1/file");
     expect(resolveApiAssetUrl(
