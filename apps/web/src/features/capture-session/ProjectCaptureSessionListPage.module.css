@@ -168,6 +168,13 @@
   text-align: center;
 }
 
+.stateLink {
+  display: inline-flex;
+  margin-top: 12px;
+  color: #1f2937;
+  font-weight: 700;
+}
+
 @media (max-width: 760px) {
   .topbar {
     align-items: flex-start;

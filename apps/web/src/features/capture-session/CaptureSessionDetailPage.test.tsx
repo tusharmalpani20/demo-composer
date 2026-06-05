@@ -173,6 +173,7 @@ describe("CaptureSessionDetailPage", () => {
 
     expect(screen.getByText("Loading capture session...")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Create department workflow" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
     expect(screen.getByText("completed")).toBeInTheDocument();
     expect(screen.getByText("extension")).toBeInTheDocument();
     expect(screen.getByText("2 events")).toBeInTheDocument();
@@ -332,6 +333,7 @@ describe("CaptureSessionDetailPage", () => {
       <CaptureSessionDetailPage
         projectId="project_1"
         captureSessionId="capture_session_1"
+        currentPath="/projects/project_1/capture-sessions/capture_session_1"
         loadDetail={async () => {
           throw new ApiClientError({
             kind: "unauthenticated",
@@ -344,6 +346,10 @@ describe("CaptureSessionDetailPage", () => {
     );
 
     expect(await screen.findByText("Sign in to view this capture session.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Fprojects%2Fproject_1%2Fcapture-sessions%2Fcapture_session_1"
+    );
 
     rerender(
       <CaptureSessionDetailPage

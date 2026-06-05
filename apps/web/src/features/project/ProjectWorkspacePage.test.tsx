@@ -23,6 +23,9 @@ const project: Project = {
 const renderPage = (overrides: {
   projectId?: string;
   loadProject?: () => Promise<{ project: Project }>;
+  currentPath?: string;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 } = {}) => {
   const loadProject = overrides.loadProject ?? vi.fn(async () => ({ project }));
 
@@ -30,6 +33,9 @@ const renderPage = (overrides: {
     <ProjectWorkspacePage
       projectId={overrides.projectId ?? "project_1"}
       loadProject={loadProject}
+      currentPath={overrides.currentPath}
+      performLogout={overrides.performLogout}
+      navigate={overrides.navigate}
     />
   );
 
@@ -126,6 +132,7 @@ describe("ProjectWorkspacePage", () => {
     const { rerender } = render(
       <ProjectWorkspacePage
         projectId="project_1"
+        currentPath="/projects/project_1?tab=overview"
         loadProject={async () => {
           throw new ApiClientError({
             kind: "unauthenticated",
@@ -138,10 +145,15 @@ describe("ProjectWorkspacePage", () => {
     );
 
     expect(await screen.findByText("Sign in to view this project.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Fprojects%2Fproject_1%3Ftab%3Doverview"
+    );
 
     rerender(
       <ProjectWorkspacePage
         projectId="missing"
+        currentPath="/projects/missing"
         loadProject={async () => {
           throw new ApiClientError({
             kind: "not_found",
@@ -154,6 +166,34 @@ describe("ProjectWorkspacePage", () => {
     );
 
     expect(await screen.findByText("Project was not found.")).toBeInTheDocument();
+  });
+
+  it("signs out from the project workspace", async () => {
+    const performLogout = vi.fn(async () => {});
+    const navigate = vi.fn();
+
+    renderPage({ performLogout, navigate });
+
+    expect(await screen.findByRole("heading", { name: "Internal onboarding demos" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+
+    await waitFor(() => expect(performLogout).toHaveBeenCalled());
+    expect(navigate).toHaveBeenCalledWith("/login");
+  });
+
+  it("keeps workspace content visible when sign-out fails", async () => {
+    renderPage({
+      performLogout: async () => {
+        throw new Error("Network failed");
+      },
+      navigate: vi.fn(),
+    });
+
+    expect(await screen.findByRole("heading", { name: "Internal onboarding demos" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+
+    expect(await screen.findByText("Could not sign out.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Internal onboarding demos" })).toBeInTheDocument();
   });
 
   it("renders generic errors and supports retry", async () => {

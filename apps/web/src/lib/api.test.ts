@@ -3,11 +3,14 @@ import {
   ApiClientError,
   createGuideFromCaptureSession,
   deleteGuideBlock,
+  getCurrentAuth,
   getCaptureSessionDetail,
   getGuideDetail,
   getProject,
+  login,
   listProjectCaptureSessions,
   listProjectGuides,
+  logout,
   reorderGuideBlocks,
   resolveApiAssetUrl,
   updateGuide,
@@ -80,6 +83,29 @@ const project_response = {
   },
 };
 
+const auth_response = {
+  auth: {
+    user: {
+      id: "user_1",
+      email: "person@example.com",
+      display_name: "Person Example",
+    },
+    organization: {
+      id: "organization_1",
+      name: "Example Org",
+    },
+    org_user: {
+      id: "org_user_1",
+      role: "owner",
+    },
+    session: {
+      id: "session_1",
+      session_type: "web",
+      expires_at: "2026-06-06T10:00:00.000Z",
+    },
+  },
+};
+
 describe("api client", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -99,6 +125,77 @@ describe("api client", () => {
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/projects/project_1",
       {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("fetches the current auth context with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(auth_response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(getCurrentAuth()).resolves.toEqual(auth_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/authentication/me",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("logs in with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(auth_response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(login({
+      email: "person@example.com",
+      password: "secret",
+    })).resolves.toEqual(auth_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/authentication/login",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          email: "person@example.com",
+          password: "secret",
+        }),
+      }
+    );
+  });
+
+  it("logs out with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(logout()).resolves.toBeUndefined();
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/authentication/logout",
+      {
+        method: "POST",
         credentials: "include",
         headers: {
           accept: "application/json",
@@ -397,6 +494,29 @@ describe("api client", () => {
       kind: "unauthenticated",
       type: "unauthenticated",
       message: "Authentication is required",
+    });
+  });
+
+  it("maps invalid credentials while logging in", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        type: "invalid_credentials",
+        message: "Email or password is incorrect",
+      },
+    }), {
+      status: 401,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    await expect(login({
+      email: "person@example.com",
+      password: "wrong",
+    })).rejects.toMatchObject({
+      kind: "unauthenticated",
+      type: "invalid_credentials",
+      message: "Email or password is incorrect",
     });
   });
 

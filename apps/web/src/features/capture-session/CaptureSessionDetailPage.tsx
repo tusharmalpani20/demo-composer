@@ -5,7 +5,9 @@ import {
   getCaptureSessionDetail,
   resolveApiAssetUrl,
 } from "../../lib/api";
+import { currentBrowserPath, signInUrl } from "../auth/navigation";
 import type { GuideDetail } from "../guide/types";
+import { PortalTopbar } from "../portal/PortalTopbar";
 import type { CaptureAsset, CaptureEvent, CaptureSessionDetail } from "./types";
 import styles from "./CaptureSessionDetailPage.module.css";
 
@@ -30,6 +32,9 @@ type CaptureSessionDetailPageProps = {
     }
   ) => Promise<GuideDetail>;
   redirectTo?: (path: string) => void;
+  currentPath?: string;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 };
 
 const formatDateTime = (value: string | null) => {
@@ -107,6 +112,9 @@ export const CaptureSessionDetailPage = ({
   resolveAssetUrl = resolveApiAssetUrl,
   createGuide = createGuideFromCaptureSession,
   redirectTo = (path) => window.location.assign(path),
+  currentPath = currentBrowserPath(),
+  performLogout,
+  navigate,
 }: CaptureSessionDetailPageProps) => {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
@@ -134,7 +142,7 @@ export const CaptureSessionDetailPage = ({
 
   if (state.status === "loading") {
     return (
-      <PortalShell projectId={projectId} captureSessionId={captureSessionId}>
+      <PortalShell projectId={projectId} captureSessionId={captureSessionId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>Loading capture session...</div>
       </PortalShell>
     );
@@ -142,15 +150,18 @@ export const CaptureSessionDetailPage = ({
 
   if (state.status === "unauthenticated") {
     return (
-      <PortalShell projectId={projectId} captureSessionId={captureSessionId}>
-        <div className={styles.state}>Sign in to view this capture session.</div>
+      <PortalShell projectId={projectId} captureSessionId={captureSessionId} performLogout={performLogout} navigate={navigate}>
+        <div className={styles.state}>
+          <div>Sign in to view this capture session.</div>
+          <a className={styles.stateLink} href={signInUrl(currentPath)}>Sign in</a>
+        </div>
       </PortalShell>
     );
   }
 
   if (state.status === "not_found") {
     return (
-      <PortalShell projectId={projectId} captureSessionId={captureSessionId}>
+      <PortalShell projectId={projectId} captureSessionId={captureSessionId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>Capture session was not found.</div>
       </PortalShell>
     );
@@ -158,7 +169,7 @@ export const CaptureSessionDetailPage = ({
 
   if (state.status === "error") {
     return (
-      <PortalShell projectId={projectId} captureSessionId={captureSessionId}>
+      <PortalShell projectId={projectId} captureSessionId={captureSessionId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load capture session.</div>
           <button className={styles.retryButton} type="button" onClick={() => setReloadKey((key) => key + 1)}>
@@ -177,6 +188,8 @@ export const CaptureSessionDetailPage = ({
       resolveAssetUrl={resolveAssetUrl}
       createGuide={createGuide}
       redirectTo={redirectTo}
+      performLogout={performLogout}
+      navigate={navigate}
     />
   );
 };
@@ -185,16 +198,17 @@ const PortalShell = ({
   children,
   projectId,
   captureSessionId,
+  performLogout,
+  navigate,
 }: {
   children: React.ReactNode;
   projectId: string;
   captureSessionId: string;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 }) => (
   <div className={styles.page}>
-    <header className={styles.topbar}>
-      <div className={styles.brand}>Demo Composer</div>
-      <div className={styles.context}>{projectId} / {captureSessionId}</div>
-    </header>
+    <PortalTopbar context={`${projectId} / ${captureSessionId}`} performLogout={performLogout} navigate={navigate} />
     <main className={styles.main}>{children}</main>
   </div>
 );
@@ -206,6 +220,8 @@ const CaptureSessionDetailView = ({
   resolveAssetUrl,
   createGuide,
   redirectTo,
+  performLogout,
+  navigate,
 }: {
   detail: CaptureSessionDetail;
   projectId: string;
@@ -213,6 +229,8 @@ const CaptureSessionDetailView = ({
   resolveAssetUrl: (fileUrl: string) => string;
   createGuide: NonNullable<CaptureSessionDetailPageProps["createGuide"]>;
   redirectTo: NonNullable<CaptureSessionDetailPageProps["redirectTo"]>;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 }) => {
   const [createState, setCreateState] = useState<"idle" | "creating" | "error">("idle");
   const assetById = useMemo(() => new Map(
@@ -242,7 +260,7 @@ const CaptureSessionDetailView = ({
   };
 
   return (
-    <PortalShell projectId={projectId} captureSessionId={captureSessionId}>
+    <PortalShell projectId={projectId} captureSessionId={captureSessionId} performLogout={performLogout} navigate={navigate}>
       <section className={styles.header}>
         <div className={styles.titleRow}>
           <div>

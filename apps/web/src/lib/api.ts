@@ -3,6 +3,7 @@ import type {
   CaptureSessionDetail,
   CaptureSessionStatus,
 } from "../features/capture-session/types";
+import type { AuthResponse } from "../features/auth/types";
 import type { Guide, GuideBlock, GuideDetail, GuideStep } from "../features/guide/types";
 import type { Project } from "../features/project/types";
 
@@ -114,6 +115,29 @@ const requestJson = async <Result>(
 
 export const resolveApiAssetUrl = (fileUrl: string, baseUrl = apiBaseUrl()) => (
   joinUrl(baseUrl, fileUrl)
+);
+
+export const getCurrentAuth = async (): Promise<AuthResponse> => (
+  requestJson<AuthResponse>("/api/v1/authentication/me")
+);
+
+export const login = async (data: {
+  email: string;
+  password: string;
+}): Promise<AuthResponse> => (
+  requestJson<AuthResponse>("/api/v1/authentication/login", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+);
+
+export const logout = async (): Promise<void> => (
+  requestJson<void>("/api/v1/authentication/logout", {
+    method: "POST",
+  })
 );
 
 export const getProject = async (

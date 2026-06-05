@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { ApiClientError, listProjectGuides, type ProjectGuideListResponse } from "../../lib/api";
+import { currentBrowserPath, signInUrl } from "../auth/navigation";
+import { PortalTopbar } from "../portal/PortalTopbar";
 import type { Guide } from "./types";
 import styles from "./ProjectGuideListPage.module.css";
 
@@ -13,6 +15,9 @@ type LoadState =
 type ProjectGuideListPageProps = {
   projectId: string;
   loadGuides?: (projectId: string) => Promise<ProjectGuideListResponse>;
+  currentPath?: string;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 };
 
 const loadStateFromError = (error: unknown): LoadState => {
@@ -41,6 +46,9 @@ const guideUrl = (projectId: string, guideId: string) => (
 export const ProjectGuideListPage = ({
   projectId,
   loadGuides = listProjectGuides,
+  currentPath = currentBrowserPath(),
+  performLogout,
+  navigate,
 }: ProjectGuideListPageProps) => {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
@@ -68,7 +76,7 @@ export const ProjectGuideListPage = ({
 
   if (state.status === "loading") {
     return (
-      <PortalShell projectId={projectId}>
+      <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>Loading guides...</div>
       </PortalShell>
     );
@@ -76,15 +84,18 @@ export const ProjectGuideListPage = ({
 
   if (state.status === "unauthenticated") {
     return (
-      <PortalShell projectId={projectId}>
-        <div className={styles.state}>Sign in to view guides.</div>
+      <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
+        <div className={styles.state}>
+          <div>Sign in to view guides.</div>
+          <a className={styles.stateLink} href={signInUrl(currentPath)}>Sign in</a>
+        </div>
       </PortalShell>
     );
   }
 
   if (state.status === "not_found") {
     return (
-      <PortalShell projectId={projectId}>
+      <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>Project was not found.</div>
       </PortalShell>
     );
@@ -92,7 +103,7 @@ export const ProjectGuideListPage = ({
 
   if (state.status === "error") {
     return (
-      <PortalShell projectId={projectId}>
+      <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load guides.</div>
           <button className={styles.secondaryButton} type="button" onClick={() => setReloadKey((key) => key + 1)}>
@@ -104,7 +115,7 @@ export const ProjectGuideListPage = ({
   }
 
   return (
-    <PortalShell projectId={projectId}>
+    <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
       <section className={styles.header}>
         <div>
           <div className={styles.eyebrow}>Project</div>
@@ -132,15 +143,16 @@ export const ProjectGuideListPage = ({
 const PortalShell = ({
   children,
   projectId,
+  performLogout,
+  navigate,
 }: {
   children: React.ReactNode;
   projectId: string;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 }) => (
   <div className={styles.page}>
-    <header className={styles.topbar}>
-      <div className={styles.brand}>Demo Composer</div>
-      <div className={styles.context}>{projectId} / guides</div>
-    </header>
+    <PortalTopbar context={`${projectId} / guides`} performLogout={performLogout} navigate={navigate} />
     <main className={styles.main}>{children}</main>
   </div>
 );

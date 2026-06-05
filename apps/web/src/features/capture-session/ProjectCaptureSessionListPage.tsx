@@ -4,6 +4,8 @@ import {
   listProjectCaptureSessions,
   type ProjectCaptureSessionListResponse,
 } from "../../lib/api";
+import { currentBrowserPath, signInUrl } from "../auth/navigation";
+import { PortalTopbar } from "../portal/PortalTopbar";
 import type { CaptureSession } from "./types";
 import styles from "./ProjectCaptureSessionListPage.module.css";
 
@@ -17,6 +19,9 @@ type LoadState =
 type ProjectCaptureSessionListPageProps = {
   projectId: string;
   loadCaptureSessions?: (projectId: string) => Promise<ProjectCaptureSessionListResponse>;
+  currentPath?: string;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 };
 
 const loadStateFromError = (error: unknown): LoadState => {
@@ -73,6 +78,9 @@ const viewportLabel = (session: CaptureSession) => (
 export const ProjectCaptureSessionListPage = ({
   projectId,
   loadCaptureSessions = listProjectCaptureSessions,
+  currentPath = currentBrowserPath(),
+  performLogout,
+  navigate,
 }: ProjectCaptureSessionListPageProps) => {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
@@ -100,7 +108,7 @@ export const ProjectCaptureSessionListPage = ({
 
   if (state.status === "loading") {
     return (
-      <PortalShell projectId={projectId}>
+      <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>Loading capture sessions...</div>
       </PortalShell>
     );
@@ -108,15 +116,18 @@ export const ProjectCaptureSessionListPage = ({
 
   if (state.status === "unauthenticated") {
     return (
-      <PortalShell projectId={projectId}>
-        <div className={styles.state}>Sign in to view capture sessions.</div>
+      <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
+        <div className={styles.state}>
+          <div>Sign in to view capture sessions.</div>
+          <a className={styles.stateLink} href={signInUrl(currentPath)}>Sign in</a>
+        </div>
       </PortalShell>
     );
   }
 
   if (state.status === "not_found") {
     return (
-      <PortalShell projectId={projectId}>
+      <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>Project was not found.</div>
       </PortalShell>
     );
@@ -124,7 +135,7 @@ export const ProjectCaptureSessionListPage = ({
 
   if (state.status === "error") {
     return (
-      <PortalShell projectId={projectId}>
+      <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load capture sessions.</div>
           <button className={styles.secondaryButton} type="button" onClick={() => setReloadKey((key) => key + 1)}>
@@ -136,7 +147,7 @@ export const ProjectCaptureSessionListPage = ({
   }
 
   return (
-    <PortalShell projectId={projectId}>
+    <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
       <section className={styles.header}>
         <div>
           <div className={styles.eyebrow}>Project</div>
@@ -164,15 +175,16 @@ export const ProjectCaptureSessionListPage = ({
 const PortalShell = ({
   children,
   projectId,
+  performLogout,
+  navigate,
 }: {
   children: React.ReactNode;
   projectId: string;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 }) => (
   <div className={styles.page}>
-    <header className={styles.topbar}>
-      <div className={styles.brand}>Demo Composer</div>
-      <div className={styles.context}>{projectId} / capture sessions</div>
-    </header>
+    <PortalTopbar context={`${projectId} / capture sessions`} performLogout={performLogout} navigate={navigate} />
     <main className={styles.main}>{children}</main>
   </div>
 );

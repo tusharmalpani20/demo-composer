@@ -95,6 +95,7 @@ describe("ProjectCaptureSessionListPage", () => {
     expect(screen.getByText("Chrome 126")).toBeInTheDocument();
     expect(screen.getByText("Linux")).toBeInTheDocument();
     expect(screen.getByText("1440 x 900")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open capture session Create department workflow" })).toHaveAttribute(
       "href",
       "/projects/project_1/capture-sessions/capture_session_1"
@@ -162,6 +163,7 @@ describe("ProjectCaptureSessionListPage", () => {
     const { rerender } = render(
       <ProjectCaptureSessionListPage
         projectId="project_1"
+        currentPath="/projects/project_1/capture-sessions"
         loadCaptureSessions={async () => {
           throw new ApiClientError({
             kind: "unauthenticated",
@@ -174,6 +176,10 @@ describe("ProjectCaptureSessionListPage", () => {
     );
 
     expect(await screen.findByText("Sign in to view capture sessions.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Fprojects%2Fproject_1%2Fcapture-sessions"
+    );
 
     rerender(
       <ProjectCaptureSessionListPage

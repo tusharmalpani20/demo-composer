@@ -57,6 +57,7 @@ describe("ProjectGuideListPage", () => {
 
     expect(screen.getByText("Loading guides...")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Guides" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
 
     const rows = screen.getAllByRole("article");
     expect(within(rows[0]!).getByRole("heading", { name: "Archived onboarding guide" })).toBeInTheDocument();
@@ -106,6 +107,7 @@ describe("ProjectGuideListPage", () => {
     const { rerender } = render(
       <ProjectGuideListPage
         projectId="project_1"
+        currentPath="/projects/project_1/guides"
         loadGuides={async () => {
           throw new ApiClientError({
             kind: "unauthenticated",
@@ -118,6 +120,10 @@ describe("ProjectGuideListPage", () => {
     );
 
     expect(await screen.findByText("Sign in to view guides.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Fprojects%2Fproject_1%2Fguides"
+    );
 
     rerender(
       <ProjectGuideListPage

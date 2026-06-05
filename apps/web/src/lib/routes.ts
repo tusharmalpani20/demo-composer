@@ -1,5 +1,8 @@
 export type PortalRoute =
   | {
+    type: "login";
+  }
+  | {
     type: "project_workspace";
     projectId: string;
   }
@@ -27,6 +30,13 @@ export type PortalRoute =
 
 export const parsePortalRoute = (pathname: string): PortalRoute => {
   const segments = pathname.split("/").filter(Boolean);
+
+  if (
+    segments.length === 1
+    && segments[0] === "login"
+  ) {
+    return { type: "login" };
+  }
 
   if (
     segments.length === 2

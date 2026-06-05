@@ -7,6 +7,8 @@ import {
   updateGuide,
   updateGuideStep,
 } from "../../lib/api";
+import { currentBrowserPath, signInUrl } from "../auth/navigation";
+import { PortalTopbar } from "../portal/PortalTopbar";
 import type { GuideBlock, GuideDetail, GuideStep } from "./types";
 import styles from "./GuideEditorPage.module.css";
 
@@ -35,6 +37,9 @@ export type GuideEditorPageProps = {
   saveStep?: typeof updateGuideStep;
   reorderBlocks?: typeof reorderGuideBlocks;
   removeBlock?: typeof deleteGuideBlock;
+  currentPath?: string;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 };
 
 const sortBlocks = (blocks: GuideBlock[]) => (
@@ -86,6 +91,9 @@ export const GuideEditorPage = ({
   saveStep = updateGuideStep,
   reorderBlocks = reorderGuideBlocks,
   removeBlock = deleteGuideBlock,
+  currentPath = currentBrowserPath(),
+  performLogout,
+  navigate,
 }: GuideEditorPageProps) => {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
@@ -267,7 +275,7 @@ export const GuideEditorPage = ({
 
   if (state.status === "loading") {
     return (
-      <PortalShell projectId={projectId} guideId={guideId}>
+      <PortalShell projectId={projectId} guideId={guideId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>Loading guide...</div>
       </PortalShell>
     );
@@ -275,15 +283,18 @@ export const GuideEditorPage = ({
 
   if (state.status === "unauthenticated") {
     return (
-      <PortalShell projectId={projectId} guideId={guideId}>
-        <div className={styles.state}>Sign in to edit this guide.</div>
+      <PortalShell projectId={projectId} guideId={guideId} performLogout={performLogout} navigate={navigate}>
+        <div className={styles.state}>
+          <div>Sign in to edit this guide.</div>
+          <a className={styles.stateLink} href={signInUrl(currentPath)}>Sign in</a>
+        </div>
       </PortalShell>
     );
   }
 
   if (state.status === "not_found") {
     return (
-      <PortalShell projectId={projectId} guideId={guideId}>
+      <PortalShell projectId={projectId} guideId={guideId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>Guide was not found.</div>
       </PortalShell>
     );
@@ -291,7 +302,7 @@ export const GuideEditorPage = ({
 
   if (state.status === "error") {
     return (
-      <PortalShell projectId={projectId} guideId={guideId}>
+      <PortalShell projectId={projectId} guideId={guideId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load guide.</div>
           <button className={styles.secondaryButton} type="button" onClick={reload}>
@@ -317,6 +328,8 @@ export const GuideEditorPage = ({
       onSaveStep={saveStepDraft}
       onMoveBlock={moveBlock}
       onDeleteBlock={deleteBlock}
+      performLogout={performLogout}
+      navigate={navigate}
     />
   );
 };
@@ -325,16 +338,17 @@ const PortalShell = ({
   children,
   projectId,
   guideId,
+  performLogout,
+  navigate,
 }: {
   children: React.ReactNode;
   projectId: string;
   guideId: string;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 }) => (
   <div className={styles.page}>
-    <header className={styles.topbar}>
-      <div className={styles.brand}>Demo Composer</div>
-      <div className={styles.context}>{projectId} / {guideId}</div>
-    </header>
+    <PortalTopbar context={`${projectId} / ${guideId}`} performLogout={performLogout} navigate={navigate} />
     <main className={styles.main}>{children}</main>
   </div>
 );
@@ -353,6 +367,8 @@ const GuideEditorView = ({
   onSaveStep,
   onMoveBlock,
   onDeleteBlock,
+  performLogout,
+  navigate,
 }: {
   detail: GuideDetail;
   guideDraft: GuideDraft;
@@ -367,12 +383,14 @@ const GuideEditorView = ({
   onSaveStep: (step: GuideStep) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 }) => {
   const sortedBlocks = useMemo(() => sortBlocks(detail.guide_blocks), [detail.guide_blocks]);
   const readOnly = detail.guide.status !== "draft";
 
   return (
-    <PortalShell projectId={projectId} guideId={guideId}>
+    <PortalShell projectId={projectId} guideId={guideId} performLogout={performLogout} navigate={navigate}>
       <section className={styles.header}>
         <div className={styles.titleRow}>
           <div>

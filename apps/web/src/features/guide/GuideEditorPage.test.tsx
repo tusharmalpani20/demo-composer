@@ -164,6 +164,7 @@ describe("GuideEditorPage", () => {
 
     expect(screen.getByText("Loading guide...")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
     expect(screen.getByText("draft")).toBeInTheDocument();
     expect(screen.getByLabelText("Guide title")).toHaveValue("Department guide");
     expect(screen.getByLabelText("Guide description")).toHaveValue("Set up departments from the list view.");
@@ -268,6 +269,7 @@ describe("GuideEditorPage", () => {
       <GuideEditorPage
         projectId="project_1"
         guideId="guide_1"
+        currentPath="/projects/project_1/guides/guide_1"
         loadDetail={async () => {
           throw new ApiClientError({
             kind: "unauthenticated",
@@ -279,6 +281,10 @@ describe("GuideEditorPage", () => {
     );
 
     expect(await screen.findByText("Sign in to edit this guide.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Fprojects%2Fproject_1%2Fguides%2Fguide_1"
+    );
 
     rerender(
       <GuideEditorPage

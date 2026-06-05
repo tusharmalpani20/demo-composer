@@ -3,6 +3,15 @@ import { describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 describe("App", () => {
+  it("renders login routes", () => {
+    window.history.pushState({}, "", "/login?next=/projects/project_1");
+
+    render(<App />);
+
+    expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toBeInTheDocument();
+  });
+
   it("renders project workspace routes", async () => {
     window.history.pushState({}, "", "/projects/project_1");
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({

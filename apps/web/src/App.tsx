@@ -1,5 +1,6 @@
 import { CaptureSessionDetailPage } from "./features/capture-session/CaptureSessionDetailPage";
 import { ProjectCaptureSessionListPage } from "./features/capture-session/ProjectCaptureSessionListPage";
+import { LoginPage } from "./features/auth/LoginPage";
 import { GuideEditorPage } from "./features/guide/GuideEditorPage";
 import { ProjectGuideListPage } from "./features/guide/ProjectGuideListPage";
 import { ProjectWorkspacePage } from "./features/project/ProjectWorkspacePage";
@@ -8,11 +9,21 @@ import styles from "./App.module.css";
 
 export default function App() {
   const route = parsePortalRoute(window.location.pathname);
+  const currentPath = `${window.location.pathname}${window.location.search}`;
+
+  if (route.type === "login") {
+    return (
+      <LoginPage
+        nextPath={new URLSearchParams(window.location.search).get("next") ?? "/"}
+      />
+    );
+  }
 
   if (route.type === "project_workspace") {
     return (
       <ProjectWorkspacePage
         projectId={route.projectId}
+        currentPath={currentPath}
       />
     );
   }
@@ -22,6 +33,7 @@ export default function App() {
       <CaptureSessionDetailPage
         projectId={route.projectId}
         captureSessionId={route.captureSessionId}
+        currentPath={currentPath}
       />
     );
   }
@@ -30,6 +42,7 @@ export default function App() {
     return (
       <ProjectCaptureSessionListPage
         projectId={route.projectId}
+        currentPath={currentPath}
       />
     );
   }
@@ -39,6 +52,7 @@ export default function App() {
       <GuideEditorPage
         projectId={route.projectId}
         guideId={route.guideId}
+        currentPath={currentPath}
       />
     );
   }
@@ -47,6 +61,7 @@ export default function App() {
     return (
       <ProjectGuideListPage
         projectId={route.projectId}
+        currentPath={currentPath}
       />
     );
   }

@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { parsePortalRoute } from "./routes";
 
 describe("parsePortalRoute", () => {
+  it("parses login routes", () => {
+    expect(parsePortalRoute("/login")).toEqual({ type: "login" });
+    expect(parsePortalRoute("/login/")).toEqual({ type: "login" });
+  });
+
   it("parses project workspace routes", () => {
     expect(parsePortalRoute("/projects/project_1")).toEqual({
       type: "project_workspace",
