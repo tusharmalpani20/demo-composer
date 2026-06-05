@@ -16,6 +16,12 @@ import requestDec from './config/fastify_decoder.config.js';
 import { configure_passport } from './config/passport.config.js';
 import { pool } from './config/database.config.js';
 import {
+  build_public_instance_routes,
+  type PublicInstanceRouteService,
+} from './modules/public-instance/public-instance.routes.js';
+import { build_public_instance_repository } from './modules/public-instance/public-instance.repository.js';
+import { build_public_instance_service } from './modules/public-instance/public-instance.service.js';
+import {
   build_first_run_setup_routes,
   type FirstRunSetupRouteService,
 } from './modules/setup/first-run-setup.routes.js';
@@ -24,11 +30,12 @@ import { build_first_run_setup_service } from './modules/setup/first-run-setup.s
 import { index_root_routes } from './root_router/index.root_router.js';
 
 type BuildOptions = FastifyServerOptions & {
+  public_instance_service?: PublicInstanceRouteService;
   first_run_setup_service?: FirstRunSetupRouteService;
 };
 
 export const build = (opts: BuildOptions = {}) => {
-  const { first_run_setup_service, ...fastify_options } = opts;
+  const { public_instance_service, first_run_setup_service, ...fastify_options } = opts;
   const app = fastify(fastify_options);
 
   // Register request decorators first
@@ -192,6 +199,14 @@ export const build = (opts: BuildOptions = {}) => {
   // Register routes
   app.register(index_root_routes, {
       prefix: "/api/v1"
+  });
+
+  app.register(build_public_instance_routes(
+      public_instance_service ?? build_public_instance_service(
+          build_public_instance_repository(pool)
+      )
+  ), {
+      prefix: "/api/v1/public",
   });
 
   app.register(build_first_run_setup_routes(

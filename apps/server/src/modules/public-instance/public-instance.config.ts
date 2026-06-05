@@ -13,7 +13,7 @@ const read_enum = <Value extends string>(
   return fallback;
 };
 
-export const get_public_instance_status = () => {
+export const get_public_instance_config = () => {
   const deployment_mode = read_enum(
     process.env.DEMO_COMPOSER_DEPLOYMENT_MODE,
     deployment_modes,
@@ -29,7 +29,5 @@ export const get_public_instance_status = () => {
   return {
     deployment_mode,
     onboarding_mode,
-    setup_required: onboarding_mode === "first_run_setup",
-    signup_enabled: onboarding_mode === "signup",
   };
 };
