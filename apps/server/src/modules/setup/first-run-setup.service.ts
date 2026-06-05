@@ -1,5 +1,8 @@
-import { createHash, randomBytes } from "node:crypto";
 import { Password } from "../../common/services/password.common.service";
+import {
+  generate_session_token,
+  hash_session_token,
+} from "../authentication/session-token";
 
 type SetupUser = {
   id: string;
@@ -70,12 +73,6 @@ export class UnsafeOwnerPasswordError extends Error {
     super(message);
   }
 }
-
-export const generate_session_token = () => randomBytes(32).toString("base64url");
-
-export const hash_session_token = (token: string) => (
-  createHash("sha256").update(token).digest("hex")
-);
 
 const unsafe_passwords = new Set([
   "admin",

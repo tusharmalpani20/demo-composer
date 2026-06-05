@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { pool } from "../../config/database.config";
 import { build } from "../../app";
-import { hash_session_token } from "./first-run-setup.service";
+import { hash_session_token } from "../authentication/session-token";
 import { build_first_run_setup_repository } from "./first-run-setup.repository";
 
 const reset_foundation_tables = async () => {

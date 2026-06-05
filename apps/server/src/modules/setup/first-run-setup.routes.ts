@@ -4,8 +4,12 @@ import {
   FirstRunSetupAlreadyCompletedError,
   UnsafeOwnerPasswordError,
 } from "./first-run-setup.service";
+import {
+  set_web_session_cookie,
+  web_session_cookie_name,
+} from "../authentication/session-cookie";
 
-export const web_session_cookie_name = "demo_composer_session";
+export { web_session_cookie_name };
 
 const first_run_setup_body_schema = z.object({
   owner: z.object({
@@ -82,11 +86,7 @@ export const build_first_run_setup_routes = (
         throw error;
       }
 
-      reply.setCookie(web_session_cookie_name, result.session_token, {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-      });
+      set_web_session_cookie(reply, result.session_token);
 
       return reply.status(201).send({
         auth: result.auth,
