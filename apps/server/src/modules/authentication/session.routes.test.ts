@@ -240,4 +240,34 @@ describe("authentication session routes", () => {
 
     await app.close();
   });
+
+  it("clears the web session cookie when logout has no session cookie", async () => {
+    const seen_session_tokens: Array<string | undefined> = [];
+    const app = await build_test_app({
+      get_current_auth_context: async () => {
+        throw new Error("not used");
+      },
+      login: async () => {
+        throw new Error("not used");
+      },
+      logout: async (session_token) => {
+        seen_session_tokens.push(session_token);
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/authentication/logout",
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(seen_session_tokens).toEqual([undefined]);
+    expect(response.cookies).toContainEqual(expect.objectContaining({
+      name: "demo_composer_session",
+      value: "",
+      path: "/",
+    }));
+
+    await app.close();
+  });
 });

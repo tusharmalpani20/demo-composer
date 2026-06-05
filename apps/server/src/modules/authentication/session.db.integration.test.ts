@@ -209,4 +209,77 @@ describe("DB-backed authentication session", () => {
 
     await app.close();
   });
+
+  it("rejects sessions and login when user organization or membership is disabled", async () => {
+    const setup_session_token = await setup_owner();
+    const app = build({ logger: false });
+
+    await pool.query("UPDATE user_schema.user SET status = 'disabled'");
+
+    const disabled_user_me_response = await app.inject({
+      method: "GET",
+      url: "/api/v1/authentication/me",
+      cookies: {
+        demo_composer_session: setup_session_token,
+      },
+    });
+    const disabled_user_login_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/authentication/login",
+      payload: {
+        email: "owner@example.com",
+        password: "safe local password",
+      },
+    });
+
+    expect(disabled_user_me_response.statusCode).toBe(401);
+    expect(disabled_user_login_response.statusCode).toBe(401);
+
+    await pool.query("UPDATE user_schema.user SET status = 'active'");
+    await pool.query("UPDATE organization_schema.organization SET status = 'disabled'");
+
+    const disabled_organization_me_response = await app.inject({
+      method: "GET",
+      url: "/api/v1/authentication/me",
+      cookies: {
+        demo_composer_session: setup_session_token,
+      },
+    });
+    const disabled_organization_login_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/authentication/login",
+      payload: {
+        email: "owner@example.com",
+        password: "safe local password",
+      },
+    });
+
+    expect(disabled_organization_me_response.statusCode).toBe(401);
+    expect(disabled_organization_login_response.statusCode).toBe(401);
+
+    await pool.query("UPDATE organization_schema.organization SET status = 'active'");
+    await pool.query("UPDATE organization_schema.org_user SET status = 'disabled'");
+
+    const disabled_membership_me_response = await app.inject({
+      method: "GET",
+      url: "/api/v1/authentication/me",
+      cookies: {
+        demo_composer_session: setup_session_token,
+      },
+    });
+    const disabled_membership_login_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/authentication/login",
+      payload: {
+        email: "owner@example.com",
+        password: "safe local password",
+      },
+    });
+
+    expect(disabled_membership_me_response.statusCode).toBe(401);
+    expect(disabled_membership_login_response.statusCode).toBe(401);
+    expect(await count_sessions()).toBe(1);
+
+    await app.close();
+  });
 });
