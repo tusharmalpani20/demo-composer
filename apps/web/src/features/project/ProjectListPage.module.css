@@ -1,0 +1,165 @@
+.page {
+  min-height: 100vh;
+  background: #f4f6f8;
+  color: #1c2430;
+}
+
+.main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 40px;
+}
+
+.header {
+  display: grid;
+  gap: 14px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #d9e0e7;
+}
+
+.eyebrow {
+  margin-bottom: 8px;
+  color: #637083;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  color: #111827;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.content {
+  padding-top: 24px;
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  color: #1f2937;
+  font-size: 16px;
+}
+
+.projects {
+  display: grid;
+  gap: 12px;
+}
+
+.project {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.projectBody {
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.projectTitle {
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+}
+
+.description {
+  margin: 8px 0 0;
+  color: #4d5968;
+  line-height: 1.45;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  color: #637083;
+  font-size: 13px;
+}
+
+.openLink,
+.secondaryButton {
+  border: 1px solid #b8c3cf;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1c2430;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.openLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  text-decoration: none;
+}
+
+.secondaryButton {
+  min-height: 36px;
+  margin-top: 14px;
+  padding: 0 14px;
+}
+
+.state,
+.empty {
+  max-width: 640px;
+  margin: 80px auto 0;
+  padding: 18px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #637083;
+  text-align: center;
+}
+
+.empty {
+  margin-top: 0;
+}
+
+.stateLink {
+  display: inline-flex;
+  margin-top: 12px;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .main {
+    padding: 20px 16px 32px;
+  }
+
+  .project {
+    grid-template-columns: 1fr;
+  }
+
+  .openLink {
+    justify-content: center;
+  }
+}

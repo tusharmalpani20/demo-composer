@@ -8,6 +8,7 @@ import {
   getGuideDetail,
   getProject,
   login,
+  listProjects,
   listProjectCaptureSessions,
   listProjectGuides,
   logout,
@@ -217,6 +218,56 @@ describe("api client", () => {
 
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/projects/project%20%2F%201",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("lists projects with session cookies", async () => {
+    const response = {
+      projects: [project_response.project],
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(listProjects()).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("lists projects filtered by status", async () => {
+    const response = {
+      projects: [project_response.project],
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(listProjects({ status: "archived" })).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects?status=archived",
       {
         credentials: "include",
         headers: {
@@ -615,6 +666,26 @@ describe("api client", () => {
     })));
 
     await expect(getProject("project_1")).rejects.toMatchObject({
+      kind: "unauthenticated",
+      type: "unauthenticated",
+      message: "Authentication is required",
+    });
+  });
+
+  it("maps unauthenticated errors while listing projects", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        type: "unauthenticated",
+        message: "Authentication is required",
+      },
+    }), {
+      status: 401,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    await expect(listProjects()).rejects.toMatchObject({
       kind: "unauthenticated",
       type: "unauthenticated",
       message: "Authentication is required",

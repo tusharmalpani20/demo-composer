@@ -3,6 +3,9 @@ export type PortalRoute =
     type: "login";
   }
   | {
+    type: "project_list";
+  }
+  | {
     type: "project_workspace";
     projectId: string;
   }
@@ -36,6 +39,16 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
     && segments[0] === "login"
   ) {
     return { type: "login" };
+  }
+
+  if (
+    segments.length === 0
+    || (
+      segments.length === 1
+      && segments[0] === "projects"
+    )
+  ) {
+    return { type: "project_list" };
   }
 
   if (

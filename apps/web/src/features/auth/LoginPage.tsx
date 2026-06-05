@@ -20,7 +20,7 @@ const errorMessage = (error: unknown) => (
 );
 
 export const LoginPage = ({
-  nextPath = "/",
+  nextPath = "/projects",
   submitLogin = login,
   navigate = (path) => window.location.assign(path),
 }: LoginPageProps) => {
@@ -40,7 +40,7 @@ export const LoginPage = ({
         email: email.trim(),
         password,
       });
-      navigate(safeNextPath(nextPath));
+      navigate(safeNextPath(nextPath, "/projects"));
     } catch (submitError: unknown) {
       setError(errorMessage(submitError));
       setState("idle");

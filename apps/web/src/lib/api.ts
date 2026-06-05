@@ -5,7 +5,7 @@ import type {
 } from "../features/capture-session/types";
 import type { AuthResponse } from "../features/auth/types";
 import type { Guide, GuideBlock, GuideDetail, GuideStep } from "../features/guide/types";
-import type { Project } from "../features/project/types";
+import type { Project, ProjectStatus } from "../features/project/types";
 
 export type ApiClientErrorKind = "unauthenticated" | "not_found" | "validation" | "unknown";
 
@@ -24,8 +24,16 @@ export type ProjectDetailResponse = {
   project: Project;
 };
 
+export type ProjectListResponse = {
+  projects: Project[];
+};
+
 export type ProjectCaptureSessionListResponse = {
   capture_sessions: CaptureSession[];
+};
+
+export type ListProjectsOptions = {
+  status?: ProjectStatus;
 };
 
 export type ListCaptureSessionsOptions = {
@@ -139,6 +147,14 @@ export const logout = async (): Promise<void> => (
     method: "POST",
   })
 );
+
+export const listProjects = async (
+  options: ListProjectsOptions = {}
+): Promise<ProjectListResponse> => {
+  const query = options.status ? `?status=${encodeURIComponent(options.status)}` : "";
+
+  return requestJson<ProjectListResponse>(`/api/v1/projects${query}`);
+};
 
 export const getProject = async (
   projectId: string

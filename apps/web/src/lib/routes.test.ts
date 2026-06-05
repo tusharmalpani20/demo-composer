@@ -7,6 +7,12 @@ describe("parsePortalRoute", () => {
     expect(parsePortalRoute("/login/")).toEqual({ type: "login" });
   });
 
+  it("parses project list routes", () => {
+    expect(parsePortalRoute("/")).toEqual({ type: "project_list" });
+    expect(parsePortalRoute("/projects")).toEqual({ type: "project_list" });
+    expect(parsePortalRoute("/projects/")).toEqual({ type: "project_list" });
+  });
+
   it("parses project workspace routes", () => {
     expect(parsePortalRoute("/projects/project_1")).toEqual({
       type: "project_workspace",
@@ -57,7 +63,6 @@ describe("parsePortalRoute", () => {
   });
 
   it("rejects unsupported routes", () => {
-    expect(parsePortalRoute("/")).toEqual({ type: "unsupported" });
-    expect(parsePortalRoute("/projects")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/unknown")).toEqual({ type: "unsupported" });
   });
 });

@@ -46,6 +46,17 @@ describe("LoginPage", () => {
     expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
   });
 
+  it("defaults successful login navigation to projects", async () => {
+    const submitLogin = vi.fn(async () => authResponse);
+    const navigate = vi.fn();
+
+    render(<LoginPage submitLogin={submitLogin} navigate={navigate} />);
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/projects"));
+  });
+
   it("submits trimmed email and exact password before navigating to the next path", async () => {
     const submitLogin = vi.fn(async () => authResponse);
     const navigate = vi.fn();
@@ -70,10 +81,10 @@ describe("LoginPage", () => {
     fillForm();
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/projects"));
   });
 
-  it("defaults missing and absolute next paths to the portal root", async () => {
+  it("defaults missing and absolute next paths to projects", async () => {
     const submitLogin = vi.fn(async () => authResponse);
     const navigate = vi.fn();
 
@@ -81,7 +92,7 @@ describe("LoginPage", () => {
     fillForm();
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/projects"));
 
     unmount();
     navigate.mockClear();
@@ -91,7 +102,7 @@ describe("LoginPage", () => {
     fillForm();
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/projects"));
   });
 
   it("shows invalid credentials errors", async () => {

@@ -3,6 +3,7 @@ import { ProjectCaptureSessionListPage } from "./features/capture-session/Projec
 import { LoginPage } from "./features/auth/LoginPage";
 import { GuideEditorPage } from "./features/guide/GuideEditorPage";
 import { ProjectGuideListPage } from "./features/guide/ProjectGuideListPage";
+import { ProjectListPage } from "./features/project/ProjectListPage";
 import { ProjectWorkspacePage } from "./features/project/ProjectWorkspacePage";
 import { parsePortalRoute } from "./lib/routes";
 import styles from "./App.module.css";
@@ -14,8 +15,14 @@ export default function App() {
   if (route.type === "login") {
     return (
       <LoginPage
-        nextPath={new URLSearchParams(window.location.search).get("next") ?? "/"}
+        nextPath={new URLSearchParams(window.location.search).get("next") ?? "/projects"}
       />
+    );
+  }
+
+  if (route.type === "project_list") {
+    return (
+      <ProjectListPage currentPath={currentPath} />
     );
   }
 
@@ -74,7 +81,7 @@ export default function App() {
       <main className={styles.main}>
         <section className={styles.emptyState}>
           <h1 className={styles.title}>Demo Composer portal</h1>
-          <p>Open a project workspace, capture session list, capture session, guide list, or guide link to continue.</p>
+          <p>Open the project list, a project workspace, capture session list, capture session, guide list, or guide link to continue.</p>
         </section>
       </main>
     </div>

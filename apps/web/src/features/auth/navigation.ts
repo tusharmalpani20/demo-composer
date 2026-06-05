@@ -1,8 +1,8 @@
 export const currentBrowserPath = () => `${window.location.pathname}${window.location.search}`;
 
-export const safeNextPath = (value: string | null | undefined) => {
+export const safeNextPath = (value: string | null | undefined, fallback = "/") => {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/";
+    return fallback;
   }
 
   return value;
