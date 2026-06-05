@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS guide_schema.guide_block (
   updated_by_id VARCHAR(26) NOT NULL REFERENCES organization_schema.org_user(id) ON DELETE RESTRICT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT chk_guide_block_type CHECK (block_type IN ('step')),
+  CONSTRAINT chk_guide_block_type CHECK (block_type IN ('step', 'header', 'paragraph', 'tip', 'alert', 'capture', 'divider', 'gif')),
   CONSTRAINT chk_guide_block_index_positive CHECK (block_index >= 1)
 );
 

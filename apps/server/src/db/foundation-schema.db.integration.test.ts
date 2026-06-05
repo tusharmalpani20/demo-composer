@@ -512,6 +512,30 @@ describe("foundation schema migrations on postgres", () => {
       context.org_user_id,
     ]);
 
+    for (const [index, block_type] of ["step", "header", "paragraph", "tip", "alert", "capture", "divider", "gif"].entries()) {
+      await pool.query(`
+        INSERT INTO guide_schema.guide_block (
+          id,
+          organization_id,
+          project_id,
+          guide_id,
+          block_type,
+          block_index,
+          created_by_id,
+          updated_by_id
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
+      `, [
+        ulid(),
+        context.organization_id,
+        context.project_id,
+        context.guide_id,
+        block_type,
+        index + 1,
+        context.org_user_id,
+      ]);
+    }
+
     await expect(pool.query(`
       INSERT INTO guide_schema.guide_block (
         id,
@@ -569,7 +593,7 @@ describe("foundation schema migrations on postgres", () => {
         created_by_id,
         updated_by_id
       )
-      VALUES ($1, $2, $3, $4, 'step', 1, $5, $5)
+      VALUES ($1, $2, $3, $4, 'step', 100, $5, $5)
     `, [
       context.guide_block_id,
       context.organization_id,
@@ -589,7 +613,7 @@ describe("foundation schema migrations on postgres", () => {
         created_by_id,
         updated_by_id
       )
-      VALUES ($1, $2, $3, $4, 'step', 1, $5, $5)
+      VALUES ($1, $2, $3, $4, 'step', 100, $5, $5)
     `, [
       ulid(),
       context.organization_id,

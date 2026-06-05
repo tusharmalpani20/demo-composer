@@ -49,7 +49,7 @@ type GuideBlockRow = {
   source_capture_session_id: string | null;
   source_capture_event_id: string | null;
   source_capture_asset_id: string | null;
-  block_type: "step";
+  block_type: GuideBlock["block_type"];
   block_index: number;
   created_by_id: string;
   updated_by_id: string;

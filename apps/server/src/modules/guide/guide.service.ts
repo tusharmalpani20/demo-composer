@@ -4,7 +4,7 @@ export type GuideAuthContext = {
 };
 
 export type GuideStatus = "draft" | "archived";
-export type GuideBlockType = "step";
+export type GuideBlockType = "step" | "header" | "paragraph" | "tip" | "alert" | "capture" | "divider" | "gif";
 export type GuideSourceEventType = "navigation" | "click" | "input" | "capture" | "note";
 
 export type Guide = {

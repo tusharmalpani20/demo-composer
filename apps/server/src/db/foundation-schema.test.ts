@@ -52,6 +52,9 @@ describe("foundation schema migrations", () => {
     expect(sql).toContain("CREATE TABLE IF NOT EXISTS guide_schema.guide_step");
     expect(table_definition(sql, "guide_schema.guide")).toContain("source_capture_session_id VARCHAR(26) DEFAULT NULL");
     expect(table_definition(sql, "guide_schema.guide_block")).toContain("block_index INTEGER NOT NULL");
+    expect(table_definition(sql, "guide_schema.guide_block")).toContain(
+      "CONSTRAINT chk_guide_block_type CHECK (block_type IN ('step', 'header', 'paragraph', 'tip', 'alert', 'capture', 'divider', 'gif'))"
+    );
     expect(table_definition(sql, "guide_schema.guide_step")).toContain("guide_block_id VARCHAR(26) NOT NULL");
     expect(sql).toContain("uq_guide_block_guide_index_active");
     expect(sql).toContain("uq_guide_step_block_active");
