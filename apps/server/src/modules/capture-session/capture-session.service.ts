@@ -1,3 +1,6 @@
+import type { CaptureAsset } from "../capture-asset/capture-asset.service";
+import type { CaptureEvent } from "../capture-event/capture-event.service";
+
 export type CaptureSessionAuthContext = {
   organization_id: string;
   actor_org_user_id: string;
@@ -38,6 +41,14 @@ export type CompletedCaptureSessionResult = {
     path: string;
     reason: "capture_session_completed";
   };
+};
+
+export type CaptureSessionDetail = {
+  capture_session: CaptureSession;
+  capture_events: CaptureEvent[];
+  capture_assets: Array<CaptureAsset & {
+    file_url: string;
+  }>;
 };
 
 export type CreateCaptureSessionInput = {
@@ -98,6 +109,15 @@ export type CaptureSessionRepository = {
     project_id: string;
     capture_session_id: string;
   }) => Promise<CaptureSession | null>;
+  get_capture_session_detail: (input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+  }) => Promise<{
+    capture_session: CaptureSession;
+    capture_events: CaptureEvent[];
+    capture_assets: CaptureAsset[];
+  } | null>;
   update_capture_session: (input: {
     organization_id: string;
     project_id: string;
@@ -333,6 +353,36 @@ export const build_capture_session_service = (repository: CaptureSessionReposito
     return capture_session;
   };
 
+  const get_capture_session_detail = async (input: {
+    auth: CaptureSessionAuthContext;
+    project_id: string;
+    capture_session_id: string;
+  }): Promise<CaptureSessionDetail> => {
+    await ensure_project_exists({
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    });
+
+    const detail = await repository.get_capture_session_detail({
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      capture_session_id: input.capture_session_id,
+    });
+
+    if (!detail) {
+      throw new CaptureSessionNotFoundError();
+    }
+
+    return {
+      capture_session: detail.capture_session,
+      capture_events: detail.capture_events,
+      capture_assets: detail.capture_assets.map((asset) => ({
+        ...asset,
+        file_url: `/api/v1/projects/${asset.project_id}/capture-sessions/${asset.capture_session_id}/assets/${asset.id}/file`,
+      })),
+    };
+  };
+
   const update_capture_session = async (input: {
     auth: CaptureSessionAuthContext;
     project_id: string;
@@ -425,6 +475,7 @@ export const build_capture_session_service = (repository: CaptureSessionReposito
     create_capture_session,
     list_capture_sessions,
     get_capture_session,
+    get_capture_session_detail,
     update_capture_session,
     complete_capture_session,
     delete_capture_session,

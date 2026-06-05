@@ -7,6 +7,9 @@ const reset_foundation_tables = async () => {
   await pool.query(`
     TRUNCATE TABLE
       auth_schema.auth_session,
+      capture_schema.capture_event,
+      capture_schema.capture_asset,
+      file_schema.file,
       capture_schema.capture_session,
       project_schema.project,
       organization_schema.org_user,
@@ -543,6 +546,191 @@ describe("DB-backed capture session API", () => {
         version: 3,
       }),
     ]));
+
+    await app.close();
+  });
+
+  it("gets capture session detail with ordered events safe assets and soft-delete filtering", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const app = build({ logger: false });
+
+    const create_session_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      payload: {
+        name: "Create department workflow",
+        source_type: "extension",
+        metadata: {
+          private_note: "do not expose",
+        },
+      },
+    });
+    expect(create_session_response.statusCode).toBe(201);
+    const capture_session_id = create_session_response.json().capture_session.id as string;
+
+    const create_asset = async (storage_key: string, page_title: string) => {
+      const response = await app.inject({
+        method: "POST",
+        url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets`,
+        cookies: {
+          demo_composer_session: session_token,
+        },
+        payload: {
+          asset_type: "screenshot",
+          width: 1440,
+          height: 900,
+          device_pixel_ratio: 1,
+          page_url: "https://example.internal/app/department",
+          page_title,
+          metadata: {
+            private_asset_note: page_title,
+          },
+          file: {
+            storage_provider: "local",
+            storage_key,
+            mime_type: "image/png",
+            size_bytes: 123456,
+            original_name: `${page_title}.png`,
+            checksum_sha256: `${page_title}-checksum`,
+            metadata: {
+              private_file_note: page_title,
+            },
+          },
+        },
+      });
+      expect(response.statusCode).toBe(201);
+      return response.json().capture_asset.id as string;
+    };
+
+    const kept_asset_id = await create_asset("captures/acme/session/kept.png", "Department List");
+    const deleted_asset_id = await create_asset("captures/acme/session/deleted.png", "Deleted Asset");
+
+    await pool.query(`
+      UPDATE capture_schema.capture_asset
+      SET created_at = CASE
+        WHEN id = $1 THEN '2026-06-05T10:01:00.000Z'::timestamptz
+        WHEN id = $2 THEN '2026-06-05T10:02:00.000Z'::timestamptz
+        ELSE created_at
+      END
+      WHERE id = ANY($3::varchar[])
+    `, [kept_asset_id, deleted_asset_id, [kept_asset_id, deleted_asset_id]]);
+
+    const create_event = async (payload: Record<string, unknown>) => {
+      const response = await app.inject({
+        method: "POST",
+        url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+        cookies: {
+          demo_composer_session: session_token,
+        },
+        payload,
+      });
+      expect(response.statusCode).toBe(201);
+      return response.json().capture_event.id as string;
+    };
+
+    await create_event({
+      event_type: "capture",
+      event_index: 2,
+      capture_asset_id: deleted_asset_id,
+      page_title: "Deleted asset still referenced",
+    });
+    await create_event({
+      event_type: "note",
+      event_index: 1,
+      note: "Start from department list",
+      metadata: {
+        private_event_note: "do not expose",
+      },
+    });
+    const deleted_event_id = await create_event({
+      event_type: "click",
+      event_index: 3,
+      capture_asset_id: kept_asset_id,
+      target_label: "Add Department",
+    });
+
+    const delete_event_response = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${deleted_event_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    const delete_asset_response = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${deleted_asset_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+
+    expect(delete_event_response.statusCode).toBe(204);
+    expect(delete_asset_response.statusCode).toBe(204);
+
+    const detail_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/detail`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+
+    expect(detail_response.statusCode).toBe(200);
+    expect(detail_response.json().capture_session).toMatchObject({
+      id: capture_session_id,
+      project_id,
+      status: "draft",
+    });
+    expect(detail_response.json().capture_events.map((event: { event_index: number }) => event.event_index)).toEqual([1, 2]);
+    expect(detail_response.json().capture_events[1]).toMatchObject({
+      capture_asset_id: deleted_asset_id,
+      event_type: "capture",
+    });
+    expect(detail_response.json().capture_assets.map((asset: { id: string }) => asset.id)).toEqual([kept_asset_id]);
+    expect(detail_response.json().capture_assets[0]).toMatchObject({
+      id: kept_asset_id,
+      file: {
+        storage_provider: "local",
+        mime_type: "image/png",
+        size_bytes: 123456,
+        original_name: "Department List.png",
+        checksum_sha256: "Department List-checksum",
+      },
+      file_url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${kept_asset_id}/file`,
+    });
+
+    const serialized_detail = JSON.stringify(detail_response.json());
+    expect(serialized_detail).not.toContain("storage_key");
+    expect(serialized_detail).not.toContain("private_note");
+    expect(serialized_detail).not.toContain("private_asset_note");
+    expect(serialized_detail).not.toContain("private_file_note");
+    expect(serialized_detail).not.toContain("private_event_note");
+    expect(serialized_detail).not.toContain("is_deleted");
+    expect(serialized_detail).not.toContain("deleted_at");
+    expect(serialized_detail).not.toContain("deleted_by_id");
+
+    const delete_session_response = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    const hidden_detail_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/detail`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+
+    expect(delete_session_response.statusCode).toBe(204);
+    expect(hidden_detail_response.statusCode).toBe(404);
+    expect(hidden_detail_response.json().error.type).toBe("capture_session_not_found");
 
     await app.close();
   });

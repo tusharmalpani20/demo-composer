@@ -1,4 +1,6 @@
 import { ulid } from "ulid";
+import type { CaptureAsset, CaptureAssetType, FileStorageProvider } from "../capture-asset/capture-asset.service";
+import type { CaptureEvent, CaptureEventType } from "../capture-event/capture-event.service";
 import {
   type CaptureSession,
   type CaptureSessionRepository,
@@ -41,6 +43,62 @@ type CaptureSessionRow = {
   updated_at: Date;
 };
 
+type CaptureEventRow = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  capture_session_id: string;
+  capture_asset_id: string | null;
+  event_type: CaptureEventType;
+  event_index: number;
+  occurred_at: Date;
+  page_url: string | null;
+  page_title: string | null;
+  target_label: string | null;
+  target_selector: string | null;
+  target_role: string | null;
+  target_test_id: string | null;
+  target_text: string | null;
+  client_x: number | null;
+  client_y: number | null;
+  viewport_width: number | null;
+  viewport_height: number | null;
+  device_pixel_ratio: number | null;
+  input_intent: string | null;
+  input_value_redacted: true;
+  note: string | null;
+  created_by_id: string;
+  updated_by_id: string;
+  version: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type CaptureAssetRow = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  capture_session_id: string;
+  asset_type: CaptureAssetType;
+  width: number | null;
+  height: number | null;
+  device_pixel_ratio: number | null;
+  page_url: string | null;
+  page_title: string | null;
+  captured_at: Date;
+  created_by_id: string;
+  updated_by_id: string;
+  version: number;
+  created_at: Date;
+  updated_at: Date;
+  file_id: string;
+  file_storage_provider: FileStorageProvider;
+  file_mime_type: string;
+  file_size_bytes: string | number;
+  file_original_name: string | null;
+  file_checksum_sha256: string | null;
+};
+
 const first_row = <Row>(result: QueryResult<Row>) => result.rows[0] ?? null;
 
 const map_capture_session = (row: CaptureSessionRow): CaptureSession => ({
@@ -62,6 +120,64 @@ const map_capture_session = (row: CaptureSessionRow): CaptureSession => ({
   viewport_height: row.viewport_height,
   device_pixel_ratio: row.device_pixel_ratio,
   user_agent: row.user_agent,
+  created_by_id: row.created_by_id,
+  updated_by_id: row.updated_by_id,
+  version: row.version,
+  created_at: row.created_at.toISOString(),
+  updated_at: row.updated_at.toISOString(),
+});
+
+const map_capture_event = (row: CaptureEventRow): CaptureEvent => ({
+  id: row.id,
+  organization_id: row.organization_id,
+  project_id: row.project_id,
+  capture_session_id: row.capture_session_id,
+  capture_asset_id: row.capture_asset_id,
+  event_type: row.event_type,
+  event_index: row.event_index,
+  occurred_at: row.occurred_at.toISOString(),
+  page_url: row.page_url,
+  page_title: row.page_title,
+  target_label: row.target_label,
+  target_selector: row.target_selector,
+  target_role: row.target_role,
+  target_test_id: row.target_test_id,
+  target_text: row.target_text,
+  client_x: row.client_x,
+  client_y: row.client_y,
+  viewport_width: row.viewport_width,
+  viewport_height: row.viewport_height,
+  device_pixel_ratio: row.device_pixel_ratio,
+  input_intent: row.input_intent,
+  input_value_redacted: row.input_value_redacted,
+  note: row.note,
+  created_by_id: row.created_by_id,
+  updated_by_id: row.updated_by_id,
+  version: row.version,
+  created_at: row.created_at.toISOString(),
+  updated_at: row.updated_at.toISOString(),
+});
+
+const map_capture_asset = (row: CaptureAssetRow): CaptureAsset => ({
+  id: row.id,
+  organization_id: row.organization_id,
+  project_id: row.project_id,
+  capture_session_id: row.capture_session_id,
+  file: {
+    id: row.file_id,
+    storage_provider: row.file_storage_provider,
+    mime_type: row.file_mime_type,
+    size_bytes: Number(row.file_size_bytes),
+    original_name: row.file_original_name,
+    checksum_sha256: row.file_checksum_sha256,
+  },
+  asset_type: row.asset_type,
+  width: row.width,
+  height: row.height,
+  device_pixel_ratio: row.device_pixel_ratio,
+  page_url: row.page_url,
+  page_title: row.page_title,
+  captured_at: row.captured_at.toISOString(),
   created_by_id: row.created_by_id,
   updated_by_id: row.updated_by_id,
   version: row.version,
@@ -93,6 +209,62 @@ const capture_session_select = `
   version,
   created_at,
   updated_at
+`;
+
+const capture_event_select = `
+  id,
+  organization_id,
+  project_id,
+  capture_session_id,
+  capture_asset_id,
+  event_type,
+  event_index,
+  occurred_at,
+  page_url,
+  page_title,
+  target_label,
+  target_selector,
+  target_role,
+  target_test_id,
+  target_text,
+  client_x,
+  client_y,
+  viewport_width,
+  viewport_height,
+  device_pixel_ratio,
+  input_intent,
+  input_value_redacted,
+  note,
+  created_by_id,
+  updated_by_id,
+  version,
+  created_at,
+  updated_at
+`;
+
+const capture_asset_select = `
+  capture_asset.id,
+  capture_asset.organization_id,
+  capture_asset.project_id,
+  capture_asset.capture_session_id,
+  capture_asset.asset_type,
+  capture_asset.width,
+  capture_asset.height,
+  capture_asset.device_pixel_ratio,
+  capture_asset.page_url,
+  capture_asset.page_title,
+  capture_asset.captured_at,
+  capture_asset.created_by_id,
+  capture_asset.updated_by_id,
+  capture_asset.version,
+  capture_asset.created_at,
+  capture_asset.updated_at,
+  app_file.id AS file_id,
+  app_file.storage_provider AS file_storage_provider,
+  app_file.mime_type AS file_mime_type,
+  app_file.size_bytes AS file_size_bytes,
+  app_file.original_name AS file_original_name,
+  app_file.checksum_sha256 AS file_checksum_sha256
 `;
 
 const update_assignments = (data: NormalizedUpdateCaptureSessionInput) => {
@@ -264,6 +436,62 @@ export const build_capture_session_repository = (
     const row = first_row(result);
 
     return row ? map_capture_session(row) : null;
+  },
+
+  async get_capture_session_detail(input) {
+    const session_result = await db.query<CaptureSessionRow>(`
+      SELECT ${capture_session_select}
+      FROM capture_schema.capture_session
+      WHERE id = $1
+      AND project_id = $2
+      AND organization_id = $3
+      AND is_deleted = FALSE
+      LIMIT 1
+    `, [
+      input.capture_session_id,
+      input.project_id,
+      input.organization_id,
+    ]);
+    const session_row = first_row(session_result);
+
+    if (!session_row) {
+      return null;
+    }
+
+    const events_result = await db.query<CaptureEventRow>(`
+      SELECT ${capture_event_select}
+      FROM capture_schema.capture_event
+      WHERE capture_session_id = $1
+      AND project_id = $2
+      AND organization_id = $3
+      AND is_deleted = FALSE
+      ORDER BY event_index ASC, created_at ASC, id ASC
+    `, [
+      input.capture_session_id,
+      input.project_id,
+      input.organization_id,
+    ]);
+    const assets_result = await db.query<CaptureAssetRow>(`
+      SELECT ${capture_asset_select}
+      FROM capture_schema.capture_asset capture_asset
+      INNER JOIN file_schema.file app_file ON app_file.id = capture_asset.file_id
+      WHERE capture_asset.capture_session_id = $1
+      AND capture_asset.project_id = $2
+      AND capture_asset.organization_id = $3
+      AND capture_asset.is_deleted = FALSE
+      AND app_file.is_deleted = FALSE
+      ORDER BY capture_asset.created_at ASC, capture_asset.id ASC
+    `, [
+      input.capture_session_id,
+      input.project_id,
+      input.organization_id,
+    ]);
+
+    return {
+      capture_session: map_capture_session(session_row),
+      capture_events: events_result.rows.map(map_capture_event),
+      capture_assets: assets_result.rows.map(map_capture_asset),
+    };
   },
 
   async update_capture_session(input) {

@@ -13,6 +13,7 @@ import {
   InvalidCaptureSessionInputError,
   ProjectNotFoundError,
   type CaptureSession,
+  type CaptureSessionDetail,
   type CaptureSessionAuthContext,
   type CompletedCaptureSessionResult,
   type CaptureSessionStatus,
@@ -40,6 +41,11 @@ export type CaptureSessionRouteDependencies = {
       project_id: string;
       capture_session_id: string;
     }) => Promise<CaptureSession>;
+    get_capture_session_detail: (input: {
+      auth: CaptureSessionAuthContext;
+      project_id: string;
+      capture_session_id: string;
+    }) => Promise<CaptureSessionDetail>;
     update_capture_session: (input: {
       auth: CaptureSessionAuthContext;
       project_id: string;
@@ -275,6 +281,25 @@ export const build_capture_session_routes = (
           data: pick_create_capture_session_data(request.body),
         });
         return reply.status(201).send({ capture_session });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.get<{
+      Params: {
+        project_id: string;
+        id: string;
+      };
+    }>("/:project_id/capture-sessions/:id/detail", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const detail = await dependencies.capture_session_service.get_capture_session_detail({
+          auth,
+          project_id: request.params.project_id,
+          capture_session_id: request.params.id,
+        });
+        return reply.status(200).send(detail);
       } catch (error) {
         return handle_domain_error(error, reply);
       }

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import type { CaptureAsset } from "../capture-asset/capture-asset.service";
+import type { CaptureEvent } from "../capture-event/capture-event.service";
 import {
   build_capture_session_service,
   CaptureSessionNotFoundError,
@@ -40,11 +42,70 @@ const capture_session: CaptureSession = {
   updated_at: "2026-06-05T00:00:00.000Z",
 };
 
+const capture_event: CaptureEvent = {
+  id: "capture_event_1",
+  organization_id: "organization_1",
+  project_id: "project_1",
+  capture_session_id: "capture_session_1",
+  capture_asset_id: "capture_asset_1",
+  event_type: "capture",
+  event_index: 1,
+  occurred_at: "2026-06-05T00:01:00.000Z",
+  page_url: "https://example.internal/app/department",
+  page_title: "Department",
+  target_label: null,
+  target_selector: null,
+  target_role: null,
+  target_test_id: null,
+  target_text: null,
+  client_x: null,
+  client_y: null,
+  viewport_width: 1440,
+  viewport_height: 900,
+  device_pixel_ratio: 1,
+  input_intent: null,
+  input_value_redacted: true,
+  note: null,
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-06-05T00:01:00.000Z",
+  updated_at: "2026-06-05T00:01:00.000Z",
+};
+
+const capture_asset: CaptureAsset = {
+  id: "capture_asset_1",
+  organization_id: "organization_1",
+  project_id: "project_1",
+  capture_session_id: "capture_session_1",
+  file: {
+    id: "file_1",
+    storage_provider: "local",
+    mime_type: "image/png",
+    size_bytes: 123,
+    original_name: "screenshot.png",
+    checksum_sha256: "checksum",
+  },
+  asset_type: "screenshot",
+  width: 1440,
+  height: 900,
+  device_pixel_ratio: 1,
+  page_url: "https://example.internal/app/department",
+  page_title: "Department",
+  captured_at: "2026-06-05T00:01:00.000Z",
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-06-05T00:01:00.000Z",
+  updated_at: "2026-06-05T00:01:00.000Z",
+};
+
 const build_repository = (): CaptureSessionRepository & {
   project_checks: unknown[];
   creates: unknown[];
   lists: unknown[];
   finds: unknown[];
+  details: unknown[];
   updates: unknown[];
   completions: unknown[];
   deletes: unknown[];
@@ -53,6 +114,7 @@ const build_repository = (): CaptureSessionRepository & {
   const creates: unknown[] = [];
   const lists: unknown[] = [];
   const finds: unknown[] = [];
+  const details: unknown[] = [];
   const updates: unknown[] = [];
   const completions: unknown[] = [];
   const deletes: unknown[] = [];
@@ -62,6 +124,7 @@ const build_repository = (): CaptureSessionRepository & {
     creates,
     lists,
     finds,
+    details,
     updates,
     completions,
     deletes,
@@ -87,6 +150,30 @@ const build_repository = (): CaptureSessionRepository & {
     async find_capture_session(input) {
       finds.push(input);
       return input.capture_session_id === "capture_session_1" ? capture_session : null;
+    },
+    async get_capture_session_detail(input) {
+      details.push(input);
+
+      if (input.capture_session_id === "missing") {
+        return null;
+      }
+
+      if (input.capture_session_id === "empty") {
+        return {
+          capture_session: {
+            ...capture_session,
+            id: "empty",
+          },
+          capture_events: [],
+          capture_assets: [],
+        };
+      }
+
+      return {
+        capture_session,
+        capture_events: [capture_event],
+        capture_assets: [capture_asset],
+      };
     },
     async update_capture_session(input) {
       updates.push(input);
@@ -367,6 +454,81 @@ describe("capture session service", () => {
         capture_session_id: "missing",
       },
     ]);
+  });
+
+  it("gets capture session detail and adds relative asset file URLs", async () => {
+    const repository = build_repository();
+    const service = build_capture_session_service(repository);
+
+    await expect(service.get_capture_session_detail({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+    })).resolves.toEqual({
+      capture_session,
+      capture_events: [capture_event],
+      capture_assets: [{
+        ...capture_asset,
+        file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1/file",
+      }],
+    });
+
+    await expect(service.get_capture_session_detail({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "empty",
+    })).resolves.toMatchObject({
+      capture_session: {
+        id: "empty",
+      },
+      capture_events: [],
+      capture_assets: [],
+    });
+
+    expect(repository.project_checks).toEqual([
+      {
+        organization_id: "organization_1",
+        project_id: "project_1",
+      },
+      {
+        organization_id: "organization_1",
+        project_id: "project_1",
+      },
+    ]);
+    expect(repository.details).toEqual([
+      {
+        organization_id: "organization_1",
+        project_id: "project_1",
+        capture_session_id: "capture_session_1",
+      },
+      {
+        organization_id: "organization_1",
+        project_id: "project_1",
+        capture_session_id: "empty",
+      },
+    ]);
+  });
+
+  it("maps missing project and capture session for capture session detail", async () => {
+    const repository = build_repository();
+    const service = build_capture_session_service(repository);
+
+    await expect(service.get_capture_session_detail({
+      auth,
+      project_id: "missing",
+      capture_session_id: "capture_session_1",
+    })).rejects.toBeInstanceOf(ProjectNotFoundError);
+    await expect(service.get_capture_session_detail({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "missing",
+    })).rejects.toBeInstanceOf(CaptureSessionNotFoundError);
+
+    expect(repository.details).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      capture_session_id: "missing",
+    }]);
   });
 
   it("updates capture sessions and lets the repository manage lifecycle timestamps", async () => {

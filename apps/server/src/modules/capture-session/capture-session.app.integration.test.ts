@@ -63,6 +63,35 @@ describe("capture session app routes", () => {
         get_capture_session: async () => {
           throw new Error("not used");
         },
+        get_capture_session_detail: async () => ({
+          capture_session: {
+            id: "capture_session_1",
+            organization_id: "organization_1",
+            project_id: "project_1",
+            name: "Create department workflow",
+            description: null,
+            status: "draft",
+            source_type: "manual",
+            started_at: null,
+            completed_at: null,
+            canceled_at: null,
+            start_url: null,
+            browser_name: null,
+            browser_version: null,
+            operating_system: null,
+            viewport_width: null,
+            viewport_height: null,
+            device_pixel_ratio: null,
+            user_agent: null,
+            created_by_id: "org_user_1",
+            updated_by_id: "org_user_1",
+            version: 1,
+            created_at: "2026-06-05T00:00:00.000Z",
+            updated_at: "2026-06-05T00:00:00.000Z",
+          },
+          capture_events: [],
+          capture_assets: [],
+        }),
         complete_capture_session: async () => ({
           capture_session: {
             id: "capture_session_1",
@@ -134,6 +163,23 @@ describe("capture session app routes", () => {
         path: "/projects/project_1/capture-sessions/capture_session_1",
         reason: "capture_session_completed",
       },
+    });
+
+    const detail_response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/detail",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+    });
+
+    expect(detail_response.statusCode).toBe(200);
+    expect(detail_response.json()).toMatchObject({
+      capture_session: {
+        id: "capture_session_1",
+      },
+      capture_events: [],
+      capture_assets: [],
     });
 
     await app.close();
