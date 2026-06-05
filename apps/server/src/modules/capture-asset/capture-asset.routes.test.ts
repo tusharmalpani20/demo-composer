@@ -1,0 +1,384 @@
+import cookie from "@fastify/cookie";
+import fastify from "fastify";
+import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
+import { describe, expect, it } from "vitest";
+import { UnauthenticatedSessionError } from "../authentication/session.service";
+import {
+  CaptureAssetNotFoundError,
+  CaptureSessionNotFoundError,
+  FileStorageKeyConflictError,
+  InvalidCaptureAssetInputError,
+  UnsupportedCaptureAssetTypeError,
+  type CaptureAsset,
+} from "./capture-asset.service";
+import { build_capture_asset_routes } from "./capture-asset.routes";
+
+const auth_context = {
+  user: {
+    id: "user_1",
+    email: "owner@example.com",
+    display_name: "Owner User",
+  },
+  organization: {
+    id: "organization_1",
+    name: "Acme",
+  },
+  org_user: {
+    id: "org_user_1",
+    role: "owner",
+  },
+  session: {
+    id: "session_1",
+    session_type: "web",
+    expires_at: "2026-07-05T00:00:00.000Z",
+  },
+};
+
+const capture_asset: CaptureAsset = {
+  id: "capture_asset_1",
+  organization_id: "organization_1",
+  project_id: "project_1",
+  capture_session_id: "capture_session_1",
+  file: {
+    id: "file_1",
+    storage_provider: "local",
+    mime_type: "image/png",
+    size_bytes: 123456,
+    original_name: "screenshot-1.png",
+    checksum_sha256: "checksum",
+  },
+  asset_type: "screenshot",
+  width: 1440,
+  height: 900,
+  device_pixel_ratio: 1,
+  page_url: "https://example.internal/app/department",
+  page_title: "Department",
+  captured_at: "2026-06-05T00:00:00.000Z",
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-06-05T00:00:00.000Z",
+  updated_at: "2026-06-05T00:00:00.000Z",
+};
+
+const build_test_app = async (
+  overrides: {
+    auth_service?: Partial<Parameters<typeof build_capture_asset_routes>[0]["auth_service"]>;
+    capture_asset_service?: Partial<Parameters<typeof build_capture_asset_routes>[0]["capture_asset_service"]>;
+  } = {}
+) => {
+  const app = fastify();
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+  await app.register(cookie);
+  await app.register(build_capture_asset_routes({
+    auth_service: {
+      get_current_auth_context: async () => auth_context,
+      ...overrides.auth_service,
+    },
+    capture_asset_service: {
+      create_capture_asset: async () => capture_asset,
+      list_capture_assets: async () => [capture_asset],
+      get_capture_asset: async () => capture_asset,
+      delete_capture_asset: async () => undefined,
+      ...overrides.capture_asset_service,
+    },
+  }), { prefix: "/api/v1/projects" });
+  return app;
+};
+
+describe("capture asset routes", () => {
+  it("rejects requests without a valid auth session", async () => {
+    const app = await build_test_app({
+      auth_service: {
+        get_current_auth_context: async () => {
+          throw new UnauthenticatedSessionError();
+        },
+      },
+    });
+
+    for (const request of [
+      {
+        method: "POST",
+        url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets",
+        payload: {
+          asset_type: "screenshot",
+          file: {
+            storage_key: "capture.png",
+            mime_type: "image/png",
+            size_bytes: 1,
+          },
+        },
+      },
+      { method: "GET", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets" },
+      { method: "GET", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1" },
+      { method: "DELETE", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1" },
+    ] as const) {
+      const response = await app.inject(request);
+      expect(response.statusCode).toBe(401);
+      expect(response.json()).toEqual({
+        error: {
+          type: "unauthenticated",
+          message: "Authentication is required",
+        },
+      });
+    }
+
+    await app.close();
+  });
+
+  it("creates screenshot asset metadata with auth context and URL scope", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      auth_service: {
+        get_current_auth_context: async (session_token) => {
+          expect(session_token).toBe("session-token");
+          return auth_context;
+        },
+      },
+      capture_asset_service: {
+        create_capture_asset: async (input) => {
+          seen_inputs.push(input);
+          return capture_asset;
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+      payload: {
+        asset_type: "screenshot",
+        width: 1440,
+        height: 900,
+        device_pixel_ratio: 1,
+        page_url: "https://example.internal/app/department",
+        page_title: "Department",
+        organization_id: "attacker_org",
+        project_id: "attacker_project",
+        capture_session_id: "attacker_session",
+        created_by_id: "attacker_org_user",
+        metadata: {
+          capture_mode: "manual",
+        },
+        file: {
+          storage_provider: "local",
+          storage_key: "captures/org/project/session/screenshot-1.png",
+          mime_type: "image/png",
+          size_bytes: 123456,
+          original_name: "screenshot-1.png",
+          checksum_sha256: "checksum",
+          metadata: {
+            absolute_path: "/tmp/secret.png",
+          },
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      data: {
+        asset_type: "screenshot",
+        width: 1440,
+        height: 900,
+        device_pixel_ratio: 1,
+        page_url: "https://example.internal/app/department",
+        page_title: "Department",
+        metadata: {
+          capture_mode: "manual",
+        },
+        file: {
+          storage_provider: "local",
+          storage_key: "captures/org/project/session/screenshot-1.png",
+          mime_type: "image/png",
+          size_bytes: 123456,
+          original_name: "screenshot-1.png",
+          checksum_sha256: "checksum",
+          metadata: {
+            absolute_path: "/tmp/secret.png",
+          },
+        },
+      },
+    }]);
+    expect(response.json()).toEqual({ capture_asset });
+    expect(JSON.stringify(response.json())).not.toContain("storage_key");
+    expect(JSON.stringify(response.json())).not.toContain("metadata");
+    expect(JSON.stringify(response.json())).not.toContain("is_deleted");
+    expect(JSON.stringify(response.json())).not.toContain("deleted_at");
+    expect(JSON.stringify(response.json())).not.toContain("deleted_by_id");
+
+    await app.close();
+  });
+
+  it("lists gets and deletes capture assets through the service", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      capture_asset_service: {
+        list_capture_assets: async (input) => {
+          seen_inputs.push(input);
+          return [capture_asset];
+        },
+        get_capture_asset: async (input) => {
+          seen_inputs.push(input);
+          return capture_asset;
+        },
+        delete_capture_asset: async (input) => {
+          seen_inputs.push(input);
+        },
+      },
+    });
+
+    const list_response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets?asset_type=screenshot",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+    });
+    const get_response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+    });
+    const delete_response = await app.inject({
+      method: "DELETE",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+    });
+
+    expect(list_response.statusCode).toBe(200);
+    expect(list_response.json()).toEqual({ capture_assets: [capture_asset] });
+    expect(get_response.statusCode).toBe(200);
+    expect(get_response.json()).toEqual({ capture_asset });
+    expect(delete_response.statusCode).toBe(204);
+    expect(delete_response.body).toBe("");
+    expect(seen_inputs).toEqual([
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        capture_session_id: "capture_session_1",
+        asset_type: "screenshot",
+      },
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        capture_session_id: "capture_session_1",
+        capture_asset_id: "capture_asset_1",
+      },
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        capture_session_id: "capture_session_1",
+        capture_asset_id: "capture_asset_1",
+      },
+    ]);
+
+    await app.close();
+  });
+
+  it("maps capture asset domain errors to stable responses", async () => {
+    const cases = [
+      {
+        error: new CaptureSessionNotFoundError(),
+        status: 404,
+        type: "capture_session_not_found",
+      },
+      {
+        error: new CaptureAssetNotFoundError(),
+        status: 404,
+        type: "capture_asset_not_found",
+      },
+      {
+        error: new UnsupportedCaptureAssetTypeError(),
+        status: 400,
+        type: "unsupported_capture_asset_type",
+      },
+      {
+        error: new InvalidCaptureAssetInputError(),
+        status: 400,
+        type: "invalid_capture_asset",
+      },
+      {
+        error: new FileStorageKeyConflictError(),
+        status: 409,
+        type: "file_storage_key_conflict",
+      },
+    ];
+
+    for (const test_case of cases) {
+      const app = await build_test_app({
+        capture_asset_service: {
+          create_capture_asset: async () => {
+            throw test_case.error;
+          },
+        },
+      });
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets",
+        cookies: {
+          demo_composer_session: "session-token",
+        },
+        payload: {
+          asset_type: "screenshot",
+          file: {
+            storage_key: "capture.png",
+            mime_type: "image/png",
+            size_bytes: 1,
+          },
+        },
+      });
+
+      expect(response.statusCode).toBe(test_case.status);
+      expect(response.json().error.type).toBe(test_case.type);
+      await app.close();
+    }
+  });
+
+  it("rejects invalid route payloads before the service", async () => {
+    const app = await build_test_app();
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+      payload: {
+        asset_type: "screenshot",
+        width: 0,
+        file: {
+          storage_key: "",
+          mime_type: "image/png",
+          size_bytes: -1,
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    await app.close();
+  });
+});

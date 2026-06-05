@@ -45,6 +45,12 @@ import {
 } from './modules/capture-session/capture-session.routes.js';
 import { build_capture_session_repository } from './modules/capture-session/capture-session.repository.js';
 import { build_capture_session_service } from './modules/capture-session/capture-session.service.js';
+import {
+  build_capture_asset_routes,
+  type CaptureAssetRouteDependencies,
+} from './modules/capture-asset/capture-asset.routes.js';
+import { build_capture_asset_repository } from './modules/capture-asset/capture-asset.repository.js';
+import { build_capture_asset_service } from './modules/capture-asset/capture-asset.service.js';
 import { index_root_routes } from './root_router/index.root_router.js';
 
 type BuildOptions = FastifyServerOptions & {
@@ -53,6 +59,7 @@ type BuildOptions = FastifyServerOptions & {
   authentication_session_service?: AuthenticationSessionRouteService;
   project_service?: ProjectRouteDependencies["project_service"];
   capture_session_service?: CaptureSessionRouteDependencies["capture_session_service"];
+  capture_asset_service?: CaptureAssetRouteDependencies["capture_asset_service"];
 };
 
 export const build = (opts: BuildOptions = {}) => {
@@ -62,6 +69,7 @@ export const build = (opts: BuildOptions = {}) => {
       authentication_session_service,
       project_service,
       capture_session_service,
+      capture_asset_service,
       ...fastify_options
   } = opts;
   const app = fastify(fastify_options);
@@ -274,6 +282,17 @@ export const build = (opts: BuildOptions = {}) => {
       },
       capture_session_service: capture_session_service ?? build_capture_session_service(
           build_capture_session_repository(pool)
+      ),
+  }), {
+      prefix: "/api/v1/projects",
+  });
+
+  app.register(build_capture_asset_routes({
+      auth_service: {
+          get_current_auth_context: default_authentication_session_service.get_current_auth_context,
+      },
+      capture_asset_service: capture_asset_service ?? build_capture_asset_service(
+          build_capture_asset_repository(pool)
       ),
   }), {
       prefix: "/api/v1/projects",
