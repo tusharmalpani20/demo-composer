@@ -221,6 +221,26 @@ describe("DB-backed capture event API", () => {
         note: "Duplicate index",
       },
     });
+    const missing_project_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/missing_project/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "note",
+        event_index: 3,
+        note: "Missing project",
+      },
+    });
+    const missing_capture_session_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/missing_capture_session/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "note",
+        event_index: 3,
+        note: "Missing capture session",
+      },
+    });
     const invalid_asset_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
@@ -231,6 +251,26 @@ describe("DB-backed capture event API", () => {
         capture_asset_id: "missing_asset",
       },
     });
+    await pool.query(`
+      UPDATE capture_schema.capture_asset
+      SET is_deleted = TRUE
+      WHERE id = $1
+    `, [capture_asset_id]);
+    const deleted_asset_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "capture",
+        event_index: 3,
+        capture_asset_id,
+      },
+    });
+    await pool.query(`
+      UPDATE capture_schema.capture_asset
+      SET is_deleted = FALSE
+      WHERE id = $1
+    `, [capture_asset_id]);
     const raw_value_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
@@ -267,8 +307,14 @@ describe("DB-backed capture event API", () => {
     expect(get_response.json().capture_event.id).toBe(capture_event_id);
     expect(duplicate_response.statusCode).toBe(409);
     expect(duplicate_response.json().error.type).toBe("capture_event_index_conflict");
+    expect(missing_project_response.statusCode).toBe(404);
+    expect(missing_project_response.json().error.type).toBe("project_not_found");
+    expect(missing_capture_session_response.statusCode).toBe(404);
+    expect(missing_capture_session_response.json().error.type).toBe("capture_session_not_found");
     expect(invalid_asset_response.statusCode).toBe(404);
     expect(invalid_asset_response.json().error.type).toBe("capture_asset_not_found");
+    expect(deleted_asset_response.statusCode).toBe(404);
+    expect(deleted_asset_response.json().error.type).toBe("capture_asset_not_found");
     expect(raw_value_response.statusCode).toBe(400);
     expect(raw_value_response.json().error.type).toBe("invalid_capture_event");
     expect(unredacted_response.statusCode).toBe(400);
