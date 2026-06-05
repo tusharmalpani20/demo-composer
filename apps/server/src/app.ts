@@ -51,6 +51,12 @@ import {
 } from './modules/capture-asset/capture-asset.routes.js';
 import { build_capture_asset_repository } from './modules/capture-asset/capture-asset.repository.js';
 import { build_capture_asset_service } from './modules/capture-asset/capture-asset.service.js';
+import {
+  build_capture_event_routes,
+  type CaptureEventRouteDependencies,
+} from './modules/capture-event/capture-event.routes.js';
+import { build_capture_event_repository } from './modules/capture-event/capture-event.repository.js';
+import { build_capture_event_service } from './modules/capture-event/capture-event.service.js';
 import { index_root_routes } from './root_router/index.root_router.js';
 
 type BuildOptions = FastifyServerOptions & {
@@ -60,6 +66,7 @@ type BuildOptions = FastifyServerOptions & {
   project_service?: ProjectRouteDependencies["project_service"];
   capture_session_service?: CaptureSessionRouteDependencies["capture_session_service"];
   capture_asset_service?: CaptureAssetRouteDependencies["capture_asset_service"];
+  capture_event_service?: CaptureEventRouteDependencies["capture_event_service"];
 };
 
 export const build = (opts: BuildOptions = {}) => {
@@ -70,6 +77,7 @@ export const build = (opts: BuildOptions = {}) => {
       project_service,
       capture_session_service,
       capture_asset_service,
+      capture_event_service,
       ...fastify_options
   } = opts;
   const app = fastify(fastify_options);
@@ -293,6 +301,17 @@ export const build = (opts: BuildOptions = {}) => {
       },
       capture_asset_service: capture_asset_service ?? build_capture_asset_service(
           build_capture_asset_repository(pool)
+      ),
+  }), {
+      prefix: "/api/v1/projects",
+  });
+
+  app.register(build_capture_event_routes({
+      auth_service: {
+          get_current_auth_context: default_authentication_session_service.get_current_auth_context,
+      },
+      capture_event_service: capture_event_service ?? build_capture_event_service(
+          build_capture_event_repository(pool)
       ),
   }), {
       prefix: "/api/v1/projects",

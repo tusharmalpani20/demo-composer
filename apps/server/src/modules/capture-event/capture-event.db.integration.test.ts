@@ -1,0 +1,322 @@
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { build } from "../../app";
+import { pool } from "../../config/database.config";
+
+const reset_foundation_tables = async () => {
+  await pool.query(`
+    TRUNCATE TABLE
+      auth_schema.auth_session,
+      capture_schema.capture_event,
+      capture_schema.capture_asset,
+      file_schema.file,
+      capture_schema.capture_session,
+      project_schema.project,
+      organization_schema.org_user,
+      organization_schema.organization,
+      user_schema.user
+    RESTART IDENTITY CASCADE
+  `);
+};
+
+const setup_owner = async () => {
+  const app = build({ logger: false });
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/v1/setup/first-run",
+    payload: {
+      owner: {
+        email: "owner@example.com",
+        password: "safe local password",
+        first_name: "Owner",
+        last_name: "User",
+      },
+      organization: {
+        name: "Acme",
+      },
+    },
+  });
+
+  await app.close();
+  expect(response.statusCode).toBe(201);
+  const session_cookie = response.cookies.find((cookie) => cookie.name === "demo_composer_session");
+  expect(session_cookie?.value).toEqual(expect.any(String));
+  return session_cookie?.value ?? "";
+};
+
+const get_owner_context = async () => {
+  const owner_context = await pool.query<{
+    organization_id: string;
+    org_user_id: string;
+  }>(`
+    SELECT org_user.organization_id, org_user.id AS org_user_id
+    FROM organization_schema.org_user org_user
+    INNER JOIN user_schema.user app_user ON app_user.id = org_user.user_id
+    WHERE app_user.email = 'owner@example.com'
+  `);
+
+  const row = owner_context.rows[0];
+  expect(row).toBeDefined();
+  return row;
+};
+
+const create_project = async (session_token: string) => {
+  const app = build({ logger: false });
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/v1/projects",
+    cookies: { demo_composer_session: session_token },
+    payload: { name: "Onboarding Demo" },
+  });
+
+  await app.close();
+  expect(response.statusCode).toBe(201);
+  return response.json().project.id as string;
+};
+
+const create_capture_session = async (session_token: string, project_id: string) => {
+  const app = build({ logger: false });
+  const response = await app.inject({
+    method: "POST",
+    url: `/api/v1/projects/${project_id}/capture-sessions`,
+    cookies: { demo_composer_session: session_token },
+    payload: {
+      name: "Create department workflow",
+      source_type: "extension",
+    },
+  });
+
+  await app.close();
+  expect(response.statusCode).toBe(201);
+  return response.json().capture_session.id as string;
+};
+
+const create_capture_asset = async (
+  session_token: string,
+  project_id: string,
+  capture_session_id: string
+) => {
+  const app = build({ logger: false });
+  const response = await app.inject({
+    method: "POST",
+    url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets`,
+    cookies: { demo_composer_session: session_token },
+    payload: {
+      asset_type: "screenshot",
+      width: 1440,
+      height: 900,
+      device_pixel_ratio: 1,
+      file: {
+        storage_key: "captures/acme/project/session/screenshot-1.png",
+        mime_type: "image/png",
+        size_bytes: 123456,
+      },
+    },
+  });
+
+  await app.close();
+  expect(response.statusCode).toBe(201);
+  return {
+    capture_asset_id: response.json().capture_asset.id as string,
+    file_id: response.json().capture_asset.file.id as string,
+  };
+};
+
+describe("DB-backed capture event API", () => {
+  beforeEach(async () => {
+    await reset_foundation_tables();
+  });
+
+  afterAll(async () => {
+    await pool.end();
+  });
+
+  it("creates lists gets and soft deletes capture events without deleting linked assets", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const capture_session_id = await create_capture_session(session_token, project_id);
+    const { capture_asset_id, file_id } = await create_capture_asset(
+      session_token,
+      project_id,
+      capture_session_id
+    );
+    const owner_context = await get_owner_context();
+    const app = build({ logger: false });
+
+    const click_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "click",
+        event_index: 2,
+        capture_asset_id,
+        occurred_at: "2026-06-05T10:00:00.000Z",
+        page_url: "https://example.internal/app/department",
+        page_title: "Department",
+        target_label: "Add Department",
+        client_x: 1200,
+        client_y: 84,
+        viewport_width: 1440,
+        viewport_height: 900,
+        device_pixel_ratio: 1,
+        metadata: { source: "manual" },
+      },
+    });
+    const note_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "note",
+        event_index: 1,
+        note: "Start from department list",
+      },
+    });
+
+    expect(click_response.statusCode).toBe(201);
+    expect(click_response.json().capture_event).toMatchObject({
+      organization_id: owner_context?.organization_id,
+      project_id,
+      capture_session_id,
+      capture_asset_id,
+      event_type: "click",
+      event_index: 2,
+      occurred_at: "2026-06-05T10:00:00.000Z",
+      target_label: "Add Department",
+      input_value_redacted: true,
+      created_by_id: owner_context?.org_user_id,
+      updated_by_id: owner_context?.org_user_id,
+      version: 1,
+    });
+    expect(JSON.stringify(click_response.json())).not.toContain("metadata");
+    expect(JSON.stringify(click_response.json())).not.toContain("is_deleted");
+    expect(JSON.stringify(click_response.json())).not.toContain("deleted_at");
+    expect(JSON.stringify(click_response.json())).not.toContain("deleted_by_id");
+    expect(note_response.statusCode).toBe(201);
+
+    const capture_event_id = click_response.json().capture_event.id as string;
+
+    const list_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+    });
+    const click_list_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events?event_type=click`,
+      cookies: { demo_composer_session: session_token },
+    });
+    const get_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
+    const duplicate_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "note",
+        event_index: 1,
+        note: "Duplicate index",
+      },
+    });
+    const invalid_asset_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "capture",
+        event_index: 3,
+        capture_asset_id: "missing_asset",
+      },
+    });
+    const raw_value_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "input",
+        event_index: 3,
+        target_label: "Password",
+        input_value: "secret",
+      },
+    });
+    const unredacted_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "input",
+        event_index: 3,
+        target_label: "Department Name",
+        input_value_redacted: false,
+      },
+    });
+    const delete_response = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
+
+    expect(list_response.statusCode).toBe(200);
+    expect(list_response.json().capture_events.map((event: { event_index: number }) => event.event_index)).toEqual([1, 2]);
+    expect(click_list_response.statusCode).toBe(200);
+    expect(click_list_response.json().capture_events).toHaveLength(1);
+    expect(get_response.statusCode).toBe(200);
+    expect(get_response.json().capture_event.id).toBe(capture_event_id);
+    expect(duplicate_response.statusCode).toBe(409);
+    expect(duplicate_response.json().error.type).toBe("capture_event_index_conflict");
+    expect(invalid_asset_response.statusCode).toBe(404);
+    expect(invalid_asset_response.json().error.type).toBe("capture_asset_not_found");
+    expect(raw_value_response.statusCode).toBe(400);
+    expect(raw_value_response.json().error.type).toBe("invalid_capture_event");
+    expect(unredacted_response.statusCode).toBe(400);
+    expect(unredacted_response.json().error.type).toBe("invalid_capture_event");
+    expect(delete_response.statusCode).toBe(204);
+    expect(delete_response.body).toBe("");
+
+    const persisted_after_delete = await pool.query<{
+      event_deleted: boolean;
+      asset_deleted: boolean;
+      file_deleted: boolean;
+      event_deleted_by_id: string | null;
+      event_version: number;
+      event_metadata: unknown;
+    }>(`
+      SELECT
+        capture_event.is_deleted AS event_deleted,
+        capture_asset.is_deleted AS asset_deleted,
+        app_file.is_deleted AS file_deleted,
+        capture_event.deleted_by_id AS event_deleted_by_id,
+        capture_event.version AS event_version,
+        capture_event.metadata AS event_metadata
+      FROM capture_schema.capture_event capture_event
+      INNER JOIN capture_schema.capture_asset capture_asset ON capture_asset.id = capture_event.capture_asset_id
+      INNER JOIN file_schema.file app_file ON app_file.id = capture_asset.file_id
+      WHERE capture_event.id = $1
+      AND capture_asset.id = $2
+      AND app_file.id = $3
+    `, [capture_event_id, capture_asset_id, file_id]);
+
+    expect(persisted_after_delete.rows[0]).toMatchObject({
+      event_deleted: true,
+      asset_deleted: false,
+      file_deleted: false,
+      event_deleted_by_id: owner_context?.org_user_id,
+      event_version: 2,
+      event_metadata: { source: "manual" },
+    });
+
+    const hidden_get_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
+
+    expect(hidden_get_response.statusCode).toBe(404);
+    expect(hidden_get_response.json().error.type).toBe("capture_event_not_found");
+
+    await app.close();
+  });
+});
