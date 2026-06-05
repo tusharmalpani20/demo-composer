@@ -184,6 +184,16 @@ const has_lifecycle_timestamp_input = (body: UpdateCaptureSessionInput) => (
   || body.canceled_at !== undefined
 );
 
+const is_valid_completion_body = (body: unknown) => (
+  body === undefined
+  || (
+    body !== null
+    && typeof body === "object"
+    && !Array.isArray(body)
+    && Object.keys(body).length === 0
+  )
+);
+
 export const build_capture_session_routes = (
   dependencies: CaptureSessionRouteDependencies
 ): FastifyPluginAsync => {
@@ -303,11 +313,7 @@ export const build_capture_session_routes = (
       Body?: Record<string, unknown>;
     }>("/:project_id/capture-sessions/:id/complete", async (request, reply) => {
       try {
-        if (
-          request.body
-          && typeof request.body === "object"
-          && Object.keys(request.body).length > 0
-        ) {
+        if (!is_valid_completion_body(request.body)) {
           throw new InvalidCaptureSessionCompletionError();
         }
 

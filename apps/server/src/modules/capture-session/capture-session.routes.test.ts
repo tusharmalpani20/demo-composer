@@ -225,10 +225,36 @@ describe("capture session routes", () => {
         completed_at: "2026-06-05T00:00:00.000Z",
       },
     });
+    const null_body_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
+      headers: {
+        "content-type": "application/json",
+      },
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+      payload: "null",
+    });
+    const array_body_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
+      headers: {
+        "content-type": "application/json",
+      },
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+      payload: "[]",
+    });
 
     expect(empty_body_response.statusCode).toBe(200);
     expect(non_empty_body_response.statusCode).toBe(400);
     expect(non_empty_body_response.json().error.type).toBe("invalid_capture_session_completion");
+    expect(null_body_response.statusCode).toBe(400);
+    expect(null_body_response.json().error.type).toBe("invalid_capture_session_completion");
+    expect(array_body_response.statusCode).toBe(400);
+    expect(array_body_response.json().error.type).toBe("invalid_capture_session_completion");
     expect(seen_inputs).toHaveLength(1);
 
     await app.close();
