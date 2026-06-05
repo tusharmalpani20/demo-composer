@@ -12,8 +12,13 @@ This app currently supports:
 - checking current auth
 - listing accessible projects
 - selecting the project that future captures should use
+- starting a capture session for the selected project
+- storing the active capture session id locally
+- restoring active capture state when the popup is reopened
+- discarding local active capture state if needed
 
 It does not capture screenshots, DOM, clicks, inputs, navigation, or upload data yet.
+Discarding local active capture state does not cancel or complete the backend capture session.
 
 ## Development
 
@@ -65,4 +70,30 @@ The server keeps normal portal cookie behavior unchanged and additionally return
 Authorization: Bearer <session_token>
 ```
 
-The password is never stored. Changing the instance clears the stored token and selected project.
+The password is never stored. Changing the instance clears the stored token, selected project, and active capture state.
+
+## Capture Session Start
+
+Starting capture calls:
+
+```text
+POST {instance_url}/api/v1/projects/:project_id/capture-sessions
+```
+
+with:
+
+```text
+Authorization: Bearer <session_token>
+x-demo-composer-client: extension
+```
+
+The extension sends `source_type: "extension"` and safe current-tab metadata when available. Current-tab metadata is limited to the active tab URL/title and only stores `http://` or `https://` URLs. The extension does not inject scripts or inspect page DOM for this slice.
+
+## Permissions
+
+The extension currently requests:
+
+- `storage` for instance, session, selected project, and active capture state
+- `tabs` for active tab URL/title metadata
+
+It does not request host permissions, `activeTab`, `scripting`, content scripts, or capture permissions yet.

@@ -128,6 +128,30 @@ button:disabled {
   gap: 8px;
 }
 
+.captureState {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d9e0e7;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.captureProject {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.captureSession {
+  color: #637083;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
 .project {
   display: grid;
   gap: 4px;

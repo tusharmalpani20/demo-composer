@@ -1,20 +1,26 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ApiClientError,
+  createCaptureSession,
   getCurrentAuth,
   listProjects,
   login,
   logout,
   type AuthResponse,
+  type CaptureSessionResponse,
+  type CreateCaptureSessionInput,
   type LoginResponse,
   type Project,
   type ProjectListResponse,
 } from "./lib/api";
+import { getCurrentTabSnapshot, type CurrentTabSnapshot } from "./lib/current-tab";
 import {
   chromeLocalStorage,
+  clearActiveCapture,
   clearSettings,
   emptySettings,
   getSettings,
+  saveActiveCapture,
   saveInstanceUrl,
   saveSelectedProjectId,
   saveSessionToken,
@@ -29,10 +35,19 @@ type Dependencies = {
   saveInstanceUrl: (instanceUrl: string) => Promise<void>;
   saveSessionToken: (sessionToken: string | null) => Promise<void>;
   saveSelectedProjectId: (projectId: string | null) => Promise<void>;
+  saveActiveCapture: (input: { captureSessionId: string; projectId: string }) => Promise<void>;
+  clearActiveCapture: () => Promise<void>;
   clearSettings: () => Promise<void>;
   getCurrentAuth: (instanceUrl: string, sessionToken: string) => Promise<AuthResponse>;
   login: (instanceUrl: string, data: { email: string; password: string }) => Promise<LoginResponse>;
   listProjects: (instanceUrl: string, sessionToken: string) => Promise<ProjectListResponse>;
+  createCaptureSession: (
+    instanceUrl: string,
+    sessionToken: string,
+    projectId: string,
+    data: CreateCaptureSessionInput
+  ) => Promise<CaptureSessionResponse>;
+  getCurrentTabSnapshot: () => Promise<CurrentTabSnapshot>;
   logout: (instanceUrl: string, sessionToken: string) => Promise<void>;
 };
 
@@ -60,10 +75,14 @@ const buildDefaultDependencies = (): Dependencies => {
     saveInstanceUrl: (instanceUrl) => saveInstanceUrl(storage, instanceUrl),
     saveSessionToken: (sessionToken) => saveSessionToken(storage, sessionToken),
     saveSelectedProjectId: (projectId) => saveSelectedProjectId(storage, projectId),
+    saveActiveCapture: (input) => saveActiveCapture(storage, input),
+    clearActiveCapture: () => clearActiveCapture(storage),
     clearSettings: () => clearSettings(storage),
     getCurrentAuth,
     login,
     listProjects,
+    createCaptureSession,
+    getCurrentTabSnapshot,
     logout,
   };
 };
@@ -139,6 +158,8 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
               settings: {
                 ...settings,
                 sessionToken: null,
+                activeCaptureSessionId: null,
+                activeCaptureProjectId: null,
               },
             });
           }
@@ -211,6 +232,8 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
                 instanceUrl: state.settings.instanceUrl ?? "",
                 sessionToken: result.session_token,
                 selectedProjectId: null,
+                activeCaptureSessionId: null,
+                activeCaptureProjectId: null,
               },
               auth: result.auth,
               projects: projectResponse.projects,
@@ -251,6 +274,8 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
         auth={state.auth}
         projects={state.projects}
         selectedProjectId={state.settings.selectedProjectId}
+        activeCaptureSessionId={state.settings.activeCaptureSessionId}
+        activeCaptureProjectId={state.settings.activeCaptureProjectId}
         onSelect={async (projectId) => {
           await dependencies.saveSelectedProjectId(projectId);
           setState({
@@ -261,18 +286,105 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
             },
           });
         }}
+        onStartCapture={async (projectId) => {
+          const tab = await dependencies.getCurrentTabSnapshot();
+          const result = await dependencies.createCaptureSession(
+            state.settings.instanceUrl,
+            state.settings.sessionToken,
+            projectId,
+            buildCaptureSessionInput({
+              project: state.projects.find((project) => project.id === projectId) ?? null,
+              tab,
+            })
+          );
+
+          await dependencies.saveActiveCapture({
+            captureSessionId: result.capture_session.id,
+            projectId,
+          });
+          setState({
+            ...state,
+            settings: {
+              ...state.settings,
+              activeCaptureSessionId: result.capture_session.id,
+              activeCaptureProjectId: projectId,
+            },
+          });
+        }}
+        onDiscardActiveCapture={async () => {
+          await dependencies.clearActiveCapture();
+          setState({
+            ...state,
+            settings: {
+              ...state.settings,
+              activeCaptureSessionId: null,
+              activeCaptureProjectId: null,
+            },
+          });
+        }}
         onChangeInstance={async () => {
           await dependencies.clearSettings();
           reload();
         }}
         onSignOut={async () => {
-          await dependencies.logout(state.settings.instanceUrl, state.settings.sessionToken);
+          try {
+            await dependencies.logout(state.settings.instanceUrl, state.settings.sessionToken);
+          } catch {
+            // Local sign-out must still work when the instance is unreachable.
+          }
+
           await dependencies.saveSessionToken(null);
           reload();
         }}
       />
     </Shell>
   );
+};
+
+const buildCaptureName = (input: {
+  project: Project | null;
+  tab: CurrentTabSnapshot;
+}) => {
+  const tabTitle = input.tab.title?.trim();
+
+  if (tabTitle) {
+    return `Capture from ${tabTitle}`;
+  }
+
+  const projectName = input.project?.name.trim();
+
+  if (projectName) {
+    return `Capture from ${projectName}`;
+  }
+
+  return "Extension capture";
+};
+
+const browserNameFromUserAgent = (userAgent: string | null) => {
+  if (!userAgent) {
+    return null;
+  }
+
+  return userAgent.includes("Chrome") ? "Chrome" : null;
+};
+
+const buildCaptureSessionInput = (input: {
+  project: Project | null;
+  tab: CurrentTabSnapshot;
+}): CreateCaptureSessionInput => {
+  const userAgent = typeof navigator === "undefined" ? null : navigator.userAgent;
+
+  return {
+    name: buildCaptureName(input),
+    source_type: "extension",
+    start_url: input.tab.url,
+    browser_name: browserNameFromUserAgent(userAgent),
+    user_agent: userAgent,
+    metadata: {
+      extension_version: "0.1.0",
+      tab_title: input.tab.title,
+    },
+  };
 };
 
 const Shell = ({ children }: { children: React.ReactNode }) => (
@@ -407,49 +519,116 @@ const ProjectPicker = ({
   auth,
   projects,
   selectedProjectId,
+  activeCaptureSessionId,
+  activeCaptureProjectId,
   onSelect,
+  onStartCapture,
+  onDiscardActiveCapture,
   onChangeInstance,
   onSignOut,
 }: {
   auth: AuthResponse["auth"];
   projects: Project[];
   selectedProjectId: string | null;
+  activeCaptureSessionId: string | null;
+  activeCaptureProjectId: string | null;
   onSelect: (projectId: string) => Promise<void>;
+  onStartCapture: (projectId: string) => Promise<void>;
+  onDiscardActiveCapture: () => Promise<void>;
   onChangeInstance: () => Promise<void>;
   onSignOut: () => Promise<void>;
-}) => (
-  <section className="panel" aria-labelledby="project-heading">
-    <div className="toolbar">
-      <div>
-        <h1 id="project-heading">Select project</h1>
-        <p className="identity">{auth.user.email}</p>
-        <p className="instance">{auth.organization.name}</p>
-      </div>
-      <div className="toolbarActions">
-        <button type="button" className="secondary" onClick={() => void onChangeInstance()}>
-          Change instance
-        </button>
-        <button type="button" className="secondary" onClick={() => void onSignOut()}>
-          Sign out
-        </button>
-      </div>
-    </div>
-    {projects.length === 0 ? (
-      <div className="state">No projects yet.</div>
-    ) : (
-      <div className="projects">
-        {projects.map((project) => (
-          <button
-            type="button"
-            className={project.id === selectedProjectId ? "project selected" : "project"}
-            key={project.id}
-            onClick={() => void onSelect(project.id)}
-          >
-            <span>Use <strong>{project.name}</strong></span>
-            <small>{project.status}</small>
+}) => {
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const selectedProject = selectedProjectId
+    ? projects.find((project) => project.id === selectedProjectId) ?? null
+    : null;
+  const activeProject = activeCaptureProjectId
+    ? projects.find((project) => project.id === activeCaptureProjectId) ?? null
+    : null;
+  const hasActiveCapture = Boolean(activeCaptureSessionId && activeCaptureProjectId);
+
+  const heading = hasActiveCapture
+    ? "Capture active"
+    : selectedProject
+      ? "Ready to capture"
+      : "Select project";
+
+  const handleStartCapture = async () => {
+    if (!selectedProject || starting) {
+      return;
+    }
+
+    setStarting(true);
+    setStartError(null);
+
+    try {
+      await onStartCapture(selectedProject.id);
+      setStarting(false);
+    } catch (error: unknown) {
+      setStartError(errorMessage(error, "Could not start capture."));
+      setStarting(false);
+    }
+  };
+
+  return (
+    <section className="panel" aria-labelledby="project-heading">
+      <div className="toolbar">
+        <div>
+          <h1 id="project-heading">{heading}</h1>
+          <p className="identity">{auth.user.email}</p>
+          <p className="instance">{auth.organization.name}</p>
+        </div>
+        <div className="toolbarActions">
+          <button type="button" className="secondary" disabled={starting} onClick={() => void onChangeInstance()}>
+            Change instance
           </button>
-        ))}
+          <button type="button" className="secondary" disabled={starting} onClick={() => void onSignOut()}>
+            Sign out
+          </button>
+        </div>
       </div>
-    )}
-  </section>
-);
+
+      {hasActiveCapture ? (
+        <div className="captureState">
+          <p className="captureProject">{activeProject?.name ?? "Project unavailable"}</p>
+          <p className="captureSession">Session {activeCaptureSessionId}</p>
+          <button type="button" className="secondary" onClick={() => void onDiscardActiveCapture()}>
+            Discard local capture state
+          </button>
+        </div>
+      ) : null}
+
+      {!hasActiveCapture && selectedProject ? (
+        <div className="captureState">
+          <p className="captureProject">{selectedProject.name}</p>
+          {startError ? <div className="error">{startError}</div> : null}
+          <button type="button" disabled={starting} onClick={() => void handleStartCapture()}>
+            {starting ? "Starting..." : "Start capture"}
+          </button>
+        </div>
+      ) : null}
+
+      {!hasActiveCapture && projects.length === 0 ? (
+        <div className="state">No projects yet.</div>
+      ) : null}
+
+      {!hasActiveCapture && projects.length > 0 ? (
+        <div className="projects">
+          {projects.map((project) => (
+            <button
+              type="button"
+              className={project.id === selectedProjectId ? "project selected" : "project"}
+              disabled={starting}
+              key={project.id}
+              onClick={() => void onSelect(project.id)}
+            >
+              <span>Use <strong>{project.name}</strong></span>
+              <small>{project.status}</small>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+};

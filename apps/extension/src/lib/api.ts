@@ -45,6 +45,32 @@ export type ProjectListResponse = {
   projects: Project[];
 };
 
+export type CaptureSession = {
+  id: string;
+  project_id: string;
+  source_type: "manual" | "extension" | "import";
+  status: "draft" | "capturing" | "completed" | "canceled" | "archived";
+};
+
+export type CreateCaptureSessionInput = {
+  name: string;
+  description?: string | null;
+  source_type: "extension";
+  start_url?: string | null;
+  browser_name?: string | null;
+  browser_version?: string | null;
+  operating_system?: string | null;
+  viewport_width?: number | null;
+  viewport_height?: number | null;
+  device_pixel_ratio?: number | null;
+  user_agent?: string | null;
+  metadata?: Record<string, unknown>;
+};
+
+export type CaptureSessionResponse = {
+  capture_session: CaptureSession;
+};
+
 type ApiErrorBody = {
   error?: {
     type?: string;
@@ -155,4 +181,28 @@ export const logout = async (
     method: "POST",
     headers: authHeaders(sessionToken),
   })
+);
+
+export const createCaptureSession = async (
+  instanceUrl: string,
+  sessionToken: string,
+  projectId: string,
+  data: CreateCaptureSessionInput
+): Promise<CaptureSessionResponse> => (
+  requestJson<CaptureSessionResponse>(
+    instanceUrl,
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions`,
+    {
+      method: "POST",
+      headers: {
+        ...authHeaders(sessionToken),
+        "content-type": "application/json",
+        "x-demo-composer-client": "extension",
+      },
+      body: JSON.stringify({
+        ...data,
+        source_type: "extension",
+      }),
+    }
+  )
 );

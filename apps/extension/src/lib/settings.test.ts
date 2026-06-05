@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   clearSettings,
   getSettings,
+  saveActiveCapture,
   saveInstanceUrl,
   saveSelectedProjectId,
   saveSessionToken,
+  clearActiveCapture,
   type ExtensionStorageArea,
 } from "./settings";
 
@@ -43,12 +45,18 @@ describe("extension settings", () => {
       instanceUrl: null,
       sessionToken: null,
       selectedProjectId: null,
+      activeCaptureSessionId: null,
+      activeCaptureProjectId: null,
     });
   });
 
   it("saves instance URL and clears session/project state", async () => {
     await saveSessionToken(storage, "token_1");
     await saveSelectedProjectId(storage, "project_1");
+    await saveActiveCapture(storage, {
+      captureSessionId: "capture_session_1",
+      projectId: "project_1",
+    });
 
     await saveInstanceUrl(storage, "https://demo.example.com");
 
@@ -56,18 +64,66 @@ describe("extension settings", () => {
       instanceUrl: "https://demo.example.com",
       sessionToken: null,
       selectedProjectId: null,
+      activeCaptureSessionId: null,
+      activeCaptureProjectId: null,
     });
   });
 
-  it("saves and clears session/project settings", async () => {
+  it("clears active capture when the session token is cleared", async () => {
     await saveInstanceUrl(storage, "https://demo.example.com");
     await saveSessionToken(storage, "session-token");
     await saveSelectedProjectId(storage, "project_1");
+    await saveActiveCapture(storage, {
+      captureSessionId: "capture_session_1",
+      projectId: "project_1",
+    });
+
+    await saveSessionToken(storage, null);
+
+    await expect(getSettings(storage)).resolves.toEqual({
+      instanceUrl: "https://demo.example.com",
+      sessionToken: null,
+      selectedProjectId: "project_1",
+      activeCaptureSessionId: null,
+      activeCaptureProjectId: null,
+    });
+  });
+
+  it("saves and clears active capture without clearing selected project", async () => {
+    await saveInstanceUrl(storage, "https://demo.example.com");
+    await saveSessionToken(storage, "session-token");
+    await saveSelectedProjectId(storage, "project_1");
+    await saveActiveCapture(storage, {
+      captureSessionId: "capture_session_1",
+      projectId: "project_1",
+    });
 
     await expect(getSettings(storage)).resolves.toEqual({
       instanceUrl: "https://demo.example.com",
       sessionToken: "session-token",
       selectedProjectId: "project_1",
+      activeCaptureSessionId: "capture_session_1",
+      activeCaptureProjectId: "project_1",
+    });
+
+    await clearActiveCapture(storage);
+
+    await expect(getSettings(storage)).resolves.toEqual({
+      instanceUrl: "https://demo.example.com",
+      sessionToken: "session-token",
+      selectedProjectId: "project_1",
+      activeCaptureSessionId: null,
+      activeCaptureProjectId: null,
+    });
+  });
+
+  it("clears all stored settings", async () => {
+    await saveInstanceUrl(storage, "https://demo.example.com");
+    await saveSessionToken(storage, "session-token");
+    await saveSelectedProjectId(storage, "project_1");
+    await saveActiveCapture(storage, {
+      captureSessionId: "capture_session_1",
+      projectId: "project_1",
     });
 
     await clearSettings(storage);
@@ -76,6 +132,8 @@ describe("extension settings", () => {
       instanceUrl: null,
       sessionToken: null,
       selectedProjectId: null,
+      activeCaptureSessionId: null,
+      activeCaptureProjectId: null,
     });
   });
 });

@@ -2,6 +2,8 @@ export type ExtensionSettings = {
   instanceUrl: string | null;
   sessionToken: string | null;
   selectedProjectId: string | null;
+  activeCaptureSessionId: string | null;
+  activeCaptureProjectId: string | null;
 };
 
 export type ExtensionStorageArea = {
@@ -14,12 +16,16 @@ const keys = {
   instanceUrl: "instanceUrl",
   sessionToken: "sessionToken",
   selectedProjectId: "selectedProjectId",
+  activeCaptureSessionId: "activeCaptureSessionId",
+  activeCaptureProjectId: "activeCaptureProjectId",
 } as const;
 
 const default_settings: ExtensionSettings = {
   instanceUrl: null,
   sessionToken: null,
   selectedProjectId: null,
+  activeCaptureSessionId: null,
+  activeCaptureProjectId: null,
 };
 
 const stringOrNull = (value: unknown) => (
@@ -55,6 +61,8 @@ export const getSettings = async (
     instanceUrl: stringOrNull(stored[keys.instanceUrl]),
     sessionToken: stringOrNull(stored[keys.sessionToken]),
     selectedProjectId: stringOrNull(stored[keys.selectedProjectId]),
+    activeCaptureSessionId: stringOrNull(stored[keys.activeCaptureSessionId]),
+    activeCaptureProjectId: stringOrNull(stored[keys.activeCaptureProjectId]),
   };
 };
 
@@ -66,6 +74,8 @@ export const saveInstanceUrl = async (
     [keys.instanceUrl]: instanceUrl,
     [keys.sessionToken]: null,
     [keys.selectedProjectId]: null,
+    [keys.activeCaptureSessionId]: null,
+    [keys.activeCaptureProjectId]: null,
   });
 };
 
@@ -73,7 +83,13 @@ export const saveSessionToken = async (
   storage: ExtensionStorageArea,
   sessionToken: string | null
 ) => {
-  await storage.set({ [keys.sessionToken]: sessionToken });
+  await storage.set({
+    [keys.sessionToken]: sessionToken,
+    ...(sessionToken === null ? {
+      [keys.activeCaptureSessionId]: null,
+      [keys.activeCaptureProjectId]: null,
+    } : {}),
+  });
 };
 
 export const saveSelectedProjectId = async (
@@ -81,6 +97,28 @@ export const saveSelectedProjectId = async (
   selectedProjectId: string | null
 ) => {
   await storage.set({ [keys.selectedProjectId]: selectedProjectId });
+};
+
+export const saveActiveCapture = async (
+  storage: ExtensionStorageArea,
+  input: {
+    captureSessionId: string;
+    projectId: string;
+  }
+) => {
+  await storage.set({
+    [keys.activeCaptureSessionId]: input.captureSessionId,
+    [keys.activeCaptureProjectId]: input.projectId,
+  });
+};
+
+export const clearActiveCapture = async (
+  storage: ExtensionStorageArea = chromeLocalStorage()
+) => {
+  await storage.set({
+    [keys.activeCaptureSessionId]: null,
+    [keys.activeCaptureProjectId]: null,
+  });
 };
 
 export const clearSettings = async (
