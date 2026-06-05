@@ -28,6 +28,7 @@ type SetupSession = {
 };
 
 type FirstRunSetupTransactionalRepository = {
+  owner_exists: () => Promise<boolean>;
   create_user: (input: {
     email: string;
     password_hash: string;
@@ -123,6 +124,10 @@ export const build_first_run_setup_service = (repository: FirstRunSetupRepositor
     }
 
     return repository.transaction(async (transaction_repository) => {
+      if (await transaction_repository.owner_exists()) {
+        throw new FirstRunSetupAlreadyCompletedError();
+      }
+
       const user = await transaction_repository.create_user({
         email: input.owner.email,
         password_hash: await Password.to_hash(input.owner.password),

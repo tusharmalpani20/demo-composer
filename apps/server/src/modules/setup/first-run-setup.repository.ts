@@ -37,6 +37,20 @@ type SetupSession = {
 const first_row = <Row>(result: QueryResult<Row>) => result.rows[0] as Row;
 
 const build_transactional_repository = (db: Queryable) => ({
+  async owner_exists() {
+    const result = await db.query<{ exists: boolean }>(`
+      SELECT EXISTS (
+        SELECT 1
+        FROM organization_schema.org_user
+        WHERE role = 'owner'
+        AND status = 'active'
+        AND is_deleted = FALSE
+      ) AS exists
+    `);
+
+    return Boolean(result.rows[0]?.exists);
+  },
+
   async create_user(input: {
     email: string;
     password_hash: string;
@@ -128,17 +142,7 @@ export const build_first_run_setup_repository = (
   ...build_transactional_repository(pool),
 
   async owner_exists() {
-    const result = await pool.query<{ exists: boolean }>(`
-      SELECT EXISTS (
-        SELECT 1
-        FROM organization_schema.org_user
-        WHERE role = 'owner'
-        AND status = 'active'
-        AND is_deleted = FALSE
-      ) AS exists
-    `);
-
-    return Boolean(result.rows[0]?.exists);
+    return build_transactional_repository(pool).owner_exists();
   },
 
   async transaction(callback) {
@@ -146,6 +150,7 @@ export const build_first_run_setup_repository = (
 
     try {
       await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('demo_composer:first_run_setup'))");
       const result = await callback(build_transactional_repository(client));
       await client.query("COMMIT");
       return result;

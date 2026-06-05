@@ -1,5 +1,9 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import {
+  FirstRunSetupAlreadyCompletedError,
+  UnsafeOwnerPasswordError,
+} from "./first-run-setup.service";
 
 export const web_session_cookie_name = "demo_composer_session";
 
@@ -53,7 +57,30 @@ export const build_first_run_setup_routes = (
         body: first_run_setup_body_schema,
       },
     }, async (request, reply) => {
-      const result = await service.complete_first_run_setup(request.body);
+      let result: Awaited<ReturnType<FirstRunSetupRouteService["complete_first_run_setup"]>>;
+      try {
+        result = await service.complete_first_run_setup(request.body);
+      } catch (error) {
+        if (error instanceof FirstRunSetupAlreadyCompletedError) {
+          return reply.status(409).send({
+            error: {
+              type: "first_run_setup_completed",
+              message: "First-run setup has already been completed",
+            },
+          });
+        }
+
+        if (error instanceof UnsafeOwnerPasswordError) {
+          return reply.status(400).send({
+            error: {
+              type: "unsafe_owner_password",
+              message: error.message,
+            },
+          });
+        }
+
+        throw error;
+      }
 
       reply.setCookie(web_session_cookie_name, result.session_token, {
         httpOnly: true,

@@ -3,6 +3,10 @@ import fastify from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { describe, expect, it } from "vitest";
 import { build_first_run_setup_routes } from "./first-run-setup.routes";
+import {
+  FirstRunSetupAlreadyCompletedError,
+  UnsafeOwnerPasswordError,
+} from "./first-run-setup.service";
 
 const build_test_app = async () => {
   const app = fastify();
@@ -100,5 +104,55 @@ describe("first-run setup routes", () => {
         },
       },
     });
+  });
+
+  it("maps repeated first-run setup to conflict", async () => {
+    const app = await build_test_app();
+    await app.register(build_first_run_setup_routes({
+      complete_first_run_setup: async () => {
+        throw new FirstRunSetupAlreadyCompletedError();
+      },
+    }), { prefix: "/api/v1/setup" });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/setup/first-run",
+      payload: {
+        owner: {
+          email: "owner@example.com",
+          password: "safe local password",
+        },
+        organization: {
+          name: "Acme",
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(409);
+  });
+
+  it("maps unsafe owner passwords to bad request", async () => {
+    const app = await build_test_app();
+    await app.register(build_first_run_setup_routes({
+      complete_first_run_setup: async () => {
+        throw new UnsafeOwnerPasswordError();
+      },
+    }), { prefix: "/api/v1/setup" });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/setup/first-run",
+      payload: {
+        owner: {
+          email: "owner@example.com",
+          password: "password",
+        },
+        organization: {
+          name: "Acme",
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
   });
 });

@@ -125,4 +125,37 @@ describe("first-run setup service", () => {
     expect(repository.org_users).toHaveLength(0);
     expect(repository.sessions).toHaveLength(0);
   });
+
+  it("rechecks owner existence inside the setup transaction", async () => {
+    const repository = build_repository();
+    const service = build_first_run_setup_service({
+      ...repository,
+      async owner_exists() {
+        return false;
+      },
+      async transaction(callback) {
+        repository.org_users.push({
+          id: "existing_owner",
+          user_id: "existing_user",
+          organization_id: "existing_organization",
+          role: "owner",
+        });
+        return callback(repository);
+      },
+    });
+
+    await expect(service.complete_first_run_setup({
+      owner: {
+        email: "owner@example.com",
+        password: "safe local password",
+      },
+      organization: {
+        name: "Acme",
+      },
+    })).rejects.toThrow("First-run setup has already been completed");
+
+    expect(repository.users).toHaveLength(0);
+    expect(repository.organizations).toHaveLength(0);
+    expect(repository.sessions).toHaveLength(0);
+  });
 });

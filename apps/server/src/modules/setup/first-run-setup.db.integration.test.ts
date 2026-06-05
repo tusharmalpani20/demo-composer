@@ -119,4 +119,92 @@ describe("DB-backed first-run setup", () => {
 
     await app.close();
   });
+
+  it("rejects repeated first-run setup without duplicating setup records", async () => {
+    const app = build({ logger: false });
+    const payload = {
+      owner: {
+        email: "owner@example.com",
+        password: "safe local password",
+      },
+      organization: {
+        name: "Acme",
+      },
+    };
+
+    const first_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/setup/first-run",
+      payload,
+    });
+    const second_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/setup/first-run",
+      payload: {
+        owner: {
+          email: "another@example.com",
+          password: "another safe password",
+        },
+        organization: {
+          name: "Another",
+        },
+      },
+    });
+
+    expect(first_response.statusCode).toBe(201);
+    expect(second_response.statusCode).toBe(409);
+    expect(second_response.json()).toMatchObject({
+      error: {
+        type: "first_run_setup_completed",
+      },
+    });
+
+    expect(await count_rows("user_schema.user")).toBe(1);
+    expect(await count_rows("organization_schema.organization")).toBe(1);
+    expect(await count_rows("organization_schema.org_user")).toBe(1);
+    expect(await count_rows("auth_schema.auth_session")).toBe(1);
+
+    await app.close();
+  });
+
+  it("prevents concurrent first-run requests from creating multiple owners", async () => {
+    const app = build({ logger: false });
+
+    const responses = await Promise.all([
+      app.inject({
+        method: "POST",
+        url: "/api/v1/setup/first-run",
+        payload: {
+          owner: {
+            email: "owner-a@example.com",
+            password: "safe local password",
+          },
+          organization: {
+            name: "Acme A",
+          },
+        },
+      }),
+      app.inject({
+        method: "POST",
+        url: "/api/v1/setup/first-run",
+        payload: {
+          owner: {
+            email: "owner-b@example.com",
+            password: "another safe password",
+          },
+          organization: {
+            name: "Acme B",
+          },
+        },
+      }),
+    ]);
+
+    expect(responses.map((response) => response.statusCode).sort()).toEqual([201, 409]);
+    expect(await count_rows("user_schema.user")).toBe(1);
+    expect(await count_rows("organization_schema.organization")).toBe(1);
+    expect(await count_rows("organization_schema.org_user")).toBe(1);
+    expect(await count_rows("auth_schema.auth_session")).toBe(1);
+
+    await app.close();
+  });
 });
