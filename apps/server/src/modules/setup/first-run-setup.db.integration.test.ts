@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { pool } from "../../config/database.config";
 import { build } from "../../app";
 import { hash_session_token } from "./first-run-setup.service";
+import { build_first_run_setup_repository } from "./first-run-setup.repository";
 
 const reset_foundation_tables = async () => {
   await pool.query(`
@@ -206,5 +207,26 @@ describe("DB-backed first-run setup", () => {
     expect(await count_rows("auth_schema.auth_session")).toBe(1);
 
     await app.close();
+  });
+
+  it("rolls back partial setup records when a transaction fails", async () => {
+    const repository = build_first_run_setup_repository(pool);
+
+    await expect(repository.transaction(async (transaction_repository) => {
+      await transaction_repository.create_user({
+        email: "owner@example.com",
+        password_hash: "hashed-password",
+        display_name: "Owner",
+      });
+      await transaction_repository.create_organization({
+        name: "Acme",
+      });
+      throw new Error("forced setup failure");
+    })).rejects.toThrow("forced setup failure");
+
+    expect(await count_rows("user_schema.user")).toBe(0);
+    expect(await count_rows("organization_schema.organization")).toBe(0);
+    expect(await count_rows("organization_schema.org_user")).toBe(0);
+    expect(await count_rows("auth_schema.auth_session")).toBe(0);
   });
 });
