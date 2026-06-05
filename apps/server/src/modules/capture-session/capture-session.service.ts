@@ -32,6 +32,14 @@ export type CaptureSession = {
   updated_at: string;
 };
 
+export type CompletedCaptureSessionResult = {
+  capture_session: CaptureSession;
+  redirect: {
+    path: string;
+    reason: "capture_session_completed";
+  };
+};
+
 export type CreateCaptureSessionInput = {
   name: string;
   description?: string | null;
@@ -97,6 +105,15 @@ export type CaptureSessionRepository = {
     actor_org_user_id: string;
     data: NormalizedUpdateCaptureSessionInput;
   }) => Promise<CaptureSession | null>;
+  complete_capture_session: (input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+    actor_org_user_id: string;
+  }) => Promise<{
+    capture_session: CaptureSession | null;
+    outcome: "completed" | "already_completed" | "not_completable" | "not_found";
+  }>;
   delete_capture_session: (input: {
     organization_id: string;
     project_id: string;
@@ -144,6 +161,18 @@ export class ProjectNotFoundError extends Error {
 export class CaptureSessionNotFoundError extends Error {
   constructor() {
     super("Capture session was not found");
+  }
+}
+
+export class CaptureSessionNotCompletableError extends Error {
+  constructor() {
+    super("Capture session cannot be completed from its current status");
+  }
+}
+
+export class InvalidCaptureSessionCompletionError extends Error {
+  constructor() {
+    super("Capture session completion input is invalid");
   }
 }
 
@@ -336,6 +365,40 @@ export const build_capture_session_service = (repository: CaptureSessionReposito
     return capture_session;
   };
 
+  const complete_capture_session = async (input: {
+    auth: CaptureSessionAuthContext;
+    project_id: string;
+    capture_session_id: string;
+  }): Promise<CompletedCaptureSessionResult> => {
+    await ensure_project_exists({
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    });
+
+    const result = await repository.complete_capture_session({
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      capture_session_id: input.capture_session_id,
+      actor_org_user_id: input.auth.actor_org_user_id,
+    });
+
+    if (!result.capture_session || result.outcome === "not_found") {
+      throw new CaptureSessionNotFoundError();
+    }
+
+    if (result.outcome === "not_completable") {
+      throw new CaptureSessionNotCompletableError();
+    }
+
+    return {
+      capture_session: result.capture_session,
+      redirect: {
+        path: `/projects/${result.capture_session.project_id}/capture-sessions/${result.capture_session.id}`,
+        reason: "capture_session_completed",
+      },
+    };
+  };
+
   const delete_capture_session = async (input: {
     auth: CaptureSessionAuthContext;
     project_id: string;
@@ -363,6 +426,7 @@ export const build_capture_session_service = (repository: CaptureSessionReposito
     list_capture_sessions,
     get_capture_session,
     update_capture_session,
+    complete_capture_session,
     delete_capture_session,
   };
 };

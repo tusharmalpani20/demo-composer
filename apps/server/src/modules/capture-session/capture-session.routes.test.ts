@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { UnauthenticatedSessionError } from "../authentication/session.service";
 import {
   CaptureSessionNotFoundError,
+  CaptureSessionNotCompletableError,
   EmptyCaptureSessionUpdateError,
   ProjectNotFoundError,
   type CaptureSession,
@@ -77,6 +78,18 @@ const build_test_app = async (
       create_capture_session: async () => capture_session,
       list_capture_sessions: async () => [capture_session],
       get_capture_session: async () => capture_session,
+      complete_capture_session: async () => ({
+        capture_session: {
+          ...capture_session,
+          status: "completed",
+          completed_at: "2026-06-05T00:00:02.000Z",
+          version: 2,
+        },
+        redirect: {
+          path: "/projects/project_1/capture-sessions/capture_session_1",
+          reason: "capture_session_completed",
+        },
+      }),
       update_capture_session: async () => ({
         ...capture_session,
         name: "Updated Capture",
@@ -105,6 +118,7 @@ describe("capture session routes", () => {
       { method: "POST", url: "/api/v1/projects/project_1/capture-sessions", payload: { name: "Capture" } },
       { method: "GET", url: "/api/v1/projects/project_1/capture-sessions" },
       { method: "GET", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1" },
+      { method: "POST", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete" },
       { method: "PATCH", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1", payload: { name: "Updated" } },
       { method: "DELETE", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1" },
     ] as const) {
@@ -117,6 +131,105 @@ describe("capture session routes", () => {
         },
       });
     }
+
+    await app.close();
+  });
+
+  it("completes capture sessions and returns redirect information", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      capture_session_service: {
+        complete_capture_session: async (input) => {
+          seen_inputs.push(input);
+          return {
+            capture_session: {
+              ...capture_session,
+              status: "completed",
+              completed_at: "2026-06-05T00:00:02.000Z",
+              version: 2,
+            },
+            redirect: {
+              path: "/projects/project_1/capture-sessions/capture_session_1",
+              reason: "capture_session_completed",
+            },
+          };
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      capture_session: {
+        id: "capture_session_1",
+        status: "completed",
+        completed_at: "2026-06-05T00:00:02.000Z",
+        version: 2,
+      },
+      redirect: {
+        path: "/projects/project_1/capture-sessions/capture_session_1",
+        reason: "capture_session_completed",
+      },
+    });
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+    }]);
+
+    await app.close();
+  });
+
+  it("accepts empty complete body and rejects non-empty complete body", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      capture_session_service: {
+        complete_capture_session: async (input) => {
+          seen_inputs.push(input);
+          return {
+            capture_session,
+            redirect: {
+              path: "/projects/project_1/capture-sessions/capture_session_1",
+              reason: "capture_session_completed",
+            },
+          };
+        },
+      },
+    });
+
+    const empty_body_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+      payload: {},
+    });
+    const non_empty_body_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+      payload: {
+        completed_at: "2026-06-05T00:00:00.000Z",
+      },
+    });
+
+    expect(empty_body_response.statusCode).toBe(200);
+    expect(non_empty_body_response.statusCode).toBe(400);
+    expect(non_empty_body_response.json().error.type).toBe("invalid_capture_session_completion");
+    expect(seen_inputs).toHaveLength(1);
 
     await app.close();
   });
@@ -322,6 +435,13 @@ describe("capture session routes", () => {
         },
       },
     });
+    const not_completable_app = await build_test_app({
+      capture_session_service: {
+        complete_capture_session: async () => {
+          throw new CaptureSessionNotCompletableError();
+        },
+      },
+    });
 
     const project_not_found_response = await project_not_found_app.inject({
       method: "POST",
@@ -340,6 +460,11 @@ describe("capture session routes", () => {
       cookies: { demo_composer_session: "session-token" },
       payload: {},
     });
+    const not_completable_response = await not_completable_app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
+      cookies: { demo_composer_session: "session-token" },
+    });
 
     expect(project_not_found_response.statusCode).toBe(404);
     expect(project_not_found_response.json()).toEqual({
@@ -357,10 +482,18 @@ describe("capture session routes", () => {
     });
     expect(empty_update_response.statusCode).toBe(400);
     expect(empty_update_response.json().error.type).toBe("empty_capture_session_update");
+    expect(not_completable_response.statusCode).toBe(400);
+    expect(not_completable_response.json()).toEqual({
+      error: {
+        type: "capture_session_not_completable",
+        message: "Capture session cannot be completed from its current status",
+      },
+    });
 
     await project_not_found_app.close();
     await capture_not_found_app.close();
     await empty_update_app.close();
+    await not_completable_app.close();
   });
 
   it("rejects invalid capture session input", async () => {

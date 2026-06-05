@@ -368,6 +368,185 @@ describe("DB-backed capture session API", () => {
     await app.close();
   });
 
+  it("completes capture sessions idempotently and rejects non-completable states", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const owner_context = await get_owner_context();
+    const app = build({ logger: false });
+
+    const create_capture_session = async (name: string) => {
+      const response = await app.inject({
+        method: "POST",
+        url: `/api/v1/projects/${project_id}/capture-sessions`,
+        cookies: {
+          demo_composer_session: session_token,
+        },
+        payload: {
+          name,
+          source_type: "extension",
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      return response.json().capture_session.id as string;
+    };
+
+    const draft_session_id = await create_capture_session("Draft Capture");
+    const capturing_session_id = await create_capture_session("Capturing Capture");
+    const canceled_session_id = await create_capture_session("Canceled Capture");
+    const archived_session_id = await create_capture_session("Archived Capture");
+
+    const capturing_update_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capturing_session_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      payload: {
+        status: "capturing",
+      },
+    });
+    const canceled_update_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${canceled_session_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      payload: {
+        status: "canceled",
+      },
+    });
+    const archived_update_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${archived_session_id}`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      payload: {
+        status: "archived",
+      },
+    });
+
+    expect(capturing_update_response.statusCode).toBe(200);
+    expect(canceled_update_response.statusCode).toBe(200);
+    expect(archived_update_response.statusCode).toBe(200);
+
+    const draft_complete_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${draft_session_id}/complete`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    const capturing_complete_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capturing_session_id}/complete`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      payload: {},
+    });
+    const repeated_complete_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${draft_session_id}/complete`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    const canceled_complete_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${canceled_session_id}/complete`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    const archived_complete_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${archived_session_id}/complete`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    const non_empty_body_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${draft_session_id}/complete`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+      payload: {
+        status: "completed",
+      },
+    });
+
+    expect(draft_complete_response.statusCode).toBe(200);
+    expect(draft_complete_response.json()).toMatchObject({
+      capture_session: {
+        id: draft_session_id,
+        status: "completed",
+        completed_at: expect.any(String),
+        updated_by_id: owner_context?.org_user_id,
+        version: 2,
+      },
+      redirect: {
+        path: `/projects/${project_id}/capture-sessions/${draft_session_id}`,
+        reason: "capture_session_completed",
+      },
+    });
+    expect(capturing_complete_response.statusCode).toBe(200);
+    expect(capturing_complete_response.json().capture_session).toMatchObject({
+      id: capturing_session_id,
+      status: "completed",
+      started_at: expect.any(String),
+      completed_at: expect.any(String),
+      version: 3,
+    });
+    expect(repeated_complete_response.statusCode).toBe(200);
+    expect(repeated_complete_response.json().capture_session).toMatchObject({
+      id: draft_session_id,
+      status: "completed",
+      completed_at: draft_complete_response.json().capture_session.completed_at,
+      version: 2,
+    });
+    expect(canceled_complete_response.statusCode).toBe(400);
+    expect(canceled_complete_response.json().error.type).toBe("capture_session_not_completable");
+    expect(archived_complete_response.statusCode).toBe(400);
+    expect(archived_complete_response.json().error.type).toBe("capture_session_not_completable");
+    expect(non_empty_body_response.statusCode).toBe(400);
+    expect(non_empty_body_response.json().error.type).toBe("invalid_capture_session_completion");
+
+    const persisted = await pool.query<{
+      id: string;
+      status: string;
+      started_at: Date | null;
+      completed_at: Date | null;
+      version: number;
+    }>(`
+      SELECT id, status, started_at, completed_at, version
+      FROM capture_schema.capture_session
+      WHERE id = ANY($1::varchar[])
+      ORDER BY id
+    `, [[draft_session_id, capturing_session_id]]);
+
+    expect(persisted.rows).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: draft_session_id,
+        status: "completed",
+        started_at: null,
+        completed_at: expect.any(Date),
+        version: 2,
+      }),
+      expect.objectContaining({
+        id: capturing_session_id,
+        status: "completed",
+        started_at: expect.any(Date),
+        completed_at: expect.any(Date),
+        version: 3,
+      }),
+    ]));
+
+    await app.close();
+  });
+
   it("does not reveal cross-org or deleted project resources", async () => {
     const session_token = await setup_owner();
     const project_id = await create_project(session_token, "Disposable Project");

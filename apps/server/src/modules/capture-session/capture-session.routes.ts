@@ -7,11 +7,14 @@ import {
 import { web_session_cookie_name } from "../authentication/session-cookie";
 import {
   CaptureSessionNotFoundError,
+  CaptureSessionNotCompletableError,
   EmptyCaptureSessionUpdateError,
+  InvalidCaptureSessionCompletionError,
   InvalidCaptureSessionInputError,
   ProjectNotFoundError,
   type CaptureSession,
   type CaptureSessionAuthContext,
+  type CompletedCaptureSessionResult,
   type CaptureSessionStatus,
   type CreateCaptureSessionInput,
   type UpdateCaptureSessionInput,
@@ -43,6 +46,11 @@ export type CaptureSessionRouteDependencies = {
       capture_session_id: string;
       data: UpdateCaptureSessionInput;
     }) => Promise<CaptureSession>;
+    complete_capture_session: (input: {
+      auth: CaptureSessionAuthContext;
+      project_id: string;
+      capture_session_id: string;
+    }) => Promise<CompletedCaptureSessionResult>;
     delete_capture_session: (input: {
       auth: CaptureSessionAuthContext;
       project_id: string;
@@ -203,6 +211,24 @@ export const build_capture_session_routes = (
         );
       }
 
+      if (error instanceof CaptureSessionNotCompletableError) {
+        return reply.status(400).send(
+          error_response(
+            "capture_session_not_completable",
+            "Capture session cannot be completed from its current status"
+          )
+        );
+      }
+
+      if (error instanceof InvalidCaptureSessionCompletionError) {
+        return reply.status(400).send(
+          error_response(
+            "invalid_capture_session_completion",
+            "Capture session completion input is invalid"
+          )
+        );
+      }
+
       if (error instanceof EmptyCaptureSessionUpdateError) {
         return reply.status(400).send(
           error_response(
@@ -264,6 +290,34 @@ export const build_capture_session_routes = (
           status: request.query.status,
         });
         return reply.status(200).send({ capture_sessions });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.post<{
+      Params: {
+        project_id: string;
+        id: string;
+      };
+      Body?: Record<string, unknown>;
+    }>("/:project_id/capture-sessions/:id/complete", async (request, reply) => {
+      try {
+        if (
+          request.body
+          && typeof request.body === "object"
+          && Object.keys(request.body).length > 0
+        ) {
+          throw new InvalidCaptureSessionCompletionError();
+        }
+
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const result = await dependencies.capture_session_service.complete_capture_session({
+          auth,
+          project_id: request.params.project_id,
+          capture_session_id: request.params.id,
+        });
+        return reply.status(200).send(result);
       } catch (error) {
         return handle_domain_error(error, reply);
       }

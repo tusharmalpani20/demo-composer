@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   build_capture_session_service,
   CaptureSessionNotFoundError,
+  CaptureSessionNotCompletableError,
   EmptyCaptureSessionUpdateError,
   ProjectNotFoundError,
   type CaptureSession,
@@ -45,6 +46,7 @@ const build_repository = (): CaptureSessionRepository & {
   lists: unknown[];
   finds: unknown[];
   updates: unknown[];
+  completions: unknown[];
   deletes: unknown[];
 } => {
   const project_checks: unknown[] = [];
@@ -52,6 +54,7 @@ const build_repository = (): CaptureSessionRepository & {
   const lists: unknown[] = [];
   const finds: unknown[] = [];
   const updates: unknown[] = [];
+  const completions: unknown[] = [];
   const deletes: unknown[] = [];
 
   return {
@@ -60,6 +63,7 @@ const build_repository = (): CaptureSessionRepository & {
     lists,
     finds,
     updates,
+    completions,
     deletes,
     async project_exists(input) {
       project_checks.push(input);
@@ -101,6 +105,51 @@ const build_repository = (): CaptureSessionRepository & {
         version: 2,
       };
     },
+    async complete_capture_session(input) {
+      completions.push(input);
+
+      if (input.capture_session_id === "missing") {
+        return {
+          outcome: "not_found",
+          capture_session: null,
+        };
+      }
+
+      if (input.capture_session_id === "canceled") {
+        return {
+          outcome: "not_completable",
+          capture_session: {
+            ...capture_session,
+            id: "canceled",
+            status: "canceled",
+          },
+        };
+      }
+
+      if (input.capture_session_id === "completed") {
+        return {
+          outcome: "already_completed",
+          capture_session: {
+            ...capture_session,
+            id: "completed",
+            status: "completed",
+            completed_at: "2026-06-05T00:00:02.000Z",
+            version: 2,
+          },
+        };
+      }
+
+      return {
+        outcome: "completed",
+        capture_session: {
+          ...capture_session,
+          status: "completed",
+          completed_at: "2026-06-05T00:00:02.000Z",
+          updated_by_id: input.actor_org_user_id,
+          version: 2,
+        },
+      };
+    },
     async delete_capture_session(input) {
       deletes.push(input);
       return input.capture_session_id === "capture_session_1";
@@ -109,6 +158,98 @@ const build_repository = (): CaptureSessionRepository & {
 };
 
 describe("capture session service", () => {
+  it("completes capture sessions and returns the portal redirect target", async () => {
+    const repository = build_repository();
+    const service = build_capture_session_service(repository);
+
+    await expect(service.complete_capture_session({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+    })).resolves.toEqual({
+      capture_session: {
+        ...capture_session,
+        status: "completed",
+        completed_at: "2026-06-05T00:00:02.000Z",
+        updated_by_id: "org_user_1",
+        version: 2,
+      },
+      redirect: {
+        path: "/projects/project_1/capture-sessions/capture_session_1",
+        reason: "capture_session_completed",
+      },
+    });
+
+    expect(repository.project_checks).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+    }]);
+    expect(repository.completions).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      actor_org_user_id: "org_user_1",
+    }]);
+  });
+
+  it("treats already completed capture sessions as idempotent success", async () => {
+    const repository = build_repository();
+    const service = build_capture_session_service(repository);
+
+    await expect(service.complete_capture_session({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "completed",
+    })).resolves.toMatchObject({
+      capture_session: {
+        id: "completed",
+        status: "completed",
+        completed_at: "2026-06-05T00:00:02.000Z",
+        version: 2,
+      },
+      redirect: {
+        path: "/projects/project_1/capture-sessions/completed",
+        reason: "capture_session_completed",
+      },
+    });
+  });
+
+  it("maps missing and non-completable capture sessions", async () => {
+    const repository = build_repository();
+    const service = build_capture_session_service(repository);
+
+    await expect(service.complete_capture_session({
+      auth,
+      project_id: "missing",
+      capture_session_id: "capture_session_1",
+    })).rejects.toBeInstanceOf(ProjectNotFoundError);
+    await expect(service.complete_capture_session({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "missing",
+    })).rejects.toBeInstanceOf(CaptureSessionNotFoundError);
+    await expect(service.complete_capture_session({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "canceled",
+    })).rejects.toBeInstanceOf(CaptureSessionNotCompletableError);
+
+    expect(repository.completions).toEqual([
+      {
+        organization_id: "organization_1",
+        project_id: "project_1",
+        capture_session_id: "missing",
+        actor_org_user_id: "org_user_1",
+      },
+      {
+        organization_id: "organization_1",
+        project_id: "project_1",
+        capture_session_id: "canceled",
+        actor_org_user_id: "org_user_1",
+      },
+    ]);
+  });
+
   it("creates capture sessions under an accessible project using auth context", async () => {
     const repository = build_repository();
     const service = build_capture_session_service(repository);

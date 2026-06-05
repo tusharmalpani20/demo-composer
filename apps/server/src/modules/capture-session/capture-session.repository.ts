@@ -299,6 +299,98 @@ export const build_capture_session_repository = (
     return row ? map_capture_session(row) : null;
   },
 
+  async complete_capture_session(input) {
+    const find_current = async () => {
+      const current_result = await db.query<CaptureSessionRow>(`
+        SELECT ${capture_session_select}
+        FROM capture_schema.capture_session
+        WHERE id = $1
+        AND project_id = $2
+        AND organization_id = $3
+        AND is_deleted = FALSE
+        LIMIT 1
+      `, [
+        input.capture_session_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+
+      return first_row(current_result);
+    };
+    const current_row = await find_current();
+
+    if (!current_row) {
+      return {
+        outcome: "not_found" as const,
+        capture_session: null,
+      };
+    }
+
+    if (current_row.status === "completed") {
+      return {
+        outcome: "already_completed" as const,
+        capture_session: map_capture_session(current_row),
+      };
+    }
+
+    if (current_row.status === "canceled" || current_row.status === "archived") {
+      return {
+        outcome: "not_completable" as const,
+        capture_session: map_capture_session(current_row),
+      };
+    }
+
+    const result = await db.query<CaptureSessionRow>(`
+      UPDATE capture_schema.capture_session
+      SET
+        status = 'completed',
+        completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
+        updated_by_id = $1,
+        updated_at = CURRENT_TIMESTAMP,
+        version = version + 1
+      WHERE id = $2
+      AND project_id = $3
+      AND organization_id = $4
+      AND is_deleted = FALSE
+      AND status IN ('draft', 'capturing')
+      RETURNING ${capture_session_select}
+    `, [
+      input.actor_org_user_id,
+      input.capture_session_id,
+      input.project_id,
+      input.organization_id,
+    ]);
+    const row = first_row(result);
+
+    if (!row) {
+      const refreshed_row = await find_current();
+
+      if (refreshed_row?.status === "completed") {
+        return {
+          outcome: "already_completed" as const,
+          capture_session: map_capture_session(refreshed_row),
+        };
+      }
+
+      if (refreshed_row?.status === "canceled" || refreshed_row?.status === "archived") {
+        return {
+          outcome: "not_completable" as const,
+          capture_session: map_capture_session(refreshed_row),
+        };
+      }
+
+      return {
+        outcome: "not_found" as const,
+        capture_session: null,
+      };
+    }
+
+    return {
+      outcome: "completed" as const,
+      capture_session: map_capture_session(row),
+    };
+  },
+
   async delete_capture_session(input) {
     const result = await db.query<CaptureSessionRow>(`
       UPDATE capture_schema.capture_session

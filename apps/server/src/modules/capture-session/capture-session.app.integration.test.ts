@@ -63,6 +63,37 @@ describe("capture session app routes", () => {
         get_capture_session: async () => {
           throw new Error("not used");
         },
+        complete_capture_session: async () => ({
+          capture_session: {
+            id: "capture_session_1",
+            organization_id: "organization_1",
+            project_id: "project_1",
+            name: "Create department workflow",
+            description: null,
+            status: "completed",
+            source_type: "manual",
+            started_at: null,
+            completed_at: "2026-06-05T00:00:01.000Z",
+            canceled_at: null,
+            start_url: null,
+            browser_name: null,
+            browser_version: null,
+            operating_system: null,
+            viewport_width: null,
+            viewport_height: null,
+            device_pixel_ratio: null,
+            user_agent: null,
+            created_by_id: "org_user_1",
+            updated_by_id: "org_user_1",
+            version: 2,
+            created_at: "2026-06-05T00:00:00.000Z",
+            updated_at: "2026-06-05T00:00:01.000Z",
+          },
+          redirect: {
+            path: "/projects/project_1/capture-sessions/capture_session_1",
+            reason: "capture_session_completed",
+          },
+        }),
         update_capture_session: async () => {
           throw new Error("not used");
         },
@@ -85,6 +116,25 @@ describe("capture session app routes", () => {
 
     expect(response.statusCode).toBe(201);
     expect(response.json().capture_session.name).toBe("Create department workflow");
+
+    const complete_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
+      cookies: {
+        demo_composer_session: "session-token",
+      },
+    });
+
+    expect(complete_response.statusCode).toBe(200);
+    expect(complete_response.json()).toMatchObject({
+      capture_session: {
+        status: "completed",
+      },
+      redirect: {
+        path: "/projects/project_1/capture-sessions/capture_session_1",
+        reason: "capture_session_completed",
+      },
+    });
 
     await app.close();
   });
