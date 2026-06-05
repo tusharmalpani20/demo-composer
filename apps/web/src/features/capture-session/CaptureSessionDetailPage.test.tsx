@@ -286,6 +286,32 @@ describe("CaptureSessionDetailPage", () => {
     expect(redirectTo).not.toHaveBeenCalled();
   });
 
+  it("clears a previous guide creation error when retrying", async () => {
+    let resolveCreate: (detail: GuideDetail) => void = () => undefined;
+    const createGuide = vi
+      .fn<() => Promise<GuideDetail>>()
+      .mockRejectedValueOnce(new Error("Create failed"))
+      .mockImplementationOnce(() => new Promise<GuideDetail>((resolve) => {
+        resolveCreate = resolve;
+      }));
+    const redirectTo = vi.fn();
+
+    renderPage({ createGuide, redirectTo });
+
+    await screen.findByRole("heading", { name: "Create department workflow" });
+    fireEvent.click(screen.getByRole("button", { name: "Create guide" }));
+
+    expect(await screen.findByText("Could not create guide.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Create guide" }));
+
+    expect(screen.queryByText("Could not create guide.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Creating guide..." })).toBeDisabled();
+
+    resolveCreate(guideDetail);
+    await waitFor(() => expect(redirectTo).toHaveBeenCalledWith("/projects/project_1/guides/guide_1"));
+  });
+
   it("disables guide creation when the loaded capture session has an empty name", async () => {
     renderPage({
       loadDetail: async () => ({
