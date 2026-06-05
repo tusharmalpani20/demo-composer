@@ -15,9 +15,11 @@ This app currently supports:
 - starting a capture session for the selected project
 - storing the active capture session id locally
 - restoring active capture state when the popup is reopened
+- capturing the visible active tab as a PNG screenshot
+- uploading that screenshot to the active capture session with safe tab metadata
 - discarding local active capture state if needed
 
-It does not capture screenshots, DOM, clicks, inputs, navigation, or upload data yet.
+It does not capture DOM, clicks, inputs, navigation events, full-page stitched screenshots, or HTML snapshots yet.
 Discarding local active capture state does not cancel or complete the backend capture session.
 
 ## Development
@@ -89,11 +91,35 @@ x-demo-composer-client: extension
 
 The extension sends `source_type: "extension"` and safe current-tab metadata when available. Current-tab metadata is limited to the active tab URL/title and only stores `http://` or `https://` URLs. The extension does not inject scripts or inspect page DOM for this slice.
 
+## Screenshot Upload
+
+When an active capture session exists, the popup can capture the visible active tab:
+
+```text
+chrome.tabs.captureVisibleTab({ format: "png" })
+```
+
+The returned PNG data URL is converted to a `Blob`, decoded for width/height when available, and uploaded as multipart form data:
+
+```text
+POST {instance_url}/api/v1/projects/:project_id/capture-sessions/:capture_session_id/assets/upload
+```
+
+with:
+
+```text
+Authorization: Bearer <session_token>
+x-demo-composer-client: extension
+```
+
+The upload includes the screenshot file, captured timestamp, visible image dimensions when available, device pixel ratio when available, and safe current-tab URL/title metadata. The extension does not inspect page DOM or read form field values.
+
 ## Permissions
 
 The extension currently requests:
 
 - `storage` for instance, session, selected project, and active capture state
 - `tabs` for active tab URL/title metadata
+- `activeTab` for visible tab screenshot capture
 
-It does not request host permissions, `activeTab`, `scripting`, content scripts, or capture permissions yet.
+It does not request broad host permissions, `scripting`, or content scripts yet.

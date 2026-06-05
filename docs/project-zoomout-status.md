@@ -1,6 +1,6 @@
 # Project Zoom-Out Status
 
-Date: 2026-06-05
+Date: 2026-06-06
 
 ## Product Intent
 
@@ -123,14 +123,17 @@ The agreed implementation style is:
 
 ## Not Built Yet
 
-### Capture Entry And Extension
+### Chrome Extension
 
-- No Chrome extension app exists yet.
-- No extension install/login/settings flow exists yet.
-- No extension capture controls exist yet.
-- No browser screenshot capture client exists yet.
-- No extension-to-backend capture session creation/upload/event recording loop exists yet.
-- No post-capture redirect from extension to portal exists yet.
+- `apps/extension` exists as a Vite/React Chrome extension popup.
+- Extension can configure a hosted or self-hosted instance URL.
+- Extension can sign in using the backend login route and store the returned extension bearer token locally.
+- Extension can verify current auth, list accessible projects, and persist the selected project.
+- Extension can create a backend capture session for the selected project with safe active-tab metadata.
+- Extension can restore active capture state when the popup is reopened.
+- Extension can capture the visible active tab as a PNG screenshot and upload it to the active capture session as a capture asset.
+- Extension can show screenshot upload loading, success, and error states without clearing the active capture state.
+- Extension can discard local active capture state if needed.
 
 ### Portal Creation Flows
 
@@ -177,24 +180,18 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend and portal can manage existing data, but the product cannot yet create real capture data from a browser workflow. The next major milestone should be the Chrome extension MVP.
+The current backend, portal, and extension can now create the first real browser-sourced capture asset: a visible-tab screenshot uploaded into an active capture session.
 
-Before building the full extension, the next slice should create the extension foundation:
+The next major milestone should make those screenshots useful as ordered source material instead of isolated assets. The next slice should add extension capture event recording:
 
-- add `apps/extension`
-- build a small popup UI
-- configure an instance URL
-- support login against that configured instance
-- verify current auth
-- list projects in the popup
-- persist extension settings locally
+- record a step/event around each manual screenshot capture
+- link the event to the uploaded screenshot asset
+- keep raw input values out of captured metadata
+- preserve enough target/page metadata for guide generation
+- render the resulting event/asset relationship in the capture session detail read model
 
 After that, the following slices can add:
 
-- start capture session from selected project
-- capture screenshot upload
-- capture event recording
-- stop/finalize capture session
-- redirect to the portal capture session detail
-
-This keeps the work aligned with the product goal: captured source material should come from the browser, then the existing portal flow can turn it into guides.
+- stop/finalize capture session from the extension
+- redirect to the portal capture session detail after capture
+- guide generation improvements that use screenshot-backed events as ordered steps
