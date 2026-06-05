@@ -609,9 +609,21 @@ describe("capture session routes", () => {
         },
       },
     });
+    const detail_project_not_found_app = await build_test_app({
+      capture_session_service: {
+        get_capture_session_detail: async () => {
+          throw new ProjectNotFoundError();
+        },
+      },
+    });
     const detail_not_found_response = await detail_not_found_app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/missing/detail",
+      cookies: { demo_composer_session: "session-token" },
+    });
+    const detail_project_not_found_response = await detail_project_not_found_app.inject({
+      method: "GET",
+      url: "/api/v1/projects/missing/capture-sessions/capture_session_1/detail",
       cookies: { demo_composer_session: "session-token" },
     });
 
@@ -640,12 +652,15 @@ describe("capture session routes", () => {
     });
     expect(detail_not_found_response.statusCode).toBe(404);
     expect(detail_not_found_response.json().error.type).toBe("capture_session_not_found");
+    expect(detail_project_not_found_response.statusCode).toBe(404);
+    expect(detail_project_not_found_response.json().error.type).toBe("project_not_found");
 
     await project_not_found_app.close();
     await capture_not_found_app.close();
     await empty_update_app.close();
     await not_completable_app.close();
     await detail_not_found_app.close();
+    await detail_project_not_found_app.close();
   });
 
   it("rejects invalid capture session input", async () => {

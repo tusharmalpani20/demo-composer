@@ -763,6 +763,16 @@ describe("DB-backed capture session API", () => {
     expect(create_under_deleted_project_response.statusCode).toBe(404);
     expect(create_under_deleted_project_response.json().error.type).toBe("project_not_found");
 
+    const detail_under_deleted_project_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/capture-sessions/missing_capture_session/detail`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
+    expect(detail_under_deleted_project_response.statusCode).toBe(404);
+    expect(detail_under_deleted_project_response.json().error.type).toBe("project_not_found");
+
     const cross_org = await insert_cross_org_project_and_capture_session();
     const cross_org_list_response = await app.inject({
       method: "GET",
@@ -778,11 +788,20 @@ describe("DB-backed capture session API", () => {
         demo_composer_session: session_token,
       },
     });
+    const cross_org_detail_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${visible_project_id}/capture-sessions/${cross_org.capture_session_id}/detail`,
+      cookies: {
+        demo_composer_session: session_token,
+      },
+    });
 
     expect(cross_org_list_response.statusCode).toBe(404);
     expect(cross_org_list_response.json().error.type).toBe("project_not_found");
     expect(cross_org_get_response.statusCode).toBe(404);
     expect(cross_org_get_response.json().error.type).toBe("capture_session_not_found");
+    expect(cross_org_detail_response.statusCode).toBe(404);
+    expect(cross_org_detail_response.json().error.type).toBe("capture_session_not_found");
 
     await app.close();
   });
