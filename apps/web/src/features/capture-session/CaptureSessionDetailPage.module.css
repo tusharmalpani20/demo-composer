@@ -1,0 +1,290 @@
+.page {
+  min-height: 100vh;
+  background: #f4f6f8;
+  color: #1c2430;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 0 24px;
+  border-bottom: 1px solid #d9e0e7;
+  background: #ffffff;
+}
+
+.brand {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.context {
+  color: #637083;
+  font-size: 13px;
+}
+
+.main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 24px 40px;
+}
+
+.header {
+  display: grid;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #d9e0e7;
+}
+
+.eyebrow {
+  margin-bottom: 8px;
+  color: #637083;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  color: #111827;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.description {
+  max-width: 800px;
+  margin-top: 8px;
+  color: #4d5968;
+  line-height: 1.55;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric {
+  padding: 12px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.metricLabel {
+  color: #637083;
+  font-size: 12px;
+}
+
+.metricValue {
+  margin-top: 4px;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+  gap: 20px;
+  padding-top: 24px;
+}
+
+.section {
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  color: #1f2937;
+  font-size: 16px;
+}
+
+.timeline {
+  display: grid;
+  gap: 10px;
+}
+
+.event {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.eventIndex {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #e8eef7;
+  color: #1f4f82;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.eventHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.eventTitle {
+  color: #111827;
+  font-weight: 700;
+}
+
+.eventType {
+  color: #637083;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.eventMeta {
+  margin-top: 6px;
+  color: #637083;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.linkedAsset {
+  margin-top: 8px;
+  color: #1f6f43;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.assets {
+  display: grid;
+  gap: 12px;
+}
+
+.asset {
+  overflow: hidden;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.preview {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  background: #eef2f6;
+  border-bottom: 1px solid #d9e0e7;
+}
+
+.assetBody {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.assetTitle {
+  color: #111827;
+  font-weight: 700;
+}
+
+.assetMeta {
+  color: #637083;
+  font-size: 13px;
+}
+
+.empty,
+.state {
+  padding: 18px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #637083;
+}
+
+.state {
+  max-width: 640px;
+  margin: 80px auto 0;
+  text-align: center;
+}
+
+.retryButton {
+  margin-top: 14px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #b8c3cf;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1c2430;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 18px;
+  }
+
+  .main {
+    padding: 22px 16px 32px;
+  }
+
+  .titleRow {
+    flex-direction: column;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .title {
+    font-size: 23px;
+  }
+
+  .metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .event {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

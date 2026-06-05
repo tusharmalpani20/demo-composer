@@ -1,0 +1,18 @@
+import { describe, expect, it } from "vitest";
+import { parsePortalRoute } from "./routes";
+
+describe("parsePortalRoute", () => {
+  it("parses capture session detail routes", () => {
+    expect(parsePortalRoute("/projects/project_1/capture-sessions/capture_session_1")).toEqual({
+      type: "capture_session_detail",
+      projectId: "project_1",
+      captureSessionId: "capture_session_1",
+    });
+  });
+
+  it("rejects unsupported routes", () => {
+    expect(parsePortalRoute("/")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/projects/project_1")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/projects/project_1/capture-sessions")).toEqual({ type: "unsupported" });
+  });
+});

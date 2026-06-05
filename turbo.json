@@ -3,7 +3,8 @@
   "ui": "tui",
   "globalEnv": [
     "DEMO_COMPOSER_LOCAL_STORAGE_ROOT",
-    "DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES"
+    "DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES",
+    "VITE_DEMO_COMPOSER_API_URL"
   ],
   "tasks": {
     "build": {
