@@ -1,0 +1,206 @@
+export type ProjectAuthContext = {
+  organization_id: string;
+  actor_org_user_id: string;
+};
+
+export type ProjectStatus = "active" | "archived";
+
+export type Project = {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  slug: string | null;
+  color: string | null;
+  icon: string | null;
+  status: ProjectStatus;
+  created_by_id: string;
+  updated_by_id: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateProjectInput = {
+  name: string;
+  description?: string | null;
+  slug?: string | null;
+  color?: string | null;
+  icon?: string | null;
+  metadata?: unknown;
+  status?: ProjectStatus;
+};
+
+export type UpdateProjectInput = Partial<{
+  name: string;
+  description: string | null;
+  slug: string | null;
+  color: string | null;
+  icon: string | null;
+  metadata: unknown;
+  status: ProjectStatus;
+}>;
+
+export type ProjectRepository = {
+  create_project: (input: {
+    organization_id: string;
+    actor_org_user_id: string;
+    data: CreateProjectInput;
+  }) => Promise<Project>;
+  list_projects: (input: {
+    organization_id: string;
+    status: ProjectStatus;
+  }) => Promise<Project[]>;
+  find_project: (input: {
+    organization_id: string;
+    project_id: string;
+  }) => Promise<Project | null>;
+  update_project: (input: {
+    organization_id: string;
+    project_id: string;
+    actor_org_user_id: string;
+    data: UpdateProjectInput;
+  }) => Promise<Project | null>;
+};
+
+export class ProjectNameConflictError extends Error {
+  constructor() {
+    super("A project with this name already exists");
+  }
+}
+
+export class ProjectSlugConflictError extends Error {
+  constructor() {
+    super("A project with this slug already exists");
+  }
+}
+
+export class ProjectNotFoundError extends Error {
+  constructor() {
+    super("Project was not found");
+  }
+}
+
+export class EmptyProjectUpdateError extends Error {
+  constructor() {
+    super("At least one project field must be provided");
+  }
+}
+
+const compact_optional_string = (value: string | null | undefined) => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed || null;
+};
+
+const normalize_create_project = (input: CreateProjectInput): CreateProjectInput => ({
+  name: input.name.trim(),
+  description: compact_optional_string(input.description),
+  slug: compact_optional_string(input.slug),
+  color: compact_optional_string(input.color),
+  icon: compact_optional_string(input.icon),
+  metadata: input.metadata,
+  status: input.status,
+});
+
+const normalize_update_project = (input: UpdateProjectInput): UpdateProjectInput => {
+  const normalized: UpdateProjectInput = {};
+
+  if (input.name !== undefined) {
+    normalized.name = input.name.trim();
+  }
+  if (input.description !== undefined) {
+    normalized.description = compact_optional_string(input.description) ?? null;
+  }
+  if (input.slug !== undefined) {
+    normalized.slug = compact_optional_string(input.slug) ?? null;
+  }
+  if (input.color !== undefined) {
+    normalized.color = compact_optional_string(input.color) ?? null;
+  }
+  if (input.icon !== undefined) {
+    normalized.icon = compact_optional_string(input.icon) ?? null;
+  }
+  if (input.metadata !== undefined) {
+    normalized.metadata = input.metadata;
+  }
+  if (input.status !== undefined) {
+    normalized.status = input.status;
+  }
+
+  return normalized;
+};
+
+export const build_project_service = (repository: ProjectRepository) => {
+  const create_project = async (input: {
+    auth: ProjectAuthContext;
+    data: CreateProjectInput;
+  }) => repository.create_project({
+    organization_id: input.auth.organization_id,
+    actor_org_user_id: input.auth.actor_org_user_id,
+    data: normalize_create_project(input.data),
+  });
+
+  const list_projects = async (input: {
+    auth: ProjectAuthContext;
+    status?: ProjectStatus;
+  }) => repository.list_projects({
+    organization_id: input.auth.organization_id,
+    status: input.status ?? "active",
+  });
+
+  const get_project = async (input: {
+    auth: ProjectAuthContext;
+    project_id: string;
+  }) => {
+    const project = await repository.find_project({
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    });
+
+    if (!project) {
+      throw new ProjectNotFoundError();
+    }
+
+    return project;
+  };
+
+  const update_project = async (input: {
+    auth: ProjectAuthContext;
+    project_id: string;
+    data: UpdateProjectInput;
+  }) => {
+    const data = normalize_update_project(input.data);
+
+    if (Object.keys(data).length === 0) {
+      throw new EmptyProjectUpdateError();
+    }
+
+    const project = await repository.update_project({
+      organization_id: input.auth.organization_id,
+      actor_org_user_id: input.auth.actor_org_user_id,
+      project_id: input.project_id,
+      data,
+    });
+
+    if (!project) {
+      throw new ProjectNotFoundError();
+    }
+
+    return project;
+  };
+
+  return {
+    create_project,
+    list_projects,
+    get_project,
+    update_project,
+  };
+};

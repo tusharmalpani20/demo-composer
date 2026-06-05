@@ -33,12 +33,19 @@ import {
 } from './modules/authentication/session.routes.js';
 import { build_authentication_session_repository } from './modules/authentication/session.repository.js';
 import { build_authentication_session_service } from './modules/authentication/session.service.js';
+import {
+  build_project_routes,
+  type ProjectRouteDependencies,
+} from './modules/project/project.routes.js';
+import { build_project_repository } from './modules/project/project.repository.js';
+import { build_project_service } from './modules/project/project.service.js';
 import { index_root_routes } from './root_router/index.root_router.js';
 
 type BuildOptions = FastifyServerOptions & {
   public_instance_service?: PublicInstanceRouteService;
   first_run_setup_service?: FirstRunSetupRouteService;
   authentication_session_service?: AuthenticationSessionRouteService;
+  project_service?: ProjectRouteDependencies["project_service"];
 };
 
 export const build = (opts: BuildOptions = {}) => {
@@ -46,6 +53,7 @@ export const build = (opts: BuildOptions = {}) => {
       public_instance_service,
       first_run_setup_service,
       authentication_session_service,
+      project_service,
       ...fastify_options
   } = opts;
   const app = fastify(fastify_options);
@@ -235,6 +243,21 @@ export const build = (opts: BuildOptions = {}) => {
       )
   ), {
       prefix: "/api/v1/authentication",
+  });
+
+  const default_authentication_session_service = authentication_session_service ?? build_authentication_session_service(
+      build_authentication_session_repository(pool)
+  );
+
+  app.register(build_project_routes({
+      auth_service: {
+          get_current_auth_context: default_authentication_session_service.get_current_auth_context,
+      },
+      project_service: project_service ?? build_project_service(
+          build_project_repository(pool)
+      ),
+  }), {
+      prefix: "/api/v1/projects",
   });
 
   return app;

@@ -1,0 +1,230 @@
+import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
+import { z } from "zod";
+import {
+  UnauthenticatedSessionError,
+  type AuthContext,
+} from "../authentication/session.service";
+import { web_session_cookie_name } from "../authentication/session-cookie";
+import {
+  EmptyProjectUpdateError,
+  ProjectNameConflictError,
+  ProjectNotFoundError,
+  ProjectSlugConflictError,
+  type CreateProjectInput,
+  type Project,
+  type ProjectAuthContext,
+  type ProjectStatus,
+  type UpdateProjectInput,
+} from "./project.service";
+
+export type ProjectRouteDependencies = {
+  auth_service: {
+    get_current_auth_context: (session_token?: string) => Promise<AuthContext>;
+  };
+  project_service: {
+    create_project: (input: {
+      auth: ProjectAuthContext;
+      data: CreateProjectInput;
+    }) => Promise<Project>;
+    list_projects: (input: {
+      auth: ProjectAuthContext;
+      status?: ProjectStatus;
+    }) => Promise<Project[]>;
+    get_project: (input: {
+      auth: ProjectAuthContext;
+      project_id: string;
+    }) => Promise<Project>;
+    update_project: (input: {
+      auth: ProjectAuthContext;
+      project_id: string;
+      data: UpdateProjectInput;
+    }) => Promise<Project>;
+  };
+};
+
+const project_body_schema = z.object({
+  name: z.string().min(1),
+  description: z.string().nullable().optional(),
+  slug: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
+  icon: z.string().nullable().optional(),
+  metadata: z.unknown().optional(),
+  status: z.enum(["active", "archived"]).optional(),
+}).passthrough();
+
+const update_project_body_schema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  slug: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
+  icon: z.string().nullable().optional(),
+  metadata: z.unknown().optional(),
+  status: z.enum(["active", "archived"]).optional(),
+}).passthrough();
+
+const list_query_schema = z.object({
+  status: z.enum(["active", "archived"]).optional(),
+});
+
+const unauthorized_response = () => ({
+  error: {
+    type: "unauthenticated",
+    message: "Authentication is required",
+  },
+});
+
+const error_response = (type: string, message: string) => ({
+  error: {
+    type,
+    message,
+  },
+});
+
+const project_auth_context = (auth: AuthContext) => ({
+  organization_id: auth.organization.id,
+  actor_org_user_id: auth.org_user.id,
+});
+
+const pick_create_project_data = (body: CreateProjectInput): CreateProjectInput => ({
+  name: body.name,
+  description: body.description,
+  slug: body.slug,
+  color: body.color,
+  icon: body.icon,
+  metadata: body.metadata,
+  status: body.status,
+});
+
+const pick_update_project_data = (body: UpdateProjectInput): UpdateProjectInput => ({
+  name: body.name,
+  description: body.description,
+  slug: body.slug,
+  color: body.color,
+  icon: body.icon,
+  metadata: body.metadata,
+  status: body.status,
+});
+
+export const build_project_routes = (
+  dependencies: ProjectRouteDependencies
+): FastifyPluginAsync => {
+  return async (fastify: FastifyInstance) => {
+    const require_auth = async (session_token?: string) => (
+      project_auth_context(
+        await dependencies.auth_service.get_current_auth_context(session_token)
+      )
+    );
+
+    const handle_domain_error = (error: unknown, reply: FastifyReply) => {
+      if (error instanceof UnauthenticatedSessionError) {
+        return reply.status(401).send(unauthorized_response());
+      }
+
+      if (error instanceof ProjectNameConflictError) {
+        return reply.status(409).send(
+          error_response("project_name_conflict", "A project with this name already exists")
+        );
+      }
+
+      if (error instanceof ProjectSlugConflictError) {
+        return reply.status(409).send(
+          error_response("project_slug_conflict", "A project with this slug already exists")
+        );
+      }
+
+      if (error instanceof ProjectNotFoundError) {
+        return reply.status(404).send(
+          error_response("project_not_found", "Project was not found")
+        );
+      }
+
+      if (error instanceof EmptyProjectUpdateError) {
+        return reply.status(400).send(
+          error_response("empty_project_update", "At least one project field must be provided")
+        );
+      }
+
+      throw error;
+    };
+
+    fastify.post<{
+      Body: CreateProjectInput;
+    }>("/", {
+      schema: {
+        body: project_body_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const project = await dependencies.project_service.create_project({
+          auth,
+          data: pick_create_project_data(request.body),
+        });
+        return reply.status(201).send({ project });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.get<{
+      Querystring: {
+        status?: ProjectStatus;
+      };
+    }>("/", {
+      schema: {
+        querystring: list_query_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const projects = await dependencies.project_service.list_projects({
+          auth,
+          status: request.query.status,
+        });
+        return reply.status(200).send({ projects });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.get<{
+      Params: {
+        id: string;
+      };
+    }>("/:id", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const project = await dependencies.project_service.get_project({
+          auth,
+          project_id: request.params.id,
+        });
+        return reply.status(200).send({ project });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.patch<{
+      Params: {
+        id: string;
+      };
+      Body: UpdateProjectInput;
+    }>("/:id", {
+      schema: {
+        body: update_project_body_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const project = await dependencies.project_service.update_project({
+          auth,
+          project_id: request.params.id,
+          data: pick_update_project_data(request.body),
+        });
+        return reply.status(200).send({ project });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+  };
+};
