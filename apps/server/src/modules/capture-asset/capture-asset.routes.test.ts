@@ -299,7 +299,7 @@ describe("capture asset routes", () => {
       {
         service: "get_capture_asset_file",
         error: new UnsupportedFileStorageProviderError(),
-        status: 500,
+        status: 400,
         type: "unsupported_file_storage_provider",
       },
     ] as const;
@@ -337,6 +337,97 @@ describe("capture asset routes", () => {
       expect(response.json().error.type).toBe(test_case.type);
       await app.close();
     }
+  });
+
+  it("rejects malformed multipart upload fields before the service", async () => {
+    const seen_inputs: unknown[] = [];
+    const cases = [
+      {
+        parts: [{
+          name: "screenshot",
+          filename: "screenshot.png",
+          content_type: "image/png",
+          value: Buffer.from("fake png bytes"),
+        }],
+        status: 400,
+        type: "upload_file_required",
+      },
+      {
+        parts: [{
+          name: "file",
+          filename: "",
+          content_type: "image/png",
+          value: Buffer.from("fake png bytes"),
+        }],
+        status: 400,
+        type: "upload_file_required",
+      },
+      {
+        parts: [
+          {
+            name: "file",
+            filename: "screenshot.png",
+            content_type: "image/png",
+            value: Buffer.from("fake png bytes"),
+          },
+          { name: "captured_at", value: "not-a-date" },
+        ],
+        status: 400,
+        type: "invalid_capture_asset_upload",
+      },
+      {
+        parts: [
+          {
+            name: "file",
+            filename: "screenshot.png",
+            content_type: "image/png",
+            value: Buffer.from("fake png bytes"),
+          },
+          { name: "captured_at", value: "2026-06-05" },
+        ],
+        status: 400,
+        type: "invalid_capture_asset_upload",
+      },
+      {
+        parts: [
+          {
+            name: "file",
+            filename: "screenshot.png",
+            content_type: "image/png",
+            value: Buffer.from("fake png bytes"),
+          },
+          { name: "metadata", value: JSON.stringify(["not", "an", "object"]) },
+        ],
+        status: 400,
+        type: "invalid_capture_asset_upload",
+      },
+    ];
+
+    const app = await build_test_app({
+      capture_asset_service: {
+        upload_capture_asset: async (input) => {
+          seen_inputs.push(input);
+          return capture_asset;
+        },
+      },
+    });
+
+    for (const test_case of cases) {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/upload",
+        cookies: {
+          demo_composer_session: "session-token",
+        },
+        ...multipart_payload(test_case.parts),
+      });
+
+      expect(response.statusCode).toBe(test_case.status);
+      expect(response.json().error.type).toBe(test_case.type);
+    }
+
+    expect(seen_inputs).toEqual([]);
+    await app.close();
   });
 
   it("creates screenshot asset metadata with auth context and URL scope", async () => {

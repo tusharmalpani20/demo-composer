@@ -217,10 +217,37 @@ const optional_metadata_field = (fields: Record<string, unknown>) => {
   }
 
   try {
-    return JSON.parse(value);
+    const parsed = JSON.parse(value);
+
+    if (
+      parsed === null
+      || typeof parsed !== "object"
+      || Array.isArray(parsed)
+    ) {
+      throw new InvalidCaptureAssetUploadError();
+    }
+
+    return parsed;
   } catch {
     throw new InvalidCaptureAssetUploadError();
   }
+};
+
+const optional_datetime_field = (
+  fields: Record<string, unknown>,
+  name: string
+) => {
+  const value = multipart_field_value(fields, name);
+
+  if (value === undefined || value.trim() === "") {
+    return undefined;
+  }
+
+  if (!z.string().datetime().safeParse(value).success) {
+    throw new InvalidCaptureAssetUploadError();
+  }
+
+  return value;
 };
 
 const pick_upload_capture_asset_data = (
@@ -232,7 +259,7 @@ const pick_upload_capture_asset_data = (
   const device_pixel_ratio = optional_positive_number_field(fields, "device_pixel_ratio", false);
   const page_url = multipart_field_value(fields, "page_url");
   const page_title = multipart_field_value(fields, "page_title");
-  const captured_at = multipart_field_value(fields, "captured_at");
+  const captured_at = optional_datetime_field(fields, "captured_at");
   const metadata = optional_metadata_field(fields);
 
   if (width !== undefined) {
@@ -342,7 +369,7 @@ export const build_capture_asset_routes = (
       }
 
       if (error instanceof UnsupportedFileStorageProviderError) {
-        return reply.status(500).send(
+        return reply.status(400).send(
           error_response("unsupported_file_storage_provider", "File storage provider is not supported")
         );
       }
@@ -399,6 +426,14 @@ export const build_capture_asset_routes = (
 
         if (!upload) {
           throw new UploadFileRequiredError();
+        }
+
+        if (upload.fieldname !== "file") {
+          throw new UploadFileRequiredError();
+        }
+
+        if (!upload.filename?.trim()) {
+          throw new InvalidCaptureAssetUploadError();
         }
 
         const capture_asset = await dependencies.capture_asset_service.upload_capture_asset({
