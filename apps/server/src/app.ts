@@ -54,6 +54,12 @@ import {
 } from './modules/capture-event/capture-event.routes.js';
 import { build_capture_event_repository } from './modules/capture-event/capture-event.repository.js';
 import { build_capture_event_service } from './modules/capture-event/capture-event.service.js';
+import {
+  build_guide_routes,
+  type GuideRouteDependencies,
+} from './modules/guide/guide.routes.js';
+import { build_guide_repository } from './modules/guide/guide.repository.js';
+import { build_guide_service } from './modules/guide/guide.service.js';
 import { index_root_routes } from './root_router/index.root_router.js';
 
 type BuildOptions = FastifyServerOptions & {
@@ -64,6 +70,7 @@ type BuildOptions = FastifyServerOptions & {
   capture_session_service?: CaptureSessionRouteDependencies["capture_session_service"];
   capture_asset_service?: CaptureAssetRouteDependencies["capture_asset_service"];
   capture_event_service?: CaptureEventRouteDependencies["capture_event_service"];
+  guide_service?: GuideRouteDependencies["guide_service"];
 };
 
 const default_local_storage_root = () => (
@@ -87,6 +94,7 @@ export const build = (opts: BuildOptions = {}) => {
       capture_session_service,
       capture_asset_service,
       capture_event_service,
+      guide_service,
       ...fastify_options
   } = opts;
   const app = fastify(fastify_options);
@@ -308,6 +316,17 @@ export const build = (opts: BuildOptions = {}) => {
       },
       capture_event_service: capture_event_service ?? build_capture_event_service(
           build_capture_event_repository(pool)
+      ),
+  }), {
+      prefix: "/api/v1/projects",
+  });
+
+  app.register(build_guide_routes({
+      auth_service: {
+          get_current_auth_context: default_authentication_session_service.get_current_auth_context,
+      },
+      guide_service: guide_service ?? build_guide_service(
+          build_guide_repository(pool)
       ),
   }), {
       prefix: "/api/v1/projects",

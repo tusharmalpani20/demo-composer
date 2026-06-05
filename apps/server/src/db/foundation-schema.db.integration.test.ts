@@ -68,6 +68,8 @@ const insert_constraint_test_context = async () => {
   const org_user_id = ulid();
   const project_id = ulid();
   const capture_session_id = ulid();
+  const guide_id = ulid();
+  const guide_block_id = ulid();
 
   await pool.query(`
     INSERT INTO user_schema.user (id, email, password_hash, display_name)
@@ -108,6 +110,8 @@ const insert_constraint_test_context = async () => {
     org_user_id,
     project_id,
     capture_session_id,
+    guide_id,
+    guide_block_id,
   };
 };
 
@@ -123,6 +127,7 @@ describe("foundation schema migrations on postgres", () => {
     await expect(schema_exists("project_schema")).resolves.toBe(true);
     await expect(schema_exists("capture_schema")).resolves.toBe(true);
     await expect(schema_exists("file_schema")).resolves.toBe(true);
+    await expect(schema_exists("guide_schema")).resolves.toBe(true);
 
     await expect(table_exists("user_schema", "user")).resolves.toBe(true);
     await expect(table_exists("organization_schema", "organization")).resolves.toBe(true);
@@ -133,6 +138,9 @@ describe("foundation schema migrations on postgres", () => {
     await expect(table_exists("file_schema", "file")).resolves.toBe(true);
     await expect(table_exists("capture_schema", "capture_asset")).resolves.toBe(true);
     await expect(table_exists("capture_schema", "capture_event")).resolves.toBe(true);
+    await expect(table_exists("guide_schema", "guide")).resolves.toBe(true);
+    await expect(table_exists("guide_schema", "guide_block")).resolves.toBe(true);
+    await expect(table_exists("guide_schema", "guide_step")).resolves.toBe(true);
   });
 
   it("keeps user identity separate from organization membership", async () => {
@@ -253,6 +261,61 @@ describe("foundation schema migrations on postgres", () => {
     await expect(index_exists("capture_schema", "idx_capture_event_asset")).resolves.toBe(true);
     await expect(index_exists("capture_schema", "idx_capture_event_project_created")).resolves.toBe(true);
     await expect(table_comment("capture_schema", "capture_event")).resolves.toMatch(/source event/i);
+  });
+
+  it("creates guide artifact schema separately from capture source material", async () => {
+    for (const column_name of [
+      "organization_id",
+      "project_id",
+      "source_capture_session_id",
+      "title",
+      "description",
+      "status",
+      "created_by_id",
+      "updated_by_id",
+      "deleted_by_id",
+    ]) {
+      await expect(column_exists("guide_schema", "guide", column_name)).resolves.toBe(true);
+    }
+
+    for (const column_name of [
+      "organization_id",
+      "project_id",
+      "guide_id",
+      "block_type",
+      "block_index",
+      "source_capture_event_id",
+      "source_capture_asset_id",
+      "created_by_id",
+      "updated_by_id",
+      "deleted_by_id",
+    ]) {
+      await expect(column_exists("guide_schema", "guide_block", column_name)).resolves.toBe(true);
+    }
+
+    for (const column_name of [
+      "organization_id",
+      "project_id",
+      "guide_id",
+      "guide_block_id",
+      "title",
+      "body",
+      "source_capture_event_id",
+      "source_capture_asset_id",
+      "created_by_id",
+      "updated_by_id",
+      "deleted_by_id",
+    ]) {
+      await expect(column_exists("guide_schema", "guide_step", column_name)).resolves.toBe(true);
+    }
+
+    await expect(index_exists("guide_schema", "idx_guide_project_active_created")).resolves.toBe(true);
+    await expect(index_exists("guide_schema", "idx_guide_source_capture_session_active")).resolves.toBe(true);
+    await expect(index_exists("guide_schema", "idx_guide_block_guide_active_order")).resolves.toBe(true);
+    await expect(index_exists("guide_schema", "uq_guide_block_guide_index_active")).resolves.toBe(true);
+    await expect(index_exists("guide_schema", "idx_guide_step_block_active")).resolves.toBe(true);
+    await expect(index_exists("guide_schema", "uq_guide_step_block_active")).resolves.toBe(true);
+    await expect(table_comment("guide_schema", "guide")).resolves.toMatch(/editable guide artifact/i);
   });
 
   it("enforces file and capture asset metadata constraints", async () => {
@@ -401,6 +464,186 @@ describe("foundation schema migrations on postgres", () => {
     ])).rejects.toMatchObject({
       code: "23514",
       constraint: "chk_capture_event_input_value_redacted_true",
+    });
+  });
+
+  it("enforces guide artifact constraints", async () => {
+    const context = await insert_constraint_test_context();
+
+    await expect(pool.query(`
+      INSERT INTO guide_schema.guide (
+        id,
+        organization_id,
+        project_id,
+        source_capture_session_id,
+        title,
+        status,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, 'Guide', 'published', $5, $5)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      context.capture_session_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23514",
+      constraint: "chk_guide_status",
+    });
+
+    await pool.query(`
+      INSERT INTO guide_schema.guide (
+        id,
+        organization_id,
+        project_id,
+        source_capture_session_id,
+        title,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, 'Guide', $5, $5)
+    `, [
+      context.guide_id,
+      context.organization_id,
+      context.project_id,
+      context.capture_session_id,
+      context.org_user_id,
+    ]);
+
+    await expect(pool.query(`
+      INSERT INTO guide_schema.guide_block (
+        id,
+        organization_id,
+        project_id,
+        guide_id,
+        block_type,
+        block_index,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, 'scene', 1, $5, $5)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      context.guide_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23514",
+      constraint: "chk_guide_block_type",
+    });
+
+    await expect(pool.query(`
+      INSERT INTO guide_schema.guide_block (
+        id,
+        organization_id,
+        project_id,
+        guide_id,
+        block_type,
+        block_index,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, 'step', 0, $5, $5)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      context.guide_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23514",
+      constraint: "chk_guide_block_index_positive",
+    });
+
+    await pool.query(`
+      INSERT INTO guide_schema.guide_block (
+        id,
+        organization_id,
+        project_id,
+        guide_id,
+        block_type,
+        block_index,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, 'step', 1, $5, $5)
+    `, [
+      context.guide_block_id,
+      context.organization_id,
+      context.project_id,
+      context.guide_id,
+      context.org_user_id,
+    ]);
+
+    await expect(pool.query(`
+      INSERT INTO guide_schema.guide_block (
+        id,
+        organization_id,
+        project_id,
+        guide_id,
+        block_type,
+        block_index,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, 'step', 1, $5, $5)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      context.guide_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23505",
+      constraint: "uq_guide_block_guide_index_active",
+    });
+
+    await pool.query(`
+      INSERT INTO guide_schema.guide_step (
+        id,
+        organization_id,
+        project_id,
+        guide_id,
+        guide_block_id,
+        title,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, $5, 'Click "Add Department"', $6, $6)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      context.guide_id,
+      context.guide_block_id,
+      context.org_user_id,
+    ]);
+
+    await expect(pool.query(`
+      INSERT INTO guide_schema.guide_step (
+        id,
+        organization_id,
+        project_id,
+        guide_id,
+        guide_block_id,
+        title,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, $5, 'Duplicate step', $6, $6)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      context.guide_id,
+      context.guide_block_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23505",
+      constraint: "uq_guide_step_block_active",
     });
   });
 });
