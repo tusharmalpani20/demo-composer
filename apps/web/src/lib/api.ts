@@ -1,4 +1,8 @@
-import type { CaptureSessionDetail } from "../features/capture-session/types";
+import type {
+  CaptureSession,
+  CaptureSessionDetail,
+  CaptureSessionStatus,
+} from "../features/capture-session/types";
 import type { Guide, GuideBlock, GuideDetail, GuideStep } from "../features/guide/types";
 
 export type ApiClientErrorKind = "unauthenticated" | "not_found" | "validation" | "unknown";
@@ -12,6 +16,14 @@ type ApiErrorBody = {
 
 export type ProjectGuideListResponse = {
   guides: Guide[];
+};
+
+export type ProjectCaptureSessionListResponse = {
+  capture_sessions: CaptureSession[];
+};
+
+export type ListCaptureSessionsOptions = {
+  status?: CaptureSessionStatus;
 };
 
 export class ApiClientError extends Error {
@@ -105,6 +117,17 @@ export const getCaptureSessionDetail = async (
 ): Promise<CaptureSessionDetail> => {
   return requestJson<CaptureSessionDetail>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}/detail`
+  );
+};
+
+export const listProjectCaptureSessions = async (
+  projectId: string,
+  options: ListCaptureSessionsOptions = {}
+): Promise<ProjectCaptureSessionListResponse> => {
+  const query = options.status ? `?status=${encodeURIComponent(options.status)}` : "";
+
+  return requestJson<ProjectCaptureSessionListResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions${query}`
   );
 };
 

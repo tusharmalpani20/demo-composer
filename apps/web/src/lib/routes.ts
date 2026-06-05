@@ -5,6 +5,10 @@ export type PortalRoute =
     captureSessionId: string;
   }
   | {
+    type: "project_capture_session_list";
+    projectId: string;
+  }
+  | {
     type: "guide_detail";
     projectId: string;
     guideId: string;
@@ -36,6 +40,23 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
       type: "capture_session_detail",
       projectId: decodeURIComponent(projectId),
       captureSessionId: decodeURIComponent(captureSessionId),
+    };
+  }
+
+  if (
+    segments.length === 3
+    && segments[0] === "projects"
+    && segments[2] === "capture-sessions"
+  ) {
+    const projectId = segments[1];
+
+    if (!projectId) {
+      return { type: "unsupported" };
+    }
+
+    return {
+      type: "project_capture_session_list",
+      projectId: decodeURIComponent(projectId),
     };
   }
 

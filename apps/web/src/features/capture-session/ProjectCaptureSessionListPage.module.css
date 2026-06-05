@@ -1,0 +1,190 @@
+.page {
+  min-height: 100vh;
+  background: #f4f6f8;
+  color: #1c2430;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 0 24px;
+  border-bottom: 1px solid #d9e0e7;
+  background: #ffffff;
+}
+
+.brand {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.context {
+  color: #637083;
+  font-size: 13px;
+}
+
+.main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 40px;
+}
+
+.header {
+  display: grid;
+  gap: 14px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #d9e0e7;
+}
+
+.eyebrow {
+  margin-bottom: 8px;
+  color: #637083;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  color: #111827;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.description {
+  margin: 8px 0 0;
+  color: #4d5968;
+  line-height: 1.55;
+}
+
+.content {
+  padding-top: 24px;
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  color: #1f2937;
+  font-size: 16px;
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+}
+
+.captureSession {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.captureSessionBody {
+  min-width: 0;
+}
+
+.captureSessionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.captureSessionTitle {
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+}
+
+.captureSessionDescription {
+  margin: 8px 0 0;
+  color: #4d5968;
+  line-height: 1.45;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  color: #637083;
+  font-size: 13px;
+}
+
+.openLink,
+.secondaryButton {
+  border: 1px solid #b8c3cf;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1c2430;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.openLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  text-decoration: none;
+}
+
+.secondaryButton {
+  min-height: 36px;
+  margin-top: 14px;
+  padding: 0 14px;
+}
+
+.empty,
+.state {
+  padding: 18px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #637083;
+}
+
+.state {
+  max-width: 640px;
+  margin: 80px auto 0;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 18px;
+  }
+
+  .main {
+    padding: 20px 16px 32px;
+  }
+
+  .captureSession {
+    grid-template-columns: 1fr;
+  }
+
+  .openLink {
+    justify-content: center;
+  }
+}

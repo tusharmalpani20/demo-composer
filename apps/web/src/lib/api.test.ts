@@ -5,6 +5,7 @@ import {
   deleteGuideBlock,
   getCaptureSessionDetail,
   getGuideDetail,
+  listProjectCaptureSessions,
   listProjectGuides,
   reorderGuideBlocks,
   resolveApiAssetUrl,
@@ -78,6 +79,56 @@ describe("api client", () => {
 
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/projects/project_1/capture-sessions/capture_session_1/detail",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("lists project capture sessions with session cookies", async () => {
+    const response = {
+      capture_sessions: [detail_response.capture_session],
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(listProjectCaptureSessions("project_1")).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project_1/capture-sessions",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("lists project capture sessions filtered by status", async () => {
+    const response = {
+      capture_sessions: [detail_response.capture_session],
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(listProjectCaptureSessions("project_1", { status: "completed" })).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project_1/capture-sessions?status=completed",
       {
         credentials: "include",
         headers: {
@@ -341,6 +392,26 @@ describe("api client", () => {
     })));
 
     await expect(listProjectGuides("missing")).rejects.toMatchObject({
+      kind: "not_found",
+      type: "project_not_found",
+      message: "Project was not found",
+    });
+  });
+
+  it("maps project not found errors while listing capture sessions", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        type: "project_not_found",
+        message: "Project was not found",
+      },
+    }), {
+      status: 404,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    await expect(listProjectCaptureSessions("missing")).rejects.toMatchObject({
       kind: "not_found",
       type: "project_not_found",
       message: "Project was not found",
