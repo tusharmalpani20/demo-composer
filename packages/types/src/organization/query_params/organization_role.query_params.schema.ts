@@ -34,8 +34,11 @@ export const organization_role_list_query_params_refine_doc = organization_role_
     (data) => {
         //if is_search is true, page_number and page_size are not required
         if (data.is_search) {
-            (data.page_number as any) = undefined;
-            (data.page_size as any) = undefined;
+            return {
+                ...data,
+                page_number: undefined,
+                page_size: undefined,
+            };
         }
         return data;
     }
@@ -85,5 +88,4 @@ export const organization_role_list_query_params_model_doc = organization_role_l
 
 export type Organization_Role_List_Query_Params_Model_Type = z.infer<typeof organization_role_list_query_params_model_doc>;
 export type TOrganizationRoleListQueryParamsModel = Organization_Role_List_Query_Params_Model_Type;
-
 

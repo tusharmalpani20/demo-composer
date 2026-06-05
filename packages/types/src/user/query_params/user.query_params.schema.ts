@@ -55,8 +55,11 @@ const user_list_query_params_catch_doc = user_list_query_params_doc.pick({
 export const user_list_query_params_refine_doc = user_list_query_params_catch_doc.transform(
     (data) => {
         if (data.is_search) {
-            (data.page_number as any) = undefined;
-            (data.page_size as any) = undefined;
+            return {
+                ...data,
+                page_number: undefined,
+                page_size: undefined,
+            };
         }
         return data;
     }
