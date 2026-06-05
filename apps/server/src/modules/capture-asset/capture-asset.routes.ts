@@ -4,7 +4,7 @@ import {
   UnauthenticatedSessionError,
   type AuthContext,
 } from "../authentication/session.service";
-import { web_session_cookie_name } from "../authentication/session-cookie";
+import { session_token_from_request } from "../authentication/request-session-token";
 import {
   CaptureAssetNotFoundError,
   CaptureSessionNotFoundError,
@@ -401,7 +401,7 @@ export const build_capture_asset_routes = (
       },
     }, async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const capture_asset = await dependencies.capture_asset_service.create_capture_asset({
           auth,
           project_id: request.params.project_id,
@@ -421,7 +421,7 @@ export const build_capture_asset_routes = (
       };
     }>("/:project_id/capture-sessions/:capture_session_id/assets/upload", async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const upload = await request.file();
 
         if (!upload) {
@@ -467,7 +467,7 @@ export const build_capture_asset_routes = (
       },
     }, async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const capture_assets = await dependencies.capture_asset_service.list_capture_assets({
           auth,
           project_id: request.params.project_id,
@@ -488,7 +488,7 @@ export const build_capture_asset_routes = (
       };
     }>("/:project_id/capture-sessions/:capture_session_id/assets/:id", async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const capture_asset = await dependencies.capture_asset_service.get_capture_asset({
           auth,
           project_id: request.params.project_id,
@@ -509,7 +509,7 @@ export const build_capture_asset_routes = (
       };
     }>("/:project_id/capture-sessions/:capture_session_id/assets/:id/file", async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const file = await dependencies.capture_asset_service.get_capture_asset_file({
           auth,
           project_id: request.params.project_id,
@@ -533,7 +533,7 @@ export const build_capture_asset_routes = (
       };
     }>("/:project_id/capture-sessions/:capture_session_id/assets/:id", async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         await dependencies.capture_asset_service.delete_capture_asset({
           auth,
           project_id: request.params.project_id,

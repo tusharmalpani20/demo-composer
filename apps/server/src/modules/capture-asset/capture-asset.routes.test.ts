@@ -245,6 +245,89 @@ describe("capture asset routes", () => {
     await app.close();
   });
 
+  it("uploads screenshot bytes with bearer auth", async () => {
+    const seen_tokens: Array<string | undefined> = [];
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      auth_service: {
+        get_current_auth_context: async (session_token) => {
+          seen_tokens.push(session_token);
+          return auth_context;
+        },
+      },
+      capture_asset_service: {
+        upload_capture_asset: async (input) => {
+          seen_inputs.push(input);
+          return capture_asset;
+        },
+      },
+    });
+    const request_body = multipart_payload([
+      {
+        name: "file",
+        filename: "screenshot.png",
+        content_type: "image/png",
+        value: Buffer.from("fake png bytes"),
+      },
+      { name: "captured_at", value: "2026-06-05T10:00:00.000Z" },
+    ]);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/upload",
+      headers: {
+        authorization: "Bearer extension-session-token",
+        ...request_body.headers,
+      },
+      payload: request_body.payload,
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toEqual({ capture_asset });
+    expect(seen_tokens).toEqual(["extension-session-token"]);
+    expect(seen_inputs).toEqual([expect.objectContaining({
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      file: expect.objectContaining({
+        mime_type: "image/png",
+        original_name: "screenshot.png",
+      }),
+      data: {
+        captured_at: "2026-06-05T10:00:00.000Z",
+      },
+    })]);
+    await app.close();
+  });
+
+  it("lists capture assets with bearer auth", async () => {
+    const seen_tokens: Array<string | undefined> = [];
+    const app = await build_test_app({
+      auth_service: {
+        get_current_auth_context: async (session_token) => {
+          seen_tokens.push(session_token);
+          return auth_context;
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets?asset_type=screenshot",
+      headers: {
+        authorization: "Bearer extension-session-token",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ capture_assets: [capture_asset] });
+    expect(seen_tokens).toEqual(["extension-session-token"]);
+    await app.close();
+  });
+
   it("streams capture asset file bytes with private cache headers", async () => {
     const app = await build_test_app();
 
