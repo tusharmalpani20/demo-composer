@@ -1,0 +1,173 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { ApiClientError } from "../../lib/api";
+import { ProjectWorkspacePage } from "./ProjectWorkspacePage";
+import type { Project } from "./types";
+
+const project: Project = {
+  id: "project_1",
+  organization_id: "organization_1",
+  name: "Internal onboarding demos",
+  description: "Reusable captures and guides for internal teams.",
+  slug: "internal-onboarding-demos",
+  color: "#2563eb",
+  icon: "folder",
+  status: "active",
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-06-05T10:00:00.000Z",
+  updated_at: "2026-06-05T10:05:00.000Z",
+};
+
+const renderPage = (overrides: {
+  projectId?: string;
+  loadProject?: () => Promise<{ project: Project }>;
+} = {}) => {
+  const loadProject = overrides.loadProject ?? vi.fn(async () => ({ project }));
+
+  render(
+    <ProjectWorkspacePage
+      projectId={overrides.projectId ?? "project_1"}
+      loadProject={loadProject}
+    />
+  );
+
+  return { loadProject };
+};
+
+describe("ProjectWorkspacePage", () => {
+  it("renders project details and workspace links", async () => {
+    const { loadProject } = renderPage();
+
+    expect(screen.getByText("Loading project...")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Internal onboarding demos" })).toBeInTheDocument();
+    expect(screen.getByText("Reusable captures and guides for internal teams.")).toBeInTheDocument();
+    expect(screen.getByText("active")).toBeInTheDocument();
+    expect(screen.getByText("internal-onboarding-demos")).toBeInTheDocument();
+    expect(screen.getByText(/Updated /)).toBeInTheDocument();
+    expect(screen.getByText(/Created /)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open capture sessions" })).toHaveAttribute(
+      "href",
+      "/projects/project_1/capture-sessions"
+    );
+    expect(screen.getByRole("link", { name: "Open guides" })).toHaveAttribute(
+      "href",
+      "/projects/project_1/guides"
+    );
+    expect(loadProject).toHaveBeenCalledWith("project_1");
+    expect(screen.queryByText("organization_1")).not.toBeInTheDocument();
+    expect(screen.queryByText("org_user_1")).not.toBeInTheDocument();
+    expect(screen.queryByText("version")).not.toBeInTheDocument();
+    expect(screen.queryByText("#2563eb")).not.toBeInTheDocument();
+    expect(screen.queryByText("folder")).not.toBeInTheDocument();
+  });
+
+  it("URL-encodes project IDs in workspace links", async () => {
+    renderPage({ projectId: "project / 1" });
+
+    expect(await screen.findByRole("link", { name: "Open capture sessions" })).toHaveAttribute(
+      "href",
+      "/projects/project%20%2F%201/capture-sessions"
+    );
+    expect(screen.getByRole("link", { name: "Open guides" })).toHaveAttribute(
+      "href",
+      "/projects/project%20%2F%201/guides"
+    );
+  });
+
+  it("renders projects without optional description and slug", async () => {
+    renderPage({
+      loadProject: async () => ({
+        project: {
+          ...project,
+          description: null,
+          slug: null,
+          color: null,
+          icon: null,
+        },
+      }),
+    });
+
+    expect(await screen.findByRole("heading", { name: "Internal onboarding demos" })).toBeInTheDocument();
+    expect(screen.queryByText("Reusable captures and guides for internal teams.")).not.toBeInTheDocument();
+    expect(screen.queryByText("internal-onboarding-demos")).not.toBeInTheDocument();
+  });
+
+  it("renders archived projects", async () => {
+    renderPage({
+      loadProject: async () => ({
+        project: {
+          ...project,
+          status: "archived",
+        },
+      }),
+    });
+
+    expect(await screen.findByText("archived")).toBeInTheDocument();
+  });
+
+  it("does not crash on invalid project timestamps", async () => {
+    renderPage({
+      loadProject: async () => ({
+        project: {
+          ...project,
+          created_at: "not a date",
+          updated_at: "also not a date",
+        },
+      }),
+    });
+
+    expect(await screen.findByText("Updated Unknown")).toBeInTheDocument();
+    expect(screen.getByText("Created Unknown")).toBeInTheDocument();
+  });
+
+  it("renders unauthenticated and not-found states", async () => {
+    const { rerender } = render(
+      <ProjectWorkspacePage
+        projectId="project_1"
+        loadProject={async () => {
+          throw new ApiClientError({
+            kind: "unauthenticated",
+            status: 401,
+            type: "unauthenticated",
+            message: "Authentication is required",
+          });
+        }}
+      />
+    );
+
+    expect(await screen.findByText("Sign in to view this project.")).toBeInTheDocument();
+
+    rerender(
+      <ProjectWorkspacePage
+        projectId="missing"
+        loadProject={async () => {
+          throw new ApiClientError({
+            kind: "not_found",
+            status: 404,
+            type: "project_not_found",
+            message: "Project was not found",
+          });
+        }}
+      />
+    );
+
+    expect(await screen.findByText("Project was not found.")).toBeInTheDocument();
+  });
+
+  it("renders generic errors and supports retry", async () => {
+    const loadProject = vi
+      .fn<() => Promise<{ project: Project }>>()
+      .mockRejectedValueOnce(new Error("Network failed"))
+      .mockResolvedValueOnce({ project });
+
+    renderPage({ loadProject });
+
+    expect(await screen.findByText("Could not load project.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => expect(loadProject).toHaveBeenCalledTimes(2));
+    expect(await screen.findByRole("heading", { name: "Internal onboarding demos" })).toBeInTheDocument();
+  });
+});

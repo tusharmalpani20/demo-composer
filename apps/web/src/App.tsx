@@ -2,11 +2,20 @@ import { CaptureSessionDetailPage } from "./features/capture-session/CaptureSess
 import { ProjectCaptureSessionListPage } from "./features/capture-session/ProjectCaptureSessionListPage";
 import { GuideEditorPage } from "./features/guide/GuideEditorPage";
 import { ProjectGuideListPage } from "./features/guide/ProjectGuideListPage";
+import { ProjectWorkspacePage } from "./features/project/ProjectWorkspacePage";
 import { parsePortalRoute } from "./lib/routes";
 import styles from "./App.module.css";
 
 export default function App() {
   const route = parsePortalRoute(window.location.pathname);
+
+  if (route.type === "project_workspace") {
+    return (
+      <ProjectWorkspacePage
+        projectId={route.projectId}
+      />
+    );
+  }
 
   if (route.type === "capture_session_detail") {
     return (
@@ -49,8 +58,8 @@ export default function App() {
       </header>
       <main className={styles.main}>
         <section className={styles.emptyState}>
-          <h1 className={styles.title}>Capture session portal</h1>
-          <p>Open a capture session list, capture session, guide list, or guide link to continue.</p>
+          <h1 className={styles.title}>Demo Composer portal</h1>
+          <p>Open a project workspace, capture session list, capture session, guide list, or guide link to continue.</p>
         </section>
       </main>
     </div>

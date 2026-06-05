@@ -1,5 +1,9 @@
 export type PortalRoute =
   | {
+    type: "project_workspace";
+    projectId: string;
+  }
+  | {
     type: "capture_session_detail";
     projectId: string;
     captureSessionId: string;
@@ -23,6 +27,22 @@ export type PortalRoute =
 
 export const parsePortalRoute = (pathname: string): PortalRoute => {
   const segments = pathname.split("/").filter(Boolean);
+
+  if (
+    segments.length === 2
+    && segments[0] === "projects"
+  ) {
+    const projectId = segments[1];
+
+    if (!projectId) {
+      return { type: "unsupported" };
+    }
+
+    return {
+      type: "project_workspace",
+      projectId: decodeURIComponent(projectId),
+    };
+  }
 
   if (
     segments.length === 4

@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { parsePortalRoute } from "./routes";
 
 describe("parsePortalRoute", () => {
+  it("parses project workspace routes", () => {
+    expect(parsePortalRoute("/projects/project_1")).toEqual({
+      type: "project_workspace",
+      projectId: "project_1",
+    });
+    expect(parsePortalRoute("/projects/project_1/")).toEqual({
+      type: "project_workspace",
+      projectId: "project_1",
+    });
+  });
+
   it("parses capture session detail routes", () => {
     expect(parsePortalRoute("/projects/project_1/capture-sessions/capture_session_1")).toEqual({
       type: "capture_session_detail",
@@ -42,6 +53,6 @@ describe("parsePortalRoute", () => {
 
   it("rejects unsupported routes", () => {
     expect(parsePortalRoute("/")).toEqual({ type: "unsupported" });
-    expect(parsePortalRoute("/projects/project_1")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/projects")).toEqual({ type: "unsupported" });
   });
 });

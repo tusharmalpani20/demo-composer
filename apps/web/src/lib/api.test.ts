@@ -5,6 +5,7 @@ import {
   deleteGuideBlock,
   getCaptureSessionDetail,
   getGuideDetail,
+  getProject,
   listProjectCaptureSessions,
   listProjectGuides,
   reorderGuideBlocks,
@@ -61,9 +62,71 @@ const guide_response = {
   guide_blocks: [],
 };
 
+const project_response = {
+  project: {
+    id: "project_1",
+    organization_id: "organization_1",
+    name: "Internal onboarding demos",
+    description: "Reusable captures and guides for internal teams.",
+    slug: "internal-onboarding-demos",
+    color: "#2563eb",
+    icon: "folder",
+    status: "active",
+    created_by_id: "org_user_1",
+    updated_by_id: "org_user_1",
+    version: 1,
+    created_at: "2026-06-05T10:00:00.000Z",
+    updated_at: "2026-06-05T10:05:00.000Z",
+  },
+};
+
 describe("api client", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("fetches project detail with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(project_response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(getProject("project_1")).resolves.toEqual(project_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project_1",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("URL-encodes project IDs while fetching project detail", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(project_response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await getProject("project / 1");
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project%20%2F%201",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
   });
 
   it("fetches capture session detail with session cookies", async () => {
@@ -395,6 +458,46 @@ describe("api client", () => {
       kind: "not_found",
       type: "project_not_found",
       message: "Project was not found",
+    });
+  });
+
+  it("maps project not found errors while fetching project detail", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        type: "project_not_found",
+        message: "Project was not found",
+      },
+    }), {
+      status: 404,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    await expect(getProject("missing")).rejects.toMatchObject({
+      kind: "not_found",
+      type: "project_not_found",
+      message: "Project was not found",
+    });
+  });
+
+  it("maps unauthenticated errors while fetching project detail", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        type: "unauthenticated",
+        message: "Authentication is required",
+      },
+    }), {
+      status: 401,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    await expect(getProject("project_1")).rejects.toMatchObject({
+      kind: "unauthenticated",
+      type: "unauthenticated",
+      message: "Authentication is required",
     });
   });
 

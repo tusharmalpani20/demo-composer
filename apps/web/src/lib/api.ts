@@ -4,6 +4,7 @@ import type {
   CaptureSessionStatus,
 } from "../features/capture-session/types";
 import type { Guide, GuideBlock, GuideDetail, GuideStep } from "../features/guide/types";
+import type { Project } from "../features/project/types";
 
 export type ApiClientErrorKind = "unauthenticated" | "not_found" | "validation" | "unknown";
 
@@ -16,6 +17,10 @@ type ApiErrorBody = {
 
 export type ProjectGuideListResponse = {
   guides: Guide[];
+};
+
+export type ProjectDetailResponse = {
+  project: Project;
 };
 
 export type ProjectCaptureSessionListResponse = {
@@ -109,6 +114,14 @@ const requestJson = async <Result>(
 
 export const resolveApiAssetUrl = (fileUrl: string, baseUrl = apiBaseUrl()) => (
   joinUrl(baseUrl, fileUrl)
+);
+
+export const getProject = async (
+  projectId: string
+): Promise<ProjectDetailResponse> => (
+  requestJson<ProjectDetailResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}`
+  )
 );
 
 export const getCaptureSessionDetail = async (
