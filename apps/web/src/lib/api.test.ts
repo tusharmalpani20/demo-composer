@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ApiClientError,
+  deleteGuideBlock,
   getCaptureSessionDetail,
+  getGuideDetail,
+  reorderGuideBlocks,
   resolveApiAssetUrl,
+  updateGuide,
+  updateGuideStep,
 } from "./api";
 
 const detail_response = {
@@ -35,6 +40,24 @@ const detail_response = {
   capture_assets: [],
 };
 
+const guide_response = {
+  guide: {
+    id: "guide_1",
+    organization_id: "organization_1",
+    project_id: "project_1",
+    source_capture_session_id: "capture_session_1",
+    title: "Department guide",
+    description: null,
+    status: "draft",
+    created_by_id: "org_user_1",
+    updated_by_id: "org_user_1",
+    version: 1,
+    created_at: "2026-06-05T10:00:00.000Z",
+    updated_at: "2026-06-05T10:00:00.000Z",
+  },
+  guide_blocks: [],
+};
+
 describe("api client", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -62,6 +85,129 @@ describe("api client", () => {
     );
   });
 
+  it("fetches guide detail with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(guide_response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(getGuideDetail("project_1", "guide_1")).resolves.toEqual(guide_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project_1/guides/guide_1",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("updates guide metadata and guide steps", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({
+      guide: guide_response.guide,
+      guide_step: {
+        id: "step_1",
+        title: "Updated step",
+        body: "Details",
+      },
+    }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await updateGuide("project_1", "guide_1", {
+      title: "Updated",
+      description: null,
+    });
+    await updateGuideStep("project_1", "guide_1", "step_1", {
+      title: "Updated step",
+      body: "Details",
+    });
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "/api/v1/projects/project_1/guides/guide_1",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Updated",
+          description: null,
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/projects/project_1/guides/guide_1/steps/step_1",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Updated step",
+          body: "Details",
+        }),
+      }
+    );
+  });
+
+  it("reorders and deletes guide blocks", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({
+      guide_blocks: [],
+    }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await reorderGuideBlocks("project_1", "guide_1", ["block_2", "block_1"]);
+    await deleteGuideBlock("project_1", "guide_1", "block_1");
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "/api/v1/projects/project_1/guides/guide_1/blocks/reorder",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          block_ids: ["block_2", "block_1"],
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/projects/project_1/guides/guide_1/blocks/block_1",
+      {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
   it("maps known backend errors", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
       error: {
@@ -77,7 +223,30 @@ describe("api client", () => {
 
     await expect(getCaptureSessionDetail("project_1", "capture_session_1")).rejects.toMatchObject({
       kind: "unauthenticated",
+      type: "unauthenticated",
       message: "Authentication is required",
+    });
+  });
+
+  it("preserves backend error type", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        type: "guide_not_editable",
+        message: "Guide is not editable",
+      },
+    }), {
+      status: 409,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    await expect(updateGuideStep("project_1", "guide_1", "step_1", {
+      title: "Blocked",
+    })).rejects.toMatchObject({
+      kind: "validation",
+      type: "guide_not_editable",
+      message: "Guide is not editable",
     });
   });
 

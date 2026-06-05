@@ -1,4 +1,5 @@
 import type { CaptureSessionDetail } from "../features/capture-session/types";
+import type { Guide, GuideBlock, GuideDetail, GuideStep } from "../features/guide/types";
 
 export type ApiClientErrorKind = "unauthenticated" | "not_found" | "validation" | "unknown";
 
@@ -12,12 +13,14 @@ type ApiErrorBody = {
 export class ApiClientError extends Error {
   kind: ApiClientErrorKind;
   status: number;
+  type: string | null;
 
-  constructor(input: { kind: ApiClientErrorKind; status: number; message: string }) {
+  constructor(input: { kind: ApiClientErrorKind; status: number; message: string; type?: string | null }) {
     super(input.message);
     this.name = "ApiClientError";
     this.kind = input.kind;
     this.status = input.status;
+    this.type = input.type ?? null;
   }
 }
 
@@ -55,23 +58,18 @@ const parseErrorBody = async (response: Response): Promise<ApiErrorBody> => {
   }
 };
 
-export const resolveApiAssetUrl = (fileUrl: string, baseUrl = apiBaseUrl()) => (
-  joinUrl(baseUrl, fileUrl)
-);
-
-export const getCaptureSessionDetail = async (
-  projectId: string,
-  captureSessionId: string
-): Promise<CaptureSessionDetail> => {
+const requestJson = async <Result>(
+  path: string,
+  init: RequestInit = {}
+): Promise<Result> => {
   const response = await fetch(
-    joinUrl(
-      apiBaseUrl(),
-      `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}/detail`
-    ),
+    joinUrl(apiBaseUrl(), path),
     {
+      ...init,
       credentials: "include",
       headers: {
         accept: "application/json",
+        ...init.headers,
       },
     }
   );
@@ -81,9 +79,110 @@ export const getCaptureSessionDetail = async (
     throw new ApiClientError({
       kind: errorKind(response.status, body.error?.type),
       status: response.status,
+      type: body.error?.type ?? null,
       message: body.error?.message ?? "Request failed",
     });
   }
 
-  return await response.json() as CaptureSessionDetail;
+  if (response.status === 204) {
+    return undefined as Result;
+  }
+
+  return await response.json() as Result;
 };
+
+export const resolveApiAssetUrl = (fileUrl: string, baseUrl = apiBaseUrl()) => (
+  joinUrl(baseUrl, fileUrl)
+);
+
+export const getCaptureSessionDetail = async (
+  projectId: string,
+  captureSessionId: string
+): Promise<CaptureSessionDetail> => {
+  return requestJson<CaptureSessionDetail>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}/detail`
+  );
+};
+
+export const getGuideDetail = async (
+  projectId: string,
+  guideId: string
+): Promise<GuideDetail> => (
+  requestJson<GuideDetail>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}`
+  )
+);
+
+export const updateGuide = async (
+  projectId: string,
+  guideId: string,
+  data: {
+    title?: string;
+    description?: string | null;
+    status?: Guide["status"];
+  }
+): Promise<{ guide: Guide }> => (
+  requestJson<{ guide: Guide }>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
+export const updateGuideStep = async (
+  projectId: string,
+  guideId: string,
+  stepId: string,
+  data: {
+    title?: string;
+    body?: string | null;
+  }
+): Promise<{ guide_step: GuideStep }> => (
+  requestJson<{ guide_step: GuideStep }>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/steps/${encodeURIComponent(stepId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
+export const reorderGuideBlocks = async (
+  projectId: string,
+  guideId: string,
+  blockIds: string[]
+): Promise<{ guide_blocks: GuideBlock[] }> => (
+  requestJson<{ guide_blocks: GuideBlock[] }>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/reorder`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        block_ids: blockIds,
+      }),
+    }
+  )
+);
+
+export const deleteGuideBlock = async (
+  projectId: string,
+  guideId: string,
+  blockId: string
+): Promise<void> => (
+  requestJson<void>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/${encodeURIComponent(blockId)}`,
+    {
+      method: "DELETE",
+    }
+  )
+);
