@@ -72,6 +72,7 @@ describe("foundation schema migrations on postgres", () => {
     await expect(schema_exists("auth_schema")).resolves.toBe(true);
     await expect(schema_exists("project_schema")).resolves.toBe(true);
     await expect(schema_exists("capture_schema")).resolves.toBe(true);
+    await expect(schema_exists("file_schema")).resolves.toBe(true);
 
     await expect(table_exists("user_schema", "user")).resolves.toBe(true);
     await expect(table_exists("organization_schema", "organization")).resolves.toBe(true);
@@ -79,6 +80,8 @@ describe("foundation schema migrations on postgres", () => {
     await expect(table_exists("auth_schema", "auth_session")).resolves.toBe(true);
     await expect(table_exists("project_schema", "project")).resolves.toBe(true);
     await expect(table_exists("capture_schema", "capture_session")).resolves.toBe(true);
+    await expect(table_exists("file_schema", "file")).resolves.toBe(true);
+    await expect(table_exists("capture_schema", "capture_asset")).resolves.toBe(true);
   });
 
   it("keeps user identity separate from organization membership", async () => {
@@ -119,5 +122,46 @@ describe("foundation schema migrations on postgres", () => {
     await expect(index_exists("capture_schema", "idx_capture_session_project_status")).resolves.toBe(true);
     await expect(index_exists("capture_schema", "idx_capture_session_org_created")).resolves.toBe(true);
     await expect(table_comment("capture_schema", "capture_session")).resolves.toMatch(/source material/i);
+  });
+
+  it("creates file and capture asset metadata schema", async () => {
+    for (const column_name of [
+      "organization_id",
+      "storage_provider",
+      "storage_key",
+      "mime_type",
+      "size_bytes",
+      "metadata",
+      "created_by_id",
+      "updated_by_id",
+      "deleted_by_id",
+    ]) {
+      await expect(column_exists("file_schema", "file", column_name)).resolves.toBe(true);
+    }
+
+    for (const column_name of [
+      "organization_id",
+      "project_id",
+      "capture_session_id",
+      "file_id",
+      "asset_type",
+      "width",
+      "height",
+      "device_pixel_ratio",
+      "captured_at",
+      "metadata",
+      "created_by_id",
+      "updated_by_id",
+      "deleted_by_id",
+    ]) {
+      await expect(column_exists("capture_schema", "capture_asset", column_name)).resolves.toBe(true);
+    }
+
+    await expect(index_exists("file_schema", "idx_file_org_created")).resolves.toBe(true);
+    await expect(index_exists("file_schema", "uq_file_storage_key_active_per_org")).resolves.toBe(true);
+    await expect(index_exists("capture_schema", "idx_capture_asset_session_created")).resolves.toBe(true);
+    await expect(index_exists("capture_schema", "idx_capture_asset_project_type")).resolves.toBe(true);
+    await expect(table_comment("file_schema", "file")).resolves.toMatch(/storage metadata/i);
+    await expect(table_comment("capture_schema", "capture_asset")).resolves.toMatch(/product meaning/i);
   });
 });
