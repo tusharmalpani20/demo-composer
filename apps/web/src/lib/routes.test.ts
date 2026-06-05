@@ -18,10 +18,20 @@ describe("parsePortalRoute", () => {
     });
   });
 
+  it("parses project guide list routes", () => {
+    expect(parsePortalRoute("/projects/project_1/guides")).toEqual({
+      type: "project_guide_list",
+      projectId: "project_1",
+    });
+    expect(parsePortalRoute("/projects/project_1/guides/")).toEqual({
+      type: "project_guide_list",
+      projectId: "project_1",
+    });
+  });
+
   it("rejects unsupported routes", () => {
     expect(parsePortalRoute("/")).toEqual({ type: "unsupported" });
     expect(parsePortalRoute("/projects/project_1")).toEqual({ type: "unsupported" });
     expect(parsePortalRoute("/projects/project_1/capture-sessions")).toEqual({ type: "unsupported" });
-    expect(parsePortalRoute("/projects/project_1/guides")).toEqual({ type: "unsupported" });
   });
 });

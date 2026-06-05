@@ -10,6 +10,10 @@ export type PortalRoute =
     guideId: string;
   }
   | {
+    type: "project_guide_list";
+    projectId: string;
+  }
+  | {
     type: "unsupported";
   };
 
@@ -51,6 +55,23 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
       type: "guide_detail",
       projectId: decodeURIComponent(projectId),
       guideId: decodeURIComponent(guideId),
+    };
+  }
+
+  if (
+    segments.length === 3
+    && segments[0] === "projects"
+    && segments[2] === "guides"
+  ) {
+    const projectId = segments[1];
+
+    if (!projectId) {
+      return { type: "unsupported" };
+    }
+
+    return {
+      type: "project_guide_list",
+      projectId: decodeURIComponent(projectId),
     };
   }
 

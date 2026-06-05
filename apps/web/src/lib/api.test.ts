@@ -5,6 +5,7 @@ import {
   deleteGuideBlock,
   getCaptureSessionDetail,
   getGuideDetail,
+  listProjectGuides,
   reorderGuideBlocks,
   resolveApiAssetUrl,
   updateGuide,
@@ -99,6 +100,31 @@ describe("api client", () => {
 
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/projects/project_1/guides/guide_1",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("lists project guides with session cookies", async () => {
+    const response = {
+      guides: [guide_response.guide],
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(listProjectGuides("project_1")).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project_1/guides",
       {
         credentials: "include",
         headers: {

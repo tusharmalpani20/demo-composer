@@ -1,5 +1,6 @@
 import { CaptureSessionDetailPage } from "./features/capture-session/CaptureSessionDetailPage";
 import { GuideEditorPage } from "./features/guide/GuideEditorPage";
+import { ProjectGuideListPage } from "./features/guide/ProjectGuideListPage";
 import { parsePortalRoute } from "./lib/routes";
 import styles from "./App.module.css";
 
@@ -24,6 +25,14 @@ export default function App() {
     );
   }
 
+  if (route.type === "project_guide_list") {
+    return (
+      <ProjectGuideListPage
+        projectId={route.projectId}
+      />
+    );
+  }
+
   return (
     <div className={styles.page}>
       <header className={styles.topbar}>
@@ -32,7 +41,7 @@ export default function App() {
       <main className={styles.main}>
         <section className={styles.emptyState}>
           <h1 className={styles.title}>Capture session portal</h1>
-          <p>Open a capture session or guide link to continue.</p>
+          <p>Open a capture session, guide list, or guide link to continue.</p>
         </section>
       </main>
     </div>

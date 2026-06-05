@@ -10,6 +10,10 @@ type ApiErrorBody = {
   };
 };
 
+export type ProjectGuideListResponse = {
+  guides: Guide[];
+};
+
 export class ApiClientError extends Error {
   kind: ApiClientErrorKind;
   status: number;
@@ -110,6 +114,14 @@ export const getGuideDetail = async (
 ): Promise<GuideDetail> => (
   requestJson<GuideDetail>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}`
+  )
+);
+
+export const listProjectGuides = async (
+  projectId: string
+): Promise<ProjectGuideListResponse> => (
+  requestJson<ProjectGuideListResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides`
   )
 );
 

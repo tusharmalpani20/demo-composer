@@ -76,11 +76,41 @@ describe("App", () => {
     expect(screen.getByText("This guide does not have any blocks yet.")).toBeInTheDocument();
   });
 
+  it("renders project guide list routes", async () => {
+    window.history.pushState({}, "", "/projects/project_1/guides");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      guides: [{
+        id: "guide_1",
+        organization_id: "organization_1",
+        project_id: "project_1",
+        source_capture_session_id: "capture_session_1",
+        title: "Department guide",
+        description: null,
+        status: "draft",
+        created_by_id: "org_user_1",
+        updated_by_id: "org_user_1",
+        version: 1,
+        created_at: "2026-06-05T10:00:00.000Z",
+        updated_at: "2026-06-05T10:00:00.000Z",
+      }],
+    }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Guides" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+  });
+
   it("renders an unsupported route state", () => {
     window.history.pushState({}, "", "/unknown");
 
     render(<App />);
 
-    expect(screen.getByText("Open a capture session or guide link to continue.")).toBeInTheDocument();
+    expect(screen.getByText("Open a capture session, guide list, or guide link to continue.")).toBeInTheDocument();
   });
 });
