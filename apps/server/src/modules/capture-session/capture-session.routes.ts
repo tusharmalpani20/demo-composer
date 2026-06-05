@@ -4,7 +4,7 @@ import {
   UnauthenticatedSessionError,
   type AuthContext,
 } from "../authentication/session.service";
-import { web_session_cookie_name } from "../authentication/session-cookie";
+import { session_token_from_request } from "../authentication/request-session-token";
 import {
   CaptureSessionNotFoundError,
   CaptureSessionNotCompletableError,
@@ -274,7 +274,7 @@ export const build_capture_session_routes = (
       },
     }, async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const capture_session = await dependencies.capture_session_service.create_capture_session({
           auth,
           project_id: request.params.project_id,
@@ -293,7 +293,7 @@ export const build_capture_session_routes = (
       };
     }>("/:project_id/capture-sessions/:id/detail", async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const detail = await dependencies.capture_session_service.get_capture_session_detail({
           auth,
           project_id: request.params.project_id,
@@ -318,7 +318,7 @@ export const build_capture_session_routes = (
       },
     }, async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const capture_sessions = await dependencies.capture_session_service.list_capture_sessions({
           auth,
           project_id: request.params.project_id,
@@ -342,7 +342,7 @@ export const build_capture_session_routes = (
           throw new InvalidCaptureSessionCompletionError();
         }
 
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const result = await dependencies.capture_session_service.complete_capture_session({
           auth,
           project_id: request.params.project_id,
@@ -361,7 +361,7 @@ export const build_capture_session_routes = (
       };
     }>("/:project_id/capture-sessions/:id", async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const capture_session = await dependencies.capture_session_service.get_capture_session({
           auth,
           project_id: request.params.project_id,
@@ -389,7 +389,7 @@ export const build_capture_session_routes = (
           throw new InvalidCaptureSessionInputError();
         }
 
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const capture_session = await dependencies.capture_session_service.update_capture_session({
           auth,
           project_id: request.params.project_id,
@@ -409,7 +409,7 @@ export const build_capture_session_routes = (
       };
     }>("/:project_id/capture-sessions/:id", async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         await dependencies.capture_session_service.delete_capture_session({
           auth,
           project_id: request.params.project_id,

@@ -390,6 +390,84 @@ describe("capture session routes", () => {
     await app.close();
   });
 
+  it("creates a capture session with bearer auth", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      auth_service: {
+        get_current_auth_context: async (session_token) => {
+          expect(session_token).toBe("extension-session-token");
+          return auth_context;
+        },
+      },
+      capture_session_service: {
+        create_capture_session: async (input) => {
+          seen_inputs.push(input);
+          return {
+            ...capture_session,
+            source_type: "extension",
+          };
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions",
+      headers: {
+        authorization: "Bearer extension-session-token",
+        "x-demo-composer-client": "extension",
+      },
+      payload: {
+        name: "Capture from Example Page",
+        source_type: "extension",
+        start_url: "https://example.com/path",
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json().capture_session.source_type).toBe("extension");
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      data: {
+        name: "Capture from Example Page",
+        source_type: "extension",
+        start_url: "https://example.com/path",
+      },
+    }]);
+
+    await app.close();
+  });
+
+  it("reads capture sessions with bearer auth", async () => {
+    const seen_tokens: Array<string | undefined> = [];
+    const app = await build_test_app({
+      auth_service: {
+        get_current_auth_context: async (session_token) => {
+          seen_tokens.push(session_token);
+          return auth_context;
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1",
+      headers: {
+        authorization: "Bearer extension-session-token",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ capture_session });
+    expect(seen_tokens).toEqual(["extension-session-token"]);
+
+    await app.close();
+  });
+
   it("lists gets updates and deletes capture sessions through the service", async () => {
     const seen_inputs: unknown[] = [];
     const app = await build_test_app({
