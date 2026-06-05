@@ -39,6 +39,12 @@ import {
 } from './modules/project/project.routes.js';
 import { build_project_repository } from './modules/project/project.repository.js';
 import { build_project_service } from './modules/project/project.service.js';
+import {
+  build_capture_session_routes,
+  type CaptureSessionRouteDependencies,
+} from './modules/capture-session/capture-session.routes.js';
+import { build_capture_session_repository } from './modules/capture-session/capture-session.repository.js';
+import { build_capture_session_service } from './modules/capture-session/capture-session.service.js';
 import { index_root_routes } from './root_router/index.root_router.js';
 
 type BuildOptions = FastifyServerOptions & {
@@ -46,6 +52,7 @@ type BuildOptions = FastifyServerOptions & {
   first_run_setup_service?: FirstRunSetupRouteService;
   authentication_session_service?: AuthenticationSessionRouteService;
   project_service?: ProjectRouteDependencies["project_service"];
+  capture_session_service?: CaptureSessionRouteDependencies["capture_session_service"];
 };
 
 export const build = (opts: BuildOptions = {}) => {
@@ -54,6 +61,7 @@ export const build = (opts: BuildOptions = {}) => {
       first_run_setup_service,
       authentication_session_service,
       project_service,
+      capture_session_service,
       ...fastify_options
   } = opts;
   const app = fastify(fastify_options);
@@ -255,6 +263,17 @@ export const build = (opts: BuildOptions = {}) => {
       },
       project_service: project_service ?? build_project_service(
           build_project_repository(pool)
+      ),
+  }), {
+      prefix: "/api/v1/projects",
+  });
+
+  app.register(build_capture_session_routes({
+      auth_service: {
+          get_current_auth_context: default_authentication_session_service.get_current_auth_context,
+      },
+      capture_session_service: capture_session_service ?? build_capture_session_service(
+          build_capture_session_repository(pool)
       ),
   }), {
       prefix: "/api/v1/projects",

@@ -1,0 +1,322 @@
+import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
+import { z } from "zod";
+import {
+  UnauthenticatedSessionError,
+  type AuthContext,
+} from "../authentication/session.service";
+import { web_session_cookie_name } from "../authentication/session-cookie";
+import {
+  CaptureSessionNotFoundError,
+  EmptyCaptureSessionUpdateError,
+  ProjectNotFoundError,
+  type CaptureSession,
+  type CaptureSessionAuthContext,
+  type CaptureSessionStatus,
+  type CreateCaptureSessionInput,
+  type UpdateCaptureSessionInput,
+} from "./capture-session.service";
+
+export type CaptureSessionRouteDependencies = {
+  auth_service: {
+    get_current_auth_context: (session_token?: string) => Promise<AuthContext>;
+  };
+  capture_session_service: {
+    create_capture_session: (input: {
+      auth: CaptureSessionAuthContext;
+      project_id: string;
+      data: CreateCaptureSessionInput;
+    }) => Promise<CaptureSession>;
+    list_capture_sessions: (input: {
+      auth: CaptureSessionAuthContext;
+      project_id: string;
+      status?: CaptureSessionStatus;
+    }) => Promise<CaptureSession[]>;
+    get_capture_session: (input: {
+      auth: CaptureSessionAuthContext;
+      project_id: string;
+      capture_session_id: string;
+    }) => Promise<CaptureSession>;
+    update_capture_session: (input: {
+      auth: CaptureSessionAuthContext;
+      project_id: string;
+      capture_session_id: string;
+      data: UpdateCaptureSessionInput;
+    }) => Promise<CaptureSession>;
+    delete_capture_session: (input: {
+      auth: CaptureSessionAuthContext;
+      project_id: string;
+      capture_session_id: string;
+    }) => Promise<void>;
+  };
+};
+
+const status_schema = z.enum(["draft", "capturing", "completed", "canceled", "archived"]);
+const source_type_schema = z.enum(["manual", "extension", "import"]);
+const positive_int_schema = z.number().int().positive();
+const positive_number_schema = z.number().positive();
+
+const create_capture_session_body_schema = z.object({
+  name: z.string().trim().min(1),
+  description: z.string().nullable().optional(),
+  source_type: source_type_schema.optional(),
+  start_url: z.string().nullable().optional(),
+  browser_name: z.string().nullable().optional(),
+  browser_version: z.string().nullable().optional(),
+  operating_system: z.string().nullable().optional(),
+  viewport_width: positive_int_schema.nullable().optional(),
+  viewport_height: positive_int_schema.nullable().optional(),
+  device_pixel_ratio: positive_number_schema.nullable().optional(),
+  user_agent: z.string().nullable().optional(),
+  metadata: z.unknown().optional(),
+}).passthrough();
+
+const update_capture_session_body_schema = z.object({
+  name: z.string().trim().min(1).optional(),
+  description: z.string().nullable().optional(),
+  status: status_schema.optional(),
+  start_url: z.string().nullable().optional(),
+  browser_name: z.string().nullable().optional(),
+  browser_version: z.string().nullable().optional(),
+  operating_system: z.string().nullable().optional(),
+  viewport_width: positive_int_schema.nullable().optional(),
+  viewport_height: positive_int_schema.nullable().optional(),
+  device_pixel_ratio: positive_number_schema.nullable().optional(),
+  user_agent: z.string().nullable().optional(),
+  metadata: z.unknown().optional(),
+}).passthrough();
+
+const list_query_schema = z.object({
+  status: status_schema.optional(),
+});
+
+const unauthorized_response = () => ({
+  error: {
+    type: "unauthenticated",
+    message: "Authentication is required",
+  },
+});
+
+const error_response = (type: string, message: string) => ({
+  error: {
+    type,
+    message,
+  },
+});
+
+const capture_session_auth_context = (auth: AuthContext) => ({
+  organization_id: auth.organization.id,
+  actor_org_user_id: auth.org_user.id,
+});
+
+const pick_create_capture_session_data = (
+  body: CreateCaptureSessionInput
+): CreateCaptureSessionInput => {
+  const data: CreateCaptureSessionInput = {
+    name: body.name,
+  };
+
+  if (body.description !== undefined) {
+    data.description = body.description;
+  }
+  if (body.source_type !== undefined) {
+    data.source_type = body.source_type;
+  }
+  if (body.start_url !== undefined) {
+    data.start_url = body.start_url;
+  }
+  if (body.browser_name !== undefined) {
+    data.browser_name = body.browser_name;
+  }
+  if (body.browser_version !== undefined) {
+    data.browser_version = body.browser_version;
+  }
+  if (body.operating_system !== undefined) {
+    data.operating_system = body.operating_system;
+  }
+  if (body.viewport_width !== undefined) {
+    data.viewport_width = body.viewport_width;
+  }
+  if (body.viewport_height !== undefined) {
+    data.viewport_height = body.viewport_height;
+  }
+  if (body.device_pixel_ratio !== undefined) {
+    data.device_pixel_ratio = body.device_pixel_ratio;
+  }
+  if (body.user_agent !== undefined) {
+    data.user_agent = body.user_agent;
+  }
+  if (body.metadata !== undefined) {
+    data.metadata = body.metadata;
+  }
+
+  return data;
+};
+
+const pick_update_capture_session_data = (
+  body: UpdateCaptureSessionInput
+): UpdateCaptureSessionInput => ({
+  name: body.name,
+  description: body.description,
+  status: body.status,
+  start_url: body.start_url,
+  browser_name: body.browser_name,
+  browser_version: body.browser_version,
+  operating_system: body.operating_system,
+  viewport_width: body.viewport_width,
+  viewport_height: body.viewport_height,
+  device_pixel_ratio: body.device_pixel_ratio,
+  user_agent: body.user_agent,
+  metadata: body.metadata,
+});
+
+export const build_capture_session_routes = (
+  dependencies: CaptureSessionRouteDependencies
+): FastifyPluginAsync => {
+  return async (fastify: FastifyInstance) => {
+    const require_auth = async (session_token?: string) => (
+      capture_session_auth_context(
+        await dependencies.auth_service.get_current_auth_context(session_token)
+      )
+    );
+
+    const handle_domain_error = (error: unknown, reply: FastifyReply) => {
+      if (error instanceof UnauthenticatedSessionError) {
+        return reply.status(401).send(unauthorized_response());
+      }
+
+      if (error instanceof ProjectNotFoundError) {
+        return reply.status(404).send(
+          error_response("project_not_found", "Project was not found")
+        );
+      }
+
+      if (error instanceof CaptureSessionNotFoundError) {
+        return reply.status(404).send(
+          error_response("capture_session_not_found", "Capture session was not found")
+        );
+      }
+
+      if (error instanceof EmptyCaptureSessionUpdateError) {
+        return reply.status(400).send(
+          error_response(
+            "empty_capture_session_update",
+            "At least one capture session field must be provided"
+          )
+        );
+      }
+
+      throw error;
+    };
+
+    fastify.post<{
+      Params: {
+        project_id: string;
+      };
+      Body: CreateCaptureSessionInput;
+    }>("/:project_id/capture-sessions", {
+      schema: {
+        body: create_capture_session_body_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const capture_session = await dependencies.capture_session_service.create_capture_session({
+          auth,
+          project_id: request.params.project_id,
+          data: pick_create_capture_session_data(request.body),
+        });
+        return reply.status(201).send({ capture_session });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.get<{
+      Params: {
+        project_id: string;
+      };
+      Querystring: {
+        status?: CaptureSessionStatus;
+      };
+    }>("/:project_id/capture-sessions", {
+      schema: {
+        querystring: list_query_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const capture_sessions = await dependencies.capture_session_service.list_capture_sessions({
+          auth,
+          project_id: request.params.project_id,
+          status: request.query.status,
+        });
+        return reply.status(200).send({ capture_sessions });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.get<{
+      Params: {
+        project_id: string;
+        id: string;
+      };
+    }>("/:project_id/capture-sessions/:id", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const capture_session = await dependencies.capture_session_service.get_capture_session({
+          auth,
+          project_id: request.params.project_id,
+          capture_session_id: request.params.id,
+        });
+        return reply.status(200).send({ capture_session });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.patch<{
+      Params: {
+        project_id: string;
+        id: string;
+      };
+      Body: UpdateCaptureSessionInput;
+    }>("/:project_id/capture-sessions/:id", {
+      schema: {
+        body: update_capture_session_body_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const capture_session = await dependencies.capture_session_service.update_capture_session({
+          auth,
+          project_id: request.params.project_id,
+          capture_session_id: request.params.id,
+          data: pick_update_capture_session_data(request.body),
+        });
+        return reply.status(200).send({ capture_session });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.delete<{
+      Params: {
+        project_id: string;
+        id: string;
+      };
+    }>("/:project_id/capture-sessions/:id", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        await dependencies.capture_session_service.delete_capture_session({
+          auth,
+          project_id: request.params.project_id,
+          capture_session_id: request.params.id,
+        });
+        return reply.status(204).send();
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+  };
+};
