@@ -8,6 +8,7 @@ import { web_session_cookie_name } from "../authentication/session-cookie";
 import {
   CaptureSessionNotFoundError,
   EmptyCaptureSessionUpdateError,
+  InvalidCaptureSessionInputError,
   ProjectNotFoundError,
   type CaptureSession,
   type CaptureSessionAuthContext,
@@ -169,6 +170,12 @@ const pick_update_capture_session_data = (
   metadata: body.metadata,
 });
 
+const has_lifecycle_timestamp_input = (body: UpdateCaptureSessionInput) => (
+  body.started_at !== undefined
+  || body.completed_at !== undefined
+  || body.canceled_at !== undefined
+);
+
 export const build_capture_session_routes = (
   dependencies: CaptureSessionRouteDependencies
 ): FastifyPluginAsync => {
@@ -202,6 +209,12 @@ export const build_capture_session_routes = (
             "empty_capture_session_update",
             "At least one capture session field must be provided"
           )
+        );
+      }
+
+      if (error instanceof InvalidCaptureSessionInputError) {
+        return reply.status(400).send(
+          error_response("invalid_capture_session", "Capture session input is invalid")
         );
       }
 
@@ -287,6 +300,10 @@ export const build_capture_session_routes = (
       },
     }, async (request, reply) => {
       try {
+        if (has_lifecycle_timestamp_input(request.body)) {
+          throw new InvalidCaptureSessionInputError();
+        }
+
         const auth = await require_auth(request.cookies[web_session_cookie_name]);
         const capture_session = await dependencies.capture_session_service.update_capture_session({
           auth,

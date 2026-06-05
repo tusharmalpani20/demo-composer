@@ -153,6 +153,12 @@ export class EmptyCaptureSessionUpdateError extends Error {
   }
 }
 
+export class InvalidCaptureSessionInputError extends Error {
+  constructor() {
+    super("Capture session input is invalid");
+  }
+}
+
 const compact_optional_string = (value: string | null | undefined) => {
   if (value === undefined) {
     return undefined;

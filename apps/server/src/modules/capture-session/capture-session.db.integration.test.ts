@@ -419,4 +419,59 @@ describe("DB-backed capture session API", () => {
 
     await app.close();
   });
+
+  it("enforces capture session schema constraints in postgres", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token, "Constraint Project");
+    const owner_context = await get_owner_context();
+
+    const insert_invalid_capture_session = (overrides: {
+      status?: string;
+      source_type?: string;
+      viewport_width?: number;
+      viewport_height?: number;
+      device_pixel_ratio?: number;
+    }) => pool.query(`
+      INSERT INTO capture_schema.capture_session (
+        id,
+        organization_id,
+        project_id,
+        name,
+        status,
+        source_type,
+        viewport_width,
+        viewport_height,
+        device_pixel_ratio,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, 'Invalid Capture', $4, $5, $6, $7, $8, $9, $9)
+    `, [
+      ulid(),
+      owner_context?.organization_id,
+      project_id,
+      overrides.status ?? "draft",
+      overrides.source_type ?? "manual",
+      overrides.viewport_width ?? 100,
+      overrides.viewport_height ?? 100,
+      overrides.device_pixel_ratio ?? 1,
+      owner_context?.org_user_id,
+    ]);
+
+    await expect(insert_invalid_capture_session({
+      status: "paused",
+    })).rejects.toThrow();
+    await expect(insert_invalid_capture_session({
+      source_type: "screen_magic",
+    })).rejects.toThrow();
+    await expect(insert_invalid_capture_session({
+      viewport_width: 0,
+    })).rejects.toThrow();
+    await expect(insert_invalid_capture_session({
+      viewport_height: -1,
+    })).rejects.toThrow();
+    await expect(insert_invalid_capture_session({
+      device_pixel_ratio: 0,
+    })).rejects.toThrow();
+  });
 });

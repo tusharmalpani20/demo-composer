@@ -235,7 +235,6 @@ describe("capture session routes", () => {
       payload: {
         name: "Updated Capture",
         status: "capturing",
-        started_at: "attacker timestamp",
         unknown_field: "ignored",
       },
     });
@@ -383,6 +382,35 @@ describe("capture session routes", () => {
         payload,
       });
       expect(response.statusCode).toBe(400);
+    }
+
+    await app.close();
+  });
+
+  it("rejects client-managed lifecycle timestamps on update", async () => {
+    const app = await build_test_app();
+
+    for (const payload of [
+      { name: "Updated Capture", started_at: "2026-06-05T00:00:00.000Z" },
+      { name: "Updated Capture", completed_at: "2026-06-05T00:00:00.000Z" },
+      { name: "Updated Capture", canceled_at: "2026-06-05T00:00:00.000Z" },
+    ]) {
+      const response = await app.inject({
+        method: "PATCH",
+        url: "/api/v1/projects/project_1/capture-sessions/capture_session_1",
+        cookies: {
+          demo_composer_session: "session-token",
+        },
+        payload,
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({
+        error: {
+          type: "invalid_capture_session",
+          message: "Capture session input is invalid",
+        },
+      });
     }
 
     await app.close();
