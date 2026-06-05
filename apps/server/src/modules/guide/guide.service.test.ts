@@ -487,7 +487,6 @@ describe("guide service", () => {
       [],
       ["block_1", "block_1"],
       ["block_1"],
-      ["block_1", "missing_block"],
     ]) {
       await expect(service.reorder_guide_blocks({
         auth,
@@ -496,6 +495,13 @@ describe("guide service", () => {
         block_ids,
       })).rejects.toBeInstanceOf(InvalidGuideBlockOrderError);
     }
+
+    await expect(service.reorder_guide_blocks({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      block_ids: ["block_1", "missing_block"],
+    })).rejects.toBeInstanceOf(GuideBlockNotFoundError);
 
     repository.list_guide_blocks = async () => [];
 

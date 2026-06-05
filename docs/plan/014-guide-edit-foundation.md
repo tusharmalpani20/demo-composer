@@ -238,7 +238,7 @@ Implementation note:
 
 - active unique index on `(guide_id, block_index)` can conflict during naive updates
 - use a two-phase reorder in a transaction:
-  1. temporarily move active blocks to negative indexes
+  1. temporarily move active blocks to a large positive offset
   2. assign final positive indexes
 
 ### Soft Delete Guide Block

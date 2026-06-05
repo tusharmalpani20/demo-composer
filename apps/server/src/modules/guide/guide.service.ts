@@ -635,6 +635,12 @@ export const build_guide_service = (repository: GuideRepository) => {
     }
 
     const active_ids = new Set(active_blocks.map((block) => block.id));
+    const includes_unknown_block = block_ids.some((id) => !active_ids.has(id));
+
+    if (includes_unknown_block) {
+      throw new GuideBlockNotFoundError();
+    }
+
     const every_active_block_included = active_ids.size === block_ids.length
       && block_ids.every((id) => active_ids.has(id));
 
