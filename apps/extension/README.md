@@ -17,6 +17,8 @@ This app currently supports:
 - restoring active capture state when the popup is reopened
 - capturing the visible active tab as a PNG screenshot
 - uploading that screenshot to the active capture session with safe tab metadata
+- recording a linked `capture` event after each successful screenshot upload
+- persisting the local event index for the active capture session
 - discarding local active capture state if needed
 
 It does not capture DOM, clicks, inputs, navigation events, full-page stitched screenshots, or HTML snapshots yet.
@@ -113,6 +115,21 @@ x-demo-composer-client: extension
 ```
 
 The upload includes the screenshot file, captured timestamp, visible image dimensions when available, device pixel ratio when available, and safe current-tab URL/title metadata. The extension does not inspect page DOM or read form field values.
+
+After upload succeeds, the extension creates a linked capture event:
+
+```text
+POST {instance_url}/api/v1/projects/:project_id/capture-sessions/:capture_session_id/events
+```
+
+with:
+
+```text
+Authorization: Bearer <session_token>
+x-demo-composer-client: extension
+```
+
+The event uses `event_type: "capture"`, links to the uploaded screenshot asset, and uses the next locally stored event index for the active capture session. The extension sends `input_value_redacted: true` and does not send raw input fields. Screenshot pixel dimensions remain on the asset record; the event does not pretend those pixels are CSS viewport dimensions.
 
 ## Permissions
 

@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `021` exist and have been implemented through the project list portal home.
+- Plans `001` through `025` exist and have been implemented through extension capture event recording.
 
 ### Backend Foundation
 
@@ -132,6 +132,8 @@ The agreed implementation style is:
 - Extension can create a backend capture session for the selected project with safe active-tab metadata.
 - Extension can restore active capture state when the popup is reopened.
 - Extension can capture the visible active tab as a PNG screenshot and upload it to the active capture session as a capture asset.
+- Extension can record a linked `capture` event after each successful screenshot upload.
+- Extension persists the local active capture event index so manual screenshots become ordered source material.
 - Extension can show screenshot upload loading, success, and error states without clearing the active capture state.
 - Extension can discard local active capture state if needed.
 
@@ -180,17 +182,9 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, and extension can now create the first real browser-sourced capture asset: a visible-tab screenshot uploaded into an active capture session.
+The current backend, portal, and extension can now create ordered browser-sourced capture material: each manual visible-tab screenshot upload is linked to a `capture` event in the active capture session.
 
-The next major milestone should make those screenshots useful as ordered source material instead of isolated assets. The next slice should add extension capture event recording:
-
-- record a step/event around each manual screenshot capture
-- link the event to the uploaded screenshot asset
-- keep raw input values out of captured metadata
-- preserve enough target/page metadata for guide generation
-- render the resulting event/asset relationship in the capture session detail read model
-
-After that, the following slices can add:
+The next major milestone should let users finish that capture loop from the extension:
 
 - stop/finalize capture session from the extension
 - redirect to the portal capture session detail after capture
