@@ -71,6 +71,14 @@ export type CaptureSessionResponse = {
   capture_session: CaptureSession;
 };
 
+export type CompleteCaptureSessionResponse = {
+  capture_session: CaptureSession;
+  redirect: {
+    path: string;
+    reason: "capture_session_completed";
+  };
+};
+
 export type CaptureAsset = {
   id: string;
   project_id: string;
@@ -351,6 +359,25 @@ export const createCaptureEvent = async (
         ...data,
         input_value_redacted: true,
       }),
+    }
+  )
+);
+
+export const completeCaptureSession = async (
+  instanceUrl: string,
+  sessionToken: string,
+  projectId: string,
+  captureSessionId: string
+): Promise<CompleteCaptureSessionResponse> => (
+  requestJson<CompleteCaptureSessionResponse>(
+    instanceUrl,
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}/complete`,
+    {
+      method: "POST",
+      headers: {
+        ...authHeaders(sessionToken),
+        "x-demo-composer-client": "extension",
+      },
     }
   )
 );

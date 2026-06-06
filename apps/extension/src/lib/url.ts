@@ -26,3 +26,37 @@ export const normalizeInstanceUrl = (value: string): NormalizedInstanceUrlResult
     return { ok: false, error: invalid_url_message };
   }
 };
+
+const buildFallbackCaptureSessionPath = (
+  projectId: string,
+  captureSessionId: string
+) => (
+  `/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}`
+);
+
+const safeRedirectPath = (
+  redirectPath: string | null | undefined
+) => {
+  if (!redirectPath || !redirectPath.startsWith("/") || redirectPath.startsWith("//")) {
+    return null;
+  }
+
+  if (/^[a-z][a-z0-9+.-]*:/i.test(redirectPath)) {
+    return null;
+  }
+
+  return redirectPath;
+};
+
+export const buildPortalCaptureSessionUrl = (
+  instanceUrl: string,
+  redirectPath: string | null | undefined,
+  projectId: string,
+  captureSessionId: string
+) => {
+  const origin = instanceUrl.replace(/\/+$/, "");
+  const path = safeRedirectPath(redirectPath)
+    ?? buildFallbackCaptureSessionPath(projectId, captureSessionId);
+
+  return `${origin}${path}`;
+};

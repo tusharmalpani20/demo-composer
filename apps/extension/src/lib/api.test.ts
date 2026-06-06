@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  completeCaptureSession,
   createCaptureEvent,
   createCaptureSession,
   getCurrentAuth,
@@ -70,6 +71,12 @@ const captureSession = {
   version: 1,
   created_at: "2026-06-05T10:00:00.000Z",
   updated_at: "2026-06-05T10:00:00.000Z",
+};
+
+const completedCaptureSession = {
+  ...captureSession,
+  status: "completed",
+  completed_at: "2026-06-05T10:05:00.000Z",
 };
 
 const captureAsset = {
@@ -383,6 +390,47 @@ describe("extension API client", () => {
     expect(body).not.toHaveProperty("viewport_width");
     expect(body).not.toHaveProperty("viewport_height");
     expect(body).not.toHaveProperty("device_pixel_ratio");
+  });
+
+  it("completes capture sessions with bearer auth and no request body", async () => {
+    const response = {
+      capture_session: completedCaptureSession,
+      redirect: {
+        path: "/projects/project with spaces/capture-sessions/capture session with spaces",
+        reason: "capture_session_completed",
+      },
+    };
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(completeCaptureSession(
+      "https://demo.example.com/",
+      "extension-session-token",
+      "project with spaces",
+      "capture session with spaces"
+    )).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://demo.example.com/api/v1/projects/project%20with%20spaces/capture-sessions/capture%20session%20with%20spaces/complete",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          authorization: "Bearer extension-session-token",
+          "x-demo-composer-client": "extension",
+        },
+      }
+    );
+    const [url, init] = fetch.mock.calls[0]!;
+    expect(url).not.toContain("extension-session-token");
+    expect((init as RequestInit).body).toBeUndefined();
+    expect((init as RequestInit).headers).not.toHaveProperty("content-type");
   });
 
   it("maps backend errors", async () => {
