@@ -360,6 +360,30 @@ const cap_title = (value: string) => (
 
 const quoted = (value: string) => `"${value}"`;
 
+const generate_capture_step_title = (event: GuideSourceEvent) => {
+  const title_source = first_present(event.page_title, event.page_url);
+
+  if (!title_source) {
+    return "Capture this screen";
+  }
+
+  return cap_title(`Capture ${quoted(title_source)}`);
+};
+
+const generate_capture_step_body = (event: GuideSourceEvent) => {
+  const page_url = first_present(event.page_url);
+
+  if (!page_url) {
+    return null;
+  }
+
+  if (first_present(event.page_title)) {
+    return `Captured from ${page_url}.`;
+  }
+
+  return "Captured from this page.";
+};
+
 const generate_step_title = (event: GuideSourceEvent) => {
   const target = first_present(
     event.target_label,
@@ -378,7 +402,19 @@ const generate_step_title = (event: GuideSourceEvent) => {
     case "navigation":
       return cap_title(`Navigate to ${quoted(first_present(event.page_title, event.page_url) ?? "the page")}`);
     case "capture":
-      return "Review this screen";
+      return generate_capture_step_title(event);
+  }
+};
+
+const generate_step_body = (event: GuideSourceEvent) => {
+  switch (event.event_type) {
+    case "capture":
+      return generate_capture_step_body(event);
+    case "note":
+    case "click":
+    case "input":
+    case "navigation":
+      return null;
   }
 };
 
@@ -475,7 +511,7 @@ export const build_guide_service = (repository: GuideRepository) => {
             : null,
           step: {
             title: generate_step_title(event),
-            body: null,
+            body: generate_step_body(event),
           },
         })),
       },
