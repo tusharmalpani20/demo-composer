@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ApiClientError,
+  completeCaptureSession,
   createCaptureEvent,
   createCaptureSession,
   getCurrentAuth,
@@ -11,6 +12,7 @@ import {
   type CaptureAssetResponse,
   type CaptureEventResponse,
   type CaptureSessionResponse,
+  type CompleteCaptureSessionResponse,
   type CreateCaptureEventInput,
   type CreateCaptureSessionInput,
   type LoginResponse,
@@ -20,6 +22,7 @@ import {
   uploadCaptureAsset,
 } from "./lib/api";
 import { getCurrentTabSnapshot, type CurrentTabSnapshot } from "./lib/current-tab";
+import { openPortalUrl } from "./lib/navigation";
 import { captureVisibleTabScreenshot, type ScreenshotCapture } from "./lib/screenshot";
 import {
   chromeLocalStorage,
@@ -35,7 +38,7 @@ import {
   type ExtensionSettings,
   type ExtensionStorageArea,
 } from "./lib/settings";
-import { normalizeInstanceUrl } from "./lib/url";
+import { buildPortalCaptureSessionUrl, normalizeInstanceUrl } from "./lib/url";
 import "./index.css";
 
 type Dependencies = {
@@ -72,6 +75,13 @@ type Dependencies = {
     captureSessionId: string,
     data: CreateCaptureEventInput
   ) => Promise<CaptureEventResponse>;
+  completeCaptureSession: (
+    instanceUrl: string,
+    sessionToken: string,
+    projectId: string,
+    captureSessionId: string
+  ) => Promise<CompleteCaptureSessionResponse>;
+  openPortalUrl: (url: string) => Promise<void>;
   logout: (instanceUrl: string, sessionToken: string) => Promise<void>;
 };
 
@@ -111,6 +121,8 @@ const buildDefaultDependencies = (): Dependencies => {
     captureVisibleTabScreenshot,
     uploadCaptureAsset,
     createCaptureEvent,
+    completeCaptureSession,
+    openPortalUrl,
     logout,
   };
 };
@@ -412,6 +424,41 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
 
           return result;
         }}
+        onFinishCapture={async (input) => {
+          const result = await dependencies.completeCaptureSession(
+            state.settings.instanceUrl,
+            state.settings.sessionToken,
+            input.projectId,
+            input.captureSessionId
+          );
+          const portalUrl = buildPortalCaptureSessionUrl(
+            state.settings.instanceUrl,
+            result.redirect.path,
+            input.projectId,
+            input.captureSessionId
+          );
+
+          await dependencies.clearActiveCapture();
+          setState({
+            ...state,
+            settings: {
+              ...state.settings,
+              activeCaptureSessionId: null,
+              activeCaptureProjectId: null,
+              activeCaptureEventIndex: null,
+            },
+          });
+
+          try {
+            await dependencies.openPortalUrl(portalUrl);
+          } catch {
+            throw new ApiClientError({
+              status: 0,
+              type: "portal_open_failed",
+              message: "Could not open portal after finishing capture.",
+            });
+          }
+        }}
         onChangeInstance={async () => {
           await dependencies.clearSettings();
           reload();
@@ -620,6 +667,7 @@ const ProjectPicker = ({
   onStartCapture,
   onDiscardActiveCapture,
   onCaptureScreenshot,
+  onFinishCapture,
   onChangeInstance,
   onSignOut,
 }: {
@@ -637,13 +685,19 @@ const ProjectPicker = ({
     captureSessionId: string;
     eventIndex: number;
   }) => Promise<CaptureEventResponse>;
+  onFinishCapture: (input: {
+    projectId: string;
+    captureSessionId: string;
+  }) => Promise<void>;
   onChangeInstance: () => Promise<void>;
   onSignOut: () => Promise<void>;
 }) => {
   const [starting, setStarting] = useState(false);
   const [capturingScreenshot, setCapturingScreenshot] = useState(false);
+  const [finishing, setFinishing] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
+  const [finishError, setFinishError] = useState<string | null>(null);
   const [lastCaptureEventIndex, setLastCaptureEventIndex] = useState<number | null>(null);
   const selectedProject = selectedProjectId
     ? projects.find((project) => project.id === selectedProjectId) ?? null
@@ -652,7 +706,7 @@ const ProjectPicker = ({
     ? projects.find((project) => project.id === activeCaptureProjectId) ?? null
     : null;
   const hasActiveCapture = Boolean(activeCaptureSessionId && activeCaptureProjectId);
-  const busy = starting || capturingScreenshot;
+  const busy = starting || capturingScreenshot || finishing;
 
   const heading = hasActiveCapture
     ? "Capture active"
@@ -684,6 +738,7 @@ const ProjectPicker = ({
 
     setCapturingScreenshot(true);
     setScreenshotError(null);
+    setFinishError(null);
     setLastCaptureEventIndex(null);
 
     try {
@@ -698,6 +753,27 @@ const ProjectPicker = ({
     } catch (error: unknown) {
       setScreenshotError(errorMessage(error, "Could not capture screenshot."));
       setCapturingScreenshot(false);
+    }
+  };
+
+  const handleFinishCapture = async () => {
+    if (!activeCaptureProjectId || !activeCaptureSessionId || busy) {
+      return;
+    }
+
+    setFinishing(true);
+    setScreenshotError(null);
+    setFinishError(null);
+
+    try {
+      await onFinishCapture({
+        projectId: activeCaptureProjectId,
+        captureSessionId: activeCaptureSessionId,
+      });
+      setFinishing(false);
+    } catch (error: unknown) {
+      setFinishError(errorMessage(error, "Could not finish capture."));
+      setFinishing(false);
     }
   };
 
@@ -724,10 +800,14 @@ const ProjectPicker = ({
           <p className="captureProject">{activeProject?.name ?? "Project unavailable"}</p>
           <p className="captureSession">Session {activeCaptureSessionId}</p>
           {screenshotError ? <div className="error">{screenshotError}</div> : null}
+          {finishError ? <div className="error">{finishError}</div> : null}
           {lastCaptureEventIndex ? <p className="success">Capture event recorded: step {lastCaptureEventIndex}</p> : null}
           <div className="actions">
-            <button type="button" disabled={capturingScreenshot} onClick={() => void handleCaptureScreenshot()}>
+            <button type="button" disabled={busy} onClick={() => void handleCaptureScreenshot()}>
               {capturingScreenshot ? "Capturing..." : "Capture screenshot"}
+            </button>
+            <button type="button" disabled={busy} onClick={() => void handleFinishCapture()}>
+              {finishing ? "Finishing..." : "Finish capture"}
             </button>
             <button type="button" className="secondary" disabled={busy} onClick={() => void onDiscardActiveCapture()}>
               Discard local capture state
@@ -740,6 +820,7 @@ const ProjectPicker = ({
         <div className="captureState">
           <p className="captureProject">{selectedProject.name}</p>
           {startError ? <div className="error">{startError}</div> : null}
+          {finishError ? <div className="error">{finishError}</div> : null}
           <button type="button" disabled={busy} onClick={() => void handleStartCapture()}>
             {starting ? "Starting..." : "Start capture"}
           </button>

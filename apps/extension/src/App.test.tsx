@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ApiClientError, type AuthResponse, type CaptureAssetResponse, type CaptureEventResponse, type Project } from "./lib/api";
+import { ApiClientError, type AuthResponse, type CaptureAssetResponse, type CaptureEventResponse, type CompleteCaptureSessionResponse, type Project } from "./lib/api";
 import { App } from "./App";
 import type { ExtensionSettings } from "./lib/settings";
 import type { ScreenshotCapture } from "./lib/screenshot";
@@ -134,6 +134,19 @@ const captureEventResponse: CaptureEventResponse = {
   },
 };
 
+const completeCaptureSessionResponse: CompleteCaptureSessionResponse = {
+  capture_session: {
+    id: "capture_session_1",
+    project_id: "project_1",
+    source_type: "extension",
+    status: "completed",
+  },
+  redirect: {
+    path: "/projects/project_1/capture-sessions/capture_session_1",
+    reason: "capture_session_completed",
+  },
+};
+
 const renderApp = (overrides: {
   settings?: ExtensionSettings;
   getCurrentAuth?: (instanceUrl: string, sessionToken: string) => Promise<AuthResponse>;
@@ -185,6 +198,13 @@ const renderApp = (overrides: {
       metadata?: Record<string, unknown>;
     }
   ) => Promise<CaptureEventResponse>;
+  completeCaptureSession?: (
+    instanceUrl: string,
+    sessionToken: string,
+    projectId: string,
+    captureSessionId: string
+  ) => Promise<CompleteCaptureSessionResponse>;
+  openPortalUrl?: (url: string) => Promise<void>;
   saveInstanceUrl?: (instanceUrl: string) => Promise<void>;
   saveSessionToken?: (sessionToken: string | null) => Promise<void>;
   saveSelectedProjectId?: (projectId: string | null) => Promise<void>;
@@ -211,6 +231,8 @@ const renderApp = (overrides: {
     captureVisibleTabScreenshot: vi.fn(overrides.captureVisibleTabScreenshot ?? (async () => screenshotCapture)),
     uploadCaptureAsset: vi.fn(overrides.uploadCaptureAsset ?? (async () => captureAssetResponse)),
     createCaptureEvent: vi.fn(overrides.createCaptureEvent ?? (async () => captureEventResponse)),
+    completeCaptureSession: vi.fn(overrides.completeCaptureSession ?? (async () => completeCaptureSessionResponse)),
+    openPortalUrl: vi.fn(overrides.openPortalUrl ?? (async () => {})),
     saveActiveCapture: vi.fn(overrides.saveActiveCapture ?? (async () => {})),
     saveActiveCaptureEventIndex: vi.fn(overrides.saveActiveCaptureEventIndex ?? (async () => {})),
     clearActiveCapture: vi.fn(overrides.clearActiveCapture ?? (async () => {})),
@@ -481,6 +503,7 @@ describe("extension popup App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Discard local capture state" }));
 
     await waitFor(() => expect(dependencies.clearActiveCapture).toHaveBeenCalled());
+    expect(dependencies.completeCaptureSession).not.toHaveBeenCalled();
   });
 
   it("uploads a screenshot and records a capture event for the active capture session", async () => {
@@ -655,6 +678,168 @@ describe("extension popup App", () => {
     expect(await screen.findByText("Capture event recorded: step 1")).toBeInTheDocument();
     expect(dependencies.uploadCaptureAsset).toHaveBeenCalledTimes(1);
     expect(dependencies.createCaptureEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("finishes active captures, clears local state, and opens the portal detail page", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 2,
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Finish capture" }));
+
+    await waitFor(() => expect(dependencies.completeCaptureSession).toHaveBeenCalledWith(
+      "https://demo.example.com",
+      "extension-session-token",
+      "project_1",
+      "capture_session_1"
+    ));
+    await waitFor(() => expect(dependencies.clearActiveCapture).toHaveBeenCalled());
+    await waitFor(() => expect(dependencies.openPortalUrl).toHaveBeenCalledWith(
+      "https://demo.example.com/projects/project_1/capture-sessions/capture_session_1"
+    ));
+    expect(screen.queryByRole("heading", { name: "Capture active" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ready to capture" })).toBeInTheDocument();
+    expect(screen.getAllByText("Internal onboarding demos")).toHaveLength(2);
+  });
+
+  it("falls back to encoded portal route when completion redirect is unsafe", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project 1",
+        activeCaptureSessionId: "capture/session",
+        activeCaptureProjectId: "project 1",
+        activeCaptureEventIndex: 2,
+      },
+      completeCaptureSession: async () => ({
+        ...completeCaptureSessionResponse,
+        redirect: {
+          path: "https://evil.example/projects/project_1",
+          reason: "capture_session_completed",
+        },
+      }),
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Finish capture" }));
+
+    await waitFor(() => expect(dependencies.openPortalUrl).toHaveBeenCalledWith(
+      "https://demo.example.com/projects/project%201/capture-sessions/capture%2Fsession"
+    ));
+  });
+
+  it("disables active capture actions while finishing", async () => {
+    let resolveComplete: (value: CompleteCaptureSessionResponse) => void = () => {};
+    const completePromise = new Promise<CompleteCaptureSessionResponse>((resolve) => {
+      resolveComplete = resolve;
+    });
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 0,
+      },
+      completeCaptureSession: async () => completePromise,
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Finish capture" }));
+
+    expect(await screen.findByRole("button", { name: "Finishing..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Capture screenshot" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Discard local capture state" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Change instance" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
+
+    resolveComplete(completeCaptureSessionResponse);
+
+    await waitFor(() => expect(dependencies.openPortalUrl).toHaveBeenCalled());
+  });
+
+  it("keeps active capture state when completion fails", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 0,
+      },
+      completeCaptureSession: async () => {
+        throw new ApiClientError({
+          status: 400,
+          type: "capture_session_not_completable",
+          message: "Capture session cannot be completed from its current status",
+        });
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Finish capture" }));
+
+    expect(await screen.findByText("Capture session cannot be completed from its current status")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    expect(dependencies.clearActiveCapture).not.toHaveBeenCalled();
+    expect(dependencies.openPortalUrl).not.toHaveBeenCalled();
+  });
+
+  it("does not open the portal when local active capture clearing fails", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 0,
+      },
+      clearActiveCapture: async () => {
+        throw new Error("Storage failed");
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Finish capture" }));
+
+    expect(await screen.findByText("Could not finish capture.")).toBeInTheDocument();
+    expect(dependencies.completeCaptureSession).toHaveBeenCalled();
+    expect(dependencies.openPortalUrl).not.toHaveBeenCalled();
+  });
+
+  it("shows an error when portal opening fails after completion", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 0,
+      },
+      openPortalUrl: async () => {
+        throw new Error("No browser navigation available");
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Finish capture" }));
+
+    expect(await screen.findByText("Could not open portal after finishing capture.")).toBeInTheDocument();
+    expect(dependencies.clearActiveCapture).toHaveBeenCalled();
+    expect(screen.queryByRole("heading", { name: "Capture active" })).not.toBeInTheDocument();
   });
 
   it("clears the local session when sign out cannot reach the server", async () => {
