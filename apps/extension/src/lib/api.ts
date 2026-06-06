@@ -100,6 +100,54 @@ export type UploadCaptureAssetInput = {
   metadata?: Record<string, unknown>;
 };
 
+export type CaptureEventType = "navigation" | "click" | "input" | "capture" | "note";
+
+export type CaptureEvent = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  capture_session_id: string;
+  capture_asset_id: string | null;
+  event_type: CaptureEventType;
+  event_index: number;
+  occurred_at: string;
+  page_url: string | null;
+  page_title: string | null;
+  target_label: string | null;
+  target_selector: string | null;
+  target_role: string | null;
+  target_test_id: string | null;
+  target_text: string | null;
+  client_x: number | null;
+  client_y: number | null;
+  viewport_width: number | null;
+  viewport_height: number | null;
+  device_pixel_ratio: number | null;
+  input_intent: string | null;
+  input_value_redacted: true;
+  note: string | null;
+  created_by_id: string;
+  updated_by_id: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CaptureEventResponse = {
+  capture_event: CaptureEvent;
+};
+
+export type CreateCaptureEventInput = {
+  event_type: "capture";
+  event_index: number;
+  capture_asset_id: string;
+  occurred_at?: string | null;
+  page_url?: string | null;
+  page_title?: string | null;
+  input_value_redacted?: true;
+  metadata?: Record<string, unknown>;
+};
+
 type ApiErrorBody = {
   error?: {
     type?: string;
@@ -281,3 +329,28 @@ export const uploadCaptureAsset = async (
     }
   );
 };
+
+export const createCaptureEvent = async (
+  instanceUrl: string,
+  sessionToken: string,
+  projectId: string,
+  captureSessionId: string,
+  data: CreateCaptureEventInput
+): Promise<CaptureEventResponse> => (
+  requestJson<CaptureEventResponse>(
+    instanceUrl,
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}/events`,
+    {
+      method: "POST",
+      headers: {
+        ...authHeaders(sessionToken),
+        "content-type": "application/json",
+        "x-demo-composer-client": "extension",
+      },
+      body: JSON.stringify({
+        ...data,
+        input_value_redacted: true,
+      }),
+    }
+  )
+);

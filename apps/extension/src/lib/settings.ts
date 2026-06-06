@@ -4,6 +4,7 @@ export type ExtensionSettings = {
   selectedProjectId: string | null;
   activeCaptureSessionId: string | null;
   activeCaptureProjectId: string | null;
+  activeCaptureEventIndex: number | null;
 };
 
 export type ExtensionStorageArea = {
@@ -18,6 +19,7 @@ const keys = {
   selectedProjectId: "selectedProjectId",
   activeCaptureSessionId: "activeCaptureSessionId",
   activeCaptureProjectId: "activeCaptureProjectId",
+  activeCaptureEventIndex: "activeCaptureEventIndex",
 } as const;
 
 const default_settings: ExtensionSettings = {
@@ -26,11 +28,22 @@ const default_settings: ExtensionSettings = {
   selectedProjectId: null,
   activeCaptureSessionId: null,
   activeCaptureProjectId: null,
+  activeCaptureEventIndex: null,
 };
 
 const stringOrNull = (value: unknown) => (
   typeof value === "string" && value.trim() ? value : null
 );
+
+const nonNegativeIntegerOrNull = (value: unknown) => (
+  typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null
+);
+
+const assertNonNegativeInteger = (value: number) => {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error("Active capture event index must be a non-negative integer.");
+  }
+};
 
 export const chromeLocalStorage = (): ExtensionStorageArea => {
   const chromeStorage = (globalThis as {
@@ -63,6 +76,7 @@ export const getSettings = async (
     selectedProjectId: stringOrNull(stored[keys.selectedProjectId]),
     activeCaptureSessionId: stringOrNull(stored[keys.activeCaptureSessionId]),
     activeCaptureProjectId: stringOrNull(stored[keys.activeCaptureProjectId]),
+    activeCaptureEventIndex: nonNegativeIntegerOrNull(stored[keys.activeCaptureEventIndex]),
   };
 };
 
@@ -76,6 +90,7 @@ export const saveInstanceUrl = async (
     [keys.selectedProjectId]: null,
     [keys.activeCaptureSessionId]: null,
     [keys.activeCaptureProjectId]: null,
+    [keys.activeCaptureEventIndex]: null,
   });
 };
 
@@ -88,6 +103,7 @@ export const saveSessionToken = async (
     ...(sessionToken === null ? {
       [keys.activeCaptureSessionId]: null,
       [keys.activeCaptureProjectId]: null,
+      [keys.activeCaptureEventIndex]: null,
     } : {}),
   });
 };
@@ -104,12 +120,25 @@ export const saveActiveCapture = async (
   input: {
     captureSessionId: string;
     projectId: string;
+    eventIndex?: number;
   }
 ) => {
+  const eventIndex = input.eventIndex ?? 0;
+  assertNonNegativeInteger(eventIndex);
+
   await storage.set({
     [keys.activeCaptureSessionId]: input.captureSessionId,
     [keys.activeCaptureProjectId]: input.projectId,
+    [keys.activeCaptureEventIndex]: eventIndex,
   });
+};
+
+export const saveActiveCaptureEventIndex = async (
+  storage: ExtensionStorageArea,
+  eventIndex: number
+) => {
+  assertNonNegativeInteger(eventIndex);
+  await storage.set({ [keys.activeCaptureEventIndex]: eventIndex });
 };
 
 export const clearActiveCapture = async (
@@ -118,6 +147,7 @@ export const clearActiveCapture = async (
   await storage.set({
     [keys.activeCaptureSessionId]: null,
     [keys.activeCaptureProjectId]: null,
+    [keys.activeCaptureEventIndex]: null,
   });
 };
 

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createCaptureEvent,
   createCaptureSession,
   getCurrentAuth,
   listProjects,
@@ -82,6 +83,37 @@ const captureAsset = {
   page_url: "https://example.com/path",
   page_title: "Example Page",
   captured_at: "2026-06-05T10:00:00.000Z",
+};
+
+const captureEvent = {
+  id: "capture_event_1",
+  organization_id: "organization_1",
+  project_id: "project_1",
+  capture_session_id: "capture_session_1",
+  capture_asset_id: "capture_asset_1",
+  event_type: "capture",
+  event_index: 1,
+  occurred_at: "2026-06-05T10:00:00.000Z",
+  page_url: "https://example.com/path",
+  page_title: "Example Page",
+  target_label: null,
+  target_selector: null,
+  target_role: null,
+  target_test_id: null,
+  target_text: null,
+  client_x: null,
+  client_y: null,
+  viewport_width: null,
+  viewport_height: null,
+  device_pixel_ratio: null,
+  input_intent: null,
+  input_value_redacted: true,
+  note: null,
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-06-05T10:00:00.000Z",
+  updated_at: "2026-06-05T10:00:00.000Z",
 };
 
 afterEach(() => {
@@ -282,6 +314,75 @@ describe("extension API client", () => {
     expect(uploadedFile).toBeInstanceOf(File);
     expect((uploadedFile as File).name).toBe("screenshot-2026-06-05T10-00-00-000Z.png");
     expect((uploadedFile as File).type).toBe("image/png");
+  });
+
+  it("creates capture events with bearer auth and safe screenshot metadata", async () => {
+    const response = { capture_event: captureEvent };
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(JSON.stringify(response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(createCaptureEvent(
+      "https://demo.example.com/",
+      "extension-session-token",
+      "project with spaces",
+      "capture session with spaces",
+      {
+        event_type: "capture",
+        event_index: 1,
+        capture_asset_id: "capture_asset_1",
+        occurred_at: "2026-06-05T10:00:00.000Z",
+        page_url: "https://example.com/path",
+        page_title: "Example Page",
+        input_value_redacted: true,
+        metadata: {
+          extension_version: "0.1.0",
+          capture_source: "extension_popup",
+          asset_type: "screenshot",
+        },
+      }
+    )).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://demo.example.com/api/v1/projects/project%20with%20spaces/capture-sessions/capture%20session%20with%20spaces/events",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          authorization: "Bearer extension-session-token",
+          "content-type": "application/json",
+          "x-demo-composer-client": "extension",
+        },
+        body: JSON.stringify({
+          event_type: "capture",
+          event_index: 1,
+          capture_asset_id: "capture_asset_1",
+          occurred_at: "2026-06-05T10:00:00.000Z",
+          page_url: "https://example.com/path",
+          page_title: "Example Page",
+          input_value_redacted: true,
+          metadata: {
+            extension_version: "0.1.0",
+            capture_source: "extension_popup",
+            asset_type: "screenshot",
+          },
+        }),
+      }
+    );
+    const body = JSON.parse((fetch.mock.calls[0]![1] as RequestInit).body as string) as Record<string, unknown>;
+    expect(body).not.toHaveProperty("input_value");
+    expect(body).not.toHaveProperty("value");
+    expect(body).not.toHaveProperty("typed_value");
+    expect(body).not.toHaveProperty("password");
+    expect(body).not.toHaveProperty("secret");
+    expect(body).not.toHaveProperty("viewport_width");
+    expect(body).not.toHaveProperty("viewport_height");
+    expect(body).not.toHaveProperty("device_pixel_ratio");
   });
 
   it("maps backend errors", async () => {

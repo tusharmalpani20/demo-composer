@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ApiClientError,
+  createCaptureEvent,
   createCaptureSession,
   getCurrentAuth,
   listProjects,
@@ -8,7 +9,9 @@ import {
   logout,
   type AuthResponse,
   type CaptureAssetResponse,
+  type CaptureEventResponse,
   type CaptureSessionResponse,
+  type CreateCaptureEventInput,
   type CreateCaptureSessionInput,
   type LoginResponse,
   type Project,
@@ -25,6 +28,7 @@ import {
   emptySettings,
   getSettings,
   saveActiveCapture,
+  saveActiveCaptureEventIndex,
   saveInstanceUrl,
   saveSelectedProjectId,
   saveSessionToken,
@@ -39,7 +43,8 @@ type Dependencies = {
   saveInstanceUrl: (instanceUrl: string) => Promise<void>;
   saveSessionToken: (sessionToken: string | null) => Promise<void>;
   saveSelectedProjectId: (projectId: string | null) => Promise<void>;
-  saveActiveCapture: (input: { captureSessionId: string; projectId: string }) => Promise<void>;
+  saveActiveCapture: (input: { captureSessionId: string; projectId: string; eventIndex?: number }) => Promise<void>;
+  saveActiveCaptureEventIndex: (eventIndex: number) => Promise<void>;
   clearActiveCapture: () => Promise<void>;
   clearSettings: () => Promise<void>;
   getCurrentAuth: (instanceUrl: string, sessionToken: string) => Promise<AuthResponse>;
@@ -60,6 +65,13 @@ type Dependencies = {
     captureSessionId: string,
     data: UploadCaptureAssetInput
   ) => Promise<CaptureAssetResponse>;
+  createCaptureEvent: (
+    instanceUrl: string,
+    sessionToken: string,
+    projectId: string,
+    captureSessionId: string,
+    data: CreateCaptureEventInput
+  ) => Promise<CaptureEventResponse>;
   logout: (instanceUrl: string, sessionToken: string) => Promise<void>;
 };
 
@@ -88,6 +100,7 @@ const buildDefaultDependencies = (): Dependencies => {
     saveSessionToken: (sessionToken) => saveSessionToken(storage, sessionToken),
     saveSelectedProjectId: (projectId) => saveSelectedProjectId(storage, projectId),
     saveActiveCapture: (input) => saveActiveCapture(storage, input),
+    saveActiveCaptureEventIndex: (eventIndex) => saveActiveCaptureEventIndex(storage, eventIndex),
     clearActiveCapture: () => clearActiveCapture(storage),
     clearSettings: () => clearSettings(storage),
     getCurrentAuth,
@@ -97,6 +110,7 @@ const buildDefaultDependencies = (): Dependencies => {
     getCurrentTabSnapshot,
     captureVisibleTabScreenshot,
     uploadCaptureAsset,
+    createCaptureEvent,
     logout,
   };
 };
@@ -174,6 +188,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
                 sessionToken: null,
                 activeCaptureSessionId: null,
                 activeCaptureProjectId: null,
+                activeCaptureEventIndex: null,
               },
             });
           }
@@ -248,6 +263,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
                 selectedProjectId: null,
                 activeCaptureSessionId: null,
                 activeCaptureProjectId: null,
+                activeCaptureEventIndex: null,
               },
               auth: result.auth,
               projects: projectResponse.projects,
@@ -290,6 +306,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
         selectedProjectId={state.settings.selectedProjectId}
         activeCaptureSessionId={state.settings.activeCaptureSessionId}
         activeCaptureProjectId={state.settings.activeCaptureProjectId}
+        activeCaptureEventIndex={state.settings.activeCaptureEventIndex}
         onSelect={async (projectId) => {
           await dependencies.saveSelectedProjectId(projectId);
           setState({
@@ -315,6 +332,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
           await dependencies.saveActiveCapture({
             captureSessionId: result.capture_session.id,
             projectId,
+            eventIndex: 0,
           });
           setState({
             ...state,
@@ -322,6 +340,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
               ...state.settings,
               activeCaptureSessionId: result.capture_session.id,
               activeCaptureProjectId: projectId,
+              activeCaptureEventIndex: 0,
             },
           });
         }}
@@ -333,6 +352,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
               ...state.settings,
               activeCaptureSessionId: null,
               activeCaptureProjectId: null,
+              activeCaptureEventIndex: null,
             },
           });
         }}
@@ -341,7 +361,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
             dependencies.captureVisibleTabScreenshot(),
             dependencies.getCurrentTabSnapshot(),
           ]);
-          const result = await dependencies.uploadCaptureAsset(
+          const captureAssetResult = await dependencies.uploadCaptureAsset(
             state.settings.instanceUrl,
             state.settings.sessionToken,
             input.projectId,
@@ -361,6 +381,34 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
               },
             }
           );
+          const result = await dependencies.createCaptureEvent(
+            state.settings.instanceUrl,
+            state.settings.sessionToken,
+            input.projectId,
+            input.captureSessionId,
+            {
+              event_type: "capture",
+              event_index: input.eventIndex,
+              capture_asset_id: captureAssetResult.capture_asset.id,
+              occurred_at: screenshot.capturedAt,
+              page_url: tab.url,
+              page_title: tab.title,
+              input_value_redacted: true,
+              metadata: {
+                extension_version: "0.1.0",
+                capture_source: "extension_popup",
+                asset_type: "screenshot",
+              },
+            }
+          );
+          await dependencies.saveActiveCaptureEventIndex(input.eventIndex);
+          setState({
+            ...state,
+            settings: {
+              ...state.settings,
+              activeCaptureEventIndex: input.eventIndex,
+            },
+          });
 
           return result;
         }}
@@ -567,6 +615,7 @@ const ProjectPicker = ({
   selectedProjectId,
   activeCaptureSessionId,
   activeCaptureProjectId,
+  activeCaptureEventIndex,
   onSelect,
   onStartCapture,
   onDiscardActiveCapture,
@@ -579,13 +628,15 @@ const ProjectPicker = ({
   selectedProjectId: string | null;
   activeCaptureSessionId: string | null;
   activeCaptureProjectId: string | null;
+  activeCaptureEventIndex: number | null;
   onSelect: (projectId: string) => Promise<void>;
   onStartCapture: (projectId: string) => Promise<void>;
   onDiscardActiveCapture: () => Promise<void>;
   onCaptureScreenshot: (input: {
     projectId: string;
     captureSessionId: string;
-  }) => Promise<CaptureAssetResponse>;
+    eventIndex: number;
+  }) => Promise<CaptureEventResponse>;
   onChangeInstance: () => Promise<void>;
   onSignOut: () => Promise<void>;
 }) => {
@@ -593,7 +644,7 @@ const ProjectPicker = ({
   const [capturingScreenshot, setCapturingScreenshot] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
-  const [lastCaptureAssetId, setLastCaptureAssetId] = useState<string | null>(null);
+  const [lastCaptureEventIndex, setLastCaptureEventIndex] = useState<number | null>(null);
   const selectedProject = selectedProjectId
     ? projects.find((project) => project.id === selectedProjectId) ?? null
     : null;
@@ -633,14 +684,16 @@ const ProjectPicker = ({
 
     setCapturingScreenshot(true);
     setScreenshotError(null);
-    setLastCaptureAssetId(null);
+    setLastCaptureEventIndex(null);
 
     try {
+      const nextEventIndex = (activeCaptureEventIndex ?? 0) + 1;
       const result = await onCaptureScreenshot({
         projectId: activeCaptureProjectId,
         captureSessionId: activeCaptureSessionId,
+        eventIndex: nextEventIndex,
       });
-      setLastCaptureAssetId(result.capture_asset.id);
+      setLastCaptureEventIndex(result.capture_event.event_index);
       setCapturingScreenshot(false);
     } catch (error: unknown) {
       setScreenshotError(errorMessage(error, "Could not capture screenshot."));
@@ -671,7 +724,7 @@ const ProjectPicker = ({
           <p className="captureProject">{activeProject?.name ?? "Project unavailable"}</p>
           <p className="captureSession">Session {activeCaptureSessionId}</p>
           {screenshotError ? <div className="error">{screenshotError}</div> : null}
-          {lastCaptureAssetId ? <p className="success">Screenshot captured: {lastCaptureAssetId}</p> : null}
+          {lastCaptureEventIndex ? <p className="success">Capture event recorded: step {lastCaptureEventIndex}</p> : null}
           <div className="actions">
             <button type="button" disabled={capturingScreenshot} onClick={() => void handleCaptureScreenshot()}>
               {capturingScreenshot ? "Capturing..." : "Capture screenshot"}

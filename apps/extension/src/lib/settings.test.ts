@@ -3,6 +3,7 @@ import {
   clearSettings,
   getSettings,
   saveActiveCapture,
+  saveActiveCaptureEventIndex,
   saveInstanceUrl,
   saveSelectedProjectId,
   saveSessionToken,
@@ -47,6 +48,7 @@ describe("extension settings", () => {
       selectedProjectId: null,
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
+      activeCaptureEventIndex: null,
     });
   });
 
@@ -66,6 +68,7 @@ describe("extension settings", () => {
       selectedProjectId: null,
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
+      activeCaptureEventIndex: null,
     });
   });
 
@@ -86,6 +89,7 @@ describe("extension settings", () => {
       selectedProjectId: "project_1",
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
+      activeCaptureEventIndex: null,
     });
   });
 
@@ -104,6 +108,18 @@ describe("extension settings", () => {
       selectedProjectId: "project_1",
       activeCaptureSessionId: "capture_session_1",
       activeCaptureProjectId: "project_1",
+      activeCaptureEventIndex: 0,
+    });
+
+    await saveActiveCaptureEventIndex(storage, 3);
+
+    await expect(getSettings(storage)).resolves.toEqual({
+      instanceUrl: "https://demo.example.com",
+      sessionToken: "session-token",
+      selectedProjectId: "project_1",
+      activeCaptureSessionId: "capture_session_1",
+      activeCaptureProjectId: "project_1",
+      activeCaptureEventIndex: 3,
     });
 
     await clearActiveCapture(storage);
@@ -114,6 +130,7 @@ describe("extension settings", () => {
       selectedProjectId: "project_1",
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
+      activeCaptureEventIndex: null,
     });
   });
 
@@ -134,6 +151,33 @@ describe("extension settings", () => {
       selectedProjectId: null,
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
+      activeCaptureEventIndex: null,
     });
+  });
+
+  it("ignores invalid stored active capture event indexes", async () => {
+    storage.values.activeCaptureEventIndex = -1;
+
+    await expect(getSettings(storage)).resolves.toEqual({
+      instanceUrl: null,
+      sessionToken: null,
+      selectedProjectId: null,
+      activeCaptureSessionId: null,
+      activeCaptureProjectId: null,
+      activeCaptureEventIndex: null,
+    });
+  });
+
+  it("rejects invalid active capture event indexes when saving", async () => {
+    await expect(saveActiveCaptureEventIndex(storage, -1)).rejects.toThrow("Active capture event index must be a non-negative integer.");
+    await expect(saveActiveCaptureEventIndex(storage, 1.5)).rejects.toThrow("Active capture event index must be a non-negative integer.");
+  });
+
+  it("rejects invalid active capture event indexes when starting capture", async () => {
+    await expect(saveActiveCapture(storage, {
+      captureSessionId: "capture_session_1",
+      projectId: "project_1",
+      eventIndex: -1,
+    })).rejects.toThrow("Active capture event index must be a non-negative integer.");
   });
 });
