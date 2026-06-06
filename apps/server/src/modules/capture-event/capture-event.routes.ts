@@ -4,7 +4,7 @@ import {
   UnauthenticatedSessionError,
   type AuthContext,
 } from "../authentication/session.service";
-import { web_session_cookie_name } from "../authentication/session-cookie";
+import { session_token_from_request } from "../authentication/request-session-token";
 import {
   CaptureAssetNotFoundError,
   CaptureEventIndexConflictError,
@@ -231,7 +231,7 @@ export const build_capture_event_routes = (
       },
     }, async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         assert_no_raw_input_values(request.body);
         const capture_event = await dependencies.capture_event_service.create_capture_event({
           auth,
@@ -259,7 +259,7 @@ export const build_capture_event_routes = (
       },
     }, async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const capture_events = await dependencies.capture_event_service.list_capture_events({
           auth,
           project_id: request.params.project_id,
@@ -280,7 +280,7 @@ export const build_capture_event_routes = (
       };
     }>("/:project_id/capture-sessions/:capture_session_id/events/:id", async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         const capture_event = await dependencies.capture_event_service.get_capture_event({
           auth,
           project_id: request.params.project_id,
@@ -301,7 +301,7 @@ export const build_capture_event_routes = (
       };
     }>("/:project_id/capture-sessions/:capture_session_id/events/:id", async (request, reply) => {
       try {
-        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const auth = await require_auth(session_token_from_request(request));
         await dependencies.capture_event_service.delete_capture_event({
           auth,
           project_id: request.params.project_id,

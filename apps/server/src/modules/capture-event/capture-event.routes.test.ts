@@ -182,6 +182,112 @@ describe("capture event routes", () => {
     await app.close();
   });
 
+  it("creates capture events with bearer auth", async () => {
+    const seen_tokens: Array<string | undefined> = [];
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      auth_service: {
+        get_current_auth_context: async (session_token) => {
+          seen_tokens.push(session_token);
+          return auth_context;
+        },
+      },
+      capture_event_service: {
+        create_capture_event: async (input) => {
+          seen_inputs.push(input);
+          return {
+            ...capture_event,
+            event_type: "capture",
+            event_index: 1,
+            target_label: null,
+            target_selector: null,
+            target_role: null,
+            target_test_id: null,
+            target_text: null,
+            client_x: null,
+            client_y: null,
+            viewport_width: null,
+            viewport_height: null,
+            device_pixel_ratio: null,
+          };
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events",
+      headers: {
+        authorization: "Bearer extension-session-token",
+      },
+      payload: {
+        event_type: "capture",
+        event_index: 1,
+        capture_asset_id: "capture_asset_1",
+        occurred_at: "2026-06-05T10:00:00.000Z",
+        page_url: "https://example.com/path",
+        page_title: "Example Page",
+        input_value_redacted: true,
+        metadata: {
+          extension_version: "0.1.0",
+          capture_source: "extension_popup",
+          asset_type: "screenshot",
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(seen_tokens).toEqual(["extension-session-token"]);
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      data: {
+        event_type: "capture",
+        event_index: 1,
+        capture_asset_id: "capture_asset_1",
+        occurred_at: "2026-06-05T10:00:00.000Z",
+        page_url: "https://example.com/path",
+        page_title: "Example Page",
+        input_value_redacted: true,
+        metadata: {
+          extension_version: "0.1.0",
+          capture_source: "extension_popup",
+          asset_type: "screenshot",
+        },
+      },
+    }]);
+    await app.close();
+  });
+
+  it("lists capture events with bearer auth", async () => {
+    const seen_tokens: Array<string | undefined> = [];
+    const app = await build_test_app({
+      auth_service: {
+        get_current_auth_context: async (session_token) => {
+          seen_tokens.push(session_token);
+          return auth_context;
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events?event_type=capture",
+      headers: {
+        authorization: "Bearer extension-session-token",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ capture_events: [capture_event] });
+    expect(seen_tokens).toEqual(["extension-session-token"]);
+    await app.close();
+  });
+
   it("lists gets and deletes capture events through the service", async () => {
     const seen_inputs: unknown[] = [];
     const app = await build_test_app({
