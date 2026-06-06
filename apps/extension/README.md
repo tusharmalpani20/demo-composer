@@ -19,10 +19,11 @@ This app currently supports:
 - uploading that screenshot to the active capture session with safe tab metadata
 - recording a linked `capture` event after each successful screenshot upload
 - persisting the local event index for the active capture session
+- finishing the active capture session and opening the portal capture detail page
 - discarding local active capture state if needed
 
 It does not capture DOM, clicks, inputs, navigation events, full-page stitched screenshots, or HTML snapshots yet.
-Discarding local active capture state does not cancel or complete the backend capture session.
+Discarding local active capture state does not cancel or complete the backend capture session. Use `Finish capture` to complete the backend capture session.
 
 ## Development
 
@@ -131,12 +132,29 @@ x-demo-composer-client: extension
 
 The event uses `event_type: "capture"`, links to the uploaded screenshot asset, and uses the next locally stored event index for the active capture session. The extension sends `input_value_redacted: true` and does not send raw input fields. Screenshot pixel dimensions remain on the asset record; the event does not pretend those pixels are CSS viewport dimensions.
 
+## Capture Finish
+
+Finishing an active capture session calls:
+
+```text
+POST {instance_url}/api/v1/projects/:project_id/capture-sessions/:capture_session_id/complete
+```
+
+with:
+
+```text
+Authorization: Bearer <session_token>
+x-demo-composer-client: extension
+```
+
+After backend completion succeeds, the extension clears only the local active capture fields and preserves the selected project. It then opens the portal capture session detail page using the backend's relative redirect path when safe, or a locally constructed project/capture-session route as fallback. Session tokens are never included in the portal URL.
+
 ## Permissions
 
 The extension currently requests:
 
 - `storage` for instance, session, selected project, and active capture state
-- `tabs` for active tab URL/title metadata
+- `tabs` for active tab URL/title metadata and opening the portal capture detail page after finishing
 - `activeTab` for visible tab screenshot capture
 
 It does not request broad host permissions, `scripting`, or content scripts yet.

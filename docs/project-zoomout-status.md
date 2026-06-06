@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `025` exist and have been implemented through extension capture event recording.
+- Plans `001` through `026` exist and have been implemented through extension capture finalization and portal opening.
 
 ### Backend Foundation
 
@@ -134,6 +134,7 @@ The agreed implementation style is:
 - Extension can capture the visible active tab as a PNG screenshot and upload it to the active capture session as a capture asset.
 - Extension can record a linked `capture` event after each successful screenshot upload.
 - Extension persists the local active capture event index so manual screenshots become ordered source material.
+- Extension can finish the active capture session, clear local active capture state, and open the portal capture session detail page.
 - Extension can show screenshot upload loading, success, and error states without clearing the active capture state.
 - Extension can discard local active capture state if needed.
 
@@ -182,10 +183,6 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, and extension can now create ordered browser-sourced capture material: each manual visible-tab screenshot upload is linked to a `capture` event in the active capture session.
+The current backend, portal, and extension can now complete the first end-to-end capture loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, and open the portal capture detail page.
 
-The next major milestone should let users finish that capture loop from the extension:
-
-- stop/finalize capture session from the extension
-- redirect to the portal capture session detail after capture
-- guide generation improvements that use screenshot-backed events as ordered steps
+The next major milestone should improve guide generation so screenshot-backed capture events become clean ordered Scribe-style guide steps with the right screenshot attached.
