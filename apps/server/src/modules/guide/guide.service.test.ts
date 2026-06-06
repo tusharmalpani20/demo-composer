@@ -59,6 +59,45 @@ const source_events: GuideSourceEvent[] = [
   },
 ];
 
+const screenshot_capture_events: GuideSourceEvent[] = [
+  {
+    id: "event_3",
+    event_type: "capture",
+    event_index: 3,
+    capture_asset_id: null,
+    page_url: null,
+    page_title: null,
+    target_label: null,
+    target_role: null,
+    target_text: null,
+    note: null,
+  },
+  {
+    id: "event_1",
+    event_type: "capture",
+    event_index: 1,
+    capture_asset_id: "asset_1",
+    page_url: "https://example.test/departments",
+    page_title: "Department List",
+    target_label: null,
+    target_role: null,
+    target_text: null,
+    note: null,
+  },
+  {
+    id: "event_2",
+    event_type: "capture",
+    event_index: 2,
+    capture_asset_id: "asset_deleted",
+    page_url: "https://example.test/departments/new",
+    page_title: null,
+    target_label: null,
+    target_role: null,
+    target_text: null,
+    note: null,
+  },
+];
+
 const guide_detail: GuideDetail = {
   guide: {
     id: "guide_1",
@@ -327,6 +366,73 @@ describe("guide service", () => {
       capture_session_id: "capture_session_1",
       data: { title: "Guide", selected_capture_event_ids: ["missing_event"] },
     })).rejects.toBeInstanceOf(CaptureEventNotFoundError);
+  });
+
+  it("creates useful guide steps from screenshot-backed capture events", async () => {
+    const repository = build_repository();
+    repository.list_source_capture_events = async (input) => {
+      const selected_ids = input.selected_capture_event_ids;
+      const events = selected_ids
+        ? screenshot_capture_events.filter((event) => selected_ids.includes(event.id))
+        : screenshot_capture_events;
+      return [...events].sort((a, b) => a.event_index - b.event_index);
+    };
+    const service = build_guide_service(repository);
+
+    await expect(service.create_guide_from_capture({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      data: {
+        title: " Screenshot guide ",
+        selected_capture_event_ids: ["event_3", "event_1", "event_2"],
+      },
+    })).resolves.toEqual(guide_detail);
+
+    expect(repository.created_inputs).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      actor_org_user_id: "org_user_1",
+      data: {
+        title: "Screenshot guide",
+        description: null,
+        blocks: [
+          {
+            block_type: "step",
+            block_index: 1,
+            source_capture_event_id: "event_1",
+            source_capture_asset_id: "asset_1",
+            step: {
+              title: "Capture \"Department List\"",
+              body: "Captured from https://example.test/departments.",
+            },
+          },
+          {
+            block_type: "step",
+            block_index: 2,
+            source_capture_event_id: "event_2",
+            source_capture_asset_id: null,
+            step: {
+              title: "Capture \"https://example.test/departments/new\"",
+              body: "Captured from this page.",
+            },
+          },
+          {
+            block_type: "step",
+            block_index: 3,
+            source_capture_event_id: "event_3",
+            source_capture_asset_id: null,
+            step: {
+              title: "Capture this screen",
+              body: null,
+            },
+          },
+        ],
+      },
+    }]);
+    expect(JSON.stringify(repository.created_inputs)).not.toContain("input_value");
+    expect(JSON.stringify(repository.created_inputs)).not.toContain("typed_value");
   });
 
   it("lists and gets guides through scoped repository calls", async () => {

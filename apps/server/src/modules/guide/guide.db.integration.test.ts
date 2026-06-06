@@ -338,4 +338,81 @@ describe("DB-backed guide API", () => {
 
     await app.close();
   });
+
+  it("persists generated guide steps from screenshot-backed capture events", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const capture_session_id = await create_capture_session(session_token, project_id);
+    const active_asset_id = await create_capture_asset(session_token, project_id, capture_session_id);
+    const deleted_asset_id = await create_capture_asset(session_token, project_id, capture_session_id);
+
+    const first_capture_event_id = await create_capture_event(session_token, project_id, capture_session_id, {
+      event_type: "capture",
+      event_index: 2,
+      capture_asset_id: active_asset_id,
+      page_title: "Department List",
+      page_url: "https://example.test/departments",
+      input_value_redacted: true,
+    });
+    const deleted_asset_event_id = await create_capture_event(session_token, project_id, capture_session_id, {
+      event_type: "capture",
+      event_index: 1,
+      capture_asset_id: deleted_asset_id,
+      page_url: "https://example.test/departments/new",
+      input_value_redacted: true,
+    });
+
+    await pool.query(`
+      UPDATE capture_schema.capture_asset
+      SET is_deleted = TRUE, deleted_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+    `, [deleted_asset_id]);
+
+    const app = build({ logger: false });
+    const create_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/from-capture-session/${capture_session_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        title: "Screenshot capture guide",
+      },
+    });
+
+    expect(create_response.statusCode).toBe(201);
+    const created_body = create_response.json();
+    expect(created_body.guide_blocks.map((block: { source_capture_event_id: string }) => block.source_capture_event_id)).toEqual([
+      deleted_asset_event_id,
+      first_capture_event_id,
+    ]);
+    expect(created_body.guide_blocks.map((block: { source_capture_asset_id: string | null }) => block.source_capture_asset_id)).toEqual([
+      null,
+      active_asset_id,
+    ]);
+    expect(created_body.guide_blocks.map((block: {
+      step: {
+        title: string;
+        body: string | null;
+        source_capture_asset_id: string | null;
+      };
+    }) => ({
+      title: block.step.title,
+      body: block.step.body,
+      source_capture_asset_id: block.step.source_capture_asset_id,
+    }))).toEqual([
+      {
+        title: "Capture \"https://example.test/departments/new\"",
+        body: "Captured from this page.",
+        source_capture_asset_id: null,
+      },
+      {
+        title: "Capture \"Department List\"",
+        body: "Captured from https://example.test/departments.",
+        source_capture_asset_id: active_asset_id,
+      },
+    ]);
+    expect(JSON.stringify(created_body)).not.toContain("input_value");
+    expect(JSON.stringify(created_body)).not.toContain("storage_key");
+
+    await app.close();
+  });
 });
