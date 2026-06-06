@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `026` exist and have been implemented through extension capture finalization and portal opening.
+- Plans `001` through `027` exist and have been implemented through screenshot-backed capture event guide generation.
 
 ### Backend Foundation
 
@@ -85,6 +85,7 @@ The agreed implementation style is:
 - Capture asset module supports metadata creation, multipart screenshot upload to local storage, list, get metadata, read file bytes, and delete/archive behavior.
 - Capture event module supports create, list, get, and delete/archive behavior, with raw input-value protection.
 - Guide module supports creating a guide from a capture session, listing guides, reading guide detail, updating guide metadata, updating guide steps, reordering guide blocks, and deleting guide blocks.
+- Guide generation uses ordered capture events as source material and creates better deterministic steps for screenshot-backed `capture` events.
 - Server has unit, route, app integration, and DB integration coverage across the implemented modules.
 
 ### Web Portal
@@ -183,6 +184,6 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, and extension can now complete the first end-to-end capture loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, and open the portal capture detail page.
+The current backend, portal, and extension can now complete the first end-to-end capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, and generate an editable draft guide with screenshot-backed capture steps.
 
-The next major milestone should improve guide generation so screenshot-backed capture events become clean ordered Scribe-style guide steps with the right screenshot attached.
+The next major milestone should add a read-only Scribe-style guide preview/reader so edited guide drafts can be reviewed outside the editor before publishing exists.
