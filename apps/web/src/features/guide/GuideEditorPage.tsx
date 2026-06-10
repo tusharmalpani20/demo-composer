@@ -4,12 +4,17 @@ import {
   deleteGuideBlock,
   getGuideDetail,
   reorderGuideBlocks,
+  resolveApiAssetUrl,
   updateGuide,
   updateGuideStep,
 } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
 import { PortalTopbar } from "../portal/PortalTopbar";
-import type { GuideBlock, GuideDetail, GuideStep } from "./types";
+import {
+  GuideScreenshotViewer,
+  type GuideScreenshotViewerImage,
+} from "./GuideScreenshotViewer";
+import type { GuideBlock, GuideDetail, GuideSourceCaptureAsset, GuideStep } from "./types";
 import styles from "./GuideEditorPage.module.css";
 
 type LoadState =
@@ -67,6 +72,22 @@ const loadStateFromError = (error: unknown): LoadState => {
 const isGuideNotEditable = (error: unknown) => (
   error instanceof ApiClientError && error.type === "guide_not_editable"
 );
+
+const assetAltText = (asset: GuideSourceCaptureAsset, stepNumber: number) => (
+  asset.page_title ?? asset.file.original_name ?? `Step ${stepNumber} screenshot`
+);
+
+const screenshotViewerImageId = (block: GuideBlock, asset: GuideSourceCaptureAsset) => (
+  `${block.id}:${asset.id}`
+);
+
+const assetForBlock = (
+  block: GuideBlock,
+  assetsById: Map<string, GuideSourceCaptureAsset>
+) => {
+  const source_capture_asset_id = block.source_capture_asset_id ?? block.step?.source_capture_asset_id ?? null;
+  return source_capture_asset_id ? assetsById.get(source_capture_asset_id) : undefined;
+};
 
 const stepDraftsFromBlocks = (blocks: GuideBlock[]) => blocks.reduce<Record<string, StepDraft>>((drafts, block) => {
   if (block.step) {
@@ -391,7 +412,24 @@ const GuideEditorView = ({
   navigate?: (path: string) => void;
 }) => {
   const sortedBlocks = useMemo(() => sortBlocks(detail.guide_blocks), [detail.guide_blocks]);
+  const [activeScreenshotId, setActiveScreenshotId] = useState<string | null>(null);
   const readOnly = detail.guide.status !== "draft";
+  const assetsById = useMemo(() => new Map(
+    detail.source_capture_assets.map((asset) => [asset.id, asset])
+  ), [detail.source_capture_assets]);
+  const screenshotImages = useMemo(
+    () => screenshotImagesFromBlocks(sortedBlocks, assetsById, stepDrafts),
+    [assetsById, sortedBlocks, stepDrafts]
+  );
+
+  useEffect(() => {
+    if (
+      activeScreenshotId
+      && !screenshotImages.some((image) => image.id === activeScreenshotId)
+    ) {
+      setActiveScreenshotId(null);
+    }
+  }, [activeScreenshotId, screenshotImages]);
 
   return (
     <PortalShell projectId={projectId} guideId={guideId} performLogout={performLogout} navigate={navigate}>
@@ -463,19 +501,50 @@ const GuideEditorView = ({
                   readOnly={readOnly}
                   busyAction={busyAction}
                   draft={block.step ? stepDrafts[block.step.id] : undefined}
+                  sourceAsset={assetForBlock(block, assetsById)}
                   onDraftChange={onStepDraftChange}
                   onSaveStep={onSaveStep}
                   onMoveBlock={onMoveBlock}
                   onDeleteBlock={onDeleteBlock}
+                  onOpenScreenshot={setActiveScreenshotId}
                 />
               ))}
             </div>
           )}
         </section>
       </div>
+      <GuideScreenshotViewer
+        images={screenshotImages}
+        activeImageId={activeScreenshotId}
+        onActiveImageChange={setActiveScreenshotId}
+        onClose={() => setActiveScreenshotId(null)}
+      />
     </PortalShell>
   );
 };
+
+const screenshotImagesFromBlocks = (
+  blocks: GuideBlock[],
+  assetsById: Map<string, GuideSourceCaptureAsset>,
+  stepDrafts: Record<string, StepDraft>
+): GuideScreenshotViewerImage[] => blocks.flatMap((block, index) => {
+  const asset = assetForBlock(block, assetsById);
+
+  if (block.block_type !== "step" || !block.step || !asset) {
+    return [];
+  }
+
+  const stepNumber = index + 1;
+  const draftTitle = stepDrafts[block.step.id]?.title;
+
+  return [{
+    id: screenshotViewerImageId(block, asset),
+    sourceAssetId: asset.id,
+    src: resolveApiAssetUrl(asset.file_url),
+    alt: assetAltText(asset, stepNumber),
+    title: draftTitle || block.step.title || asset.page_title || asset.file.original_name || `Step ${stepNumber} screenshot`,
+  }];
+});
 
 const GuideBlockEditor = ({
   block,
@@ -485,10 +554,12 @@ const GuideBlockEditor = ({
   readOnly,
   busyAction,
   draft,
+  sourceAsset,
   onDraftChange,
   onSaveStep,
   onMoveBlock,
   onDeleteBlock,
+  onOpenScreenshot,
 }: {
   block: GuideBlock;
   blockNumber: number;
@@ -497,10 +568,12 @@ const GuideBlockEditor = ({
   readOnly: boolean;
   busyAction: string | null;
   draft?: StepDraft;
+  sourceAsset?: GuideSourceCaptureAsset;
   onDraftChange: (stepId: string, draft: StepDraft) => void;
   onSaveStep: (step: GuideStep) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
+  onOpenScreenshot: (imageId: string) => void;
 }) => {
   const step = block.step;
   const actionLabel = step ? "step" : "block";
@@ -512,8 +585,10 @@ const GuideBlockEditor = ({
         <div className={styles.blockIndex}>{blockNumber}</div>
         <div>
           <div className={styles.blockType}>{block.block_type}</div>
-          {block.source_capture_asset_id ? (
-            <div className={styles.blockMeta}>Screenshot source: {block.source_capture_asset_id}</div>
+          {sourceAsset ? (
+            <div className={styles.blockMeta}>
+              {sourceAsset.page_title ?? sourceAsset.file.original_name ?? "Source screenshot"}
+            </div>
           ) : null}
         </div>
         <div className={styles.blockActions}>
@@ -581,6 +656,22 @@ const GuideBlockEditor = ({
           >
             Save step {blockNumber}
           </button>
+          {sourceAsset ? (
+            <div className={styles.media}>
+              <button
+                className={styles.mediaButton}
+                type="button"
+                aria-label={`Open screenshot for step ${blockNumber}`}
+                onClick={() => onOpenScreenshot(screenshotViewerImageId(block, sourceAsset))}
+              >
+                <img
+                  className={styles.screenshot}
+                  src={resolveApiAssetUrl(sourceAsset.file_url)}
+                  alt={assetAltText(sourceAsset, blockNumber)}
+                />
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className={styles.empty}>This block is not editable yet.</div>

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import { GuideEditorPage } from "./GuideEditorPage";
@@ -88,7 +88,44 @@ const guideDetail: GuideDetail = {
       },
     },
   ],
-  source_capture_assets: [],
+  source_capture_assets: [
+    {
+      id: "asset_1",
+      capture_session_id: "capture_session_1",
+      asset_type: "screenshot",
+      width: 1440,
+      height: 900,
+      device_pixel_ratio: 1,
+      page_url: "https://example.test/departments",
+      page_title: "Department List",
+      captured_at: "2026-06-05T10:01:00.000Z",
+      file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_1/file",
+      file: {
+        id: "file_1",
+        original_name: "departments.png",
+        mime_type: "image/png",
+        size_bytes: 123456,
+      },
+    },
+    {
+      id: "asset_2",
+      capture_session_id: "capture_session_1",
+      asset_type: "screenshot",
+      width: 1440,
+      height: 900,
+      device_pixel_ratio: 1,
+      page_url: "https://example.test/departments/new",
+      page_title: "New Department",
+      captured_at: "2026-06-05T10:02:00.000Z",
+      file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_2/file",
+      file: {
+        id: "file_2",
+        original_name: "new-department.png",
+        mime_type: "image/png",
+        size_bytes: 234567,
+      },
+    },
+  ],
 };
 
 const renderPage = (overrides: {
@@ -177,9 +214,71 @@ describe("GuideEditorPage", () => {
       "Navigate to Department List",
       "Click Add Department",
     ]);
-    expect(screen.getByText("Screenshot source: asset_1")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Department List" })).toHaveAttribute(
+      "src",
+      "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_1/file"
+    );
+    expect(screen.getByRole("img", { name: "New Department" })).toHaveAttribute(
+      "src",
+      "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_2/file"
+    );
+    expect(screen.getByRole("button", { name: "Open screenshot for step 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open screenshot for step 2" })).toBeInTheDocument();
+    expect(screen.queryByText("Screenshot source: asset_1")).not.toBeInTheDocument();
+    expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
     expect(loadDetail).toHaveBeenCalledWith("project_1", "guide_1");
     expect(screen.queryByText("organization_1")).not.toBeInTheDocument();
+  });
+
+  it("does not render broken screenshots or raw IDs when source assets are missing", async () => {
+    renderPage({
+      detail: {
+        ...guideDetail,
+        source_capture_assets: [],
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "Department List" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open screenshot for step 1" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Screenshot source: asset_1")).not.toBeInTheDocument();
+    expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
+  });
+
+  it("opens and navigates screenshot viewer images from editor screenshots", async () => {
+    const duplicateAssetDetail: GuideDetail = {
+      ...guideDetail,
+      guide_blocks: guideDetail.guide_blocks.map((block) => (
+        block.id === "block_2"
+          ? {
+            ...block,
+            source_capture_asset_id: "asset_1",
+            step: block.step ? { ...block.step, source_capture_asset_id: "asset_1" } : null,
+          }
+          : block
+      )),
+      source_capture_assets: [guideDetail.source_capture_assets[0]!],
+    };
+
+    renderPage({ detail: duplicateAssetDetail });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open screenshot for step 1" }));
+
+    const firstDialog = screen.getByRole("dialog", { name: "Navigate to Department List" });
+    expect(within(firstDialog).getByRole("img", { name: "Department List" })).toHaveAttribute(
+      "src",
+      "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_1/file"
+    );
+    expect(within(firstDialog).getByText("1 / 2")).toBeInTheDocument();
+
+    fireEvent.click(within(firstDialog).getByRole("button", { name: "Next screenshot" }));
+    const secondDialog = screen.getByRole("dialog", { name: "Click Add Department" });
+    expect(within(secondDialog).getByText("2 / 2")).toBeInTheDocument();
+    expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
+
+    fireEvent.click(within(secondDialog).getByRole("button", { name: "Close screenshot viewer" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("renders non-step blocks with block-level actions", async () => {
@@ -267,6 +366,34 @@ describe("GuideEditorPage", () => {
     expect(await screen.findByText("Archived guides are read-only.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save guide" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Save step 1" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Open screenshot for step 1" }));
+    expect(screen.getByRole("dialog", { name: "Navigate to Department List" })).toBeInTheDocument();
+  });
+
+  it("closes the screenshot viewer when the active screenshot disappears after deletion", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const loadDetail = vi
+      .fn()
+      .mockResolvedValueOnce(guideDetail)
+      .mockResolvedValueOnce({
+        ...guideDetail,
+        guide_blocks: [guideDetail.guide_blocks[0]!],
+        source_capture_assets: [guideDetail.source_capture_assets[1]!],
+      });
+
+    renderPage({ loadDetail });
+
+    await screen.findByRole("heading", { name: "Department guide" });
+    fireEvent.click(screen.getByRole("button", { name: "Open screenshot for step 1" }));
+    expect(screen.getByRole("dialog", { name: "Navigate to Department List" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete step 1" }));
+
+    await waitFor(() => expect(loadDetail).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "Department List" })).not.toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "New Department" })).toBeInTheDocument();
+    confirm.mockRestore();
   });
 
   it("renders load and mutation error states", async () => {

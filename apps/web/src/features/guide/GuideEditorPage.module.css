@@ -270,6 +270,33 @@
   border-top: 1px solid #e5ebf1;
 }
 
+.media {
+  margin-top: 10px;
+}
+
+.mediaButton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: zoom-in;
+}
+
+.mediaButton:focus-visible {
+  outline: 3px solid #8ab4f8;
+  outline-offset: 2px;
+}
+
+.screenshot {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+}
+
 .empty,
 .state {
   padding: 18px;
