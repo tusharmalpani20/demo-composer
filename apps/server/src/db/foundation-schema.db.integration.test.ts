@@ -128,6 +128,7 @@ describe("foundation schema migrations on postgres", () => {
     await expect(schema_exists("capture_schema")).resolves.toBe(true);
     await expect(schema_exists("file_schema")).resolves.toBe(true);
     await expect(schema_exists("guide_schema")).resolves.toBe(true);
+    await expect(schema_exists("publish_schema")).resolves.toBe(true);
 
     await expect(table_exists("user_schema", "user")).resolves.toBe(true);
     await expect(table_exists("organization_schema", "organization")).resolves.toBe(true);
@@ -141,6 +142,8 @@ describe("foundation schema migrations on postgres", () => {
     await expect(table_exists("guide_schema", "guide")).resolves.toBe(true);
     await expect(table_exists("guide_schema", "guide_block")).resolves.toBe(true);
     await expect(table_exists("guide_schema", "guide_step")).resolves.toBe(true);
+    await expect(table_exists("publish_schema", "published_artifact")).resolves.toBe(true);
+    await expect(table_exists("publish_schema", "publish_link")).resolves.toBe(true);
   });
 
   it("keeps user identity separate from organization membership", async () => {
@@ -316,6 +319,206 @@ describe("foundation schema migrations on postgres", () => {
     await expect(index_exists("guide_schema", "idx_guide_step_block_active")).resolves.toBe(true);
     await expect(index_exists("guide_schema", "uq_guide_step_block_active")).resolves.toBe(true);
     await expect(table_comment("guide_schema", "guide")).resolves.toMatch(/editable guide artifact/i);
+  });
+
+  it("creates publish snapshot and link schema separately from editable artifacts", async () => {
+    for (const column_name of [
+      "organization_id",
+      "project_id",
+      "artifact_type",
+      "artifact_id",
+      "version_number",
+      "title",
+      "snapshot_json",
+      "created_by_id",
+      "published_at",
+    ]) {
+      await expect(column_exists("publish_schema", "published_artifact", column_name)).resolves.toBe(true);
+    }
+
+    for (const column_name of [
+      "organization_id",
+      "project_id",
+      "artifact_type",
+      "artifact_id",
+      "published_artifact_id",
+      "slug",
+      "visibility",
+      "status",
+      "created_by_id",
+      "revoked_by_id",
+      "published_at",
+      "revoked_at",
+    ]) {
+      await expect(column_exists("publish_schema", "publish_link", column_name)).resolves.toBe(true);
+    }
+
+    await expect(index_exists("publish_schema", "idx_published_artifact_source_created")).resolves.toBe(true);
+    await expect(index_exists("publish_schema", "uq_publish_link_active_source")).resolves.toBe(true);
+    await expect(index_exists("publish_schema", "idx_publish_link_slug_active")).resolves.toBe(true);
+    await expect(table_comment("publish_schema", "published_artifact")).resolves.toMatch(/immutable/i);
+    await expect(table_comment("publish_schema", "publish_link")).resolves.toMatch(/stable publish/i);
+  });
+
+  it("enforces publish snapshot versions slugs and active source links", async () => {
+    const context = await insert_constraint_test_context();
+    const guide_id = ulid();
+    const first_artifact_id = ulid();
+    const second_artifact_id = ulid();
+
+    await pool.query(`
+      INSERT INTO guide_schema.guide (
+        id,
+        organization_id,
+        project_id,
+        source_capture_session_id,
+        title,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, 'Publish Constraint Guide', $5, $5)
+    `, [
+      guide_id,
+      context.organization_id,
+      context.project_id,
+      context.capture_session_id,
+      context.org_user_id,
+    ]);
+
+    await pool.query(`
+      INSERT INTO publish_schema.published_artifact (
+        id,
+        organization_id,
+        project_id,
+        artifact_type,
+        artifact_id,
+        version_number,
+        title,
+        snapshot_json,
+        created_by_id
+      )
+      VALUES ($1, $2, $3, 'guide', $4, 1, 'Version 1', '{"artifact_type":"guide","blocks":[]}'::jsonb, $5)
+    `, [
+      first_artifact_id,
+      context.organization_id,
+      context.project_id,
+      guide_id,
+      context.org_user_id,
+    ]);
+
+    await expect(pool.query(`
+      INSERT INTO publish_schema.published_artifact (
+        id,
+        organization_id,
+        project_id,
+        artifact_type,
+        artifact_id,
+        version_number,
+        title,
+        snapshot_json,
+        created_by_id
+      )
+      VALUES ($1, $2, $3, 'guide', $4, 1, 'Duplicate Version', '{"artifact_type":"guide"}'::jsonb, $5)
+    `, [
+      second_artifact_id,
+      context.organization_id,
+      context.project_id,
+      guide_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23505",
+      constraint: "uq_published_artifact_source_version",
+    });
+
+    await pool.query(`
+      INSERT INTO publish_schema.published_artifact (
+        id,
+        organization_id,
+        project_id,
+        artifact_type,
+        artifact_id,
+        version_number,
+        title,
+        snapshot_json,
+        created_by_id
+      )
+      VALUES ($1, $2, $3, 'guide', $4, 2, 'Version 2', '{"artifact_type":"guide","blocks":[]}'::jsonb, $5)
+    `, [
+      second_artifact_id,
+      context.organization_id,
+      context.project_id,
+      guide_id,
+      context.org_user_id,
+    ]);
+
+    await pool.query(`
+      INSERT INTO publish_schema.publish_link (
+        id,
+        organization_id,
+        project_id,
+        artifact_type,
+        artifact_id,
+        published_artifact_id,
+        slug,
+        created_by_id
+      )
+      VALUES ($1, $2, $3, 'guide', $4, $5, 'constraint-slug', $6)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      guide_id,
+      first_artifact_id,
+      context.org_user_id,
+    ]);
+
+    await expect(pool.query(`
+      INSERT INTO publish_schema.publish_link (
+        id,
+        organization_id,
+        project_id,
+        artifact_type,
+        artifact_id,
+        published_artifact_id,
+        slug,
+        created_by_id
+      )
+      VALUES ($1, $2, $3, 'guide', $4, $5, 'constraint-slug', $6)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      guide_id,
+      second_artifact_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23505",
+      constraint: "uq_publish_link_slug",
+    });
+
+    await expect(pool.query(`
+      INSERT INTO publish_schema.publish_link (
+        id,
+        organization_id,
+        project_id,
+        artifact_type,
+        artifact_id,
+        published_artifact_id,
+        slug,
+        created_by_id
+      )
+      VALUES ($1, $2, $3, 'guide', $4, $5, 'second-active-source-slug', $6)
+    `, [
+      ulid(),
+      context.organization_id,
+      context.project_id,
+      guide_id,
+      second_artifact_id,
+      context.org_user_id,
+    ])).rejects.toMatchObject({
+      code: "23505",
+      constraint: "uq_publish_link_active_source",
+    });
   });
 
   it("enforces file and capture asset metadata constraints", async () => {
