@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `027` exist and have been implemented through screenshot-backed capture event guide generation.
+- Plans `001` through `028` exist and have been implemented through the authenticated guide preview reader.
 
 ### Backend Foundation
 
@@ -84,7 +84,7 @@ The agreed implementation style is:
 - Capture session module supports create, list, get, detail read model, update, complete/finalize, and delete/archive behavior.
 - Capture asset module supports metadata creation, multipart screenshot upload to local storage, list, get metadata, read file bytes, and delete/archive behavior.
 - Capture event module supports create, list, get, and delete/archive behavior, with raw input-value protection.
-- Guide module supports creating a guide from a capture session, listing guides, reading guide detail, updating guide metadata, updating guide steps, reordering guide blocks, and deleting guide blocks.
+- Guide module supports creating a guide from a capture session, listing guides, reading guide detail with safe source screenshot asset display data, updating guide metadata, updating guide steps, reordering guide blocks, and deleting guide blocks.
 - Guide generation uses ordered capture events as source material and creates better deterministic steps for screenshot-backed `capture` events.
 - Server has unit, route, app integration, and DB integration coverage across the implemented modules.
 
@@ -99,6 +99,7 @@ The agreed implementation style is:
   - `/projects/:project_id/capture-sessions/:capture_session_id`
   - `/projects/:project_id/guides`
   - `/projects/:project_id/guides/:guide_id`
+  - `/projects/:project_id/guides/:guide_id/preview`
 - API client helpers currently cover:
   - current auth
   - login
@@ -120,6 +121,7 @@ The agreed implementation style is:
 - Capture session detail page shows source capture detail and supports creating a guide from that capture.
 - Guide list page shows project guides.
 - Guide editor page supports editing guide title/description/status, updating step title/body, reordering blocks, and deleting blocks.
+- Guide preview page renders a private Scribe-style read-only guide with ordered steps and active source screenshots.
 - Web has focused page, route, API, and app tests for the implemented screens.
 
 ## Not Built Yet
@@ -153,7 +155,7 @@ The agreed implementation style is:
 - Guide editor does not yet insert non-step blocks from the UI.
 - Guide editor does not yet attach/change screenshots per step.
 - Guide annotations/highlights are not implemented.
-- Guide preview/published reader is not implemented.
+- Public guide reader is not implemented.
 - Guide export is not implemented.
 - Guide publish links are not implemented.
 
@@ -184,6 +186,6 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, and extension can now complete the first end-to-end capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, and generate an editable draft guide with screenshot-backed capture steps.
+The current backend, portal, and extension can now complete the first end-to-end capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, and review that draft in a private read-only guide preview.
 
-The next major milestone should add a read-only Scribe-style guide preview/reader so edited guide drafts can be reviewed outside the editor before publishing exists.
+The next major milestone should add screenshot zoom/lightbox support so users can inspect full-size captured screens from guide preview and editor contexts.
