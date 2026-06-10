@@ -192,6 +192,7 @@ describe("App", () => {
         updated_at: "2026-06-05T10:00:00.000Z",
       },
       guide_blocks: [],
+      source_capture_assets: [],
     }), {
       status: 200,
       headers: {
@@ -203,6 +204,38 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
     expect(screen.getByText("This guide does not have any blocks yet.")).toBeInTheDocument();
+  });
+
+  it("renders guide preview routes", async () => {
+    window.history.pushState({}, "", "/projects/project_1/guides/guide_1/preview");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      guide: {
+        id: "guide_1",
+        organization_id: "organization_1",
+        project_id: "project_1",
+        source_capture_session_id: null,
+        title: "Department guide",
+        description: "Set up departments from the list view.",
+        status: "draft",
+        created_by_id: "org_user_1",
+        updated_by_id: "org_user_1",
+        version: 1,
+        created_at: "2026-06-05T10:00:00.000Z",
+        updated_at: "2026-06-05T10:00:00.000Z",
+      },
+      guide_blocks: [],
+      source_capture_assets: [],
+    }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit guide" })).toHaveAttribute("href", "/projects/project_1/guides/guide_1");
   });
 
   it("renders project guide list routes", async () => {

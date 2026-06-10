@@ -52,7 +52,7 @@ const renderPage = (overrides: {
 };
 
 describe("ProjectGuideListPage", () => {
-  it("renders project guides in response order with editor links", async () => {
+  it("renders project guides in response order with editor and preview links", async () => {
     const { loadGuides } = renderPage();
 
     expect(screen.getByText("Loading guides...")).toBeInTheDocument();
@@ -70,6 +70,10 @@ describe("ProjectGuideListPage", () => {
     expect(screen.getByRole("link", { name: "Open guide Department guide" })).toHaveAttribute(
       "href",
       "/projects/project_1/guides/guide_1"
+    );
+    expect(screen.getByRole("link", { name: "Preview guide Department guide" })).toHaveAttribute(
+      "href",
+      "/projects/project_1/guides/guide_1/preview"
     );
     expect(loadGuides).toHaveBeenCalledWith("project_1");
     expect(screen.queryByText("organization_1")).not.toBeInTheDocument();
@@ -92,6 +96,10 @@ describe("ProjectGuideListPage", () => {
     expect(await screen.findByRole("link", { name: "Open guide Encoded guide" })).toHaveAttribute(
       "href",
       "/projects/project%201/guides/guide%20%2F%201"
+    );
+    expect(screen.getByRole("link", { name: "Preview guide Encoded guide" })).toHaveAttribute(
+      "href",
+      "/projects/project%201/guides/guide%20%2F%201/preview"
     );
   });
 

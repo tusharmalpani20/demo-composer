@@ -46,6 +46,10 @@ const sortBlocks = (blocks: GuideBlock[]) => (
   [...blocks].sort((left, right) => left.block_index - right.block_index)
 );
 
+const guidePreviewUrl = (projectId: string, guideId: string) => (
+  `/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/preview`
+);
+
 const loadStateFromError = (error: unknown): LoadState => {
   if (error instanceof ApiClientError) {
     if (error.kind === "unauthenticated") {
@@ -398,7 +402,10 @@ const GuideEditorView = ({
             <h1 className={styles.title}>{detail.guide.title}</h1>
             {detail.guide.description ? <p className={styles.description}>{detail.guide.description}</p> : null}
           </div>
-          <span className={styles.badge}>{detail.guide.status}</span>
+          <div className={styles.headerActions}>
+            <a className={styles.previewLink} href={guidePreviewUrl(projectId, guideId)}>Preview guide</a>
+            <span className={styles.badge}>{detail.guide.status}</span>
+          </div>
         </div>
         {readOnly ? <div className={styles.notice}>Archived guides are read-only.</div> : null}
         {notice ? <div className={styles.notice}>{notice}</div> : null}

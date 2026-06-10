@@ -142,9 +142,17 @@
 .openLink {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 36px;
   padding: 0 14px;
   text-decoration: none;
+}
+
+.guideActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .secondaryButton {
@@ -191,6 +199,7 @@
     grid-template-columns: 1fr;
   }
 
+  .guideActions,
   .openLink {
     justify-content: center;
   }

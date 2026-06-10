@@ -88,6 +88,7 @@ const guideDetail: GuideDetail = {
       },
     },
   ],
+  source_capture_assets: [],
 };
 
 const renderPage = (overrides: {
@@ -168,6 +169,10 @@ describe("GuideEditorPage", () => {
     expect(screen.getByText("draft")).toBeInTheDocument();
     expect(screen.getByLabelText("Guide title")).toHaveValue("Department guide");
     expect(screen.getByLabelText("Guide description")).toHaveValue("Set up departments from the list view.");
+    expect(screen.getByRole("link", { name: "Preview guide" })).toHaveAttribute(
+      "href",
+      "/projects/project_1/guides/guide_1/preview"
+    );
     expect(screen.getAllByRole("textbox", { name: /Step title/ }).map((input) => input.getAttribute("value"))).toEqual([
       "Navigate to Department List",
       "Click Add Department",

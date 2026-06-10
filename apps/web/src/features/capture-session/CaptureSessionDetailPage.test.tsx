@@ -140,6 +140,7 @@ const guideDetail: GuideDetail = {
     updated_at: "2026-06-05T10:00:00.000Z",
   },
   guide_blocks: [],
+  source_capture_assets: [],
 };
 
 const renderPage = (overrides: {

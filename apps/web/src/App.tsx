@@ -2,6 +2,7 @@ import { CaptureSessionDetailPage } from "./features/capture-session/CaptureSess
 import { ProjectCaptureSessionListPage } from "./features/capture-session/ProjectCaptureSessionListPage";
 import { LoginPage } from "./features/auth/LoginPage";
 import { GuideEditorPage } from "./features/guide/GuideEditorPage";
+import { GuidePreviewPage } from "./features/guide/GuidePreviewPage";
 import { ProjectGuideListPage } from "./features/guide/ProjectGuideListPage";
 import { ProjectListPage } from "./features/project/ProjectListPage";
 import { ProjectWorkspacePage } from "./features/project/ProjectWorkspacePage";
@@ -57,6 +58,16 @@ export default function App() {
   if (route.type === "guide_detail") {
     return (
       <GuideEditorPage
+        projectId={route.projectId}
+        guideId={route.guideId}
+        currentPath={currentPath}
+      />
+    );
+  }
+
+  if (route.type === "guide_preview") {
+    return (
+      <GuidePreviewPage
         projectId={route.projectId}
         guideId={route.guideId}
         currentPath={currentPath}

@@ -24,6 +24,11 @@ export type PortalRoute =
     guideId: string;
   }
   | {
+    type: "guide_preview";
+    projectId: string;
+    guideId: string;
+  }
+  | {
     type: "project_guide_list";
     projectId: string;
   }
@@ -100,6 +105,26 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
     return {
       type: "project_capture_session_list",
       projectId: decodeURIComponent(projectId),
+    };
+  }
+
+  if (
+    segments.length === 5
+    && segments[0] === "projects"
+    && segments[2] === "guides"
+    && segments[4] === "preview"
+  ) {
+    const projectId = segments[1];
+    const guideId = segments[3];
+
+    if (!projectId || !guideId) {
+      return { type: "unsupported" };
+    }
+
+    return {
+      type: "guide_preview",
+      projectId: decodeURIComponent(projectId),
+      guideId: decodeURIComponent(guideId),
     };
   }
 

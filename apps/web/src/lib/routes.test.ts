@@ -51,6 +51,19 @@ describe("parsePortalRoute", () => {
     });
   });
 
+  it("parses guide preview routes", () => {
+    expect(parsePortalRoute("/projects/project_1/guides/guide_1/preview")).toEqual({
+      type: "guide_preview",
+      projectId: "project_1",
+      guideId: "guide_1",
+    });
+    expect(parsePortalRoute("/projects/project%201/guides/guide%20%2F%201/preview")).toEqual({
+      type: "guide_preview",
+      projectId: "project 1",
+      guideId: "guide / 1",
+    });
+  });
+
   it("parses project guide list routes", () => {
     expect(parsePortalRoute("/projects/project_1/guides")).toEqual({
       type: "project_guide_list",

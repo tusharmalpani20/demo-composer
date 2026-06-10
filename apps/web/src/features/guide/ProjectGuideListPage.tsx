@@ -43,6 +43,10 @@ const guideUrl = (projectId: string, guideId: string) => (
   `/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}`
 );
 
+const guidePreviewUrl = (projectId: string, guideId: string) => (
+  `${guideUrl(projectId, guideId)}/preview`
+);
+
 export const ProjectGuideListPage = ({
   projectId,
   loadGuides = listProjectGuides,
@@ -171,8 +175,13 @@ const GuideRow = ({ guide, projectId }: { guide: Guide; projectId: string }) => 
         <span>Created {formatDateTime(guide.created_at)}</span>
       </div>
     </div>
-    <a className={styles.openLink} href={guideUrl(projectId, guide.id)}>
-      Open guide {guide.title}
-    </a>
+    <div className={styles.guideActions}>
+      <a className={styles.openLink} href={guidePreviewUrl(projectId, guide.id)}>
+        Preview guide {guide.title}
+      </a>
+      <a className={styles.openLink} href={guideUrl(projectId, guide.id)}>
+        Open guide {guide.title}
+      </a>
+    </div>
   </article>
 );
