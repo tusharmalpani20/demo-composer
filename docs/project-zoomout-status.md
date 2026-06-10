@@ -1,6 +1,6 @@
 # Project Zoom-Out Status
 
-Date: 2026-06-06
+Date: 2026-06-10
 
 ## Product Intent
 
@@ -47,7 +47,7 @@ The agreed implementation style is:
   - immutable capture source records
   - guide blocks with first-class steps
   - interactive demos as scenes/hotspots/transitions
-  - publish links as immutable snapshots later
+  - publish links resolving to immutable snapshots
   - rebuild foundation domains
   - file domain owns storage metadata
   - screenshot capture first, HTML replay deferred
@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `030` exist and have been implemented through guide editor screenshot rendering.
+- Plans `001` through `031` exist and have been implemented through guide publish foundation.
 
 ### Backend Foundation
 
@@ -78,6 +78,8 @@ The agreed implementation style is:
   - guides
   - guide blocks
   - guide steps
+  - published artifacts
+  - publish links
 - Public instance/setup modules exist for deployment-aware first-run setup.
 - Authentication module supports cookie-backed login, current session lookup, and logout.
 - Project module supports create, list, get, update, and soft delete/archive behavior.
@@ -86,6 +88,7 @@ The agreed implementation style is:
 - Capture event module supports create, list, get, and delete/archive behavior, with raw input-value protection.
 - Guide module supports creating a guide from a capture session, listing guides, reading guide detail with safe source screenshot asset display data, updating guide metadata, updating guide steps, reordering guide blocks, and deleting guide blocks.
 - Guide generation uses ordered capture events as source material and creates better deterministic steps for screenshot-backed `capture` events.
+- Publish module supports authenticated guide publish/republish, immutable guide snapshot creation, stable active public slugs, publish status reads, revoke/unpublish, public publish-link resolution, and public asset file streaming constrained to assets referenced by the active snapshot.
 - Server has unit, route, app integration, and DB integration coverage across the implemented modules.
 
 ### Web Portal
@@ -157,7 +160,7 @@ The agreed implementation style is:
 - Guide annotations/highlights are not implemented.
 - Public guide reader is not implemented.
 - Guide export is not implemented.
-- Guide publish links are not implemented.
+- Portal publish controls are not implemented.
 
 ### Interactive Demo Product
 
@@ -165,11 +168,9 @@ The agreed implementation style is:
 
 ### Publishing And Viewing
 
-- No publish-link domain implementation yet.
-- No immutable published snapshots yet.
 - No public guide/demo viewer yet.
 - No embed flow.
-- No access rules, passwords, expiry, or viewer sessions.
+- No advanced access rules, passwords, expiry, or viewer sessions.
 
 ### Analytics And Sales Layer
 
@@ -186,6 +187,6 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, and extension can now complete the first end-to-end capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their source screenshots, review that draft in a private read-only guide preview, and inspect screenshots in a focused viewer.
+The current backend, portal, and extension can now complete the first end-to-end capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their source screenshots, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, and publish that guide as an immutable backend snapshot behind a stable public link.
 
-The next major milestone should define the publish foundation for guides: private-to-public state, snapshot behavior, public route shape, and access rules.
+The next major milestone should build the public guide reader: a public web route that resolves a published guide snapshot by slug, renders the Scribe-style guide outside portal authentication, and reuses the published asset file URLs for screenshots.
