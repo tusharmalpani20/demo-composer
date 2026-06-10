@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import { GuidePreviewPage } from "./GuidePreviewPage";
@@ -103,6 +103,39 @@ const guideDetail: GuideDetail = {
       updated_at: "2026-06-05T10:03:00.000Z",
       step: null,
     },
+    {
+      id: "block_4",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: "capture_session_1",
+      source_capture_event_id: "event_4",
+      source_capture_asset_id: "asset_1",
+      block_type: "step",
+      block_index: 4,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T10:04:00.000Z",
+      updated_at: "2026-06-05T10:04:00.000Z",
+      step: {
+        id: "step_4",
+        organization_id: "organization_1",
+        project_id: "project_1",
+        guide_id: "guide_1",
+        guide_block_id: "block_4",
+        source_capture_session_id: "capture_session_1",
+        source_capture_event_id: "event_4",
+        source_capture_asset_id: "asset_1",
+        title: "Confirm Department List",
+        body: "Review the updated list.",
+        created_by_id: "org_user_1",
+        updated_by_id: "org_user_1",
+        version: 1,
+        created_at: "2026-06-05T10:04:00.000Z",
+        updated_at: "2026-06-05T10:04:00.000Z",
+      },
+    },
   ],
   source_capture_assets: [{
     id: "asset_1",
@@ -153,19 +186,44 @@ describe("GuidePreviewPage", () => {
     expect(screen.getByText("draft")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Edit guide" })).toHaveAttribute("href", "/projects/project_1/guides/guide_1");
     expect(screen.getByRole("link", { name: "Back to guides" })).toHaveAttribute("href", "/projects/project_1/guides");
-    expect(screen.getAllByText(/^[123]$/).map((node) => node.textContent)).toEqual(["1", "2", "3"]);
+    expect(screen.getAllByText(/^[1234]$/).map((node) => node.textContent)).toEqual(["1", "2", "3", "4"]);
     expect(screen.getByRole("heading", { name: "Navigate to Department List" })).toBeInTheDocument();
     expect(screen.getByText("Open the Department module.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Click Add Department" })).toBeInTheDocument();
     expect(screen.getByText("Use the primary action in the list view.")).toBeInTheDocument();
     expect(screen.getByText("Unsupported guide block: header")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Department List" })).toHaveAttribute(
+    expect(screen.getAllByRole("img", { name: "Department List" })[0]).toHaveAttribute(
       "src",
       "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_1/file"
     );
+    expect(screen.getByRole("button", { name: "Open screenshot for step 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open screenshot for step 4" })).toBeInTheDocument();
     expect(screen.queryByText("asset_missing")).not.toBeInTheDocument();
     expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
     expect(loadDetail).toHaveBeenCalledWith("project_1", "guide_1");
+  });
+
+  it("opens and navigates screenshot viewer images from guide preview", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open screenshot for step 1" }));
+
+    const firstDialog = screen.getByRole("dialog", { name: "Navigate to Department List" });
+    expect(within(firstDialog).getByRole("img", { name: "Department List" })).toHaveAttribute(
+      "src",
+      "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_1/file"
+    );
+    expect(within(firstDialog).getByText("1 / 2")).toBeInTheDocument();
+
+    fireEvent.click(within(firstDialog).getByRole("button", { name: "Next screenshot" }));
+    const secondDialog = screen.getByRole("dialog", { name: "Confirm Department List" });
+    expect(within(secondDialog).getByText("2 / 2")).toBeInTheDocument();
+    expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
+
+    fireEvent.click(within(secondDialog).getByRole("button", { name: "Close screenshot viewer" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Department guide" })).toBeInTheDocument();
   });
 
   it("renders empty guides", async () => {

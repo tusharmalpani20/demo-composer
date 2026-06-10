@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { ApiClientError, getGuideDetail, resolveApiAssetUrl } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
 import { PortalTopbar } from "../portal/PortalTopbar";
+import {
+  GuideScreenshotViewer,
+  type GuideScreenshotViewerImage,
+} from "./GuideScreenshotViewer";
 import type { GuideBlock, GuideDetail, GuideSourceCaptureAsset } from "./types";
 import styles from "./GuidePreviewPage.module.css";
 
@@ -49,6 +53,10 @@ const guidePreviewListUrl = (projectId: string) => (
 
 const assetAltText = (asset: GuideSourceCaptureAsset, stepNumber: number) => (
   asset.page_title ?? asset.file.original_name ?? `Step ${stepNumber} screenshot`
+);
+
+const screenshotViewerImageId = (block: GuideBlock, asset: GuideSourceCaptureAsset) => (
+  `${block.id}:${asset.id}`
 );
 
 export const GuidePreviewPage = ({
@@ -161,9 +169,20 @@ const GuidePreviewView = ({
   navigate?: (path: string) => void;
 }) => {
   const sortedBlocks = useMemo(() => sortBlocks(detail.guide_blocks), [detail.guide_blocks]);
+  const [activeScreenshotId, setActiveScreenshotId] = useState<string | null>(null);
   const assetsById = useMemo(() => new Map(
     detail.source_capture_assets.map((asset) => [asset.id, asset])
   ), [detail.source_capture_assets]);
+  const screenshotImages = useMemo(() => screenshotImagesFromBlocks(sortedBlocks, assetsById), [assetsById, sortedBlocks]);
+
+  useEffect(() => {
+    if (
+      activeScreenshotId
+      && !screenshotImages.some((image) => image.id === activeScreenshotId)
+    ) {
+      setActiveScreenshotId(null);
+    }
+  }, [activeScreenshotId, screenshotImages]);
 
   return (
     <PortalShell projectId={projectId} guideId={guideId} performLogout={performLogout} navigate={navigate}>
@@ -190,10 +209,17 @@ const GuidePreviewView = ({
               block={block}
               stepNumber={index + 1}
               asset={assetForBlock(block, assetsById)}
+              onOpenScreenshot={setActiveScreenshotId}
             />
           ))
         )}
       </section>
+      <GuideScreenshotViewer
+        images={screenshotImages}
+        activeImageId={activeScreenshotId}
+        onActiveImageChange={setActiveScreenshotId}
+        onClose={() => setActiveScreenshotId(null)}
+      />
     </PortalShell>
   );
 };
@@ -206,14 +232,37 @@ const assetForBlock = (
   return source_capture_asset_id ? assetsById.get(source_capture_asset_id) : undefined;
 };
 
+const screenshotImagesFromBlocks = (
+  blocks: GuideBlock[],
+  assetsById: Map<string, GuideSourceCaptureAsset>
+): GuideScreenshotViewerImage[] => blocks.flatMap((block, index) => {
+  const asset = assetForBlock(block, assetsById);
+
+  if (block.block_type !== "step" || !block.step || !asset) {
+    return [];
+  }
+
+  const stepNumber = index + 1;
+
+  return [{
+    id: screenshotViewerImageId(block, asset),
+    sourceAssetId: asset.id,
+    src: resolveApiAssetUrl(asset.file_url),
+    alt: assetAltText(asset, stepNumber),
+    title: block.step.title || asset.page_title || asset.file.original_name || `Step ${stepNumber} screenshot`,
+  }];
+});
+
 const GuidePreviewBlock = ({
   block,
   stepNumber,
   asset,
+  onOpenScreenshot,
 }: {
   block: GuideBlock;
   stepNumber: number;
   asset?: GuideSourceCaptureAsset;
+  onOpenScreenshot: (imageId: string) => void;
 }) => {
   if (block.block_type !== "step" || !block.step) {
     return (
@@ -234,11 +283,18 @@ const GuidePreviewBlock = ({
         {block.step.body ? <p className={styles.stepBody}>{block.step.body}</p> : null}
         {asset ? (
           <div className={styles.media}>
-            <img
-              className={styles.screenshot}
-              src={resolveApiAssetUrl(asset.file_url)}
-              alt={assetAltText(asset, stepNumber)}
-            />
+            <button
+              className={styles.mediaButton}
+              type="button"
+              aria-label={`Open screenshot for step ${stepNumber}`}
+              onClick={() => onOpenScreenshot(screenshotViewerImageId(block, asset))}
+            >
+              <img
+                className={styles.screenshot}
+                src={resolveApiAssetUrl(asset.file_url)}
+                alt={assetAltText(asset, stepNumber)}
+              />
+            </button>
           </div>
         ) : null}
       </div>
