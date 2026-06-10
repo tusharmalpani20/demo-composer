@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `028` exist and have been implemented through the authenticated guide preview reader.
+- Plans `001` through `029` exist and have been implemented through guide preview screenshot inspection.
 
 ### Backend Foundation
 
@@ -121,7 +121,7 @@ The agreed implementation style is:
 - Capture session detail page shows source capture detail and supports creating a guide from that capture.
 - Guide list page shows project guides.
 - Guide editor page supports editing guide title/description/status, updating step title/body, reordering blocks, and deleting blocks.
-- Guide preview page renders a private Scribe-style read-only guide with ordered steps and active source screenshots.
+- Guide preview page renders a private Scribe-style read-only guide with ordered steps, active source screenshots, and a focused screenshot viewer with zoom and previous/next navigation.
 - Web has focused page, route, API, and app tests for the implemented screens.
 
 ## Not Built Yet
@@ -153,6 +153,7 @@ The agreed implementation style is:
 ### Guide Product Depth
 
 - Guide editor does not yet insert non-step blocks from the UI.
+- Guide editor does not yet render source screenshots inline.
 - Guide editor does not yet attach/change screenshots per step.
 - Guide annotations/highlights are not implemented.
 - Public guide reader is not implemented.
@@ -186,6 +187,6 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, and extension can now complete the first end-to-end capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, and review that draft in a private read-only guide preview.
+The current backend, portal, and extension can now complete the first end-to-end capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, review that draft in a private read-only guide preview, and inspect preview screenshots in a focused viewer.
 
-The next major milestone should add screenshot zoom/lightbox support so users can inspect full-size captured screens from guide preview and editor contexts.
+The next major milestone should render source screenshots inside the guide editor so users can edit step copy while seeing the related screenshot.
