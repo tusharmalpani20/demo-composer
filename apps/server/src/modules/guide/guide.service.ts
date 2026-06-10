@@ -58,9 +58,29 @@ export type GuideBlock = {
   step: GuideStep | null;
 };
 
+export type GuideSourceCaptureAsset = {
+  id: string;
+  capture_session_id: string;
+  asset_type: "screenshot" | "html_snapshot" | "thumbnail" | "redacted_screenshot";
+  width: number | null;
+  height: number | null;
+  device_pixel_ratio: number | null;
+  page_url: string | null;
+  page_title: string | null;
+  captured_at: string;
+  file_url: string;
+  file: {
+    id: string;
+    original_name: string | null;
+    mime_type: string;
+    size_bytes: number;
+  };
+};
+
 export type GuideDetail = {
   guide: Guide;
   guide_blocks: GuideBlock[];
+  source_capture_assets: GuideSourceCaptureAsset[];
 };
 
 export type GuideSourceEvent = {

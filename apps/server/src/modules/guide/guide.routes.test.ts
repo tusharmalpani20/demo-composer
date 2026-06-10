@@ -87,6 +87,24 @@ const guide_detail: GuideDetail = {
       updated_at: "2026-06-05T00:00:00.000Z",
     },
   }],
+  source_capture_assets: [{
+    id: "asset_1",
+    capture_session_id: "capture_session_1",
+    asset_type: "screenshot",
+    width: 1440,
+    height: 900,
+    device_pixel_ratio: 1,
+    page_url: "https://example.test/departments",
+    page_title: "Department List",
+    captured_at: "2026-06-05T00:00:00.000Z",
+    file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_1/file",
+    file: {
+      id: "file_1",
+      original_name: "departments.png",
+      mime_type: "image/png",
+      size_bytes: 123456,
+    },
+  }],
 };
 const guide_block = guide_detail.guide_blocks[0]!;
 const guide_step = guide_block.step!;
@@ -191,6 +209,8 @@ describe("guide routes", () => {
     expect(list_response.json()).toEqual({ guides: [guide_detail.guide] });
     expect(get_response.statusCode).toBe(200);
     expect(get_response.json()).toEqual(guide_detail);
+    expect(JSON.stringify(get_response.json())).not.toContain("storage_key");
+    expect(JSON.stringify(get_response.json())).not.toContain("checksum_sha256");
     await app.close();
   });
 

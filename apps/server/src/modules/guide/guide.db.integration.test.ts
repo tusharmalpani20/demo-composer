@@ -354,6 +354,14 @@ describe("DB-backed guide API", () => {
       page_url: "https://example.test/departments",
       input_value_redacted: true,
     });
+    const duplicate_asset_event_id = await create_capture_event(session_token, project_id, capture_session_id, {
+      event_type: "capture",
+      event_index: 3,
+      capture_asset_id: active_asset_id,
+      page_title: "Department List Duplicate",
+      page_url: "https://example.test/departments",
+      input_value_redacted: true,
+    });
     const deleted_asset_event_id = await create_capture_event(session_token, project_id, capture_session_id, {
       event_type: "capture",
       event_index: 1,
@@ -383,9 +391,11 @@ describe("DB-backed guide API", () => {
     expect(created_body.guide_blocks.map((block: { source_capture_event_id: string }) => block.source_capture_event_id)).toEqual([
       deleted_asset_event_id,
       first_capture_event_id,
+      duplicate_asset_event_id,
     ]);
     expect(created_body.guide_blocks.map((block: { source_capture_asset_id: string | null }) => block.source_capture_asset_id)).toEqual([
       null,
+      active_asset_id,
       active_asset_id,
     ]);
     expect(created_body.guide_blocks.map((block: {
@@ -409,9 +419,44 @@ describe("DB-backed guide API", () => {
         body: "Captured from https://example.test/departments.",
         source_capture_asset_id: active_asset_id,
       },
+      {
+        title: "Capture \"Department List Duplicate\"",
+        body: "Captured from https://example.test/departments.",
+        source_capture_asset_id: active_asset_id,
+      },
     ]);
     expect(JSON.stringify(created_body)).not.toContain("input_value");
     expect(JSON.stringify(created_body)).not.toContain("storage_key");
+
+    const guide_id = created_body.guide.id as string;
+    const get_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
+
+    expect(get_response.statusCode).toBe(200);
+    expect(get_response.json().source_capture_assets).toEqual([{
+      id: active_asset_id,
+      capture_session_id,
+      asset_type: "screenshot",
+      width: 1440,
+      height: 900,
+      device_pixel_ratio: null,
+      page_url: null,
+      page_title: null,
+      captured_at: expect.any(String),
+      file_url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${active_asset_id}/file`,
+      file: {
+        id: expect.any(String),
+        original_name: null,
+        mime_type: "image/png",
+        size_bytes: 123456,
+      },
+    }]);
+    expect(JSON.stringify(get_response.json())).not.toContain(deleted_asset_id);
+    expect(JSON.stringify(get_response.json())).not.toContain("storage_key");
+    expect(JSON.stringify(get_response.json())).not.toContain("checksum_sha256");
 
     await app.close();
   });

@@ -4,6 +4,7 @@ import type {
   GuideBlock,
   GuideDetail,
   GuideRepository,
+  GuideSourceCaptureAsset,
   GuideSourceEvent,
   GuideSourceEventType,
   GuideStatus,
@@ -89,6 +90,23 @@ type GuideSourceEventRow = {
   note: string | null;
 };
 
+type GuideSourceCaptureAssetRow = {
+  id: string;
+  project_id: string;
+  capture_session_id: string;
+  asset_type: GuideSourceCaptureAsset["asset_type"];
+  width: number | null;
+  height: number | null;
+  device_pixel_ratio: number | null;
+  page_url: string | null;
+  page_title: string | null;
+  captured_at: Date;
+  file_id: string;
+  original_name: string | null;
+  mime_type: string;
+  size_bytes: number;
+};
+
 const first_row = <Row>(result: QueryResult<Row>) => result.rows[0] ?? null;
 
 const map_guide = (row: GuideRow): Guide => ({
@@ -155,6 +173,25 @@ const map_source_event = (row: GuideSourceEventRow): GuideSourceEvent => ({
   note: row.note,
 });
 
+const map_source_capture_asset = (row: GuideSourceCaptureAssetRow): GuideSourceCaptureAsset => ({
+  id: row.id,
+  capture_session_id: row.capture_session_id,
+  asset_type: row.asset_type,
+  width: row.width,
+  height: row.height,
+  device_pixel_ratio: row.device_pixel_ratio,
+  page_url: row.page_url,
+  page_title: row.page_title,
+  captured_at: row.captured_at.toISOString(),
+  file_url: `/api/v1/projects/${row.project_id}/capture-sessions/${row.capture_session_id}/assets/${row.id}/file`,
+  file: {
+    id: row.file_id,
+    original_name: row.original_name,
+    mime_type: row.mime_type,
+    size_bytes: Number(row.size_bytes),
+  },
+});
+
 const guide_select = `
   id,
   organization_id,
@@ -208,7 +245,8 @@ const guide_step_select = `
 const build_detail_from_rows = (
   guide_row: GuideRow,
   block_rows: GuideBlockRow[],
-  step_rows: GuideStepRow[]
+  step_rows: GuideStepRow[],
+  source_capture_assets: GuideSourceCaptureAsset[] = []
 ): GuideDetail => {
   const steps_by_block_id = new Map(
     step_rows.map((row) => [row.guide_block_id, map_step(row)])
@@ -217,7 +255,76 @@ const build_detail_from_rows = (
   return {
     guide: map_guide(guide_row),
     guide_blocks: block_rows.map((row) => map_block(row, steps_by_block_id.get(row.id) ?? null)),
+    source_capture_assets,
   };
+};
+
+const source_capture_asset_ids_from_blocks = (blocks: GuideBlock[]) => {
+  const seen = new Set<string>();
+  const ids: string[] = [];
+
+  for (const block of blocks) {
+    const source_capture_asset_id = block.source_capture_asset_id ?? block.step?.source_capture_asset_id ?? null;
+
+    if (!source_capture_asset_id || seen.has(source_capture_asset_id)) {
+      continue;
+    }
+
+    seen.add(source_capture_asset_id);
+    ids.push(source_capture_asset_id);
+  }
+
+  return ids;
+};
+
+const read_source_capture_assets = async (
+  db: Queryable,
+  input: {
+    organization_id: string;
+    project_id: string;
+    source_capture_asset_ids: string[];
+  }
+) => {
+  if (input.source_capture_asset_ids.length === 0) {
+    return [];
+  }
+
+  const result = await db.query<GuideSourceCaptureAssetRow>(`
+    SELECT
+      capture_asset.id,
+      capture_asset.project_id,
+      capture_asset.capture_session_id,
+      capture_asset.asset_type,
+      capture_asset.width,
+      capture_asset.height,
+      capture_asset.device_pixel_ratio,
+      capture_asset.page_url,
+      capture_asset.page_title,
+      capture_asset.captured_at,
+      app_file.id AS file_id,
+      app_file.original_name,
+      app_file.mime_type,
+      app_file.size_bytes
+    FROM capture_schema.capture_asset capture_asset
+    INNER JOIN file_schema.file app_file ON app_file.id = capture_asset.file_id
+    WHERE capture_asset.id = ANY($1::varchar[])
+    AND capture_asset.project_id = $2
+    AND capture_asset.organization_id = $3
+    AND capture_asset.is_deleted = FALSE
+    AND app_file.is_deleted = FALSE
+  `, [
+    input.source_capture_asset_ids,
+    input.project_id,
+    input.organization_id,
+  ]);
+
+  const assets_by_id = new Map(
+    result.rows.map((row) => [row.id, map_source_capture_asset(row)])
+  );
+
+  return input.source_capture_asset_ids
+    .map((id) => assets_by_id.get(id))
+    .filter((asset): asset is GuideSourceCaptureAsset => Boolean(asset));
 };
 
 const read_guide_blocks = async (
@@ -585,7 +692,18 @@ export const build_guide_repository = (db: TransactionCapable): GuideRepository 
       input.organization_id,
     ]);
 
-    return build_detail_from_rows(guide_row, blocks_result.rows, steps_result.rows);
+    const guide_blocks = build_detail_from_rows(guide_row, blocks_result.rows, steps_result.rows).guide_blocks;
+    const source_capture_assets = await read_source_capture_assets(db, {
+      organization_id: input.organization_id,
+      project_id: input.project_id,
+      source_capture_asset_ids: source_capture_asset_ids_from_blocks(guide_blocks),
+    });
+
+    return {
+      guide: map_guide(guide_row),
+      guide_blocks,
+      source_capture_assets,
+    };
   },
 
   async update_guide(input) {
