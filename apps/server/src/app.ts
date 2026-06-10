@@ -60,6 +60,12 @@ import {
 } from './modules/guide/guide.routes.js';
 import { build_guide_repository } from './modules/guide/guide.repository.js';
 import { build_guide_service } from './modules/guide/guide.service.js';
+import {
+  build_publish_routes,
+  type PublishRouteDependencies,
+} from './modules/publish/publish.routes.js';
+import { build_publish_repository } from './modules/publish/publish.repository.js';
+import { build_publish_service } from './modules/publish/publish.service.js';
 import { index_root_routes } from './root_router/index.root_router.js';
 
 type BuildOptions = FastifyServerOptions & {
@@ -71,6 +77,7 @@ type BuildOptions = FastifyServerOptions & {
   capture_asset_service?: CaptureAssetRouteDependencies["capture_asset_service"];
   capture_event_service?: CaptureEventRouteDependencies["capture_event_service"];
   guide_service?: GuideRouteDependencies["guide_service"];
+  publish_service?: PublishRouteDependencies["publish_service"];
 };
 
 const default_local_storage_root = () => (
@@ -95,6 +102,7 @@ export const build = (opts: BuildOptions = {}) => {
       capture_asset_service,
       capture_event_service,
       guide_service,
+      publish_service,
       ...fastify_options
   } = opts;
   const app = fastify(fastify_options);
@@ -330,6 +338,20 @@ export const build = (opts: BuildOptions = {}) => {
       ),
   }), {
       prefix: "/api/v1/projects",
+  });
+
+  app.register(build_publish_routes({
+      auth_service: {
+          get_current_auth_context: default_authentication_session_service.get_current_auth_context,
+      },
+      publish_service: publish_service ?? build_publish_service(
+          build_publish_repository(pool),
+          {
+              file_storage: default_capture_file_storage,
+          }
+      ),
+  }), {
+      prefix: "/api/v1",
   });
 
   return app;
