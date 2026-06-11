@@ -91,6 +91,24 @@ const publicGuideResponse: PublicPublishLinkResponse = {
           step: null,
           source_asset: null,
         },
+        {
+          id: "block_4",
+          block_type: "paragraph",
+          content: {
+            body: "Choose the right department settings before saving.",
+          },
+          block_index: 4,
+          step: null,
+          source_asset: null,
+        },
+        {
+          id: "block_5",
+          block_type: "divider",
+          content: null,
+          block_index: 5,
+          step: null,
+          source_asset: null,
+        },
       ],
     },
   },
@@ -127,6 +145,8 @@ describe("PublicGuideReaderPage", () => {
     expect(screen.getByRole("heading", { name: "Click Add Department" })).toBeInTheDocument();
     expect(screen.getByText("Use the primary action in the list view.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Department fields" })).toBeInTheDocument();
+    expect(screen.getByText("Choose the right department settings before saving.")).toBeInTheDocument();
+    expect(screen.getByRole("separator", { name: "Guide section divider" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Department List" })).toHaveAttribute(
       "src",
       "/api/v1/public/publish-links/abc123/assets/asset_1/file"

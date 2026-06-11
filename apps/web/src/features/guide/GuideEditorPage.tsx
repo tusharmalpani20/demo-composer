@@ -178,7 +178,7 @@ const stepDraftsFromBlocks = (blocks: GuideBlock[]) => blocks.reduce<Record<stri
 }, {});
 
 const blockContentDraftsFromBlocks = (blocks: GuideBlock[]) => blocks.reduce<Record<string, BlockContentDraft>>((drafts, block) => {
-  if (block.block_type === "header" || block.block_type === "tip" || block.block_type === "alert") {
+  if (block.block_type === "header" || block.block_type === "paragraph" || block.block_type === "tip" || block.block_type === "alert") {
     drafts[block.id] = {
       title: block.content?.title ?? "",
       body: block.content?.body ?? "",
@@ -219,7 +219,7 @@ const mergeAssetIntoDetail = (
 };
 
 const defaultBlockInput = (
-  blockType: "step" | "header" | "tip" | "alert",
+  blockType: "step" | "header" | "paragraph" | "tip" | "alert" | "divider",
   position?: { placement: "before" | "after"; guide_block_id: string }
 ) => {
   if (blockType === "step") {
@@ -240,6 +240,23 @@ const defaultBlockInput = (
       content: {
         title: "New section",
       },
+    };
+  }
+
+  if (blockType === "paragraph") {
+    return {
+      block_type: blockType,
+      ...(position ? { position } : {}),
+      content: {
+        body: "Add supporting context.",
+      },
+    };
+  }
+
+  if (blockType === "divider") {
+    return {
+      block_type: blockType,
+      ...(position ? { position } : {}),
     };
   }
 
@@ -496,7 +513,7 @@ export const GuideEditorPage = ({
   };
 
   const addBlock = async (
-    blockType: "step" | "header" | "tip" | "alert",
+    blockType: "step" | "header" | "paragraph" | "tip" | "alert" | "divider",
     afterBlock?: GuideBlock
   ) => {
     setBusyAction(`create:${afterBlock?.id ?? "end"}:${blockType}`);
@@ -535,7 +552,9 @@ export const GuideEditorPage = ({
 
     const content: GuideBlockContent = block.block_type === "header"
       ? { title: draft.title }
-      : { title: draft.title || null, body: draft.body || null };
+      : block.block_type === "paragraph"
+        ? { body: draft.body || null }
+        : { title: draft.title || null, body: draft.body || null };
 
     setBusyAction(`block:${block.id}`);
     setNotice(null);
@@ -853,7 +872,7 @@ const GuideEditorView = ({
   onCloseScreenshotPicker: () => void;
   onSaveScreenshot: (block: GuideBlock, captureAssetId: string | null) => void;
   onUploadScreenshot: (block: GuideBlock, file: File) => void;
-  onAddBlock: (blockType: "step" | "header" | "tip" | "alert", afterBlock?: GuideBlock) => void;
+  onAddBlock: (blockType: "step" | "header" | "paragraph" | "tip" | "alert" | "divider", afterBlock?: GuideBlock) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
   onPublish: () => void;
@@ -1198,7 +1217,7 @@ const GuideBlockEditor = ({
   onCloseScreenshotPicker: () => void;
   onSaveScreenshot: (block: GuideBlock, captureAssetId: string | null) => void;
   onUploadScreenshot: (block: GuideBlock, file: File) => void;
-  onAddBlock: (blockType: "step" | "header" | "tip" | "alert", afterBlock?: GuideBlock) => void;
+  onAddBlock: (blockType: "step" | "header" | "paragraph" | "tip" | "alert" | "divider", afterBlock?: GuideBlock) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
   onOpenScreenshot: (imageId: string) => void;
@@ -1207,7 +1226,7 @@ const GuideBlockEditor = ({
   const actionLabel = step ? "step" : "block";
   const actionBusy = busyAction !== null;
   const uploadBusy = busyAction === `upload-screenshot:${block.id}`;
-  const editableContentBlock = block.block_type === "header" || block.block_type === "tip" || block.block_type === "alert";
+  const editableContentBlock = block.block_type === "header" || block.block_type === "paragraph" || block.block_type === "tip" || block.block_type === "alert";
 
   return (
     <article className={styles.block}>
@@ -1381,18 +1400,20 @@ const GuideBlockEditor = ({
         </div>
       ) : editableContentBlock && contentDraft ? (
         <div className={styles.stepForm}>
-          <label className={styles.field}>
-            <span>{block.block_type === "header" ? "Header title" : `${block.block_type} title`}</span>
-            <input
-              aria-label={`${labelForBlockType(block.block_type)} title ${blockNumber}`}
-              value={contentDraft.title}
-              disabled={readOnly || busyAction === `block:${block.id}`}
-              onChange={(event) => onContentDraftChange(block.id, {
-                ...contentDraft,
-                title: event.target.value,
-              })}
-            />
-          </label>
+          {block.block_type !== "paragraph" ? (
+            <label className={styles.field}>
+              <span>{block.block_type === "header" ? "Header title" : `${block.block_type} title`}</span>
+              <input
+                aria-label={`${labelForBlockType(block.block_type)} title ${blockNumber}`}
+                value={contentDraft.title}
+                disabled={readOnly || busyAction === `block:${block.id}`}
+                onChange={(event) => onContentDraftChange(block.id, {
+                  ...contentDraft,
+                  title: event.target.value,
+                })}
+              />
+            </label>
+          ) : null}
           {block.block_type !== "header" ? (
             <label className={styles.field}>
               <span>{labelForBlockType(block.block_type)} body</span>
@@ -1416,6 +1437,10 @@ const GuideBlockEditor = ({
           >
             Save {block.block_type} {blockNumber}
           </button>
+        </div>
+      ) : block.block_type === "divider" ? (
+        <div className={styles.dividerBlock}>
+          <hr aria-label={`Guide section divider ${blockNumber}`} />
         </div>
       ) : (
         <div className={styles.empty}>This block is not editable yet.</div>
@@ -1459,7 +1484,7 @@ const BlockInsertControls = ({
 }: {
   blockNumber: number;
   disabled: boolean;
-  onAdd: (blockType: "step" | "header" | "tip" | "alert") => void;
+  onAdd: (blockType: "step" | "header" | "paragraph" | "tip" | "alert" | "divider") => void;
 }) => (
   <div className={styles.insertControls} aria-label={`Add block after block ${blockNumber}`}>
     <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("step")}>
@@ -1468,11 +1493,17 @@ const BlockInsertControls = ({
     <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("header")}>
       Add header after block {blockNumber}
     </button>
+    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("paragraph")}>
+      Add paragraph after block {blockNumber}
+    </button>
     <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("tip")}>
       Add tip after block {blockNumber}
     </button>
     <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("alert")}>
       Add alert after block {blockNumber}
+    </button>
+    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("divider")}>
+      Add divider after block {blockNumber}
     </button>
   </div>
 );

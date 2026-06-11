@@ -814,6 +814,78 @@ describe("api client", () => {
     );
   });
 
+  it("creates paragraph and divider guide blocks", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({
+      guide_blocks: [],
+    }), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await createGuideBlock("project_1", "guide_1", {
+      block_type: "paragraph",
+      position: {
+        placement: "after",
+        guide_block_id: "block_1",
+      },
+      content: {
+        body: "Add supporting context.",
+      },
+    });
+    await createGuideBlock("project_1", "guide_1", {
+      block_type: "divider",
+      position: {
+        placement: "after",
+        guide_block_id: "block_paragraph",
+      },
+    });
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "/api/v1/projects/project_1/guides/guide_1/blocks",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          block_type: "paragraph",
+          position: {
+            placement: "after",
+            guide_block_id: "block_1",
+          },
+          content: {
+            body: "Add supporting context.",
+          },
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/projects/project_1/guides/guide_1/blocks",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          block_type: "divider",
+          position: {
+            placement: "after",
+            guide_block_id: "block_paragraph",
+          },
+        }),
+      }
+    );
+  });
+
   it("lists project screenshots and updates guide block screenshots", async () => {
     const screenshot_response = {
       capture_assets: [{

@@ -344,6 +344,18 @@ const PublicGuideBlock = ({
     );
   }
 
+  if (block.block_type === "paragraph" && block.content?.body) {
+    return (
+      <section className={styles.callout}>
+        <p className={styles.stepBody}>{block.content.body}</p>
+      </section>
+    );
+  }
+
+  if (block.block_type === "divider") {
+    return <hr aria-label="Guide section divider" />;
+  }
+
   if (block.block_type !== "step" || !block.step) {
     return (
       <article className={styles.step}>

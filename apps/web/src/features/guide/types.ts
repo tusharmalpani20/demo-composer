@@ -116,7 +116,7 @@ export type PublishedGuideSnapshotBlock = {
 };
 
 export type CreateGuideBlockInput = {
-  block_type: "step" | "header" | "tip" | "alert";
+  block_type: "step" | "header" | "paragraph" | "tip" | "alert" | "divider";
   position?: {
     placement: "before" | "after";
     guide_block_id: string;

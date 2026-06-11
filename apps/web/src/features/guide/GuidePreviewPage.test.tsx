@@ -154,6 +154,50 @@ const guideDetail: GuideDetail = {
         updated_at: "2026-06-05T10:04:00.000Z",
       },
     },
+    {
+      id: "block_5",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: null,
+      source_capture_event_id: null,
+      source_capture_asset_id: null,
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: null,
+      block_type: "paragraph",
+      content: {
+        body: "Choose the right department settings before saving.",
+      },
+      block_index: 5,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T10:05:00.000Z",
+      updated_at: "2026-06-05T10:05:00.000Z",
+      step: null,
+    },
+    {
+      id: "block_6",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: null,
+      source_capture_event_id: null,
+      source_capture_asset_id: null,
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: null,
+      block_type: "divider",
+      content: null,
+      block_index: 6,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T10:06:00.000Z",
+      updated_at: "2026-06-05T10:06:00.000Z",
+      step: null,
+    },
   ],
   source_capture_assets: [{
     id: "asset_1",
@@ -208,6 +252,8 @@ describe("GuidePreviewPage", () => {
     expect(screen.getByRole("heading", { name: "Navigate to Department List" })).toBeInTheDocument();
     expect(screen.getByText("Open the Department module.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Click Add Department" })).toBeInTheDocument();
+    expect(screen.getByText("Choose the right department settings before saving.")).toBeInTheDocument();
+    expect(screen.getByRole("separator", { name: "Guide section divider" })).toBeInTheDocument();
     expect(screen.getByText("Use the primary action in the list view.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Department fields" })).toBeInTheDocument();
     expect(screen.getAllByRole("img", { name: "Department List" })[0]).toHaveAttribute(
