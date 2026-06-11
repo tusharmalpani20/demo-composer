@@ -8,6 +8,9 @@ import type {
   Guide,
   GuideBlock,
   GuideDetail,
+  GuidePublishResult,
+  GuidePublishStatusResponse,
+  GuideRevokePublishResult,
   GuideStep,
   PublicPublishLinkResponse,
 } from "../features/guide/types";
@@ -196,6 +199,39 @@ export const getGuideDetail = async (
 ): Promise<GuideDetail> => (
   requestJson<GuideDetail>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}`
+  )
+);
+
+export const getGuidePublishStatus = async (
+  projectId: string,
+  guideId: string
+): Promise<GuidePublishStatusResponse> => (
+  requestJson<GuidePublishStatusResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/publish`
+  )
+);
+
+export const publishGuide = async (
+  projectId: string,
+  guideId: string
+): Promise<GuidePublishResult> => (
+  requestJson<GuidePublishResult>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/publish`,
+    {
+      method: "POST",
+    }
+  )
+);
+
+export const revokeGuidePublishLink = async (
+  projectId: string,
+  guideId: string
+): Promise<GuideRevokePublishResult> => (
+  requestJson<GuideRevokePublishResult>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/publish`,
+    {
+      method: "DELETE",
+    }
   )
 );
 

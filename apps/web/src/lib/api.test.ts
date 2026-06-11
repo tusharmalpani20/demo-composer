@@ -6,6 +6,7 @@ import {
   getCurrentAuth,
   getCaptureSessionDetail,
   getGuideDetail,
+  getGuidePublishStatus,
   getProject,
   getPublicPublishLink,
   login,
@@ -13,8 +14,10 @@ import {
   listProjectCaptureSessions,
   listProjectGuides,
   logout,
+  publishGuide,
   reorderGuideBlocks,
   resolveApiAssetUrl,
+  revokeGuidePublishLink,
   updateGuide,
   updateGuideStep,
 } from "./api";
@@ -94,6 +97,29 @@ const public_publish_response = {
       },
       blocks: [],
     },
+  },
+};
+
+const guide_publish_response = {
+  publish_link: {
+    id: "publish_link_1",
+    artifact_type: "guide",
+    artifact_id: "guide_1",
+    published_artifact_id: "published_artifact_1",
+    slug: "abc123",
+    visibility: "public",
+    status: "active",
+    published_at: "2026-06-11T00:00:00.000Z",
+    revoked_at: null,
+    public_url: "/p/abc123",
+  },
+  published_artifact: {
+    id: "published_artifact_1",
+    artifact_type: "guide",
+    artifact_id: "guide_1",
+    version_number: 1,
+    title: "Department guide",
+    published_at: "2026-06-11T00:00:00.000Z",
   },
 };
 
@@ -422,6 +448,123 @@ describe("api client", () => {
         },
       }
     );
+  });
+
+  it("fetches guide publish status with session cookies", async () => {
+    const response = {
+      publish_link: null,
+      published_artifact: null,
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(getGuidePublishStatus("project / 1", "guide / 1")).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project%20%2F%201/guides/guide%20%2F%201/publish",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("publishes guides with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(guide_publish_response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(publishGuide("project_1", "guide_1")).resolves.toEqual(guide_publish_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project_1/guides/guide_1/publish",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("revokes guide publish links with session cookies", async () => {
+    const response = {
+      publish_link: {
+        id: "publish_link_1",
+        status: "revoked",
+        revoked_at: "2026-06-11T01:00:00.000Z",
+      },
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(revokeGuidePublishLink("project_1", "guide_1")).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project_1/guides/guide_1/publish",
+      {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("maps guide publish validation errors", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        type: "guide_has_no_publishable_blocks",
+        message: "Guide has no publishable blocks",
+      },
+    }), {
+      status: 400,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    await expect(publishGuide("project_1", "guide_1")).rejects.toMatchObject({
+      kind: "validation",
+      type: "guide_has_no_publishable_blocks",
+      message: "Guide has no publishable blocks",
+    });
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        type: "guide_not_publishable",
+        message: "Guide is not publishable",
+      },
+    }), {
+      status: 409,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    await expect(publishGuide("project_1", "guide_1")).rejects.toMatchObject({
+      kind: "validation",
+      type: "guide_not_publishable",
+      message: "Guide is not publishable",
+    });
   });
 
   it("maps missing or revoked public publish links to not found", async () => {

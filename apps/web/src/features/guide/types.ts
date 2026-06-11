@@ -139,3 +139,40 @@ export type PublicPublishLinkResponse = {
   publish_link: PublicPublishLink;
   published_artifact: PublicPublishedArtifact;
 };
+
+export type GuidePublishLink = {
+  id: string;
+  artifact_type: "guide" | "interactive_demo";
+  artifact_id: string;
+  published_artifact_id: string;
+  slug: string;
+  visibility: "public";
+  status: "active" | "revoked";
+  published_at: string;
+  revoked_at: string | null;
+  public_url: string;
+};
+
+export type GuidePublishedArtifact = {
+  id: string;
+  artifact_type: "guide" | "interactive_demo";
+  artifact_id: string;
+  version_number: number;
+  title: string;
+  published_at: string;
+};
+
+export type GuidePublishStatusResponse = {
+  publish_link: GuidePublishLink | null;
+  published_artifact: GuidePublishedArtifact | null;
+};
+
+export type GuidePublishResult = GuidePublishStatusResponse;
+
+export type GuideRevokePublishResult = {
+  publish_link: {
+    id: string;
+    status: "revoked";
+    revoked_at: string;
+  };
+};
