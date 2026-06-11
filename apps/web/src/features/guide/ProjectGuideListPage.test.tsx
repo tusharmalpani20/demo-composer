@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import { ProjectGuideListPage } from "./ProjectGuideListPage";
-import type { Guide } from "./types";
+import type { Guide, GuidePublishStatusResponse } from "./types";
 
 const guides: Guide[] = [
   {
@@ -35,20 +35,51 @@ const guides: Guide[] = [
   },
 ];
 
+const unpublishedStatus: GuidePublishStatusResponse = {
+  publish_link: null,
+  published_artifact: null,
+};
+
+const publishedStatus = (guideId: string, publicUrl: string): GuidePublishStatusResponse => ({
+  publish_link: {
+    id: `publish_link_${guideId}`,
+    artifact_type: "guide",
+    artifact_id: guideId,
+    published_artifact_id: `published_artifact_${guideId}`,
+    slug: publicUrl.replace("/p/", ""),
+    visibility: "public",
+    status: "active",
+    published_at: "2026-06-11T00:00:00.000Z",
+    revoked_at: null,
+    public_url: publicUrl,
+  },
+  published_artifact: {
+    id: `published_artifact_${guideId}`,
+    artifact_type: "guide",
+    artifact_id: guideId,
+    version_number: 1,
+    title: "Published guide",
+    published_at: "2026-06-11T00:00:00.000Z",
+  },
+});
+
 const renderPage = (overrides: {
   projectId?: string;
   loadGuides?: () => Promise<{ guides: Guide[] }>;
+  loadPublishStatus?: (projectId: string, guideId: string) => Promise<GuidePublishStatusResponse>;
 } = {}) => {
   const loadGuides = overrides.loadGuides ?? vi.fn(async () => ({ guides }));
+  const loadPublishStatus = overrides.loadPublishStatus ?? vi.fn(async () => unpublishedStatus);
 
   render(
     <ProjectGuideListPage
       projectId={overrides.projectId ?? "project_1"}
       loadGuides={loadGuides}
+      loadPublishStatus={loadPublishStatus}
     />
   );
 
-  return { loadGuides };
+  return { loadGuides, loadPublishStatus };
 };
 
 describe("ProjectGuideListPage", () => {
@@ -101,6 +132,117 @@ describe("ProjectGuideListPage", () => {
       "href",
       "/projects/project%201/guides/guide%20%2F%201/preview"
     );
+  });
+
+  it("renders publish status for each guide without blocking the list", async () => {
+    const loadPublishStatus = vi.fn(() => new Promise<GuidePublishStatusResponse>(() => undefined));
+
+    const { loadGuides } = renderPage({ loadPublishStatus });
+
+    expect(await screen.findByRole("heading", { name: "Archived onboarding guide" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(screen.getAllByText("Checking...")).toHaveLength(2);
+    expect(loadGuides).toHaveBeenCalledWith("project_1");
+    await waitFor(() => expect(loadPublishStatus).toHaveBeenCalledTimes(2));
+    expect(loadPublishStatus).toHaveBeenCalledWith("project_1", "guide_2");
+    expect(loadPublishStatus).toHaveBeenCalledWith("project_1", "guide_1");
+  });
+
+  it("shows active public guide links and unpublished status in the guide list", async () => {
+    const loadPublishStatus = vi.fn(async (_projectId: string, guideId: string) => (
+      guideId === "guide_2" ? publishedStatus("guide_2", "/p/archived-guide") : unpublishedStatus
+    ));
+
+    renderPage({ loadPublishStatus });
+
+    const archivedRow = (await screen.findByRole("heading", { name: "Archived onboarding guide" })).closest("article");
+    const draftRow = screen.getByRole("heading", { name: "Department guide" }).closest("article");
+
+    expect(archivedRow).not.toBeNull();
+    expect(draftRow).not.toBeNull();
+    expect(await within(archivedRow!).findByText("Published")).toBeInTheDocument();
+    expect(within(archivedRow!).getByRole("link", { name: "Open public guide Archived onboarding guide" })).toHaveAttribute(
+      "href",
+      "/p/archived-guide"
+    );
+    expect(await within(draftRow!).findByText("Not published")).toBeInTheDocument();
+    expect(within(draftRow!).queryByRole("link", { name: /Open public guide/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("publish_link_guide_2")).not.toBeInTheDocument();
+    expect(screen.queryByText("published_artifact_guide_2")).not.toBeInTheDocument();
+  });
+
+  it("shows per-guide publish status failures without breaking the guide list", async () => {
+    const loadPublishStatus = vi.fn(async (_projectId: string, guideId: string) => {
+      if (guideId === "guide_2") {
+        throw new Error("status failed");
+      }
+
+      return publishedStatus("guide_1", "/p/department-guide");
+    });
+
+    renderPage({ loadPublishStatus });
+
+    const archivedRow = (await screen.findByRole("heading", { name: "Archived onboarding guide" })).closest("article");
+    const draftRow = screen.getByRole("heading", { name: "Department guide" }).closest("article");
+
+    expect(archivedRow).not.toBeNull();
+    expect(draftRow).not.toBeNull();
+    expect(await within(archivedRow!).findByText("Could not check")).toBeInTheDocument();
+    expect(await within(draftRow!).findByText("Published")).toBeInTheDocument();
+    expect(within(draftRow!).getByRole("link", { name: "Open public guide Department guide" })).toHaveAttribute(
+      "href",
+      "/p/department-guide"
+    );
+  });
+
+  it("ignores stale publish status responses after the project changes", async () => {
+    let resolveOldStatus: ((value: GuidePublishStatusResponse) => void) | undefined;
+    const currentGuide = {
+      ...guides[1]!,
+      title: "Current project guide",
+    };
+    const loadGuides = vi.fn(async (projectId: string) => ({
+      guides: projectId === "project_old" ? [guides[1]!] : [currentGuide],
+    }));
+    const loadPublishStatus = vi.fn((projectId: string) => {
+      if (projectId === "project_old") {
+        return new Promise<GuidePublishStatusResponse>((resolve) => {
+          resolveOldStatus = resolve;
+        });
+      }
+
+      return Promise.resolve(unpublishedStatus);
+    });
+
+    const { rerender } = render(
+      <ProjectGuideListPage
+        projectId="project_old"
+        loadGuides={loadGuides}
+        loadPublishStatus={loadPublishStatus}
+      />
+    );
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    await waitFor(() => expect(loadPublishStatus).toHaveBeenCalledWith("project_old", "guide_1"));
+
+    rerender(
+      <ProjectGuideListPage
+        projectId="project_current"
+        loadGuides={loadGuides}
+        loadPublishStatus={loadPublishStatus}
+      />
+    );
+
+    expect(await screen.findByRole("heading", { name: "Current project guide" })).toBeInTheDocument();
+    expect(await screen.findByText("Not published")).toBeInTheDocument();
+
+    resolveOldStatus?.(publishedStatus("guide_1", "/p/old-guide"));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("link", { name: "Open public guide Current project guide" })).not.toBeInTheDocument();
+    });
+    expect(screen.queryByText("Published")).not.toBeInTheDocument();
+    expect(screen.queryByText("/p/old-guide")).not.toBeInTheDocument();
   });
 
   it("renders empty guide lists", async () => {

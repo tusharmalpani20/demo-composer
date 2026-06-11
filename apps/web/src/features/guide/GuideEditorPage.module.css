@@ -237,6 +237,16 @@
   line-height: 1.45;
 }
 
+.staleNotice {
+  padding: 9px 10px;
+  border: 1px solid #f3c37a;
+  border-radius: 6px;
+  background: #fff8eb;
+  color: #7a4a00;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .publicUrl {
   overflow-wrap: anywhere;
   padding: 9px 10px;

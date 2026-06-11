@@ -129,6 +129,21 @@
   font-size: 13px;
 }
 
+.publishStatus {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 26px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 0 10px;
+  border: 1px solid #d9e0e7;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .openLink,
 .secondaryButton {
   border: 1px solid #b8c3cf;

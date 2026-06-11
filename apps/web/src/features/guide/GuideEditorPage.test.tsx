@@ -156,6 +156,14 @@ const publishedStatus = (versionNumber = 1): GuidePublishStatusResponse => ({
   },
 });
 
+const withGuideUpdatedAt = (updatedAt: string): GuideDetail => ({
+  ...guideDetail,
+  guide: {
+    ...guideDetail.guide,
+    updated_at: updatedAt,
+  },
+});
+
 const renderPage = (overrides: {
   detail?: GuideDetail;
   loadDetail?: () => Promise<GuideDetail>;
@@ -296,8 +304,7 @@ describe("GuideEditorPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Publish guide" }));
 
     await waitFor(() => expect(publishCurrentGuide).toHaveBeenCalledWith("project_1", "guide_1"));
-    expect(await screen.findByText("Published version 1")).toBeInTheDocument();
-    expect(screen.getByText("Published Jun 11, 2026, 12:00 AM")).toBeInTheDocument();
+    expect(await screen.findByText("Published version 1 on Jun 11, 2026, 12:00 AM")).toBeInTheDocument();
     expect(screen.getByText("/p/abc123")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open public guide" })).toHaveAttribute("href", "/p/abc123");
     expect(screen.getByText("Guide published.")).toBeInTheDocument();
@@ -313,7 +320,7 @@ describe("GuideEditorPage", () => {
       copyText,
     });
 
-    expect(await screen.findByText("Published version 1")).toBeInTheDocument();
+    expect(await screen.findByText("Published version 1 on Jun 11, 2026, 12:00 AM")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(copyText).toHaveBeenCalledWith("http://localhost:3000/p/abc123"));
@@ -321,13 +328,81 @@ describe("GuideEditorPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Republish" }));
     await waitFor(() => expect(publishCurrentGuide).toHaveBeenCalledWith("project_1", "guide_1"));
-    expect(await screen.findByText("Published version 2")).toBeInTheDocument();
+    expect(await screen.findByText("Published version 2 on Jun 11, 2026, 12:00 AM")).toBeInTheDocument();
     expect(screen.getByText("/p/abc123")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Revoke link" }));
     await waitFor(() => expect(revokePublishLink).toHaveBeenCalledWith("project_1", "guide_1"));
     expect(await screen.findByText("This guide is not published.")).toBeInTheDocument();
     expect(screen.getByText("Public link revoked.")).toBeInTheDocument();
+  });
+
+  it("renders clearer live and stale published states", async () => {
+    renderPage({
+      detail: withGuideUpdatedAt("2026-06-12T00:00:00.000Z"),
+      loadPublishStatus: async () => publishedStatus(2),
+    });
+
+    expect(await screen.findByText("Public guide is live")).toBeInTheDocument();
+    expect(screen.getByText("Published version 2 on Jun 11, 2026, 12:00 AM")).toBeInTheDocument();
+    expect(screen.getByText("Draft has changes not yet published.")).toBeInTheDocument();
+  });
+
+  it("does not show stale published state when the draft timestamp is current", async () => {
+    renderPage({
+      detail: withGuideUpdatedAt("2026-06-11T00:00:00.000Z"),
+      loadPublishStatus: async () => publishedStatus(2),
+    });
+
+    expect(await screen.findByText("Public guide is live")).toBeInTheDocument();
+    expect(screen.queryByText("Draft has changes not yet published.")).not.toBeInTheDocument();
+  });
+
+  it("marks a published guide stale after editor mutations and clears it after republish", async () => {
+    const saveGuide = vi.fn(async (_projectId, _guideId, data) => ({
+      guide: {
+        ...guideDetail.guide,
+        ...data,
+        description: data.description ?? null,
+      },
+    }));
+    const publishCurrentGuide = vi.fn(async () => publishedStatus(2));
+
+    renderPage({
+      loadPublishStatus: async () => publishedStatus(1),
+      saveGuide,
+      publishCurrentGuide,
+    });
+
+    expect(await screen.findByText("Public guide is live")).toBeInTheDocument();
+    expect(screen.queryByText("Draft has changes not yet published.")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Guide title"), {
+      target: { value: "Updated department guide" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save guide" }));
+
+    expect(await screen.findByText("Draft has changes not yet published.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Republish" }));
+
+    await waitFor(() => expect(publishCurrentGuide).toHaveBeenCalledWith("project_1", "guide_1"));
+    await waitFor(() => expect(screen.queryByText("Draft has changes not yet published.")).not.toBeInTheDocument());
+  });
+
+  it("shows publish-panel busy labels without locking guide editing", async () => {
+    const publishCurrentGuide = vi.fn(() => new Promise<GuidePublishStatusResponse>(() => undefined));
+
+    renderPage({
+      publishCurrentGuide,
+    });
+
+    expect(await screen.findByText("This guide is not published.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Publish guide" }));
+
+    expect(await screen.findByRole("button", { name: "Publishing..." })).toBeDisabled();
+    expect(screen.getByLabelText("Guide title")).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save guide" })).not.toBeDisabled();
   });
 
   it("shows a stable notice when public link copy fails", async () => {
@@ -339,11 +414,11 @@ describe("GuideEditorPage", () => {
       copyText,
     });
 
-    expect(await screen.findByText("Published version 1")).toBeInTheDocument();
+    expect(await screen.findByText("Published version 1 on Jun 11, 2026, 12:00 AM")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
 
     await waitFor(() => expect(copyText).toHaveBeenCalledWith("http://localhost:3000/p/abc123"));
-    expect(screen.getByText("Could not copy public link.")).toBeInTheDocument();
+    expect(screen.getByText("Could not copy public link. Select the URL above.")).toBeInTheDocument();
     expect(screen.getByText("/p/abc123")).toBeInTheDocument();
   });
 
@@ -388,7 +463,7 @@ describe("GuideEditorPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
 
     await waitFor(() => expect(loadPublishStatus).toHaveBeenCalledTimes(2));
-    expect(await screen.findByText("Published version 1")).toBeInTheDocument();
+    expect(await screen.findByText("Published version 1 on Jun 11, 2026, 12:00 AM")).toBeInTheDocument();
   });
 
   it("shows publish validation errors and disables publish controls for archived guides", async () => {

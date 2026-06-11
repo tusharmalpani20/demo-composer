@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
-import { ApiClientError, listProjectGuides, type ProjectGuideListResponse } from "../../lib/api";
+import {
+  ApiClientError,
+  getGuidePublishStatus,
+  listProjectGuides,
+  type ProjectGuideListResponse,
+} from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
 import { PortalTopbar } from "../portal/PortalTopbar";
-import type { Guide } from "./types";
+import type { Guide, GuidePublishStatusResponse } from "./types";
 import styles from "./ProjectGuideListPage.module.css";
 
 type LoadState =
@@ -15,10 +20,17 @@ type LoadState =
 type ProjectGuideListPageProps = {
   projectId: string;
   loadGuides?: (projectId: string) => Promise<ProjectGuideListResponse>;
+  loadPublishStatus?: (projectId: string, guideId: string) => Promise<GuidePublishStatusResponse>;
   currentPath?: string;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
 };
+
+type PublishStatusState =
+  | { status: "checking" }
+  | { status: "published"; response: GuidePublishStatusResponse }
+  | { status: "unpublished" }
+  | { status: "error" };
 
 const loadStateFromError = (error: unknown): LoadState => {
   if (error instanceof ApiClientError) {
@@ -50,11 +62,13 @@ const guidePreviewUrl = (projectId: string, guideId: string) => (
 export const ProjectGuideListPage = ({
   projectId,
   loadGuides = listProjectGuides,
+  loadPublishStatus = getGuidePublishStatus,
   currentPath = currentBrowserPath(),
   performLogout,
   navigate,
 }: ProjectGuideListPageProps) => {
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [publishStatuses, setPublishStatuses] = useState<Record<string, PublishStatusState>>({});
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -77,6 +91,49 @@ export const ProjectGuideListPage = ({
       active = false;
     };
   }, [projectId, loadGuides, reloadKey]);
+
+  useEffect(() => {
+    if (state.status !== "loaded" || state.guides.length === 0) {
+      setPublishStatuses({});
+      return;
+    }
+
+    let active = true;
+    const guideIds = state.guides.map((guide) => guide.id);
+    setPublishStatuses(Object.fromEntries(
+      guideIds.map((guideId) => [guideId, { status: "checking" as const }])
+    ));
+
+    guideIds.forEach((guideId) => {
+      loadPublishStatus(projectId, guideId)
+        .then((response) => {
+          if (!active) {
+            return;
+          }
+
+          setPublishStatuses((current) => ({
+            ...current,
+            [guideId]: response.publish_link?.status === "active"
+              ? { status: "published", response }
+              : { status: "unpublished" },
+          }));
+        })
+        .catch(() => {
+          if (!active) {
+            return;
+          }
+
+          setPublishStatuses((current) => ({
+            ...current,
+            [guideId]: { status: "error" },
+          }));
+        });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [projectId, loadPublishStatus, state]);
 
   if (state.status === "loading") {
     return (
@@ -135,7 +192,12 @@ export const ProjectGuideListPage = ({
         ) : (
           <div className={styles.list}>
             {state.guides.map((guide) => (
-              <GuideRow key={guide.id} guide={guide} projectId={projectId} />
+              <GuideRow
+                key={guide.id}
+                guide={guide}
+                projectId={projectId}
+                publishStatus={publishStatuses[guide.id] ?? { status: "checking" }}
+              />
             ))}
           </div>
         )}
@@ -161,7 +223,15 @@ const PortalShell = ({
   </div>
 );
 
-const GuideRow = ({ guide, projectId }: { guide: Guide; projectId: string }) => (
+const GuideRow = ({
+  guide,
+  projectId,
+  publishStatus,
+}: {
+  guide: Guide;
+  projectId: string;
+  publishStatus: PublishStatusState;
+}) => (
   <article className={styles.guide}>
     <div className={styles.guideBody}>
       <div className={styles.guideHeader}>
@@ -174,8 +244,14 @@ const GuideRow = ({ guide, projectId }: { guide: Guide; projectId: string }) => 
         <span>Updated {formatDateTime(guide.updated_at)}</span>
         <span>Created {formatDateTime(guide.created_at)}</span>
       </div>
+      <GuidePublishStatus status={publishStatus} />
     </div>
     <div className={styles.guideActions}>
+      {publishStatus.status === "published" && publishStatus.response.publish_link ? (
+        <a className={styles.openLink} href={publishStatus.response.publish_link.public_url}>
+          Open public guide {guide.title}
+        </a>
+      ) : null}
       <a className={styles.openLink} href={guidePreviewUrl(projectId, guide.id)}>
         Preview guide {guide.title}
       </a>
@@ -185,3 +261,19 @@ const GuideRow = ({ guide, projectId }: { guide: Guide; projectId: string }) => 
     </div>
   </article>
 );
+
+const GuidePublishStatus = ({ status }: { status: PublishStatusState }) => {
+  if (status.status === "checking") {
+    return <div className={styles.publishStatus}>Checking...</div>;
+  }
+
+  if (status.status === "published") {
+    return <div className={styles.publishStatus}>Published</div>;
+  }
+
+  if (status.status === "error") {
+    return <div className={styles.publishStatus}>Could not check</div>;
+  }
+
+  return <div className={styles.publishStatus}>Not published</div>;
+};

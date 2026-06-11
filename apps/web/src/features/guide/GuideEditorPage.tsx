@@ -117,6 +117,17 @@ const publicGuideUrl = (publicUrl: string) => {
   return publicUrl;
 };
 
+const isDateAfter = (left: string, right: string) => {
+  const leftDate = new Date(left);
+  const rightDate = new Date(right);
+
+  if (!Number.isFinite(leftDate.getTime()) || !Number.isFinite(rightDate.getTime())) {
+    return false;
+  }
+
+  return leftDate.getTime() > rightDate.getTime();
+};
+
 const publishErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof ApiClientError) {
     if (error.type === "guide_not_publishable") {
@@ -183,6 +194,7 @@ export const GuideEditorPage = ({
   const [notice, setNotice] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [publishBusyAction, setPublishBusyAction] = useState<string | null>(null);
+  const [locallyStalePublish, setLocallyStalePublish] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -231,6 +243,10 @@ export const GuideEditorPage = ({
     };
   }, [projectId, guideId, loadPublishStatus, publishReloadKey]);
 
+  useEffect(() => {
+    setLocallyStalePublish(false);
+  }, [projectId, guideId]);
+
   const reload = () => setReloadKey((key) => key + 1);
   const reloadPublishStatus = () => setPublishReloadKey((key) => key + 1);
 
@@ -248,6 +264,18 @@ export const GuideEditorPage = ({
     setNotice(fallback);
   };
 
+  const hasActivePublish = () => (
+    publishState.status === "loaded"
+    && publishState.response.publish_link?.status === "active"
+    && Boolean(publishState.response.published_artifact)
+  );
+
+  const markPublishedDraftStale = () => {
+    if (hasActivePublish()) {
+      setLocallyStalePublish(true);
+    }
+  };
+
   const publishCurrent = async () => {
     setPublishBusyAction("publish");
     setNotice(null);
@@ -255,6 +283,7 @@ export const GuideEditorPage = ({
     try {
       const response = await publishCurrentGuide(projectId, guideId);
       setPublishState({ status: "loaded", response });
+      setLocallyStalePublish(false);
       setNotice("Guide published.");
     } catch (error: unknown) {
       setNotice(publishErrorMessage(error, "Could not publish guide."));
@@ -276,6 +305,7 @@ export const GuideEditorPage = ({
           published_artifact: null,
         },
       });
+      setLocallyStalePublish(false);
       setNotice("Public link revoked.");
     } catch (error: unknown) {
       setNotice(publishErrorMessage(error, "Could not revoke public link."));
@@ -292,7 +322,7 @@ export const GuideEditorPage = ({
       await copyText(publicGuideUrl(publicUrl));
       setNotice("Public link copied.");
     } catch {
-      setNotice("Could not copy public link.");
+      setNotice("Could not copy public link. Select the URL above.");
     } finally {
       setPublishBusyAction(null);
     }
@@ -328,6 +358,7 @@ export const GuideEditorPage = ({
         title: response.guide.title,
         description: response.guide.description ?? "",
       });
+      markPublishedDraftStale();
     } catch (error: unknown) {
       handleMutationError(error, "Could not save changes.");
     } finally {
@@ -362,6 +393,7 @@ export const GuideEditorPage = ({
           body: response.guide_step.body ?? "",
         },
       }));
+      markPublishedDraftStale();
     } catch (error: unknown) {
       handleMutationError(error, "Could not save changes.");
     } finally {
@@ -402,6 +434,7 @@ export const GuideEditorPage = ({
         ...detail,
         guide_blocks: response.guide_blocks,
       }));
+      markPublishedDraftStale();
     } catch (error: unknown) {
       handleMutationError(error, "Could not reorder blocks.");
     } finally {
@@ -419,6 +452,7 @@ export const GuideEditorPage = ({
 
     try {
       await removeBlock(projectId, guideId, block.id);
+      markPublishedDraftStale();
       reload();
     } catch (error: unknown) {
       handleMutationError(error, "Could not delete block.");
@@ -473,6 +507,7 @@ export const GuideEditorPage = ({
       guideDraft={guideDraft}
       stepDrafts={stepDrafts}
       publishState={publishState}
+      locallyStalePublish={locallyStalePublish}
       notice={notice}
       busyAction={busyAction}
       publishBusyAction={publishBusyAction}
@@ -518,6 +553,7 @@ const GuideEditorView = ({
   guideDraft,
   stepDrafts,
   publishState,
+  locallyStalePublish,
   notice,
   busyAction,
   publishBusyAction,
@@ -540,6 +576,7 @@ const GuideEditorView = ({
   guideDraft: GuideDraft;
   stepDrafts: Record<string, StepDraft>;
   publishState: PublishState;
+  locallyStalePublish: boolean;
   notice: string | null;
   busyAction: string | null;
   publishBusyAction: string | null;
@@ -602,6 +639,8 @@ const GuideEditorView = ({
             state={publishState}
             readOnly={readOnly}
             busyAction={publishBusyAction}
+            guideUpdatedAt={detail.guide.updated_at}
+            locallyStale={locallyStalePublish}
             onPublish={onPublish}
             onRevoke={onRevokePublish}
             onCopyPublicLink={onCopyPublicLink}
@@ -699,6 +738,8 @@ const PublishPanel = ({
   state,
   readOnly,
   busyAction,
+  guideUpdatedAt,
+  locallyStale,
   onPublish,
   onRevoke,
   onCopyPublicLink,
@@ -707,6 +748,8 @@ const PublishPanel = ({
   state: PublishState;
   readOnly: boolean;
   busyAction: string | null;
+  guideUpdatedAt: string;
+  locallyStale: boolean;
   onPublish: () => void;
   onRevoke: () => void;
   onCopyPublicLink: (publicUrl: string) => void;
@@ -718,6 +761,15 @@ const PublishPanel = ({
     : null;
   const publishedArtifact = state.status === "loaded" ? state.response.published_artifact : null;
   const publishedAt = publishedArtifact ? formatPublishedAt(publishedArtifact.published_at) : null;
+  const stale = Boolean(
+    activeLink
+    && publishedArtifact
+    && (locallyStale || isDateAfter(guideUpdatedAt, publishedArtifact.published_at))
+  );
+  const publishLabel = isBusy && busyAction === "publish" ? "Publishing..." : "Publish guide";
+  const republishLabel = isBusy && busyAction === "publish" ? "Republishing..." : "Republish";
+  const revokeLabel = isBusy && busyAction === "revoke" ? "Revoking..." : "Revoke link";
+  const copyLabel = isBusy && busyAction === "copy" ? "Copying..." : "Copy link";
 
   return (
     <section className={styles.panel} aria-labelledby="publishing-heading">
@@ -743,14 +795,23 @@ const PublishPanel = ({
             disabled={readOnly || isBusy}
             onClick={onPublish}
           >
-            Publish guide
+            {publishLabel}
           </button>
         </div>
       ) : null}
       {activeLink && publishedArtifact ? (
         <div className={styles.publishStack}>
-          <div className={styles.publishText}>Published version {publishedArtifact.version_number}</div>
-          {publishedAt ? <div className={styles.publishNote}>Published {publishedAt}</div> : null}
+          <div className={styles.publishText}>Public guide is live</div>
+          {publishedAt ? (
+            <div className={styles.publishNote}>
+              Published version {publishedArtifact.version_number} on {publishedAt}
+            </div>
+          ) : (
+            <div className={styles.publishNote}>Published version {publishedArtifact.version_number}</div>
+          )}
+          {stale ? (
+            <div className={styles.staleNotice}>Draft has changes not yet published.</div>
+          ) : null}
           <div className={styles.publicUrl}>{activeLink.public_url}</div>
           <div className={styles.publishActions}>
             <button
@@ -759,7 +820,7 @@ const PublishPanel = ({
               disabled={isBusy}
               onClick={() => onCopyPublicLink(activeLink.public_url)}
             >
-              Copy link
+              {copyLabel}
             </button>
             <a
               className={styles.previewLink}
@@ -775,7 +836,7 @@ const PublishPanel = ({
               disabled={readOnly || isBusy}
               onClick={onPublish}
             >
-              Republish
+              {republishLabel}
             </button>
             <button
               className={styles.dangerButton}
@@ -783,7 +844,7 @@ const PublishPanel = ({
               disabled={isBusy}
               onClick={onRevoke}
             >
-              Revoke link
+              {revokeLabel}
             </button>
           </div>
         </div>
