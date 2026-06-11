@@ -322,6 +322,32 @@
   border-top: 1px solid #e5ebf1;
 }
 
+.insertControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #edf1f5;
+}
+
+.insertButton {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #c9d3df;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #243244;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.insertButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .media {
   margin-top: 10px;
 }

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ApiClientError,
+  createGuideBlock,
   createGuideFromCaptureSession,
   deleteGuideBlock,
   getCurrentAuth,
@@ -19,6 +20,7 @@ import {
   resolveApiAssetUrl,
   revokeGuidePublishLink,
   updateGuide,
+  updateGuideBlock,
   updateGuideStep,
 } from "./api";
 
@@ -702,9 +704,16 @@ describe("api client", () => {
     );
   });
 
-  it("reorders and deletes guide blocks", async () => {
+  it("creates updates reorders and deletes guide blocks", async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({
       guide_blocks: [],
+      guide_block: {
+        id: "block_1",
+        content: {
+          title: "Updated tip",
+          body: "Details",
+        },
+      },
     }), {
       status: 200,
       headers: {
@@ -713,11 +722,69 @@ describe("api client", () => {
     }));
     vi.stubGlobal("fetch", fetch);
 
+    await createGuideBlock("project_1", "guide_1", {
+      block_type: "tip",
+      position: {
+        placement: "after",
+        guide_block_id: "block_1",
+      },
+      content: {
+        title: "Helpful tip",
+        body: "Details",
+      },
+    });
+    await updateGuideBlock("project_1", "guide_1", "block_1", {
+      content: {
+        title: "Updated tip",
+        body: "Details",
+      },
+    });
     await reorderGuideBlocks("project_1", "guide_1", ["block_2", "block_1"]);
     await deleteGuideBlock("project_1", "guide_1", "block_1");
 
     expect(fetch).toHaveBeenNthCalledWith(
       1,
+      "/api/v1/projects/project_1/guides/guide_1/blocks",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          block_type: "tip",
+          position: {
+            placement: "after",
+            guide_block_id: "block_1",
+          },
+          content: {
+            title: "Helpful tip",
+            body: "Details",
+          },
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/projects/project_1/guides/guide_1/blocks/block_1",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          content: {
+            title: "Updated tip",
+            body: "Details",
+          },
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      3,
       "/api/v1/projects/project_1/guides/guide_1/blocks/reorder",
       {
         method: "PATCH",
@@ -732,7 +799,7 @@ describe("api client", () => {
       }
     );
     expect(fetch).toHaveBeenNthCalledWith(
-      2,
+      4,
       "/api/v1/projects/project_1/guides/guide_1/blocks/block_1",
       {
         method: "DELETE",

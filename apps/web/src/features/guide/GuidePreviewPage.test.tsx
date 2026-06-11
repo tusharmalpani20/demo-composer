@@ -29,6 +29,7 @@ const guideDetail: GuideDetail = {
       source_capture_event_id: "event_2",
       source_capture_asset_id: "asset_missing",
       block_type: "step",
+      content: null,
       block_index: 2,
       created_by_id: "org_user_1",
       updated_by_id: "org_user_1",
@@ -62,6 +63,7 @@ const guideDetail: GuideDetail = {
       source_capture_event_id: "event_1",
       source_capture_asset_id: "asset_1",
       block_type: "step",
+      content: null,
       block_index: 1,
       created_by_id: "org_user_1",
       updated_by_id: "org_user_1",
@@ -95,6 +97,9 @@ const guideDetail: GuideDetail = {
       source_capture_event_id: null,
       source_capture_asset_id: null,
       block_type: "header",
+      content: {
+        title: "Department fields",
+      },
       block_index: 3,
       created_by_id: "org_user_1",
       updated_by_id: "org_user_1",
@@ -112,6 +117,7 @@ const guideDetail: GuideDetail = {
       source_capture_event_id: "event_4",
       source_capture_asset_id: "asset_1",
       block_type: "step",
+      content: null,
       block_index: 4,
       created_by_id: "org_user_1",
       updated_by_id: "org_user_1",
@@ -186,18 +192,18 @@ describe("GuidePreviewPage", () => {
     expect(screen.getByText("draft")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Edit guide" })).toHaveAttribute("href", "/projects/project_1/guides/guide_1");
     expect(screen.getByRole("link", { name: "Back to guides" })).toHaveAttribute("href", "/projects/project_1/guides");
-    expect(screen.getAllByText(/^[1234]$/).map((node) => node.textContent)).toEqual(["1", "2", "3", "4"]);
+    expect(screen.getAllByText(/^[123]$/).map((node) => node.textContent)).toEqual(["1", "2", "3"]);
     expect(screen.getByRole("heading", { name: "Navigate to Department List" })).toBeInTheDocument();
     expect(screen.getByText("Open the Department module.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Click Add Department" })).toBeInTheDocument();
     expect(screen.getByText("Use the primary action in the list view.")).toBeInTheDocument();
-    expect(screen.getByText("Unsupported guide block: header")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Department fields" })).toBeInTheDocument();
     expect(screen.getAllByRole("img", { name: "Department List" })[0]).toHaveAttribute(
       "src",
       "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_1/file"
     );
     expect(screen.getByRole("button", { name: "Open screenshot for step 1" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Open screenshot for step 4" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open screenshot for step 3" })).toBeInTheDocument();
     expect(screen.queryByText("asset_missing")).not.toBeInTheDocument();
     expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
     expect(loadDetail).toHaveBeenCalledWith("project_1", "guide_1");

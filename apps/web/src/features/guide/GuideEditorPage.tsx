@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ApiClientError,
+  createGuideBlock,
   deleteGuideBlock,
   getGuideDetail,
   getGuidePublishStatus,
@@ -9,6 +10,7 @@ import {
   resolveApiAssetUrl,
   revokeGuidePublishLink,
   updateGuide,
+  updateGuideBlock,
   updateGuideStep,
 } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
@@ -19,6 +21,7 @@ import {
 } from "./GuideScreenshotViewer";
 import type {
   GuideBlock,
+  GuideBlockContent,
   GuideDetail,
   GuidePublishResult,
   GuidePublishStatusResponse,
@@ -45,6 +48,11 @@ type StepDraft = {
   body: string;
 };
 
+type BlockContentDraft = {
+  title: string;
+  body: string;
+};
+
 type PublishState =
   | { status: "loading" }
   | { status: "loaded"; response: GuidePublishStatusResponse }
@@ -60,6 +68,8 @@ export type GuideEditorPageProps = {
   copyText?: (text: string) => Promise<void>;
   saveGuide?: typeof updateGuide;
   saveStep?: typeof updateGuideStep;
+  createBlock?: typeof createGuideBlock;
+  saveBlock?: typeof updateGuideBlock;
   reorderBlocks?: typeof reorderGuideBlocks;
   removeBlock?: typeof deleteGuideBlock;
   currentPath?: string;
@@ -161,6 +171,17 @@ const stepDraftsFromBlocks = (blocks: GuideBlock[]) => blocks.reduce<Record<stri
   return drafts;
 }, {});
 
+const blockContentDraftsFromBlocks = (blocks: GuideBlock[]) => blocks.reduce<Record<string, BlockContentDraft>>((drafts, block) => {
+  if (block.block_type === "header" || block.block_type === "tip" || block.block_type === "alert") {
+    drafts[block.id] = {
+      title: block.content?.title ?? "",
+      body: block.content?.body ?? "",
+    };
+  }
+
+  return drafts;
+}, {});
+
 const updateStepInBlocks = (blocks: GuideBlock[], guideStep: GuideStep) => (
   blocks.map((block) => (
     block.step?.id === guideStep.id
@@ -168,6 +189,48 @@ const updateStepInBlocks = (blocks: GuideBlock[], guideStep: GuideStep) => (
       : block
   ))
 );
+
+const updateBlockInBlocks = (blocks: GuideBlock[], guideBlock: GuideBlock) => (
+  blocks.map((block) => (
+    block.id === guideBlock.id
+      ? guideBlock
+      : block
+  ))
+);
+
+const defaultBlockInput = (
+  blockType: "step" | "header" | "tip" | "alert",
+  position?: { placement: "before" | "after"; guide_block_id: string }
+) => {
+  if (blockType === "step") {
+    return {
+      block_type: blockType,
+      ...(position ? { position } : {}),
+      step: {
+        title: "New step",
+        body: null,
+      },
+    };
+  }
+
+  if (blockType === "header") {
+    return {
+      block_type: blockType,
+      ...(position ? { position } : {}),
+      content: {
+        title: "New section",
+      },
+    };
+  }
+
+  return {
+    block_type: blockType,
+    ...(position ? { position } : {}),
+    content: {
+      body: blockType === "tip" ? "Add a helpful tip." : "Add an important note.",
+    },
+  };
+};
 
 export const GuideEditorPage = ({
   projectId,
@@ -179,6 +242,8 @@ export const GuideEditorPage = ({
   copyText = defaultCopyText,
   saveGuide = updateGuide,
   saveStep = updateGuideStep,
+  createBlock = createGuideBlock,
+  saveBlock = updateGuideBlock,
   reorderBlocks = reorderGuideBlocks,
   removeBlock = deleteGuideBlock,
   currentPath = currentBrowserPath(),
@@ -191,6 +256,7 @@ export const GuideEditorPage = ({
   const [publishReloadKey, setPublishReloadKey] = useState(0);
   const [guideDraft, setGuideDraft] = useState<GuideDraft>({ title: "", description: "" });
   const [stepDrafts, setStepDrafts] = useState<Record<string, StepDraft>>({});
+  const [blockContentDrafts, setBlockContentDrafts] = useState<Record<string, BlockContentDraft>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [publishBusyAction, setPublishBusyAction] = useState<string | null>(null);
@@ -209,6 +275,7 @@ export const GuideEditorPage = ({
             description: detail.guide.description ?? "",
           });
           setStepDrafts(stepDraftsFromBlocks(detail.guide_blocks));
+          setBlockContentDrafts(blockContentDraftsFromBlocks(detail.guide_blocks));
         }
       })
       .catch((error: unknown) => {
@@ -401,6 +468,73 @@ export const GuideEditorPage = ({
     }
   };
 
+  const addBlock = async (
+    blockType: "step" | "header" | "tip" | "alert",
+    afterBlock?: GuideBlock
+  ) => {
+    setBusyAction(`create:${afterBlock?.id ?? "end"}:${blockType}`);
+    setNotice(null);
+
+    try {
+      const response = await createBlock(
+        projectId,
+        guideId,
+        defaultBlockInput(blockType, afterBlock ? {
+          placement: "after",
+          guide_block_id: afterBlock.id,
+        } : undefined)
+      );
+      patchDetail((detail) => ({
+        ...detail,
+        guide_blocks: response.guide_blocks,
+      }));
+      setStepDrafts(stepDraftsFromBlocks(response.guide_blocks));
+      setBlockContentDrafts(blockContentDraftsFromBlocks(response.guide_blocks));
+      markPublishedDraftStale();
+      setNotice("Block added.");
+    } catch (error: unknown) {
+      handleMutationError(error, "Could not add block.");
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const saveBlockDraft = async (block: GuideBlock) => {
+    const draft = blockContentDrafts[block.id];
+
+    if (!draft) {
+      return;
+    }
+
+    const content: GuideBlockContent = block.block_type === "header"
+      ? { title: draft.title }
+      : { title: draft.title || null, body: draft.body || null };
+
+    setBusyAction(`block:${block.id}`);
+    setNotice(null);
+
+    try {
+      const response = await saveBlock(projectId, guideId, block.id, { content });
+      patchDetail((detail) => ({
+        ...detail,
+        guide_blocks: updateBlockInBlocks(detail.guide_blocks, response.guide_block),
+      }));
+      setBlockContentDrafts((current) => ({
+        ...current,
+        [response.guide_block.id]: {
+          title: response.guide_block.content?.title ?? "",
+          body: response.guide_block.content?.body ?? "",
+        },
+      }));
+      markPublishedDraftStale();
+      setNotice("Block saved.");
+    } catch (error: unknown) {
+      handleMutationError(error, "Could not save block.");
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
   const moveBlock = async (blockId: string, direction: -1 | 1) => {
     if (state.status !== "loaded") {
       return;
@@ -506,6 +640,7 @@ export const GuideEditorPage = ({
       detail={state.detail}
       guideDraft={guideDraft}
       stepDrafts={stepDrafts}
+      blockContentDrafts={blockContentDrafts}
       publishState={publishState}
       locallyStalePublish={locallyStalePublish}
       notice={notice}
@@ -515,8 +650,11 @@ export const GuideEditorPage = ({
       guideId={guideId}
       onGuideDraftChange={setGuideDraft}
       onStepDraftChange={(stepId, draft) => setStepDrafts((current) => ({ ...current, [stepId]: draft }))}
+      onBlockContentDraftChange={(blockId, draft) => setBlockContentDrafts((current) => ({ ...current, [blockId]: draft }))}
       onSaveGuide={saveGuideDraft}
       onSaveStep={saveStepDraft}
+      onSaveBlock={saveBlockDraft}
+      onAddBlock={addBlock}
       onMoveBlock={moveBlock}
       onDeleteBlock={deleteBlock}
       onPublish={publishCurrent}
@@ -552,6 +690,7 @@ const GuideEditorView = ({
   detail,
   guideDraft,
   stepDrafts,
+  blockContentDrafts,
   publishState,
   locallyStalePublish,
   notice,
@@ -561,8 +700,11 @@ const GuideEditorView = ({
   guideId,
   onGuideDraftChange,
   onStepDraftChange,
+  onBlockContentDraftChange,
   onSaveGuide,
   onSaveStep,
+  onSaveBlock,
+  onAddBlock,
   onMoveBlock,
   onDeleteBlock,
   onPublish,
@@ -575,6 +717,7 @@ const GuideEditorView = ({
   detail: GuideDetail;
   guideDraft: GuideDraft;
   stepDrafts: Record<string, StepDraft>;
+  blockContentDrafts: Record<string, BlockContentDraft>;
   publishState: PublishState;
   locallyStalePublish: boolean;
   notice: string | null;
@@ -584,8 +727,11 @@ const GuideEditorView = ({
   guideId: string;
   onGuideDraftChange: (draft: GuideDraft) => void;
   onStepDraftChange: (stepId: string, draft: StepDraft) => void;
+  onBlockContentDraftChange: (blockId: string, draft: BlockContentDraft) => void;
   onSaveGuide: () => void;
   onSaveStep: (step: GuideStep) => void;
+  onSaveBlock: (block: GuideBlock) => void;
+  onAddBlock: (blockType: "step" | "header" | "tip" | "alert", afterBlock?: GuideBlock) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
   onPublish: () => void;
@@ -698,9 +844,13 @@ const GuideEditorView = ({
                   readOnly={readOnly}
                   busyAction={busyAction}
                   draft={block.step ? stepDrafts[block.step.id] : undefined}
+                  contentDraft={blockContentDrafts[block.id]}
                   sourceAsset={assetForBlock(block, assetsById)}
                   onDraftChange={onStepDraftChange}
+                  onContentDraftChange={onBlockContentDraftChange}
                   onSaveStep={onSaveStep}
+                  onSaveBlock={onSaveBlock}
+                  onAddBlock={onAddBlock}
                   onMoveBlock={onMoveBlock}
                   onDeleteBlock={onDeleteBlock}
                   onOpenScreenshot={setActiveScreenshotId}
@@ -884,9 +1034,13 @@ const GuideBlockEditor = ({
   readOnly,
   busyAction,
   draft,
+  contentDraft,
   sourceAsset,
   onDraftChange,
+  onContentDraftChange,
   onSaveStep,
+  onSaveBlock,
+  onAddBlock,
   onMoveBlock,
   onDeleteBlock,
   onOpenScreenshot,
@@ -898,9 +1052,13 @@ const GuideBlockEditor = ({
   readOnly: boolean;
   busyAction: string | null;
   draft?: StepDraft;
+  contentDraft?: BlockContentDraft;
   sourceAsset?: GuideSourceCaptureAsset;
   onDraftChange: (stepId: string, draft: StepDraft) => void;
+  onContentDraftChange: (blockId: string, draft: BlockContentDraft) => void;
   onSaveStep: (step: GuideStep) => void;
+  onSaveBlock: (block: GuideBlock) => void;
+  onAddBlock: (blockType: "step" | "header" | "tip" | "alert", afterBlock?: GuideBlock) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
   onOpenScreenshot: (imageId: string) => void;
@@ -908,6 +1066,7 @@ const GuideBlockEditor = ({
   const step = block.step;
   const actionLabel = step ? "step" : "block";
   const actionBusy = busyAction !== null;
+  const editableContentBlock = block.block_type === "header" || block.block_type === "tip" || block.block_type === "alert";
 
   return (
     <article className={styles.block}>
@@ -1003,9 +1162,100 @@ const GuideBlockEditor = ({
             </div>
           ) : null}
         </div>
+      ) : editableContentBlock && contentDraft ? (
+        <div className={styles.stepForm}>
+          <label className={styles.field}>
+            <span>{block.block_type === "header" ? "Header title" : `${block.block_type} title`}</span>
+            <input
+              aria-label={`${labelForBlockType(block.block_type)} title ${blockNumber}`}
+              value={contentDraft.title}
+              disabled={readOnly || busyAction === `block:${block.id}`}
+              onChange={(event) => onContentDraftChange(block.id, {
+                ...contentDraft,
+                title: event.target.value,
+              })}
+            />
+          </label>
+          {block.block_type !== "header" ? (
+            <label className={styles.field}>
+              <span>{labelForBlockType(block.block_type)} body</span>
+              <textarea
+                aria-label={`${labelForBlockType(block.block_type)} body ${blockNumber}`}
+                value={contentDraft.body}
+                disabled={readOnly || busyAction === `block:${block.id}`}
+                rows={4}
+                onChange={(event) => onContentDraftChange(block.id, {
+                  ...contentDraft,
+                  body: event.target.value,
+                })}
+              />
+            </label>
+          ) : null}
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            disabled={readOnly || busyAction === `block:${block.id}`}
+            onClick={() => onSaveBlock(block)}
+          >
+            Save {block.block_type} {blockNumber}
+          </button>
+        </div>
       ) : (
         <div className={styles.empty}>This block is not editable yet.</div>
       )}
+      {!readOnly ? (
+        <BlockInsertControls
+          blockNumber={blockNumber}
+          disabled={actionBusy}
+          onAdd={(blockType) => onAddBlock(blockType, block)}
+        />
+      ) : null}
     </article>
   );
 };
+
+const labelForBlockType = (blockType: GuideBlock["block_type"]) => {
+  switch (blockType) {
+    case "header":
+      return "Header";
+    case "tip":
+      return "Tip";
+    case "alert":
+      return "Alert";
+    case "step":
+      return "Step";
+    case "paragraph":
+      return "Paragraph";
+    case "capture":
+      return "Capture";
+    case "divider":
+      return "Divider";
+    case "gif":
+      return "GIF";
+  }
+};
+
+const BlockInsertControls = ({
+  blockNumber,
+  disabled,
+  onAdd,
+}: {
+  blockNumber: number;
+  disabled: boolean;
+  onAdd: (blockType: "step" | "header" | "tip" | "alert") => void;
+}) => (
+  <div className={styles.insertControls} aria-label={`Add block after block ${blockNumber}`}>
+    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("step")}>
+      Add step after block {blockNumber}
+    </button>
+    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("header")}>
+      Add header after block {blockNumber}
+    </button>
+    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("tip")}>
+      Add tip after block {blockNumber}
+    </button>
+    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("alert")}>
+      Add alert after block {blockNumber}
+    </button>
+  </div>
+);

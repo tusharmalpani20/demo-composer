@@ -7,12 +7,14 @@ import type { AuthResponse } from "../features/auth/types";
 import type {
   Guide,
   GuideBlock,
+  CreateGuideBlockInput,
   GuideDetail,
   GuidePublishResult,
   GuidePublishStatusResponse,
   GuideRevokePublishResult,
   GuideStep,
   PublicPublishLinkResponse,
+  UpdateGuideBlockInput,
 } from "../features/guide/types";
 import type { Project, ProjectStatus } from "../features/project/types";
 
@@ -303,6 +305,41 @@ export const updateGuideStep = async (
 ): Promise<{ guide_step: GuideStep }> => (
   requestJson<{ guide_step: GuideStep }>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/steps/${encodeURIComponent(stepId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
+export const createGuideBlock = async (
+  projectId: string,
+  guideId: string,
+  data: CreateGuideBlockInput
+): Promise<{ guide_blocks: GuideBlock[] }> => (
+  requestJson<{ guide_blocks: GuideBlock[] }>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
+export const updateGuideBlock = async (
+  projectId: string,
+  guideId: string,
+  blockId: string,
+  data: UpdateGuideBlockInput
+): Promise<{ guide_block: GuideBlock }> => (
+  requestJson<{ guide_block: GuideBlock }>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/${encodeURIComponent(blockId)}`,
     {
       method: "PATCH",
       headers: {

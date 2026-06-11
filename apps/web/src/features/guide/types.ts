@@ -1,6 +1,11 @@
 export type GuideStatus = "draft" | "archived";
 export type GuideBlockType = "step" | "header" | "paragraph" | "tip" | "alert" | "capture" | "divider" | "gif";
 
+export type GuideBlockContent = {
+  title?: string | null;
+  body?: string | null;
+};
+
 export type Guide = {
   id: string;
   organization_id: string;
@@ -43,6 +48,7 @@ export type GuideBlock = {
   source_capture_event_id: string | null;
   source_capture_asset_id: string | null;
   block_type: GuideBlockType;
+  content: GuideBlockContent | null;
   block_index: number;
   created_by_id: string;
   updated_by_id: string;
@@ -97,12 +103,30 @@ export type PublishedGuideSnapshotBlock = {
   id: string;
   block_type: GuideBlockType;
   block_index: number;
+  content?: GuideBlockContent | null;
   step: {
     id: string;
     title: string;
     body: string | null;
   } | null;
   source_asset: PublishedGuideSnapshotAsset | null;
+};
+
+export type CreateGuideBlockInput = {
+  block_type: "step" | "header" | "tip" | "alert";
+  position?: {
+    placement: "before" | "after";
+    guide_block_id: string;
+  } | null;
+  step?: {
+    title?: string;
+    body?: string | null;
+  } | null;
+  content?: GuideBlockContent | null;
+};
+
+export type UpdateGuideBlockInput = {
+  content?: GuideBlockContent | null;
 };
 
 export type PublishedGuideSnapshot = {

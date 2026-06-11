@@ -32,6 +32,17 @@ const nullable_string = (value: unknown): string | null => (
   typeof value === "string" ? value : null
 );
 
+const parse_block_content = (value: unknown) => {
+  if (!is_record(value)) {
+    return null;
+  }
+
+  return {
+    title: nullable_string(value.title),
+    body: nullable_string(value.body),
+  };
+};
+
 const number_or_zero = (value: unknown) => (
   typeof value === "number" && Number.isFinite(value) ? value : 0
 );
@@ -86,6 +97,7 @@ const parse_block = (value: unknown): PublishedGuideSnapshotBlock | null => {
     id: value.id,
     block_type: value.block_type as PublishedGuideSnapshotBlock["block_type"],
     block_index: number_or_zero(value.block_index),
+    content: parse_block_content(value.content),
     step,
     source_asset: parse_source_asset(value.source_asset),
   };
@@ -263,11 +275,11 @@ const PublicGuideReaderView = ({
           {sortedBlocks.length === 0 ? (
             <div className={styles.empty}>This published guide does not have any blocks yet.</div>
           ) : (
-            sortedBlocks.map((block, index) => (
+            sortedBlocks.map((block) => (
               <PublicGuideBlock
-                key={`${block.id}:${index}`}
+                key={block.id}
                 block={block}
-                stepNumber={index + 1}
+                stepNumber={step_number_for_block(sortedBlocks, block)}
                 onOpenScreenshot={setActiveScreenshotId}
               />
             ))
@@ -286,14 +298,14 @@ const PublicGuideReaderView = ({
 
 const screenshot_images_from_blocks = (
   blocks: PublishedGuideSnapshotBlock[]
-): GuideScreenshotViewerImage[] => blocks.flatMap((block, index) => {
+): GuideScreenshotViewerImage[] => blocks.flatMap((block) => {
   const asset = block.source_asset;
 
   if (block.block_type !== "step" || !block.step || !asset) {
     return [];
   }
 
-  const stepNumber = index + 1;
+  const stepNumber = step_number_for_block(blocks, block);
 
   return [{
     id: screenshot_viewer_image_id(block, asset),
@@ -314,6 +326,23 @@ const PublicGuideBlock = ({
   onOpenScreenshot: (imageId: string) => void;
 }) => {
   const asset = block.source_asset;
+
+  if (block.block_type === "header" && block.content?.title) {
+    return (
+      <section className={styles.callout}>
+        <h2 className={styles.calloutTitle}>{block.content.title}</h2>
+      </section>
+    );
+  }
+
+  if ((block.block_type === "tip" || block.block_type === "alert") && block.content) {
+    return (
+      <aside className={block.block_type === "alert" ? styles.alert : styles.tip}>
+        {block.content.title ? <h3 className={styles.calloutTitle}>{block.content.title}</h3> : null}
+        {block.content.body ? <p className={styles.stepBody}>{block.content.body}</p> : null}
+      </aside>
+    );
+  }
 
   if (block.block_type !== "step" || !block.step) {
     return (
@@ -352,3 +381,9 @@ const PublicGuideBlock = ({
     </article>
   );
 };
+
+const step_number_for_block = (blocks: PublishedGuideSnapshotBlock[], target: PublishedGuideSnapshotBlock) => (
+  blocks
+    .filter((block) => block.block_type === "step" && block.block_index <= target.block_index)
+    .length
+);

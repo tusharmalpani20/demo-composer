@@ -30,6 +30,7 @@ const guideDetail: GuideDetail = {
       source_capture_event_id: "event_2",
       source_capture_asset_id: "asset_2",
       block_type: "step",
+      content: null,
       block_index: 2,
       created_by_id: "org_user_1",
       updated_by_id: "org_user_1",
@@ -63,6 +64,7 @@ const guideDetail: GuideDetail = {
       source_capture_event_id: "event_1",
       source_capture_asset_id: "asset_1",
       block_type: "step",
+      content: null,
       block_index: 1,
       created_by_id: "org_user_1",
       updated_by_id: "org_user_1",
@@ -169,6 +171,8 @@ const renderPage = (overrides: {
   loadDetail?: () => Promise<GuideDetail>;
   saveGuide?: GuideEditorPageProps["saveGuide"];
   saveStep?: GuideEditorPageProps["saveStep"];
+  createBlock?: GuideEditorPageProps["createBlock"];
+  saveBlock?: GuideEditorPageProps["saveBlock"];
   reorderBlocks?: GuideEditorPageProps["reorderBlocks"];
   removeBlock?: GuideEditorPageProps["removeBlock"];
   loadPublishStatus?: GuideEditorPageProps["loadPublishStatus"];
@@ -202,6 +206,65 @@ const renderPage = (overrides: {
       },
     };
   });
+  const createBlock = overrides.createBlock ?? vi.fn(async (_projectId, _guideId, data) => ({
+    guide_blocks: [
+      ...guideDetail.guide_blocks,
+      {
+        id: "block_tip",
+        organization_id: "organization_1",
+        project_id: "project_1",
+        guide_id: "guide_1",
+        source_capture_session_id: null,
+        source_capture_event_id: null,
+        source_capture_asset_id: null,
+        block_type: data.block_type,
+        content: data.content ?? null,
+        block_index: 3,
+        created_by_id: "org_user_1",
+        updated_by_id: "org_user_1",
+        version: 1,
+        created_at: "2026-06-05T10:03:00.000Z",
+        updated_at: "2026-06-05T10:03:00.000Z",
+        step: data.block_type === "step" ? {
+          id: "step_new",
+          organization_id: "organization_1",
+          project_id: "project_1",
+          guide_id: "guide_1",
+          guide_block_id: "block_tip",
+          source_capture_session_id: null,
+          source_capture_event_id: null,
+          source_capture_asset_id: null,
+          title: data.step?.title ?? "New step",
+          body: data.step?.body ?? null,
+          created_by_id: "org_user_1",
+          updated_by_id: "org_user_1",
+          version: 1,
+          created_at: "2026-06-05T10:03:00.000Z",
+          updated_at: "2026-06-05T10:03:00.000Z",
+        } : null,
+      },
+    ],
+  }));
+  const saveBlock = overrides.saveBlock ?? vi.fn(async (_projectId, _guideId, blockId, data) => ({
+    guide_block: {
+      id: blockId,
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: null,
+      source_capture_event_id: null,
+      source_capture_asset_id: null,
+      block_type: "tip" as const,
+      content: data.content ?? null,
+      block_index: 3,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 2,
+      created_at: "2026-06-05T10:03:00.000Z",
+      updated_at: "2026-06-05T10:04:00.000Z",
+      step: null,
+    },
+  }));
   const reorderBlocks = overrides.reorderBlocks ?? vi.fn(async (
     _projectId: string,
     _guideId: string,
@@ -239,6 +302,8 @@ const renderPage = (overrides: {
       loadPublishStatus={loadPublishStatus}
       saveGuide={saveGuide}
       saveStep={saveStep}
+      createBlock={createBlock}
+      saveBlock={saveBlock}
       reorderBlocks={reorderBlocks}
       removeBlock={removeBlock}
       publishCurrentGuide={publishCurrentGuide}
@@ -252,6 +317,8 @@ const renderPage = (overrides: {
     loadPublishStatus,
     saveGuide,
     saveStep,
+    createBlock,
+    saveBlock,
     reorderBlocks,
     removeBlock,
     publishCurrentGuide,
@@ -388,6 +455,109 @@ describe("GuideEditorPage", () => {
 
     await waitFor(() => expect(publishCurrentGuide).toHaveBeenCalledWith("project_1", "guide_1"));
     await waitFor(() => expect(screen.queryByText("Draft has changes not yet published.")).not.toBeInTheDocument());
+  });
+
+  it("adds and edits non-step guide blocks from the editor", async () => {
+    const createBlock = vi.fn(async () => ({
+      guide_blocks: [
+        {
+          ...guideDetail.guide_blocks[1]!,
+          block_index: 1,
+        },
+        {
+          id: "block_tip",
+          organization_id: "organization_1",
+          project_id: "project_1",
+          guide_id: "guide_1",
+          source_capture_session_id: null,
+          source_capture_event_id: null,
+          source_capture_asset_id: null,
+          block_type: "tip" as const,
+          content: {
+            title: null,
+            body: "Add a helpful tip.",
+          },
+          block_index: 2,
+          created_by_id: "org_user_1",
+          updated_by_id: "org_user_1",
+          version: 1,
+          created_at: "2026-06-05T10:03:00.000Z",
+          updated_at: "2026-06-05T10:03:00.000Z",
+          step: null,
+        },
+        {
+          ...guideDetail.guide_blocks[0]!,
+          block_index: 3,
+        },
+      ],
+    }));
+    const saveBlock = vi.fn(async (_projectId, _guideId, blockId, data) => ({
+      guide_block: {
+        id: blockId,
+        organization_id: "organization_1",
+        project_id: "project_1",
+        guide_id: "guide_1",
+        source_capture_session_id: null,
+        source_capture_event_id: null,
+        source_capture_asset_id: null,
+        block_type: "tip" as const,
+        content: data.content ?? null,
+        block_index: 2,
+        created_by_id: "org_user_1",
+        updated_by_id: "org_user_1",
+        version: 2,
+        created_at: "2026-06-05T10:03:00.000Z",
+        updated_at: "2026-06-05T10:04:00.000Z",
+        step: null,
+      },
+    }));
+
+    renderPage({ createBlock, saveBlock });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Add tip after block 1" }));
+
+    await waitFor(() => expect(createBlock).toHaveBeenCalledWith("project_1", "guide_1", {
+      block_type: "tip",
+      position: {
+        placement: "after",
+        guide_block_id: "block_1",
+      },
+      content: {
+        body: "Add a helpful tip.",
+      },
+    }));
+    expect(await screen.findByText("Block added.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tip body 2")).toHaveValue("Add a helpful tip.");
+
+    fireEvent.change(screen.getByLabelText("Tip title 2"), {
+      target: { value: "Before you continue" },
+    });
+    fireEvent.change(screen.getByLabelText("Tip body 2"), {
+      target: { value: "Confirm the department name." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save tip 2" }));
+
+    await waitFor(() => expect(saveBlock).toHaveBeenCalledWith("project_1", "guide_1", "block_tip", {
+      content: {
+        title: "Before you continue",
+        body: "Confirm the department name.",
+      },
+    }));
+    expect(screen.getByText("Block saved.")).toBeInTheDocument();
+  });
+
+  it("marks a published guide stale after inserting a block", async () => {
+    renderPage({
+      loadPublishStatus: async () => publishedStatus(1),
+    });
+
+    expect(await screen.findByText("Public guide is live")).toBeInTheDocument();
+    expect(screen.queryByText("Draft has changes not yet published.")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add header after block 1" }));
+
+    expect(await screen.findByText("Draft has changes not yet published.")).toBeInTheDocument();
   });
 
   it("shows publish-panel busy labels without locking guide editing", async () => {
@@ -570,6 +740,9 @@ describe("GuideEditorPage", () => {
             ...guideDetail.guide_blocks[0]!,
             id: "block_header_1",
             block_type: "header",
+            content: {
+              title: "Setup section",
+            },
             block_index: 1,
             source_capture_asset_id: null,
             step: null,
@@ -579,7 +752,8 @@ describe("GuideEditorPage", () => {
     });
 
     expect(await screen.findByText("header")).toBeInTheDocument();
-    expect(screen.getByText("This block is not editable yet.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Header title 1")).toHaveValue("Setup section");
+    expect(screen.getByRole("button", { name: "Save header 1" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete block 1" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Delete step 1" })).not.toBeInTheDocument();
   });

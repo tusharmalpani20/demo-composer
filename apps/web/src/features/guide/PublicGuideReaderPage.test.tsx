@@ -32,6 +32,7 @@ const publicGuideResponse: PublicPublishLinkResponse = {
         {
           id: "block_2",
           block_type: "step",
+          content: null,
           block_index: 2,
           step: {
             id: "step_2",
@@ -57,6 +58,7 @@ const publicGuideResponse: PublicPublishLinkResponse = {
         {
           id: "block_1",
           block_type: "step",
+          content: null,
           block_index: 1,
           step: {
             id: "step_1",
@@ -82,6 +84,9 @@ const publicGuideResponse: PublicPublishLinkResponse = {
         {
           id: "block_3",
           block_type: "header",
+          content: {
+            title: "Department fields",
+          },
           block_index: 3,
           step: null,
           source_asset: null,
@@ -116,12 +121,12 @@ describe("PublicGuideReaderPage", () => {
     expect(screen.getByText("Set up departments from the list view.")).toBeInTheDocument();
     expect(screen.getByText("Published version 1")).toBeInTheDocument();
     expect(screen.getByText("Published Jun 10, 2026, 12:00 AM")).toBeInTheDocument();
-    expect(screen.getAllByText(/^[123]$/).map((node) => node.textContent)).toEqual(["1", "2", "3"]);
+    expect(screen.getAllByText(/^[12]$/).map((node) => node.textContent)).toEqual(["1", "2"]);
     expect(screen.getByRole("heading", { name: "Navigate to Department List" })).toBeInTheDocument();
     expect(screen.getByText("Open the Department module.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Click Add Department" })).toBeInTheDocument();
     expect(screen.getByText("Use the primary action in the list view.")).toBeInTheDocument();
-    expect(screen.getByText("Unsupported guide block: header")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Department fields" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Department List" })).toHaveAttribute(
       "src",
       "/api/v1/public/publish-links/abc123/assets/asset_1/file"

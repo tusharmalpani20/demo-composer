@@ -203,11 +203,11 @@ const GuidePreviewView = ({
         {sortedBlocks.length === 0 ? (
           <div className={styles.empty}>This guide does not have any blocks yet.</div>
         ) : (
-          sortedBlocks.map((block, index) => (
+          sortedBlocks.map((block) => (
             <GuidePreviewBlock
               key={block.id}
               block={block}
-              stepNumber={index + 1}
+              stepNumber={stepNumberForBlock(sortedBlocks, block)}
               asset={assetForBlock(block, assetsById)}
               onOpenScreenshot={setActiveScreenshotId}
             />
@@ -235,14 +235,14 @@ const assetForBlock = (
 const screenshotImagesFromBlocks = (
   blocks: GuideBlock[],
   assetsById: Map<string, GuideSourceCaptureAsset>
-): GuideScreenshotViewerImage[] => blocks.flatMap((block, index) => {
+): GuideScreenshotViewerImage[] => blocks.flatMap((block) => {
   const asset = assetForBlock(block, assetsById);
 
   if (block.block_type !== "step" || !block.step || !asset) {
     return [];
   }
 
-  const stepNumber = index + 1;
+  const stepNumber = stepNumberForBlock(blocks, block);
 
   return [{
     id: screenshotViewerImageId(block, asset),
@@ -264,6 +264,23 @@ const GuidePreviewBlock = ({
   asset?: GuideSourceCaptureAsset;
   onOpenScreenshot: (imageId: string) => void;
 }) => {
+  if (block.block_type === "header" && block.content?.title) {
+    return (
+      <section className={styles.callout}>
+        <h2 className={styles.calloutTitle}>{block.content.title}</h2>
+      </section>
+    );
+  }
+
+  if ((block.block_type === "tip" || block.block_type === "alert") && block.content) {
+    return (
+      <aside className={block.block_type === "alert" ? styles.alert : styles.tip}>
+        {block.content.title ? <h3 className={styles.calloutTitle}>{block.content.title}</h3> : null}
+        {block.content.body ? <p className={styles.stepBody}>{block.content.body}</p> : null}
+      </aside>
+    );
+  }
+
   if (block.block_type !== "step" || !block.step) {
     return (
       <article className={styles.step}>
@@ -301,3 +318,9 @@ const GuidePreviewBlock = ({
     </article>
   );
 };
+
+const stepNumberForBlock = (blocks: GuideBlock[], target: GuideBlock) => (
+  blocks
+    .filter((block) => block.block_type === "step" && block.block_index <= target.block_index)
+    .length
+);
