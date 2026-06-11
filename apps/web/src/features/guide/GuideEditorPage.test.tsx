@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import { GuideEditorPage } from "./GuideEditorPage";
 import type { GuideEditorPageProps } from "./GuideEditorPage";
-import type { GuideDetail } from "./types";
+import type { GuideDetail, GuidePublishStatusResponse } from "./types";
 
 const guideDetail: GuideDetail = {
   guide: {
@@ -128,6 +128,34 @@ const guideDetail: GuideDetail = {
   ],
 };
 
+const unpublishedStatus: GuidePublishStatusResponse = {
+  publish_link: null,
+  published_artifact: null,
+};
+
+const publishedStatus = (versionNumber = 1): GuidePublishStatusResponse => ({
+  publish_link: {
+    id: "publish_link_1",
+    artifact_type: "guide",
+    artifact_id: "guide_1",
+    published_artifact_id: `published_artifact_${versionNumber}`,
+    slug: "abc123",
+    visibility: "public",
+    status: "active",
+    published_at: "2026-06-11T00:00:00.000Z",
+    revoked_at: null,
+    public_url: "/p/abc123",
+  },
+  published_artifact: {
+    id: `published_artifact_${versionNumber}`,
+    artifact_type: "guide",
+    artifact_id: "guide_1",
+    version_number: versionNumber,
+    title: "Department guide",
+    published_at: "2026-06-11T00:00:00.000Z",
+  },
+});
+
 const renderPage = (overrides: {
   detail?: GuideDetail;
   loadDetail?: () => Promise<GuideDetail>;
@@ -135,8 +163,13 @@ const renderPage = (overrides: {
   saveStep?: GuideEditorPageProps["saveStep"];
   reorderBlocks?: GuideEditorPageProps["reorderBlocks"];
   removeBlock?: GuideEditorPageProps["removeBlock"];
+  loadPublishStatus?: GuideEditorPageProps["loadPublishStatus"];
+  publishCurrentGuide?: GuideEditorPageProps["publishCurrentGuide"];
+  revokePublishLink?: GuideEditorPageProps["revokePublishLink"];
+  copyText?: GuideEditorPageProps["copyText"];
 } = {}) => {
   const loadDetail = overrides.loadDetail ?? vi.fn(async () => overrides.detail ?? guideDetail);
+  const loadPublishStatus = overrides.loadPublishStatus ?? vi.fn(async () => unpublishedStatus);
   const saveGuide = overrides.saveGuide ?? vi.fn(async (_projectId, _guideId, data) => ({
     guide: {
       ...(overrides.detail ?? guideDetail).guide,
@@ -180,25 +213,48 @@ const renderPage = (overrides: {
     }),
   }));
   const removeBlock = overrides.removeBlock ?? vi.fn(async () => undefined);
+  const publishCurrentGuide = overrides.publishCurrentGuide ?? vi.fn(async () => publishedStatus());
+  const revokePublishLink = overrides.revokePublishLink ?? vi.fn(async () => ({
+    publish_link: {
+      id: "publish_link_1",
+      status: "revoked" as const,
+      revoked_at: "2026-06-11T01:00:00.000Z",
+    },
+  }));
+  const copyText = overrides.copyText ?? vi.fn(async () => undefined);
 
   render(
     <GuideEditorPage
       projectId="project_1"
       guideId="guide_1"
       loadDetail={loadDetail}
+      loadPublishStatus={loadPublishStatus}
       saveGuide={saveGuide}
       saveStep={saveStep}
       reorderBlocks={reorderBlocks}
       removeBlock={removeBlock}
+      publishCurrentGuide={publishCurrentGuide}
+      revokePublishLink={revokePublishLink}
+      copyText={copyText}
     />
   );
 
-  return { loadDetail, saveGuide, saveStep, reorderBlocks, removeBlock };
+  return {
+    loadDetail,
+    loadPublishStatus,
+    saveGuide,
+    saveStep,
+    reorderBlocks,
+    removeBlock,
+    publishCurrentGuide,
+    revokePublishLink,
+    copyText,
+  };
 };
 
 describe("GuideEditorPage", () => {
   it("renders guide metadata and editable blocks in block order", async () => {
-    const { loadDetail } = renderPage();
+    const { loadDetail, loadPublishStatus } = renderPage();
 
     expect(screen.getByText("Loading guide...")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
@@ -227,7 +283,156 @@ describe("GuideEditorPage", () => {
     expect(screen.queryByText("Screenshot source: asset_1")).not.toBeInTheDocument();
     expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
     expect(loadDetail).toHaveBeenCalledWith("project_1", "guide_1");
+    expect(loadPublishStatus).toHaveBeenCalledWith("project_1", "guide_1");
     expect(screen.queryByText("organization_1")).not.toBeInTheDocument();
+  });
+
+  it("loads unpublished publish status and publishes a guide", async () => {
+    const { publishCurrentGuide } = renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Publishing" })).toBeInTheDocument();
+    expect(screen.getByText("This guide is not published.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish guide" }));
+
+    await waitFor(() => expect(publishCurrentGuide).toHaveBeenCalledWith("project_1", "guide_1"));
+    expect(await screen.findByText("Published version 1")).toBeInTheDocument();
+    expect(screen.getByText("Published Jun 11, 2026, 12:00 AM")).toBeInTheDocument();
+    expect(screen.getByText("/p/abc123")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open public guide" })).toHaveAttribute("href", "/p/abc123");
+    expect(screen.getByText("Guide published.")).toBeInTheDocument();
+  });
+
+  it("copies, republishes, and revokes an active public guide link", async () => {
+    const copyText = vi.fn(async () => undefined);
+    const publishCurrentGuide = vi.fn()
+      .mockResolvedValueOnce(publishedStatus(2));
+    const { revokePublishLink } = renderPage({
+      loadPublishStatus: async () => publishedStatus(1),
+      publishCurrentGuide,
+      copyText,
+    });
+
+    expect(await screen.findByText("Published version 1")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
+    await waitFor(() => expect(copyText).toHaveBeenCalledWith("http://localhost:3000/p/abc123"));
+    expect(screen.getByText("Public link copied.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Republish" }));
+    await waitFor(() => expect(publishCurrentGuide).toHaveBeenCalledWith("project_1", "guide_1"));
+    expect(await screen.findByText("Published version 2")).toBeInTheDocument();
+    expect(screen.getByText("/p/abc123")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Revoke link" }));
+    await waitFor(() => expect(revokePublishLink).toHaveBeenCalledWith("project_1", "guide_1"));
+    expect(await screen.findByText("This guide is not published.")).toBeInTheDocument();
+    expect(screen.getByText("Public link revoked.")).toBeInTheDocument();
+  });
+
+  it("shows a stable notice when public link copy fails", async () => {
+    const copyText = vi.fn(async () => {
+      throw new Error("clipboard blocked");
+    });
+    renderPage({
+      loadPublishStatus: async () => publishedStatus(1),
+      copyText,
+    });
+
+    expect(await screen.findByText("Published version 1")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
+
+    await waitFor(() => expect(copyText).toHaveBeenCalledWith("http://localhost:3000/p/abc123"));
+    expect(screen.getByText("Could not copy public link.")).toBeInTheDocument();
+    expect(screen.getByText("/p/abc123")).toBeInTheDocument();
+  });
+
+  it("keeps the editor usable when publish status fails to load", async () => {
+    const saveGuide = vi.fn(async (_projectId, _guideId, data) => ({
+      guide: {
+        ...guideDetail.guide,
+        ...data,
+        description: data.description ?? null,
+      },
+    }));
+
+    renderPage({
+      saveGuide,
+      loadPublishStatus: async () => {
+        throw new Error("status failed");
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(screen.getByText("Could not load publishing status.")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Guide title"), {
+      target: { value: "Updated department guide" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save guide" }));
+
+    await waitFor(() => expect(saveGuide).toHaveBeenCalledWith("project_1", "guide_1", {
+      title: "Updated department guide",
+      description: "Set up departments from the list view.",
+    }));
+  });
+
+  it("retries publish status after a load failure", async () => {
+    const loadPublishStatus = vi.fn()
+      .mockRejectedValueOnce(new Error("status failed"))
+      .mockResolvedValueOnce(publishedStatus(1));
+
+    renderPage({ loadPublishStatus });
+
+    expect(await screen.findByText("Could not load publishing status.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => expect(loadPublishStatus).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Published version 1")).toBeInTheDocument();
+  });
+
+  it("shows publish validation errors and disables publish controls for archived guides", async () => {
+    const publishCurrentGuide = vi.fn(async () => {
+      throw new ApiClientError({
+        kind: "validation",
+        status: 400,
+        type: "guide_has_no_publishable_blocks",
+        message: "Guide has no publishable blocks",
+      });
+    });
+    const archivedDetail = {
+      ...guideDetail,
+      guide: {
+        ...guideDetail.guide,
+        status: "archived" as const,
+      },
+    };
+    const { rerender } = render(
+      <GuideEditorPage
+        projectId="project_1"
+        guideId="guide_1"
+        loadDetail={async () => guideDetail}
+        loadPublishStatus={async () => unpublishedStatus}
+        publishCurrentGuide={publishCurrentGuide}
+      />
+    );
+
+    expect(await screen.findByText("This guide is not published.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Publish guide" }));
+    expect(await screen.findByText("Guide has no publishable blocks.")).toBeInTheDocument();
+
+    rerender(
+      <GuideEditorPage
+        projectId="project_1"
+        guideId="guide_1"
+        loadDetail={async () => archivedDetail}
+        loadPublishStatus={async () => unpublishedStatus}
+        publishCurrentGuide={publishCurrentGuide}
+      />
+    );
+
+    expect(await screen.findByText("Archived guides are read-only.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Publish guide" })).toBeDisabled();
   });
 
   it("does not render broken screenshots or raw IDs when source assets are missing", async () => {

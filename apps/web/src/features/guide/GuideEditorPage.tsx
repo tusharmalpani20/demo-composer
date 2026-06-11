@@ -3,8 +3,11 @@ import {
   ApiClientError,
   deleteGuideBlock,
   getGuideDetail,
+  getGuidePublishStatus,
+  publishGuide,
   reorderGuideBlocks,
   resolveApiAssetUrl,
+  revokeGuidePublishLink,
   updateGuide,
   updateGuideStep,
 } from "../../lib/api";
@@ -14,7 +17,15 @@ import {
   GuideScreenshotViewer,
   type GuideScreenshotViewerImage,
 } from "./GuideScreenshotViewer";
-import type { GuideBlock, GuideDetail, GuideSourceCaptureAsset, GuideStep } from "./types";
+import type {
+  GuideBlock,
+  GuideDetail,
+  GuidePublishResult,
+  GuidePublishStatusResponse,
+  GuideRevokePublishResult,
+  GuideSourceCaptureAsset,
+  GuideStep,
+} from "./types";
 import styles from "./GuideEditorPage.module.css";
 
 type LoadState =
@@ -34,10 +45,19 @@ type StepDraft = {
   body: string;
 };
 
+type PublishState =
+  | { status: "loading" }
+  | { status: "loaded"; response: GuidePublishStatusResponse }
+  | { status: "error" };
+
 export type GuideEditorPageProps = {
   projectId: string;
   guideId: string;
   loadDetail?: (projectId: string, guideId: string) => Promise<GuideDetail>;
+  loadPublishStatus?: (projectId: string, guideId: string) => Promise<GuidePublishStatusResponse>;
+  publishCurrentGuide?: (projectId: string, guideId: string) => Promise<GuidePublishResult>;
+  revokePublishLink?: (projectId: string, guideId: string) => Promise<GuideRevokePublishResult>;
+  copyText?: (text: string) => Promise<void>;
   saveGuide?: typeof updateGuide;
   saveStep?: typeof updateGuideStep;
   reorderBlocks?: typeof reorderGuideBlocks;
@@ -81,6 +101,36 @@ const screenshotViewerImageId = (block: GuideBlock, asset: GuideSourceCaptureAss
   `${block.id}:${asset.id}`
 );
 
+const defaultCopyText = async (text: string) => {
+  if (!navigator.clipboard?.writeText) {
+    throw new Error("Clipboard API is unavailable");
+  }
+
+  await navigator.clipboard.writeText(text);
+};
+
+const publicGuideUrl = (publicUrl: string) => {
+  if (publicUrl.startsWith("/")) {
+    return new URL(publicUrl, window.location.origin).toString();
+  }
+
+  return publicUrl;
+};
+
+const publishErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof ApiClientError) {
+    if (error.type === "guide_not_publishable") {
+      return "Guide is not publishable.";
+    }
+
+    if (error.type === "guide_has_no_publishable_blocks") {
+      return "Guide has no publishable blocks.";
+    }
+  }
+
+  return fallback;
+};
+
 const assetForBlock = (
   block: GuideBlock,
   assetsById: Map<string, GuideSourceCaptureAsset>
@@ -112,6 +162,10 @@ export const GuideEditorPage = ({
   projectId,
   guideId,
   loadDetail = getGuideDetail,
+  loadPublishStatus = getGuidePublishStatus,
+  publishCurrentGuide = publishGuide,
+  revokePublishLink = revokeGuidePublishLink,
+  copyText = defaultCopyText,
   saveGuide = updateGuide,
   saveStep = updateGuideStep,
   reorderBlocks = reorderGuideBlocks,
@@ -121,11 +175,14 @@ export const GuideEditorPage = ({
   navigate,
 }: GuideEditorPageProps) => {
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [publishState, setPublishState] = useState<PublishState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
+  const [publishReloadKey, setPublishReloadKey] = useState(0);
   const [guideDraft, setGuideDraft] = useState<GuideDraft>({ title: "", description: "" });
   const [stepDrafts, setStepDrafts] = useState<Record<string, StepDraft>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [publishBusyAction, setPublishBusyAction] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -153,7 +210,29 @@ export const GuideEditorPage = ({
     };
   }, [projectId, guideId, loadDetail, reloadKey]);
 
+  useEffect(() => {
+    let active = true;
+    setPublishState({ status: "loading" });
+
+    loadPublishStatus(projectId, guideId)
+      .then((response) => {
+        if (active) {
+          setPublishState({ status: "loaded", response });
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setPublishState({ status: "error" });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [projectId, guideId, loadPublishStatus, publishReloadKey]);
+
   const reload = () => setReloadKey((key) => key + 1);
+  const reloadPublishStatus = () => setPublishReloadKey((key) => key + 1);
 
   const markNotEditable = () => {
     setNotice("Archived guides are read-only.");
@@ -167,6 +246,56 @@ export const GuideEditorPage = ({
     }
 
     setNotice(fallback);
+  };
+
+  const publishCurrent = async () => {
+    setPublishBusyAction("publish");
+    setNotice(null);
+
+    try {
+      const response = await publishCurrentGuide(projectId, guideId);
+      setPublishState({ status: "loaded", response });
+      setNotice("Guide published.");
+    } catch (error: unknown) {
+      setNotice(publishErrorMessage(error, "Could not publish guide."));
+    } finally {
+      setPublishBusyAction(null);
+    }
+  };
+
+  const revokeCurrent = async () => {
+    setPublishBusyAction("revoke");
+    setNotice(null);
+
+    try {
+      await revokePublishLink(projectId, guideId);
+      setPublishState({
+        status: "loaded",
+        response: {
+          publish_link: null,
+          published_artifact: null,
+        },
+      });
+      setNotice("Public link revoked.");
+    } catch (error: unknown) {
+      setNotice(publishErrorMessage(error, "Could not revoke public link."));
+    } finally {
+      setPublishBusyAction(null);
+    }
+  };
+
+  const copyCurrent = async (publicUrl: string) => {
+    setPublishBusyAction("copy");
+    setNotice(null);
+
+    try {
+      await copyText(publicGuideUrl(publicUrl));
+      setNotice("Public link copied.");
+    } catch {
+      setNotice("Could not copy public link.");
+    } finally {
+      setPublishBusyAction(null);
+    }
   };
 
   const patchDetail = (patch: (detail: GuideDetail) => GuideDetail) => {
@@ -343,8 +472,10 @@ export const GuideEditorPage = ({
       detail={state.detail}
       guideDraft={guideDraft}
       stepDrafts={stepDrafts}
+      publishState={publishState}
       notice={notice}
       busyAction={busyAction}
+      publishBusyAction={publishBusyAction}
       projectId={projectId}
       guideId={guideId}
       onGuideDraftChange={setGuideDraft}
@@ -353,6 +484,10 @@ export const GuideEditorPage = ({
       onSaveStep={saveStepDraft}
       onMoveBlock={moveBlock}
       onDeleteBlock={deleteBlock}
+      onPublish={publishCurrent}
+      onRevokePublish={revokeCurrent}
+      onCopyPublicLink={copyCurrent}
+      onRetryPublishStatus={reloadPublishStatus}
       performLogout={performLogout}
       navigate={navigate}
     />
@@ -382,8 +517,10 @@ const GuideEditorView = ({
   detail,
   guideDraft,
   stepDrafts,
+  publishState,
   notice,
   busyAction,
+  publishBusyAction,
   projectId,
   guideId,
   onGuideDraftChange,
@@ -392,14 +529,20 @@ const GuideEditorView = ({
   onSaveStep,
   onMoveBlock,
   onDeleteBlock,
+  onPublish,
+  onRevokePublish,
+  onCopyPublicLink,
+  onRetryPublishStatus,
   performLogout,
   navigate,
 }: {
   detail: GuideDetail;
   guideDraft: GuideDraft;
   stepDrafts: Record<string, StepDraft>;
+  publishState: PublishState;
   notice: string | null;
   busyAction: string | null;
+  publishBusyAction: string | null;
   projectId: string;
   guideId: string;
   onGuideDraftChange: (draft: GuideDraft) => void;
@@ -408,6 +551,10 @@ const GuideEditorView = ({
   onSaveStep: (step: GuideStep) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
+  onPublish: () => void;
+  onRevokePublish: () => void;
+  onCopyPublicLink: (publicUrl: string) => void;
+  onRetryPublishStatus: () => void;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
 }) => {
@@ -450,40 +597,51 @@ const GuideEditorView = ({
       </section>
 
       <div className={styles.content}>
-        <section className={styles.panel} aria-labelledby="metadata-heading">
-          <h2 className={styles.sectionTitle} id="metadata-heading">Guide metadata</h2>
-          <label className={styles.field}>
-            <span>Guide title</span>
-            <input
-              value={guideDraft.title}
+        <div className={styles.panelStack}>
+          <PublishPanel
+            state={publishState}
+            readOnly={readOnly}
+            busyAction={publishBusyAction}
+            onPublish={onPublish}
+            onRevoke={onRevokePublish}
+            onCopyPublicLink={onCopyPublicLink}
+            onRetry={onRetryPublishStatus}
+          />
+          <section className={styles.panel} aria-labelledby="metadata-heading">
+            <h2 className={styles.sectionTitle} id="metadata-heading">Guide metadata</h2>
+            <label className={styles.field}>
+              <span>Guide title</span>
+              <input
+                value={guideDraft.title}
+                disabled={readOnly || busyAction === "guide"}
+                onChange={(event) => onGuideDraftChange({
+                  ...guideDraft,
+                  title: event.target.value,
+                })}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Guide description</span>
+              <textarea
+                value={guideDraft.description}
+                disabled={readOnly || busyAction === "guide"}
+                rows={5}
+                onChange={(event) => onGuideDraftChange({
+                  ...guideDraft,
+                  description: event.target.value,
+                })}
+              />
+            </label>
+            <button
+              className={styles.primaryButton}
+              type="button"
               disabled={readOnly || busyAction === "guide"}
-              onChange={(event) => onGuideDraftChange({
-                ...guideDraft,
-                title: event.target.value,
-              })}
-            />
-          </label>
-          <label className={styles.field}>
-            <span>Guide description</span>
-            <textarea
-              value={guideDraft.description}
-              disabled={readOnly || busyAction === "guide"}
-              rows={5}
-              onChange={(event) => onGuideDraftChange({
-                ...guideDraft,
-                description: event.target.value,
-              })}
-            />
-          </label>
-          <button
-            className={styles.primaryButton}
-            type="button"
-            disabled={readOnly || busyAction === "guide"}
-            onClick={onSaveGuide}
-          >
-            Save guide
-          </button>
-        </section>
+              onClick={onSaveGuide}
+            >
+              Save guide
+            </button>
+          </section>
+        </div>
 
         <section className={styles.panel} aria-labelledby="blocks-heading">
           <h2 className={styles.sectionTitle} id="blocks-heading">Guide blocks</h2>
@@ -520,6 +678,117 @@ const GuideEditorView = ({
         onClose={() => setActiveScreenshotId(null)}
       />
     </PortalShell>
+  );
+};
+
+const formatPublishedAt = (value: string) => {
+  const date = new Date(value);
+
+  if (!Number.isFinite(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  }).format(date);
+};
+
+const PublishPanel = ({
+  state,
+  readOnly,
+  busyAction,
+  onPublish,
+  onRevoke,
+  onCopyPublicLink,
+  onRetry,
+}: {
+  state: PublishState;
+  readOnly: boolean;
+  busyAction: string | null;
+  onPublish: () => void;
+  onRevoke: () => void;
+  onCopyPublicLink: (publicUrl: string) => void;
+  onRetry: () => void;
+}) => {
+  const isBusy = busyAction !== null;
+  const activeLink = state.status === "loaded" && state.response.publish_link?.status === "active"
+    ? state.response.publish_link
+    : null;
+  const publishedArtifact = state.status === "loaded" ? state.response.published_artifact : null;
+  const publishedAt = publishedArtifact ? formatPublishedAt(publishedArtifact.published_at) : null;
+
+  return (
+    <section className={styles.panel} aria-labelledby="publishing-heading">
+      <h2 className={styles.sectionTitle} id="publishing-heading">Publishing</h2>
+      {state.status === "loading" ? (
+        <div className={styles.publishText}>Loading publishing status...</div>
+      ) : null}
+      {state.status === "error" ? (
+        <div className={styles.publishStack}>
+          <div className={styles.publishText}>Could not load publishing status.</div>
+          <button className={styles.secondaryButton} type="button" onClick={onRetry}>
+            Retry
+          </button>
+        </div>
+      ) : null}
+      {state.status === "loaded" && !activeLink ? (
+        <div className={styles.publishStack}>
+          <div className={styles.publishText}>This guide is not published.</div>
+          <p className={styles.publishNote}>Publishing creates a public read-only snapshot.</p>
+          <button
+            className={styles.primaryButton}
+            type="button"
+            disabled={readOnly || isBusy}
+            onClick={onPublish}
+          >
+            Publish guide
+          </button>
+        </div>
+      ) : null}
+      {activeLink && publishedArtifact ? (
+        <div className={styles.publishStack}>
+          <div className={styles.publishText}>Published version {publishedArtifact.version_number}</div>
+          {publishedAt ? <div className={styles.publishNote}>Published {publishedAt}</div> : null}
+          <div className={styles.publicUrl}>{activeLink.public_url}</div>
+          <div className={styles.publishActions}>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              disabled={isBusy}
+              onClick={() => onCopyPublicLink(activeLink.public_url)}
+            >
+              Copy link
+            </button>
+            <a
+              className={styles.previewLink}
+              href={activeLink.public_url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open public guide
+            </a>
+            <button
+              className={styles.primaryButton}
+              type="button"
+              disabled={readOnly || isBusy}
+              onClick={onPublish}
+            >
+              Republish
+            </button>
+            <button
+              className={styles.dangerButton}
+              type="button"
+              disabled={isBusy}
+              onClick={onRevoke}
+            >
+              Revoke link
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 };
 
