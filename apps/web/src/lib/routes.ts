@@ -33,6 +33,10 @@ export type PortalRoute =
     projectId: string;
   }
   | {
+    type: "public_guide_reader";
+    slug: string;
+  }
+  | {
     type: "unsupported";
   };
 
@@ -54,6 +58,22 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
     )
   ) {
     return { type: "project_list" };
+  }
+
+  if (
+    segments.length === 2
+    && segments[0] === "p"
+  ) {
+    const slug = segments[1];
+
+    if (!slug) {
+      return { type: "unsupported" };
+    }
+
+    return {
+      type: "public_guide_reader",
+      slug: decodeURIComponent(slug),
+    };
   }
 
   if (

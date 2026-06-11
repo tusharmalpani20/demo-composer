@@ -75,7 +75,20 @@ describe("parsePortalRoute", () => {
     });
   });
 
+  it("parses public guide reader routes", () => {
+    expect(parsePortalRoute("/p/abc123")).toEqual({
+      type: "public_guide_reader",
+      slug: "abc123",
+    });
+    expect(parsePortalRoute("/p/abc%20123")).toEqual({
+      type: "public_guide_reader",
+      slug: "abc 123",
+    });
+  });
+
   it("rejects unsupported routes", () => {
     expect(parsePortalRoute("/unknown")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/p")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/p/abc123/extra")).toEqual({ type: "unsupported" });
   });
 });

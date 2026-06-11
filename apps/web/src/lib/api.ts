@@ -4,7 +4,13 @@ import type {
   CaptureSessionStatus,
 } from "../features/capture-session/types";
 import type { AuthResponse } from "../features/auth/types";
-import type { Guide, GuideBlock, GuideDetail, GuideStep } from "../features/guide/types";
+import type {
+  Guide,
+  GuideBlock,
+  GuideDetail,
+  GuideStep,
+  PublicPublishLinkResponse,
+} from "../features/guide/types";
 import type { Project, ProjectStatus } from "../features/project/types";
 
 export type ApiClientErrorKind = "unauthenticated" | "not_found" | "validation" | "unknown";
@@ -190,6 +196,14 @@ export const getGuideDetail = async (
 ): Promise<GuideDetail> => (
   requestJson<GuideDetail>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}`
+  )
+);
+
+export const getPublicPublishLink = async (
+  slug: string
+): Promise<PublicPublishLinkResponse> => (
+  requestJson<PublicPublishLinkResponse>(
+    `/api/v1/public/publish-links/${encodeURIComponent(slug)}`
   )
 );
 

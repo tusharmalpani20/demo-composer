@@ -76,3 +76,66 @@ export type GuideDetail = {
   guide_blocks: GuideBlock[];
   source_capture_assets: GuideSourceCaptureAsset[];
 };
+
+export type PublishedGuideSnapshotAsset = {
+  id: string;
+  asset_type: "screenshot" | "html_snapshot" | "thumbnail" | "redacted_screenshot";
+  width: number | null;
+  height: number | null;
+  page_title: string | null;
+  page_url: string | null;
+  file: {
+    id: string;
+    original_name: string | null;
+    mime_type: string;
+    size_bytes: number;
+  };
+  file_url: string;
+};
+
+export type PublishedGuideSnapshotBlock = {
+  id: string;
+  block_type: GuideBlockType;
+  block_index: number;
+  step: {
+    id: string;
+    title: string;
+    body: string | null;
+  } | null;
+  source_asset: PublishedGuideSnapshotAsset | null;
+};
+
+export type PublishedGuideSnapshot = {
+  artifact_type: "guide";
+  guide: {
+    id: string;
+    title: string;
+    description: string | null;
+    source_capture_session_id: string | null;
+    published_version: number;
+    published_at: string;
+  };
+  blocks: PublishedGuideSnapshotBlock[];
+};
+
+export type PublicPublishLink = {
+  slug: string;
+  artifact_type: "guide" | "interactive_demo";
+  visibility: "public";
+  status: "active" | "revoked";
+};
+
+export type PublicPublishedArtifact = {
+  id: string;
+  artifact_type: "guide" | "interactive_demo";
+  artifact_id: string;
+  version_number: number;
+  title: string;
+  published_at: string;
+  snapshot: unknown;
+};
+
+export type PublicPublishLinkResponse = {
+  publish_link: PublicPublishLink;
+  published_artifact: PublicPublishedArtifact;
+};

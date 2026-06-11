@@ -7,6 +7,7 @@ import {
   getCaptureSessionDetail,
   getGuideDetail,
   getProject,
+  getPublicPublishLink,
   login,
   listProjects,
   listProjectCaptureSessions,
@@ -65,6 +66,35 @@ const guide_response = {
   },
   guide_blocks: [],
   source_capture_assets: [],
+};
+
+const public_publish_response = {
+  publish_link: {
+    slug: "abc123",
+    artifact_type: "guide",
+    visibility: "public",
+    status: "active",
+  },
+  published_artifact: {
+    id: "published_artifact_1",
+    artifact_type: "guide",
+    artifact_id: "guide_1",
+    version_number: 1,
+    title: "Department guide",
+    published_at: "2026-06-10T00:00:00.000Z",
+    snapshot: {
+      artifact_type: "guide",
+      guide: {
+        id: "guide_1",
+        title: "Department guide",
+        description: "Set up departments.",
+        source_capture_session_id: "capture_session_1",
+        published_version: 1,
+        published_at: "2026-06-10T00:00:00.000Z",
+      },
+      blocks: [],
+    },
+  },
 };
 
 const project_response = {
@@ -370,6 +400,48 @@ describe("api client", () => {
         },
       }
     );
+  });
+
+  it("fetches public publish links by slug", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(public_publish_response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(getPublicPublishLink("abc 123")).resolves.toEqual(public_publish_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/public/publish-links/abc%20123",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("maps missing or revoked public publish links to not found", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      error: {
+        type: "publish_link_not_found",
+        message: "Publish link was not found",
+      },
+    }), {
+      status: 404,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    await expect(getPublicPublishLink("missing")).rejects.toMatchObject({
+      kind: "not_found",
+      type: "publish_link_not_found",
+      message: "Publish link was not found",
+    });
   });
 
   it("lists project guides with session cookies", async () => {
