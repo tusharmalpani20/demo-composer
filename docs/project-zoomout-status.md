@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `033` exist and have been implemented through portal guide publish controls.
+- Plans `001` through `034` exist and have been implemented through polished portal guide publish controls.
 
 ### Backend Foundation
 
@@ -126,9 +126,9 @@ The agreed implementation style is:
 - Project workspace links to capture sessions and guides.
 - Capture session list page shows project capture sessions.
 - Capture session detail page shows source capture detail and supports creating a guide from that capture.
-- Guide list page shows project guides.
+- Guide list page shows project guides with per-guide publish status, isolated status-load failures, and direct public-link open actions for active published guides.
 - Guide editor page supports editing guide title/description/status, updating step title/body, reordering blocks, deleting blocks, rendering source screenshots inline, and opening editor screenshots in the focused screenshot viewer.
-- Guide editor page supports publishing, republishing, opening, copying, and revoking public guide links from an authenticated portal publishing panel.
+- Guide editor page supports publishing, republishing, opening, copying, and revoking public guide links from an authenticated portal publishing panel, including clearer busy states, copy fallback messaging, and stale-draft cues when a published guide has unpublished draft changes.
 - Guide preview page renders a private Scribe-style read-only guide with ordered steps, active source screenshots, and a focused screenshot viewer with zoom and previous/next navigation.
 - Public guide reader route `/p/:slug` resolves active published guide snapshots without portal authentication, renders ordered published steps and screenshots, handles missing/revoked/malformed links, and reuses the focused screenshot viewer.
 - Web has focused page, route, API, and app tests for the implemented screens.
@@ -165,7 +165,7 @@ The agreed implementation style is:
 - Guide editor does not yet attach/change screenshots per step.
 - Guide annotations/highlights are not implemented.
 - Guide export is not implemented.
-- Guide publish controls are implemented in the guide editor, but not yet polished for guide-list status, stale draft indicators, or advanced sharing settings.
+- Advanced guide sharing settings are not implemented yet.
 
 ### Interactive Demo Product
 
@@ -192,6 +192,6 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their source screenshots, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, publish or republish that guide from the portal as an immutable backend snapshot behind a stable public link, copy/open the public URL, revoke the active link, and open that public `/p/:slug` guide outside portal authentication.
+The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their source screenshots, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, publish or republish that guide from the portal as an immutable backend snapshot behind a stable public link, see guide-list publish status, copy/open the public URL, revoke the active link, and open that public `/p/:slug` guide outside portal authentication.
 
-The next major milestone should polish the publish workflow: add guide-list publish status if useful, show clearer stale-draft/republish cues, improve copy/open/revoke UX, and only then consider access modes, embed support, or analytics.
+The next major milestone should improve guide authoring depth: add UI support for inserting and editing non-step guide blocks, attaching or changing screenshots per step, and then consider access modes, embed support, or analytics.
