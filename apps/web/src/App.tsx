@@ -3,6 +3,7 @@ import { ProjectCaptureSessionListPage } from "./features/capture-session/Projec
 import { LoginPage } from "./features/auth/LoginPage";
 import { GuideEditorPage } from "./features/guide/GuideEditorPage";
 import { GuidePreviewPage } from "./features/guide/GuidePreviewPage";
+import { PublicGuideReaderPage } from "./features/guide/PublicGuideReaderPage";
 import { ProjectGuideListPage } from "./features/guide/ProjectGuideListPage";
 import { ProjectListPage } from "./features/project/ProjectListPage";
 import { ProjectWorkspacePage } from "./features/project/ProjectWorkspacePage";
@@ -18,6 +19,12 @@ export default function App() {
       <LoginPage
         nextPath={new URLSearchParams(window.location.search).get("next") ?? "/projects"}
       />
+    );
+  }
+
+  if (route.type === "public_guide_reader") {
+    return (
+      <PublicGuideReaderPage slug={route.slug} />
     );
   }
 

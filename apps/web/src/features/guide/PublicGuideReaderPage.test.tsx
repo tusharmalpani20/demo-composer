@@ -1,0 +1,266 @@
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { ApiClientError } from "../../lib/api";
+import { PublicGuideReaderPage } from "./PublicGuideReaderPage";
+import type { PublicPublishLinkResponse } from "./types";
+
+const publicGuideResponse: PublicPublishLinkResponse = {
+  publish_link: {
+    slug: "abc123",
+    artifact_type: "guide",
+    visibility: "public",
+    status: "active",
+  },
+  published_artifact: {
+    id: "published_artifact_1",
+    artifact_type: "guide",
+    artifact_id: "guide_1",
+    version_number: 1,
+    title: "Department guide",
+    published_at: "2026-06-10T00:00:00.000Z",
+    snapshot: {
+      artifact_type: "guide",
+      guide: {
+        id: "guide_1",
+        title: "Department guide",
+        description: "Set up departments from the list view.",
+        source_capture_session_id: "capture_session_1",
+        published_version: 1,
+        published_at: "2026-06-10T00:00:00.000Z",
+      },
+      blocks: [
+        {
+          id: "block_2",
+          block_type: "step",
+          block_index: 2,
+          step: {
+            id: "step_2",
+            title: "Click Add Department",
+            body: "Use the primary action in the list view.",
+          },
+          source_asset: {
+            id: "asset_2",
+            asset_type: "screenshot",
+            width: 1440,
+            height: 900,
+            page_title: "Add Department",
+            page_url: "https://example.test/departments/new",
+            file_url: "/api/v1/public/publish-links/abc123/assets/asset_2/file",
+            file: {
+              id: "file_2",
+              original_name: "add-department.png",
+              mime_type: "image/png",
+              size_bytes: 234567,
+            },
+          },
+        },
+        {
+          id: "block_1",
+          block_type: "step",
+          block_index: 1,
+          step: {
+            id: "step_1",
+            title: "Navigate to Department List",
+            body: "Open the Department module.",
+          },
+          source_asset: {
+            id: "asset_1",
+            asset_type: "screenshot",
+            width: 1440,
+            height: 900,
+            page_title: "Department List",
+            page_url: "https://example.test/departments",
+            file_url: "/api/v1/public/publish-links/abc123/assets/asset_1/file",
+            file: {
+              id: "file_1",
+              original_name: "departments.png",
+              mime_type: "image/png",
+              size_bytes: 123456,
+            },
+          },
+        },
+        {
+          id: "block_3",
+          block_type: "header",
+          block_index: 3,
+          step: null,
+          source_asset: null,
+        },
+      ],
+    },
+  },
+};
+
+const renderPage = (overrides: {
+  response?: PublicPublishLinkResponse;
+  loadPublishLink?: (slug: string) => Promise<PublicPublishLinkResponse>;
+} = {}) => {
+  const loadPublishLink = overrides.loadPublishLink ?? vi.fn(async () => overrides.response ?? publicGuideResponse);
+
+  render(
+    <PublicGuideReaderPage
+      slug="abc123"
+      loadPublishLink={loadPublishLink}
+    />
+  );
+
+  return { loadPublishLink };
+};
+
+describe("PublicGuideReaderPage", () => {
+  it("renders public guide snapshots in block order with screenshots", async () => {
+    const { loadPublishLink } = renderPage();
+
+    expect(screen.getByText("Loading published guide...")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(screen.getByText("Set up departments from the list view.")).toBeInTheDocument();
+    expect(screen.getByText("Published version 1")).toBeInTheDocument();
+    expect(screen.getByText("Published Jun 10, 2026, 12:00 AM")).toBeInTheDocument();
+    expect(screen.getAllByText(/^[123]$/).map((node) => node.textContent)).toEqual(["1", "2", "3"]);
+    expect(screen.getByRole("heading", { name: "Navigate to Department List" })).toBeInTheDocument();
+    expect(screen.getByText("Open the Department module.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Click Add Department" })).toBeInTheDocument();
+    expect(screen.getByText("Use the primary action in the list view.")).toBeInTheDocument();
+    expect(screen.getByText("Unsupported guide block: header")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Department List" })).toHaveAttribute(
+      "src",
+      "/api/v1/public/publish-links/abc123/assets/asset_1/file"
+    );
+    expect(screen.getByRole("img", { name: "Add Department" })).toHaveAttribute(
+      "src",
+      "/api/v1/public/publish-links/abc123/assets/asset_2/file"
+    );
+    expect(screen.getByRole("button", { name: "Open screenshot for step 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open screenshot for step 2" })).toBeInTheDocument();
+    expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
+    expect(screen.queryByText("file_1")).not.toBeInTheDocument();
+    expect(screen.queryByText("organization_1")).not.toBeInTheDocument();
+    expect(screen.queryByText("storage_key")).not.toBeInTheDocument();
+    expect(loadPublishLink).toHaveBeenCalledWith("abc123");
+  });
+
+  it("opens and navigates public guide screenshots", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open screenshot for step 1" }));
+
+    const firstDialog = screen.getByRole("dialog", { name: "Navigate to Department List" });
+    expect(within(firstDialog).getByRole("img", { name: "Department List" })).toHaveAttribute(
+      "src",
+      "/api/v1/public/publish-links/abc123/assets/asset_1/file"
+    );
+    expect(within(firstDialog).getByText("1 / 2")).toBeInTheDocument();
+
+    fireEvent.click(within(firstDialog).getByRole("button", { name: "Next screenshot" }));
+    const secondDialog = screen.getByRole("dialog", { name: "Click Add Department" });
+    expect(within(secondDialog).getByText("2 / 2")).toBeInTheDocument();
+
+    fireEvent.click(within(secondDialog).getByRole("button", { name: "Close screenshot viewer" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("renders public not found without portal login navigation", async () => {
+    renderPage({
+      loadPublishLink: async () => {
+        throw new ApiClientError({
+          kind: "not_found",
+          status: 404,
+          type: "publish_link_not_found",
+          message: "Publish link was not found",
+        });
+      },
+    });
+
+    expect(await screen.findByText("Published guide was not found.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Demo Composer portal")).not.toBeInTheDocument();
+  });
+
+  it("renders empty and metadata-light public guide snapshots", async () => {
+    renderPage({
+      response: {
+        ...publicGuideResponse,
+        published_artifact: {
+          ...publicGuideResponse.published_artifact,
+          snapshot: {
+            artifact_type: "guide",
+            guide: {
+              id: "guide_1",
+              title: "Text-only guide",
+              description: null,
+              source_capture_session_id: null,
+              published_version: 1,
+              published_at: "",
+            },
+            blocks: [],
+          },
+        },
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Text-only guide" })).toBeInTheDocument();
+    expect(screen.getByText("This published guide does not have any blocks yet.")).toBeInTheDocument();
+    expect(screen.queryByText(/Published Jun/)).not.toBeInTheDocument();
+  });
+
+  it("renders malformed public artifact states safely", async () => {
+    renderPage({
+      response: {
+        ...publicGuideResponse,
+        published_artifact: {
+          ...publicGuideResponse.published_artifact,
+          artifact_type: "interactive_demo",
+          snapshot: { artifact_type: "interactive_demo" },
+        },
+      },
+    });
+
+    expect(await screen.findByText("Published artifact cannot be displayed.")).toBeInTheDocument();
+    expect(screen.queryByText("interactive_demo")).not.toBeInTheDocument();
+  });
+
+  it("ignores invalid block and asset entries without crashing", async () => {
+    renderPage({
+      response: {
+        ...publicGuideResponse,
+        published_artifact: {
+          ...publicGuideResponse.published_artifact,
+          snapshot: {
+            artifact_type: "guide",
+            guide: {
+              id: "guide_1",
+              title: "Defensive guide",
+              description: null,
+              source_capture_session_id: null,
+              published_version: 1,
+              published_at: "2026-06-10T00:00:00.000Z",
+            },
+            blocks: [
+              null,
+              {
+                id: "block_1",
+                block_type: "step",
+                block_index: 1,
+                step: {
+                  id: "step_1",
+                  title: "Valid step",
+                  body: null,
+                },
+                source_asset: {
+                  id: "asset_1",
+                  file_url: "",
+                },
+              },
+            ],
+          },
+        },
+      } as unknown as PublicPublishLinkResponse,
+    });
+
+    expect(await screen.findByRole("heading", { name: "Defensive guide" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Valid step" })).toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
+  });
+});

@@ -268,6 +268,50 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Department guide" })).toBeInTheDocument();
   });
 
+  it("renders public guide reader routes without portal navigation", async () => {
+    window.history.pushState({}, "", "/p/abc123");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      publish_link: {
+        slug: "abc123",
+        artifact_type: "guide",
+        visibility: "public",
+        status: "active",
+      },
+      published_artifact: {
+        id: "published_artifact_1",
+        artifact_type: "guide",
+        artifact_id: "guide_1",
+        version_number: 1,
+        title: "Department guide",
+        published_at: "2026-06-10T00:00:00.000Z",
+        snapshot: {
+          artifact_type: "guide",
+          guide: {
+            id: "guide_1",
+            title: "Department guide",
+            description: "Set up departments from the list view.",
+            source_capture_session_id: "capture_session_1",
+            published_version: 1,
+            published_at: "2026-06-10T00:00:00.000Z",
+          },
+          blocks: [],
+        },
+      },
+    }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(screen.getByText("This published guide does not have any blocks yet.")).toBeInTheDocument();
+    expect(screen.queryByText("Demo Composer portal")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sign out")).not.toBeInTheDocument();
+  });
+
   it("renders an unsupported route state", () => {
     window.history.pushState({}, "", "/unknown");
 
