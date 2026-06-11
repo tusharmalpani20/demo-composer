@@ -539,6 +539,97 @@ describe("guide routes", () => {
     await app.close();
   });
 
+  it("creates paragraph and divider guide blocks through the service", async () => {
+    const seen_inputs: unknown[] = [];
+    const paragraph_block = {
+      ...guide_block,
+      id: "block_paragraph",
+      block_type: "paragraph" as const,
+      content: {
+        body: "Add supporting context.",
+      },
+      step: null,
+    };
+    const divider_block = {
+      ...guide_block,
+      id: "block_divider",
+      block_type: "divider" as const,
+      content: null,
+      step: null,
+    };
+    const app = await build_test_app({
+      guide_service: {
+        create_guide_block: async (input) => {
+          seen_inputs.push(input);
+          return input.data.block_type === "paragraph" ? [paragraph_block] : [divider_block];
+        },
+      },
+    });
+
+    const paragraph_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        block_type: "paragraph",
+        position: {
+          placement: "after",
+          guide_block_id: "block_1",
+        },
+        content: {
+          body: "Add supporting context.",
+        },
+      },
+    });
+    const divider_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        block_type: "divider",
+        position: {
+          placement: "after",
+          guide_block_id: "block_paragraph",
+        },
+        content: {
+          body: null,
+        },
+      },
+    });
+
+    expect(paragraph_response.statusCode).toBe(201);
+    expect(divider_response.statusCode).toBe(201);
+    expect(seen_inputs).toEqual([
+      expect.objectContaining({
+        data: {
+          block_type: "paragraph",
+          position: {
+            placement: "after",
+            guide_block_id: "block_1",
+          },
+          step: undefined,
+          content: {
+            body: "Add supporting context.",
+          },
+        },
+      }),
+      expect.objectContaining({
+        data: {
+          block_type: "divider",
+          position: {
+            placement: "after",
+            guide_block_id: "block_paragraph",
+          },
+          step: undefined,
+          content: {
+            body: null,
+          },
+        },
+      }),
+    ]);
+    await app.close();
+  });
+
   it("updates guide block screenshot selection through the service", async () => {
     const seen_inputs: unknown[] = [];
     const app = await build_test_app({

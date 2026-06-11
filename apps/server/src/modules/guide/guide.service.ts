@@ -159,7 +159,7 @@ export type NormalizedUpdateGuideStepInput = {
 };
 
 export type NormalizedCreateGuideBlockInput = {
-  block_type: "step" | "header" | "tip" | "alert";
+  block_type: "step" | "header" | "paragraph" | "tip" | "alert" | "divider";
   position?: {
     placement: "before" | "after";
     guide_block_id: string;
@@ -168,7 +168,7 @@ export type NormalizedCreateGuideBlockInput = {
     title: string;
     body: string | null;
   };
-  content?: GuideBlockContent;
+  content?: GuideBlockContent | null;
 };
 
 export type NormalizedUpdateGuideBlockInput = {
@@ -442,7 +442,7 @@ const normalize_position = (position: CreateGuideBlockInput["position"]) => {
 };
 
 const normalize_block_content = (
-  block_type: "header" | "tip" | "alert",
+  block_type: "header" | "paragraph" | "tip" | "alert" | "divider",
   content: GuideBlockContent | null | undefined
 ) => {
   const title = compact_optional_string(content?.title);
@@ -456,11 +456,40 @@ const normalize_block_content = (
     return { title };
   }
 
+  if (block_type === "paragraph") {
+    if (title || !body) {
+      throw new InvalidGuideBlockContentError();
+    }
+
+    return { body };
+  }
+
+  if (block_type === "divider") {
+    if (title || body) {
+      throw new InvalidGuideBlockContentError();
+    }
+
+    return null;
+  }
+
   if (!title && !body) {
     throw new InvalidGuideBlockContentError();
   }
 
   return { title, body };
+};
+
+const normalize_editable_block_content = (
+  block_type: "header" | "paragraph" | "tip" | "alert",
+  content: GuideBlockContent | null | undefined
+) => {
+  const normalized = normalize_block_content(block_type, content);
+
+  if (!normalized) {
+    throw new InvalidGuideBlockContentError();
+  }
+
+  return normalized;
 };
 
 const normalize_create_guide_block_input = (
@@ -485,7 +514,13 @@ const normalize_create_guide_block_input = (
     };
   }
 
-  if (input.block_type === "header" || input.block_type === "tip" || input.block_type === "alert") {
+  if (
+    input.block_type === "header"
+    || input.block_type === "paragraph"
+    || input.block_type === "tip"
+    || input.block_type === "alert"
+    || input.block_type === "divider"
+  ) {
     return {
       block_type: input.block_type,
       ...(position ? { position } : {}),
@@ -500,12 +535,12 @@ const normalize_update_guide_block_input = (
   block_type: GuideBlockType,
   input: UpdateGuideBlockInput
 ): NormalizedUpdateGuideBlockInput => {
-  if (block_type !== "header" && block_type !== "tip" && block_type !== "alert") {
+  if (block_type !== "header" && block_type !== "paragraph" && block_type !== "tip" && block_type !== "alert") {
     throw new InvalidGuideBlockContentError();
   }
 
   return {
-    content: normalize_block_content(block_type, input.content),
+    content: normalize_editable_block_content(block_type, input.content),
   };
 };
 

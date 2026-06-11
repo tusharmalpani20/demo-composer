@@ -338,6 +338,52 @@ describe("DB-backed guide API", () => {
       url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
       cookies: { demo_composer_session: session_token },
     });
+    const create_paragraph_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        block_type: "paragraph",
+        position: {
+          placement: "after",
+          guide_block_id: created_header_block?.id,
+        },
+        content: {
+          body: "Confirm the department fields before saving.",
+        },
+      },
+    });
+    const created_paragraph_block = create_paragraph_response.json().guide_blocks
+      ?.find((block: { block_type: string }) => block.block_type === "paragraph");
+    const update_paragraph_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/${created_paragraph_block?.id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        content: {
+          body: "Review the department fields before saving.",
+        },
+      },
+    });
+    const create_divider_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        block_type: "divider",
+        position: {
+          placement: "after",
+          guide_block_id: created_paragraph_block?.id,
+        },
+      },
+    });
+    const created_divider_block = create_divider_response.json().guide_blocks
+      ?.find((block: { block_type: string }) => block.block_type === "divider");
+    const after_paragraph_divider_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
     const archive_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
@@ -420,6 +466,40 @@ describe("DB-backed guide API", () => {
       content: {
         title: "Department setup details",
       },
+    });
+    expect(create_paragraph_response.statusCode).toBe(201);
+    expect(created_paragraph_block).toMatchObject({
+      block_type: "paragraph",
+      content: {
+        body: "Confirm the department fields before saving.",
+      },
+      step: null,
+    });
+    expect(update_paragraph_response.statusCode).toBe(200);
+    expect(update_paragraph_response.json().guide_block).toMatchObject({
+      id: created_paragraph_block.id,
+      content: {
+        body: "Review the department fields before saving.",
+      },
+      step: null,
+    });
+    expect(create_divider_response.statusCode).toBe(201);
+    expect(created_divider_block).toMatchObject({
+      block_type: "divider",
+      content: null,
+      step: null,
+    });
+    expect(after_paragraph_divider_response.statusCode).toBe(200);
+    expect(after_paragraph_divider_response.json().guide_blocks.map((block: { block_index: number }) => block.block_index)).toEqual([1, 2, 3, 4, 5]);
+    expect(after_paragraph_divider_response.json().guide_blocks[2]).toMatchObject({
+      id: created_paragraph_block.id,
+      content: {
+        body: "Review the department fields before saving.",
+      },
+    });
+    expect(after_paragraph_divider_response.json().guide_blocks[3]).toMatchObject({
+      id: created_divider_block.id,
+      content: null,
     });
     expect(archive_response.statusCode).toBe(200);
     expect(archive_response.json().guide.status).toBe("archived");

@@ -158,7 +158,7 @@ const guide_block_content_schema = z.object({
 }).passthrough();
 
 const create_guide_block_body_schema = z.object({
-  block_type: z.enum(["step", "header", "tip", "alert"]),
+  block_type: z.enum(["step", "header", "paragraph", "tip", "alert", "divider"]),
   position: z.object({
     placement: z.enum(["before", "after"]),
     guide_block_id: z.string().trim().min(1),

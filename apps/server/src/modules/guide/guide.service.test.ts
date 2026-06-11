@@ -772,6 +772,65 @@ describe("guide service", () => {
     }]);
   });
 
+  it("creates paragraph and divider guide blocks without step records", async () => {
+    const repository = build_repository();
+    const service = build_guide_service(repository);
+
+    await expect(service.create_guide_block({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      data: {
+        block_type: "paragraph",
+        position: {
+          placement: "after",
+          guide_block_id: "block_1",
+        },
+        content: {
+          body: " Explain what happens before the next step. ",
+        },
+      },
+    })).resolves.toHaveLength(1);
+
+    await expect(service.create_guide_block({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      data: {
+        block_type: "divider",
+        position: {
+          placement: "before",
+          guide_block_id: "block_2",
+        },
+      },
+    })).resolves.toHaveLength(1);
+
+    expect(repository.create_block_inputs).toEqual([
+      expect.objectContaining({
+        data: {
+          block_type: "paragraph",
+          position: {
+            placement: "after",
+            guide_block_id: "block_1",
+          },
+          content: {
+            body: "Explain what happens before the next step.",
+          },
+        },
+      }),
+      expect.objectContaining({
+        data: {
+          block_type: "divider",
+          position: {
+            placement: "before",
+            guide_block_id: "block_2",
+          },
+          content: null,
+        },
+      }),
+    ]);
+  });
+
   it("creates manual step blocks through the first-class step model", async () => {
     const repository = build_repository();
     const service = build_guide_service(repository);
@@ -862,6 +921,59 @@ describe("guide service", () => {
     }]);
   });
 
+  it("updates paragraph block body content", async () => {
+    const repository = build_repository();
+    repository.list_guide_blocks = async () => [{
+      id: "block_paragraph",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: null,
+      source_capture_event_id: null,
+      source_capture_asset_id: null,
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: null,
+      block_type: "paragraph",
+      content: {
+        body: "Old body",
+      },
+      block_index: 3,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T00:00:00.000Z",
+      updated_at: "2026-06-05T00:00:00.000Z",
+      step: null,
+    }];
+    const service = build_guide_service(repository);
+
+    await expect(service.update_guide_block({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "block_paragraph",
+      data: {
+        content: {
+          body: " Updated explanation. ",
+        },
+      },
+    })).resolves.toMatchObject({
+      id: "block_paragraph",
+      content: {
+        body: "Updated explanation.",
+      },
+    });
+
+    expect(repository.update_block_inputs).toEqual([expect.objectContaining({
+      data: {
+        content: {
+          body: "Updated explanation.",
+        },
+      },
+    })]);
+  });
+
   it("rejects invalid manual guide block content", async () => {
     const repository = build_repository();
     const service = build_guide_service(repository);
@@ -885,7 +997,19 @@ describe("guide service", () => {
       data: {
         block_type: "paragraph",
         content: {
-          body: "Not in this slice",
+          body: " ",
+        },
+      },
+    })).rejects.toBeInstanceOf(InvalidGuideBlockContentError);
+
+    await expect(service.create_guide_block({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      data: {
+        block_type: "divider",
+        content: {
+          body: "Divider text is not supported.",
         },
       },
     })).rejects.toBeInstanceOf(InvalidGuideBlockContentError);
