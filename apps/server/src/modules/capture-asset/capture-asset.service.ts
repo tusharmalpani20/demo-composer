@@ -53,6 +53,10 @@ export type CaptureAsset = {
   updated_at: string;
 };
 
+export type CaptureAssetWithFileUrl = CaptureAsset & {
+  file_url: string;
+};
+
 export type CreateCaptureAssetInput = {
   asset_type: CaptureAssetType;
   width?: number | null;
@@ -168,6 +172,11 @@ export type CaptureAssetTransactionalRepository = {
     organization_id: string;
     project_id: string;
     capture_session_id: string;
+    asset_type?: CaptureAssetType;
+  }) => Promise<CaptureAsset[]>;
+  list_project_capture_assets: (input: {
+    organization_id: string;
+    project_id: string;
     asset_type?: CaptureAssetType;
   }) => Promise<CaptureAsset[]>;
   find_capture_asset: (input: {
@@ -318,6 +327,11 @@ const upload_mime_types = new Set([
   "image/png",
   "image/jpeg",
   "image/webp",
+]);
+
+const project_screenshot_picker_asset_types = new Set<CaptureAssetType>([
+  "screenshot",
+  "redacted_screenshot",
 ]);
 
 const normalize_upload_capture_asset = (input: UploadCaptureAssetInput): UploadCaptureAssetInput => ({
@@ -532,6 +546,35 @@ export const build_capture_asset_service = (
     });
   };
 
+  const list_project_capture_assets = async (input: {
+    auth: CaptureAssetAuthContext;
+    project_id: string;
+    asset_type?: CaptureAssetType;
+  }): Promise<CaptureAssetWithFileUrl[]> => {
+    const asset_type = input.asset_type ?? "screenshot";
+
+    if (!project_screenshot_picker_asset_types.has(asset_type)) {
+      throw new UnsupportedCaptureAssetTypeError();
+    }
+
+    await ensure_project_exists({
+      repository,
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    });
+
+    const assets = await repository.list_project_capture_assets({
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      asset_type,
+    });
+
+    return assets.map((asset) => ({
+      ...asset,
+      file_url: `/api/v1/projects/${asset.project_id}/capture-sessions/${asset.capture_session_id}/assets/${asset.id}/file`,
+    }));
+  };
+
   const get_capture_asset = async (input: {
     auth: CaptureAssetAuthContext;
     project_id: string;
@@ -649,6 +692,7 @@ export const build_capture_asset_service = (
     create_capture_asset,
     upload_capture_asset,
     list_capture_assets,
+    list_project_capture_assets,
     get_capture_asset,
     get_capture_asset_file,
     delete_capture_asset,

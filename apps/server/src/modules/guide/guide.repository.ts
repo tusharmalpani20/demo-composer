@@ -50,6 +50,8 @@ type GuideBlockRow = {
   source_capture_session_id: string | null;
   source_capture_event_id: string | null;
   source_capture_asset_id: string | null;
+  selected_capture_asset_id: string | null;
+  screenshot_hidden: boolean;
   block_type: GuideBlock["block_type"];
   content: GuideBlock["content"] | null;
   block_index: number;
@@ -151,6 +153,11 @@ const map_block = (row: GuideBlockRow, step: GuideStep | null): GuideBlock => ({
   source_capture_session_id: row.source_capture_session_id,
   source_capture_event_id: row.source_capture_event_id,
   source_capture_asset_id: row.source_capture_asset_id,
+  selected_capture_asset_id: row.selected_capture_asset_id,
+  screenshot_hidden: row.screenshot_hidden,
+  display_capture_asset_id: row.screenshot_hidden
+    ? null
+    : row.selected_capture_asset_id ?? row.source_capture_asset_id ?? step?.source_capture_asset_id ?? null,
   block_type: row.block_type,
   content: row.content,
   block_index: row.block_index,
@@ -217,6 +224,8 @@ const guide_block_select = `
   source_capture_session_id,
   source_capture_event_id,
   source_capture_asset_id,
+  selected_capture_asset_id,
+  screenshot_hidden,
   block_type,
   content,
   block_index,
@@ -267,7 +276,7 @@ const source_capture_asset_ids_from_blocks = (blocks: GuideBlock[]) => {
   const ids: string[] = [];
 
   for (const block of blocks) {
-    const source_capture_asset_id = block.source_capture_asset_id ?? block.step?.source_capture_asset_id ?? null;
+    const source_capture_asset_id = block.display_capture_asset_id;
 
     if (!source_capture_asset_id || seen.has(source_capture_asset_id)) {
       continue;
@@ -517,6 +526,28 @@ export const build_guide_repository = (db: TransactionCapable): GuideRepository 
     ]);
 
     return result.rows.map((row) => row.id);
+  },
+
+  async active_screenshot_asset_exists(input) {
+    const result = await db.query<{ exists: boolean }>(`
+      SELECT EXISTS (
+        SELECT 1
+        FROM capture_schema.capture_asset capture_asset
+        INNER JOIN file_schema.file app_file ON app_file.id = capture_asset.file_id
+        WHERE capture_asset.id = $1
+        AND capture_asset.project_id = $2
+        AND capture_asset.organization_id = $3
+        AND capture_asset.asset_type IN ('screenshot', 'redacted_screenshot')
+        AND capture_asset.is_deleted = FALSE
+        AND app_file.is_deleted = FALSE
+      ) AS exists
+    `, [
+      input.capture_asset_id,
+      input.project_id,
+      input.organization_id,
+    ]);
+
+    return Boolean(result.rows[0]?.exists);
   },
 
   async create_guide_from_capture(input) {
@@ -1066,6 +1097,59 @@ export const build_guide_repository = (db: TransactionCapable): GuideRepository 
       await touch_guide(client, input);
 
       return map_block(row, null);
+    });
+  },
+
+  async update_guide_block_screenshot(input) {
+    return with_transaction(db, async (client) => {
+      const result = await client.query<GuideBlockRow>(`
+        UPDATE guide_schema.guide_block
+        SET
+          selected_capture_asset_id = $1,
+          screenshot_hidden = $2,
+          updated_by_id = $3,
+          updated_at = CURRENT_TIMESTAMP,
+          version = version + 1
+        WHERE id = $4
+        AND guide_id = $5
+        AND project_id = $6
+        AND organization_id = $7
+        AND is_deleted = FALSE
+        RETURNING ${guide_block_select}
+      `, [
+        input.data.selected_capture_asset_id,
+        input.data.screenshot_hidden,
+        input.actor_org_user_id,
+        input.guide_block_id,
+        input.guide_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+      const row = first_row(result);
+
+      if (!row) {
+        throw new Error("Failed to update guide block screenshot");
+      }
+
+      const steps_result = await client.query<GuideStepRow>(`
+        SELECT ${guide_step_select}
+        FROM guide_schema.guide_step
+        WHERE guide_block_id = $1
+        AND guide_id = $2
+        AND project_id = $3
+        AND organization_id = $4
+        AND is_deleted = FALSE
+        LIMIT 1
+      `, [
+        input.guide_block_id,
+        input.guide_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+
+      await touch_guide(client, input);
+
+      return map_block(row, steps_result.rows[0] ? map_step(steps_result.rows[0]) : null);
     });
   },
 

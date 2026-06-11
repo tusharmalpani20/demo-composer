@@ -339,6 +339,36 @@ const build_transactional_repository = (db: Queryable) => ({
     return result.rows.map(map_capture_asset);
   },
 
+  async list_project_capture_assets(input: {
+    organization_id: string;
+    project_id: string;
+    asset_type?: CaptureAssetType;
+  }) {
+    const values: unknown[] = [
+      input.project_id,
+      input.organization_id,
+    ];
+    const asset_type_filter = input.asset_type ? "AND capture_asset.asset_type = $3" : "";
+
+    if (input.asset_type) {
+      values.push(input.asset_type);
+    }
+
+    const result = await db.query<CaptureAssetRow>(`
+      SELECT ${capture_asset_select}
+      FROM capture_schema.capture_asset capture_asset
+      INNER JOIN file_schema.file app_file ON app_file.id = capture_asset.file_id
+      WHERE capture_asset.project_id = $1
+      AND capture_asset.organization_id = $2
+      AND capture_asset.is_deleted = FALSE
+      AND app_file.is_deleted = FALSE
+      ${asset_type_filter}
+      ORDER BY capture_asset.captured_at ASC, capture_asset.created_at ASC, capture_asset.id ASC
+    `, values);
+
+    return result.rows.map(map_capture_asset);
+  },
+
   async find_capture_asset(input: {
     organization_id: string;
     project_id: string;

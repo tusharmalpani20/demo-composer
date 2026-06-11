@@ -50,6 +50,9 @@ describe("guide app integration", () => {
         update_guide_block: async () => {
           throw new Error("not needed");
         },
+        update_guide_block_screenshot: async () => {
+          throw new Error("not needed");
+        },
         reorder_guide_blocks: async () => [],
         delete_guide_block: async () => undefined,
       },

@@ -54,6 +54,8 @@ describe("foundation schema migrations", () => {
     expect(table_definition(sql, "guide_schema.guide_block")).toContain("block_index INTEGER NOT NULL");
     expect(sql).toContain("ALTER TABLE guide_schema.guide_block");
     expect(sql).toContain("ADD COLUMN IF NOT EXISTS content JSONB DEFAULT NULL");
+    expect(sql).toContain("ADD COLUMN IF NOT EXISTS selected_capture_asset_id VARCHAR(26) DEFAULT NULL REFERENCES capture_schema.capture_asset(id)");
+    expect(sql).toContain("ADD COLUMN IF NOT EXISTS screenshot_hidden BOOLEAN NOT NULL DEFAULT FALSE");
     expect(table_definition(sql, "guide_schema.guide_block")).toContain(
       "CONSTRAINT chk_guide_block_type CHECK (block_type IN ('step', 'header', 'paragraph', 'tip', 'alert', 'capture', 'divider', 'gif'))"
     );

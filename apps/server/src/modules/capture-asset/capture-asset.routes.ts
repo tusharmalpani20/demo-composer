@@ -23,6 +23,7 @@ import {
   type CaptureAssetAuthContext,
   type CaptureAssetFileRead,
   type CaptureAssetType,
+  type CaptureAssetWithFileUrl,
   type CreateCaptureAssetInput,
   type UploadCaptureAssetInput,
 } from "./capture-asset.service";
@@ -55,6 +56,11 @@ export type CaptureAssetRouteDependencies = {
       capture_session_id: string;
       asset_type?: CaptureAssetType;
     }) => Promise<CaptureAsset[]>;
+    list_project_capture_assets: (input: {
+      auth: CaptureAssetAuthContext;
+      project_id: string;
+      asset_type?: CaptureAssetType;
+    }) => Promise<CaptureAssetWithFileUrl[]>;
     get_capture_asset: (input: {
       auth: CaptureAssetAuthContext;
       project_id: string;
@@ -448,6 +454,31 @@ export const build_capture_asset_routes = (
           data: pick_upload_capture_asset_data(upload.fields),
         });
         return reply.status(201).send({ capture_asset });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.get<{
+      Params: {
+        project_id: string;
+      };
+      Querystring: {
+        asset_type?: CaptureAssetType;
+      };
+    }>("/:project_id/capture-assets", {
+      schema: {
+        querystring: list_query_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(session_token_from_request(request));
+        const capture_assets = await dependencies.capture_asset_service.list_project_capture_assets({
+          auth,
+          project_id: request.params.project_id,
+          asset_type: request.query.asset_type,
+        });
+        return reply.status(200).send({ capture_assets });
       } catch (error) {
         return handle_domain_error(error, reply);
       }

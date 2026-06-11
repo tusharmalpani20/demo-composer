@@ -36,6 +36,9 @@ const guide_detail: GuideDetail = {
       source_capture_session_id: "capture_session_1",
       source_capture_event_id: "event_2",
       source_capture_asset_id: null,
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: null,
       block_type: "step",
       content: null,
       block_index: 2,
@@ -70,6 +73,9 @@ const guide_detail: GuideDetail = {
       source_capture_session_id: "capture_session_1",
       source_capture_event_id: "event_1",
       source_capture_asset_id: "asset_1",
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: "asset_1",
       block_type: "step",
       content: null,
       block_index: 1,
@@ -104,6 +110,9 @@ const guide_detail: GuideDetail = {
       source_capture_session_id: null,
       source_capture_event_id: null,
       source_capture_asset_id: null,
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: null,
       block_type: "header",
       content: {
         title: "Department fields",
@@ -133,6 +142,23 @@ const guide_detail: GuideDetail = {
       original_name: "departments.png",
       mime_type: "image/png",
       size_bytes: 123456,
+    },
+  }, {
+    id: "asset_2",
+    capture_session_id: "capture_session_1",
+    asset_type: "screenshot",
+    width: 1280,
+    height: 720,
+    device_pixel_ratio: 1,
+    page_url: "https://example.test/departments/new",
+    page_title: "New Department",
+    captured_at: "2026-06-05T00:02:00.000Z",
+    file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_2/file",
+    file: {
+      id: "file_2",
+      original_name: "new-department.png",
+      mime_type: "image/png",
+      size_bytes: 654321,
     },
   }],
 };
@@ -347,6 +373,60 @@ describe("publish service", () => {
     }
     expect(snapshot.blocks[0]?.source_asset?.file_url)
       .toBe(`/api/v1/public/publish-links/${result.publish_link.slug}/assets/asset_1/file`);
+  });
+
+  it("publishes selected screenshot assets and omits hidden screenshots", async () => {
+    const selected_detail: GuideDetail = {
+      ...guide_detail,
+      guide_blocks: guide_detail.guide_blocks.map((block) => {
+        if (block.id === "block_1") {
+          return {
+            ...block,
+            selected_capture_asset_id: "asset_2",
+            screenshot_hidden: false,
+            display_capture_asset_id: "asset_2",
+          };
+        }
+
+        if (block.id === "block_2") {
+          return {
+            ...block,
+            source_capture_asset_id: "asset_1",
+            selected_capture_asset_id: null,
+            screenshot_hidden: true,
+            display_capture_asset_id: null,
+            step: block.step
+              ? {
+                ...block.step,
+                source_capture_asset_id: "asset_1",
+              }
+              : null,
+          };
+        }
+
+        return block;
+      }),
+    };
+    const repository = create_repository({
+      find_guide_detail: vi.fn(async () => selected_detail),
+    });
+    const service = build_publish_service(repository, {
+      generate_slug: () => "abc123",
+      now: () => new Date("2026-06-10T00:00:00.000Z"),
+    });
+
+    await service.publish_guide({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+    });
+
+    const snapshot = vi.mocked(repository.create_published_artifact).mock.calls[0]?.[0].snapshot_json;
+    expect(snapshot?.blocks[0]?.source_asset).toMatchObject({
+      id: "asset_2",
+      file_url: "/api/v1/public/publish-links/abc123/assets/asset_2/file",
+    });
+    expect(snapshot?.blocks[1]?.source_asset).toBeNull();
   });
 
   it("rejects missing archived and empty guides", async () => {

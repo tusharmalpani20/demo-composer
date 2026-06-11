@@ -110,6 +110,10 @@ const build_repository = (): CaptureAssetRepository & {
       lists.push(input);
       return [capture_asset];
     },
+    async list_project_capture_assets(input) {
+      lists.push(input);
+      return [capture_asset];
+    },
     async find_capture_asset(input) {
       finds.push(input);
       return input.capture_asset_id === "capture_asset_1" ? capture_asset : null;
@@ -589,6 +593,47 @@ describe("capture asset service", () => {
       capture_asset_id: "capture_asset_1",
       actor_org_user_id: "org_user_1",
     }]);
+  });
+
+  it("lists project screenshot assets and rejects non-screenshot picker filters", async () => {
+    const repository = build_repository();
+    const service = build_capture_asset_service(repository);
+
+    await expect(service.list_project_capture_assets({
+      auth,
+      project_id: "project_1",
+    })).resolves.toEqual([{
+      ...capture_asset,
+      file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1/file",
+    }]);
+
+    await expect(service.list_project_capture_assets({
+      auth,
+      project_id: "project_1",
+      asset_type: "redacted_screenshot",
+    })).resolves.toEqual([{
+      ...capture_asset,
+      file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1/file",
+    }]);
+
+    await expect(service.list_project_capture_assets({
+      auth,
+      project_id: "project_1",
+      asset_type: "html_snapshot",
+    })).rejects.toBeInstanceOf(UnsupportedCaptureAssetTypeError);
+
+    expect(repository.lists).toEqual([
+      {
+        organization_id: "organization_1",
+        project_id: "project_1",
+        asset_type: "screenshot",
+      },
+      {
+        organization_id: "organization_1",
+        project_id: "project_1",
+        asset_type: "redacted_screenshot",
+      },
+    ]);
   });
 
   it("rejects list get and delete when the capture session is missing", async () => {

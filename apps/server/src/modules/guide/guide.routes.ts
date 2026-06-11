@@ -14,6 +14,7 @@ import {
   GuideStepNotFoundError,
   InvalidGuideBlockOrderError,
   InvalidGuideBlockContentError,
+  InvalidGuideBlockScreenshotError,
   InvalidGuideInputError,
   InvalidGuideStepInputError,
   ProjectNotFoundError,
@@ -26,6 +27,7 @@ import {
   type GuideStep,
   type UpdateGuideInput,
   type UpdateGuideBlockInput,
+  type UpdateGuideBlockScreenshotInput,
   type UpdateGuideStepInput,
 } from "./guide.service";
 
@@ -81,6 +83,13 @@ export type GuideRouteDependencies = {
       guide_block_id: string;
       data: UpdateGuideBlockInput;
     }) => Promise<GuideBlock>;
+    update_guide_block_screenshot: (input: {
+      auth: GuideAuthContext;
+      project_id: string;
+      guide_id: string;
+      guide_block_id: string;
+      data: UpdateGuideBlockScreenshotInput;
+    }) => Promise<GuideBlock>;
     delete_guide_block: (input: {
       auth: GuideAuthContext;
       project_id: string;
@@ -131,6 +140,10 @@ const create_guide_block_body_schema = z.object({
 
 const update_guide_block_body_schema = z.object({
   content: guide_block_content_schema.nullable().optional(),
+}).passthrough();
+
+const update_guide_block_screenshot_body_schema = z.object({
+  capture_asset_id: z.string().trim().min(1).nullable(),
 }).passthrough();
 
 const unauthorized_response = () => ({
@@ -206,6 +219,12 @@ const pick_update_guide_block_data = (
   content: body.content ?? undefined,
 });
 
+const pick_update_guide_block_screenshot_data = (
+  body: UpdateGuideBlockScreenshotInput
+): UpdateGuideBlockScreenshotInput => ({
+  capture_asset_id: body.capture_asset_id,
+});
+
 export const build_guide_routes = (
   dependencies: GuideRouteDependencies
 ): FastifyPluginAsync => {
@@ -263,6 +282,10 @@ export const build_guide_routes = (
 
       if (error instanceof InvalidGuideBlockContentError) {
         return reply.status(400).send(error_response("invalid_guide_block_content", "Guide block content is invalid"));
+      }
+
+      if (error instanceof InvalidGuideBlockScreenshotError) {
+        return reply.status(400).send(error_response("invalid_guide_block_screenshot", "Guide block screenshot is invalid"));
       }
 
       throw error;
@@ -435,6 +458,34 @@ export const build_guide_routes = (
         });
 
         return reply.status(201).send({ guide_blocks });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.patch<{
+      Params: {
+        project_id: string;
+        guide_id: string;
+        guide_block_id: string;
+      };
+      Body: UpdateGuideBlockScreenshotInput;
+    }>("/:project_id/guides/:guide_id/blocks/:guide_block_id/screenshot", {
+      schema: {
+        body: update_guide_block_screenshot_body_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const guide_block = await dependencies.guide_service.update_guide_block_screenshot({
+          auth,
+          project_id: request.params.project_id,
+          guide_id: request.params.guide_id,
+          guide_block_id: request.params.guide_block_id,
+          data: pick_update_guide_block_screenshot_data(request.body),
+        });
+
+        return reply.status(200).send({ guide_block });
       } catch (error) {
         return handle_domain_error(error, reply);
       }

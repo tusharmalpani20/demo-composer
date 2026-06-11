@@ -103,6 +103,10 @@ const build_test_app = async (
       }),
       delete_capture_asset: async () => undefined,
       ...overrides.capture_asset_service,
+      list_project_capture_assets: overrides.capture_asset_service?.list_project_capture_assets ?? (async () => [{
+        ...capture_asset,
+        file_url: `/api/v1/projects/${capture_asset.project_id}/capture-sessions/${capture_asset.capture_session_id}/assets/${capture_asset.id}/file`,
+      }]),
     },
   }), { prefix: "/api/v1/projects" });
   return app;

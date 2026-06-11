@@ -509,4 +509,80 @@ describe("DB-backed capture asset API", () => {
 
     await app.close();
   });
+
+  it("lists active screenshot assets across a project for guide editing", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const first_capture_session_id = await create_capture_session(session_token, project_id);
+    const second_capture_session_id = await create_capture_session(session_token, project_id);
+    const app = build({ logger: false });
+
+    const first_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${first_capture_session_id}/assets`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        asset_type: "screenshot",
+        captured_at: "2026-06-05T10:00:00.000Z",
+        file: {
+          storage_key: "captures/acme/project/session/screenshot-1.png",
+          mime_type: "image/png",
+          size_bytes: 123456,
+          original_name: "screenshot-1.png",
+        },
+      },
+    });
+    const second_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${second_capture_session_id}/assets`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        asset_type: "screenshot",
+        captured_at: "2026-06-05T10:05:00.000Z",
+        file: {
+          storage_key: "captures/acme/project/session/screenshot-2.png",
+          mime_type: "image/png",
+          size_bytes: 456789,
+          original_name: "screenshot-2.png",
+        },
+      },
+    });
+
+    expect(first_response.statusCode).toBe(201);
+    expect(second_response.statusCode).toBe(201);
+
+    const project_list_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/capture-assets?asset_type=screenshot`,
+      cookies: { demo_composer_session: session_token },
+    });
+
+    expect(project_list_response.statusCode).toBe(200);
+    expect(project_list_response.json().capture_assets.map((asset: {
+      id: string;
+      capture_session_id: string;
+      file_url: string;
+      file: { original_name: string | null };
+    }) => ({
+      id: asset.id,
+      capture_session_id: asset.capture_session_id,
+      file_url: asset.file_url,
+      original_name: asset.file.original_name,
+    }))).toEqual([
+      {
+        id: first_response.json().capture_asset.id,
+        capture_session_id: first_capture_session_id,
+        file_url: `/api/v1/projects/${project_id}/capture-sessions/${first_capture_session_id}/assets/${first_response.json().capture_asset.id}/file`,
+        original_name: "screenshot-1.png",
+      },
+      {
+        id: second_response.json().capture_asset.id,
+        capture_session_id: second_capture_session_id,
+        file_url: `/api/v1/projects/${project_id}/capture-sessions/${second_capture_session_id}/assets/${second_response.json().capture_asset.id}/file`,
+        original_name: "screenshot-2.png",
+      },
+    ]);
+
+    await app.close();
+  });
 });

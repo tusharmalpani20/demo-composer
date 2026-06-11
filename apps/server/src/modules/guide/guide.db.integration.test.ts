@@ -524,4 +524,111 @@ describe("DB-backed guide API", () => {
 
     await app.close();
   });
+
+  it("replaces and hides guide step screenshots without mutating capture source records", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const capture_session_id = await create_capture_session(session_token, project_id);
+    const source_asset_id = await create_capture_asset(session_token, project_id, capture_session_id);
+    const replacement_asset_id = await create_capture_asset(session_token, project_id, capture_session_id);
+
+    await create_capture_event(session_token, project_id, capture_session_id, {
+      event_type: "capture",
+      event_index: 1,
+      capture_asset_id: source_asset_id,
+      page_title: "Department List",
+      page_url: "https://example.test/departments",
+    });
+
+    const app = build({ logger: false });
+    const create_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/from-capture-session/${capture_session_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        title: "Screenshot replacement guide",
+      },
+    });
+
+    expect(create_response.statusCode).toBe(201);
+    const guide_id = create_response.json().guide.id as string;
+    const guide_block_id = create_response.json().guide_blocks[0].id as string;
+
+    const replace_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/${guide_block_id}/screenshot`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        capture_asset_id: replacement_asset_id,
+      },
+    });
+
+    expect(replace_response.statusCode).toBe(200);
+    expect(replace_response.json().guide_block).toMatchObject({
+      id: guide_block_id,
+      source_capture_asset_id: source_asset_id,
+      selected_capture_asset_id: replacement_asset_id,
+      screenshot_hidden: false,
+      display_capture_asset_id: replacement_asset_id,
+    });
+
+    const after_replace_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
+
+    expect(after_replace_response.statusCode).toBe(200);
+    expect(after_replace_response.json().guide_blocks[0]).toMatchObject({
+      id: guide_block_id,
+      source_capture_asset_id: source_asset_id,
+      selected_capture_asset_id: replacement_asset_id,
+      screenshot_hidden: false,
+      display_capture_asset_id: replacement_asset_id,
+    });
+    expect(after_replace_response.json().source_capture_assets.map((asset: { id: string }) => asset.id))
+      .toEqual([replacement_asset_id]);
+
+    const source_block = await pool.query<{ source_capture_asset_id: string | null }>(`
+      SELECT source_capture_asset_id
+      FROM guide_schema.guide_block
+      WHERE id = $1
+    `, [guide_block_id]);
+    expect(source_block.rows[0]?.source_capture_asset_id).toBe(source_asset_id);
+
+    const hide_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/${guide_block_id}/screenshot`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        capture_asset_id: null,
+      },
+    });
+
+    expect(hide_response.statusCode).toBe(200);
+    expect(hide_response.json().guide_block).toMatchObject({
+      id: guide_block_id,
+      source_capture_asset_id: source_asset_id,
+      selected_capture_asset_id: null,
+      screenshot_hidden: true,
+      display_capture_asset_id: null,
+    });
+
+    const after_hide_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
+
+    expect(after_hide_response.statusCode).toBe(200);
+    expect(after_hide_response.json().guide_blocks[0]).toMatchObject({
+      id: guide_block_id,
+      selected_capture_asset_id: null,
+      screenshot_hidden: true,
+      display_capture_asset_id: null,
+    });
+    expect(after_hide_response.json().source_capture_assets).toEqual([]);
+
+    await app.close();
+  });
 });

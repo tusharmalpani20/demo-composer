@@ -159,6 +159,9 @@ const build_repository = (): GuideRepository & {
     async list_active_capture_asset_ids(input) {
       return input.capture_asset_ids.filter((id) => id === "asset_1");
     },
+    async active_screenshot_asset_exists(input) {
+      return input.capture_asset_id === "asset_1";
+    },
     async create_guide_from_capture(input) {
       created_inputs.push(input);
       return guide_detail;
@@ -231,6 +234,9 @@ const build_repository = (): GuideRepository & {
         source_capture_session_id: "capture_session_1",
         source_capture_event_id: "event_1",
         source_capture_asset_id: "asset_1",
+        selected_capture_asset_id: null,
+        screenshot_hidden: false,
+        display_capture_asset_id: "asset_1",
         block_type: "step",
         content: null,
         block_index: 1,
@@ -248,6 +254,9 @@ const build_repository = (): GuideRepository & {
         source_capture_session_id: "capture_session_1",
         source_capture_event_id: "event_2",
         source_capture_asset_id: "asset_1",
+        selected_capture_asset_id: null,
+        screenshot_hidden: false,
+        display_capture_asset_id: "asset_1",
         block_type: "step",
         content: null,
         block_index: 2,
@@ -269,6 +278,9 @@ const build_repository = (): GuideRepository & {
         source_capture_session_id: "capture_session_1",
         source_capture_event_id: null,
         source_capture_asset_id: null,
+        selected_capture_asset_id: null,
+        screenshot_hidden: false,
+        display_capture_asset_id: null,
         block_type: "step",
         content: null,
         block_index: index + 1,
@@ -290,6 +302,9 @@ const build_repository = (): GuideRepository & {
         source_capture_session_id: null,
         source_capture_event_id: null,
         source_capture_asset_id: null,
+        selected_capture_asset_id: null,
+        screenshot_hidden: false,
+        display_capture_asset_id: null,
         block_type: "step",
         content: null,
         block_index: 1,
@@ -327,9 +342,37 @@ const build_repository = (): GuideRepository & {
         source_capture_session_id: null,
         source_capture_event_id: null,
         source_capture_asset_id: null,
+        selected_capture_asset_id: null,
+        screenshot_hidden: false,
+        display_capture_asset_id: null,
         block_type: "tip",
         content: input.data.content,
         block_index: 2,
+        created_by_id: "org_user_1",
+        updated_by_id: input.actor_org_user_id,
+        version: 2,
+        created_at: "2026-06-05T00:00:00.000Z",
+        updated_at: "2026-06-05T00:10:00.000Z",
+        step: null,
+      };
+    },
+    async update_guide_block_screenshot(input) {
+      return {
+        id: input.guide_block_id,
+        organization_id: input.organization_id,
+        project_id: input.project_id,
+        guide_id: input.guide_id,
+        source_capture_session_id: "capture_session_1",
+        source_capture_event_id: "event_1",
+        source_capture_asset_id: "asset_1",
+        selected_capture_asset_id: input.data.selected_capture_asset_id,
+        screenshot_hidden: input.data.screenshot_hidden,
+        display_capture_asset_id: input.data.screenshot_hidden
+          ? null
+          : input.data.selected_capture_asset_id ?? "asset_1",
+        block_type: "step",
+        content: null,
+        block_index: 1,
         created_by_id: "org_user_1",
         updated_by_id: input.actor_org_user_id,
         version: 2,
@@ -766,7 +809,10 @@ describe("guide service", () => {
       source_capture_session_id: null,
       source_capture_event_id: null,
       source_capture_asset_id: null,
-      block_type: "tip",
+      selected_capture_asset_id: null,
+        screenshot_hidden: false,
+        display_capture_asset_id: null,
+        block_type: "tip",
       content: {
         title: "Old title",
         body: null,

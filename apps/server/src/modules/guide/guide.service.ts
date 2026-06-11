@@ -48,6 +48,9 @@ export type GuideBlock = {
   source_capture_session_id: string | null;
   source_capture_event_id: string | null;
   source_capture_asset_id: string | null;
+  selected_capture_asset_id: string | null;
+  screenshot_hidden: boolean;
+  display_capture_asset_id: string | null;
   block_type: GuideBlockType;
   content: GuideBlockContent | null;
   block_index: number;
@@ -136,6 +139,10 @@ export type UpdateGuideBlockInput = {
   content?: GuideBlockContent | null;
 };
 
+export type UpdateGuideBlockScreenshotInput = {
+  capture_asset_id: string | null;
+};
+
 export type NormalizedUpdateGuideInput = {
   title?: string;
   description?: string | null;
@@ -162,6 +169,11 @@ export type NormalizedCreateGuideBlockInput = {
 
 export type NormalizedUpdateGuideBlockInput = {
   content: GuideBlockContent;
+};
+
+export type NormalizedUpdateGuideBlockScreenshotInput = {
+  selected_capture_asset_id: string | null;
+  screenshot_hidden: boolean;
 };
 
 export type NormalizedCreateGuideFromCaptureInput = {
@@ -201,6 +213,11 @@ export type GuideRepository = {
     capture_session_id: string;
     capture_asset_ids: string[];
   }) => Promise<string[]>;
+  active_screenshot_asset_exists: (input: {
+    organization_id: string;
+    project_id: string;
+    capture_asset_id: string;
+  }) => Promise<boolean>;
   create_guide_from_capture: (input: {
     organization_id: string;
     project_id: string;
@@ -264,6 +281,14 @@ export type GuideRepository = {
     guide_block_id: string;
     actor_org_user_id: string;
     data: NormalizedUpdateGuideBlockInput;
+  }) => Promise<GuideBlock>;
+  update_guide_block_screenshot: (input: {
+    organization_id: string;
+    project_id: string;
+    guide_id: string;
+    guide_block_id: string;
+    actor_org_user_id: string;
+    data: NormalizedUpdateGuideBlockScreenshotInput;
   }) => Promise<GuideBlock>;
   delete_guide_block: (input: {
     organization_id: string;
@@ -337,6 +362,12 @@ export class InvalidGuideBlockOrderError extends Error {
 export class InvalidGuideBlockContentError extends Error {
   constructor() {
     super("Guide block content is invalid");
+  }
+}
+
+export class InvalidGuideBlockScreenshotError extends Error {
+  constructor() {
+    super("Guide block screenshot is invalid");
   }
 }
 
@@ -471,6 +502,24 @@ const normalize_update_guide_block_input = (
 
   return {
     content: normalize_block_content(block_type, input.content),
+  };
+};
+
+const normalize_update_guide_block_screenshot_input = (
+  input: UpdateGuideBlockScreenshotInput
+): NormalizedUpdateGuideBlockScreenshotInput => {
+  const capture_asset_id = compact_optional_string(input.capture_asset_id);
+
+  if (!capture_asset_id) {
+    return {
+      selected_capture_asset_id: null,
+      screenshot_hidden: true,
+    };
+  }
+
+  return {
+    selected_capture_asset_id: capture_asset_id,
+    screenshot_hidden: false,
   };
 };
 
@@ -926,6 +975,55 @@ export const build_guide_service = (repository: GuideRepository) => {
     });
   };
 
+  const update_guide_block_screenshot = async (input: {
+    auth: GuideAuthContext;
+    project_id: string;
+    guide_id: string;
+    guide_block_id: string;
+    data: UpdateGuideBlockScreenshotInput;
+  }) => {
+    const data = normalize_update_guide_block_screenshot_input(input.data);
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      guide_id: input.guide_id,
+    };
+    await ensure_project_exists({
+      organization_id: scope.organization_id,
+      project_id: scope.project_id,
+    });
+    await ensure_editable_guide(scope);
+
+    const block = (await repository.list_guide_blocks(scope))
+      .find((candidate) => candidate.id === input.guide_block_id);
+
+    if (!block) {
+      throw new GuideBlockNotFoundError();
+    }
+
+    if (block.block_type !== "step") {
+      throw new InvalidGuideBlockScreenshotError();
+    }
+
+    if (
+      data.selected_capture_asset_id
+      && !await repository.active_screenshot_asset_exists({
+        organization_id: scope.organization_id,
+        project_id: scope.project_id,
+        capture_asset_id: data.selected_capture_asset_id,
+      })
+    ) {
+      throw new InvalidGuideBlockScreenshotError();
+    }
+
+    return repository.update_guide_block_screenshot({
+      ...scope,
+      guide_block_id: input.guide_block_id,
+      actor_org_user_id: input.auth.actor_org_user_id,
+      data,
+    });
+  };
+
   const delete_guide_block = async (input: {
     auth: GuideAuthContext;
     project_id: string;
@@ -963,6 +1061,7 @@ export const build_guide_service = (repository: GuideRepository) => {
     reorder_guide_blocks,
     create_guide_block,
     update_guide_block,
+    update_guide_block_screenshot,
     delete_guide_block,
   };
 };

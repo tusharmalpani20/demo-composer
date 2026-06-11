@@ -65,6 +65,10 @@ describe("capture asset app integration", () => {
         create_capture_asset: async () => capture_asset,
         upload_capture_asset: async () => capture_asset,
         list_capture_assets: async () => [capture_asset],
+        list_project_capture_assets: async () => [{
+          ...capture_asset,
+          file_url: `/api/v1/projects/${capture_asset.project_id}/capture-sessions/${capture_asset.capture_session_id}/assets/${capture_asset.id}/file`,
+        }],
         get_capture_asset: async () => capture_asset,
         get_capture_asset_file: async () => ({
           stream: Readable.from(Buffer.from("file")),

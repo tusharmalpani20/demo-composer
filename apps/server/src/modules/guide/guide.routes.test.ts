@@ -12,6 +12,7 @@ import {
   GuideStepNotFoundError,
   InvalidGuideBlockContentError,
   InvalidGuideBlockOrderError,
+  InvalidGuideBlockScreenshotError,
   InvalidGuideInputError,
   InvalidGuideStepInputError,
   ProjectNotFoundError,
@@ -63,6 +64,9 @@ const guide_detail: GuideDetail = {
     source_capture_session_id: "capture_session_1",
     source_capture_event_id: "event_1",
     source_capture_asset_id: "asset_1",
+    selected_capture_asset_id: null,
+    screenshot_hidden: false,
+    display_capture_asset_id: "asset_1",
     block_type: "step",
     content: null,
     block_index: 1,
@@ -137,6 +141,12 @@ const build_test_app = async (
       update_guide_block: async () => ({ ...guide_block, block_type: "tip", content: { title: "Tip", body: "Details" }, step: null }),
       delete_guide_block: async () => undefined,
       ...overrides.guide_service,
+      update_guide_block_screenshot: overrides.guide_service?.update_guide_block_screenshot ?? (async () => ({
+        ...guide_block,
+        selected_capture_asset_id: "asset_1",
+        screenshot_hidden: false,
+        display_capture_asset_id: "asset_1",
+      })),
     },
   }), { prefix: "/api/v1/projects" });
   return app;
@@ -455,6 +465,85 @@ describe("guide routes", () => {
     await app.close();
   });
 
+  it("updates guide block screenshot selection through the service", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      guide_service: {
+        update_guide_block_screenshot: async (input) => {
+          seen_inputs.push(input);
+          return {
+            ...guide_block,
+            selected_capture_asset_id: input.data.capture_asset_id,
+            screenshot_hidden: input.data.capture_asset_id === null,
+            display_capture_asset_id: input.data.capture_asset_id,
+          };
+        },
+      },
+    });
+
+    const replace_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/screenshot",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        capture_asset_id: "asset_2",
+        organization_id: "attacker",
+        selected_capture_asset_id: "attacker_asset",
+      },
+    });
+    const remove_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/screenshot",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        capture_asset_id: null,
+      },
+    });
+
+    expect(replace_response.statusCode).toBe(200);
+    expect(replace_response.json().guide_block).toMatchObject({
+      id: "block_1",
+      selected_capture_asset_id: "asset_2",
+      screenshot_hidden: false,
+      display_capture_asset_id: "asset_2",
+    });
+    expect(remove_response.statusCode).toBe(200);
+    expect(remove_response.json().guide_block).toMatchObject({
+      id: "block_1",
+      selected_capture_asset_id: null,
+      screenshot_hidden: true,
+      display_capture_asset_id: null,
+    });
+    expect(seen_inputs).toEqual([
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        guide_id: "guide_1",
+        guide_block_id: "block_1",
+        data: {
+          capture_asset_id: "asset_2",
+        },
+      },
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        guide_id: "guide_1",
+        guide_block_id: "block_1",
+        data: {
+          capture_asset_id: null,
+        },
+      },
+    ]);
+    expect(JSON.stringify(replace_response.json())).not.toContain("attacker");
+    await app.close();
+  });
+
   it("maps auth and domain errors to stable responses", async () => {
     const unauthenticated_app = await build_test_app({
       auth_service: {
@@ -481,6 +570,7 @@ describe("guide routes", () => {
       { error: new GuideBlockNotFoundError(), status: 404, type: "guide_block_not_found" },
       { error: new InvalidGuideBlockOrderError(), status: 400, type: "invalid_guide_block_order" },
       { error: new InvalidGuideBlockContentError(), status: 400, type: "invalid_guide_block_content" },
+      { error: new InvalidGuideBlockScreenshotError(), status: 400, type: "invalid_guide_block_screenshot" },
       { error: new InvalidGuideStepInputError(), status: 400, type: "invalid_guide_step" },
       { error: new GuideNotEditableError(), status: 409, type: "guide_not_editable" },
     ];
