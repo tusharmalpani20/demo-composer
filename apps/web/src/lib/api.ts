@@ -17,6 +17,8 @@ import type {
   PublicPublishLinkResponse,
   UpdateGuideBlockInput,
   UpdateGuideBlockScreenshotInput,
+  UploadGuideBlockScreenshotInput,
+  UploadGuideBlockScreenshotResponse,
 } from "../features/guide/types";
 import type { Project, ProjectStatus } from "../features/project/types";
 
@@ -377,6 +379,46 @@ export const updateGuideBlockScreenshot = async (
     }
   )
 );
+
+export const uploadGuideBlockScreenshot = async (
+  projectId: string,
+  guideId: string,
+  blockId: string,
+  input: UploadGuideBlockScreenshotInput
+): Promise<UploadGuideBlockScreenshotResponse> => {
+  const body = new FormData();
+  body.append("file", input.file);
+
+  if (input.width !== undefined) {
+    body.append("width", String(input.width));
+  }
+  if (input.height !== undefined) {
+    body.append("height", String(input.height));
+  }
+  if (input.devicePixelRatio !== undefined) {
+    body.append("device_pixel_ratio", String(input.devicePixelRatio));
+  }
+  if (input.pageUrl !== undefined) {
+    body.append("page_url", input.pageUrl);
+  }
+  if (input.pageTitle !== undefined) {
+    body.append("page_title", input.pageTitle);
+  }
+  if (input.capturedAt !== undefined) {
+    body.append("captured_at", input.capturedAt);
+  }
+  if (input.metadata !== undefined) {
+    body.append("metadata", JSON.stringify(input.metadata));
+  }
+
+  return requestJson<UploadGuideBlockScreenshotResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/${encodeURIComponent(blockId)}/screenshot-upload`,
+    {
+      method: "POST",
+      body,
+    }
+  );
+};
 
 export const reorderGuideBlocks = async (
   projectId: string,

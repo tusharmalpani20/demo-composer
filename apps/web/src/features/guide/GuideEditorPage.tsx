@@ -13,6 +13,7 @@ import {
   updateGuide,
   updateGuideBlock,
   updateGuideBlockScreenshot,
+  uploadGuideBlockScreenshot,
   updateGuideStep,
 } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
@@ -74,6 +75,7 @@ export type GuideEditorPageProps = {
   saveBlock?: typeof updateGuideBlock;
   loadScreenshotAssets?: typeof listProjectScreenshotAssets;
   saveBlockScreenshot?: typeof updateGuideBlockScreenshot;
+  uploadBlockScreenshot?: typeof uploadGuideBlockScreenshot;
   reorderBlocks?: typeof reorderGuideBlocks;
   removeBlock?: typeof deleteGuideBlock;
   currentPath?: string;
@@ -264,6 +266,7 @@ export const GuideEditorPage = ({
   saveBlock = updateGuideBlock,
   loadScreenshotAssets = listProjectScreenshotAssets,
   saveBlockScreenshot = updateGuideBlockScreenshot,
+  uploadBlockScreenshot = uploadGuideBlockScreenshot,
   reorderBlocks = reorderGuideBlocks,
   removeBlock = deleteGuideBlock,
   currentPath = currentBrowserPath(),
@@ -608,6 +611,34 @@ export const GuideEditorPage = ({
     }
   };
 
+  const uploadScreenshot = async (block: GuideBlock, file: File) => {
+    setBusyAction(`upload-screenshot:${block.id}`);
+    setNotice(null);
+
+    try {
+      const response = await uploadBlockScreenshot(projectId, guideId, block.id, { file });
+      patchDetail((detail) => {
+        const withAsset = mergeAssetIntoDetail(detail, response.capture_asset);
+        return {
+          ...withAsset,
+          guide_blocks: updateBlockInBlocks(withAsset.guide_blocks, response.guide_block),
+        };
+      });
+      setScreenshotAssets((current) => (
+        current.some((asset) => asset.id === response.capture_asset.id)
+          ? current
+          : [...current, response.capture_asset]
+      ));
+      setActiveScreenshotPickerBlockId(null);
+      markPublishedDraftStale();
+      setNotice("Screenshot uploaded.");
+    } catch (error: unknown) {
+      handleMutationError(error, "Could not upload screenshot.");
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
   const moveBlock = async (blockId: string, direction: -1 | 1) => {
     if (state.status !== "loaded") {
       return;
@@ -732,6 +763,7 @@ export const GuideEditorPage = ({
       onOpenScreenshotPicker={openScreenshotPicker}
       onCloseScreenshotPicker={() => setActiveScreenshotPickerBlockId(null)}
       onSaveScreenshot={saveScreenshot}
+      onUploadScreenshot={uploadScreenshot}
       onAddBlock={addBlock}
       onMoveBlock={moveBlock}
       onDeleteBlock={deleteBlock}
@@ -787,6 +819,7 @@ const GuideEditorView = ({
   onOpenScreenshotPicker,
   onCloseScreenshotPicker,
   onSaveScreenshot,
+  onUploadScreenshot,
   onAddBlock,
   onMoveBlock,
   onDeleteBlock,
@@ -819,6 +852,7 @@ const GuideEditorView = ({
   onOpenScreenshotPicker: (block: GuideBlock) => void;
   onCloseScreenshotPicker: () => void;
   onSaveScreenshot: (block: GuideBlock, captureAssetId: string | null) => void;
+  onUploadScreenshot: (block: GuideBlock, file: File) => void;
   onAddBlock: (blockType: "step" | "header" | "tip" | "alert", afterBlock?: GuideBlock) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
@@ -943,6 +977,7 @@ const GuideEditorView = ({
                   onOpenScreenshotPicker={onOpenScreenshotPicker}
                   onCloseScreenshotPicker={onCloseScreenshotPicker}
                   onSaveScreenshot={onSaveScreenshot}
+                  onUploadScreenshot={onUploadScreenshot}
                   onAddBlock={onAddBlock}
                   onMoveBlock={onMoveBlock}
                   onDeleteBlock={onDeleteBlock}
@@ -1138,6 +1173,7 @@ const GuideBlockEditor = ({
   onOpenScreenshotPicker,
   onCloseScreenshotPicker,
   onSaveScreenshot,
+  onUploadScreenshot,
   onAddBlock,
   onMoveBlock,
   onDeleteBlock,
@@ -1161,6 +1197,7 @@ const GuideBlockEditor = ({
   onOpenScreenshotPicker: (block: GuideBlock) => void;
   onCloseScreenshotPicker: () => void;
   onSaveScreenshot: (block: GuideBlock, captureAssetId: string | null) => void;
+  onUploadScreenshot: (block: GuideBlock, file: File) => void;
   onAddBlock: (blockType: "step" | "header" | "tip" | "alert", afterBlock?: GuideBlock) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
@@ -1169,6 +1206,7 @@ const GuideBlockEditor = ({
   const step = block.step;
   const actionLabel = step ? "step" : "block";
   const actionBusy = busyAction !== null;
+  const uploadBusy = busyAction === `upload-screenshot:${block.id}`;
   const editableContentBlock = block.block_type === "header" || block.block_type === "tip" || block.block_type === "alert";
 
   return (
@@ -1265,6 +1303,24 @@ const GuideBlockEditor = ({
             </div>
           ) : null}
           <div className={styles.mediaActions}>
+            <label className={`${styles.secondaryButton} ${styles.uploadButton}`}>
+              {uploadBusy ? `Uploading screenshot for step ${blockNumber}` : `Upload screenshot for step ${blockNumber}`}
+              <input
+                aria-label={`Upload screenshot for step ${blockNumber}`}
+                className={styles.fileInput}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={readOnly || actionBusy}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.currentTarget.value = "";
+
+                  if (file) {
+                    onUploadScreenshot(block, file);
+                  }
+                }}
+              />
+            </label>
             <button
               className={styles.secondaryButton}
               type="button"

@@ -23,6 +23,7 @@ import {
   updateGuide,
   updateGuideBlock,
   updateGuideBlockScreenshot,
+  uploadGuideBlockScreenshot,
   updateGuideStep,
 } from "./api";
 
@@ -888,6 +889,64 @@ describe("api client", () => {
         }),
       }
     );
+  });
+
+  it("uploads a guide block screenshot as multipart form data", async () => {
+    const upload_response = {
+      guide_block: {
+        id: "block_1",
+        selected_capture_asset_id: "asset_uploaded",
+        screenshot_hidden: false,
+        display_capture_asset_id: "asset_uploaded",
+      },
+      capture_asset: {
+        id: "asset_uploaded",
+        capture_session_id: "capture_session_1",
+        asset_type: "screenshot",
+        file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_uploaded/file",
+      },
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(upload_response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+    const file = new File(["fake png bytes"], "replacement.png", { type: "image/png" });
+
+    await expect(uploadGuideBlockScreenshot("project_1", "guide_1", "block_1", {
+      file,
+      width: 1440,
+      height: 900,
+      devicePixelRatio: 2,
+      pageUrl: "https://example.test/replacement",
+      pageTitle: "Replacement",
+      capturedAt: "2026-06-05T10:00:00.000Z",
+      metadata: { source: "editor" },
+    })).resolves.toEqual(upload_response);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/v1/projects/project_1/guides/guide_1/blocks/block_1/screenshot-upload");
+    expect(init).toMatchObject({
+      method: "POST",
+      credentials: "include",
+      headers: {
+        accept: "application/json",
+      },
+    });
+    expect(init.headers).not.toHaveProperty("content-type");
+    expect(init.body).toBeInstanceOf(FormData);
+    const body = init.body as FormData;
+    expect(body.get("file")).toBe(file);
+    expect(body.get("width")).toBe("1440");
+    expect(body.get("height")).toBe("900");
+    expect(body.get("device_pixel_ratio")).toBe("2");
+    expect(body.get("page_url")).toBe("https://example.test/replacement");
+    expect(body.get("page_title")).toBe("Replacement");
+    expect(body.get("captured_at")).toBe("2026-06-05T10:00:00.000Z");
+    expect(body.get("metadata")).toBe(JSON.stringify({ source: "editor" }));
   });
 
   it("maps known backend errors", async () => {

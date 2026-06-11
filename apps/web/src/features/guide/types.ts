@@ -140,6 +140,22 @@ export type ProjectScreenshotAssetListResponse = {
   capture_assets: GuideSourceCaptureAsset[];
 };
 
+export type UploadGuideBlockScreenshotInput = {
+  file: File;
+  width?: number;
+  height?: number;
+  devicePixelRatio?: number;
+  pageUrl?: string;
+  pageTitle?: string;
+  capturedAt?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type UploadGuideBlockScreenshotResponse = {
+  guide_block: GuideBlock;
+  capture_asset: GuideSourceCaptureAsset;
+};
+
 export type PublishedGuideSnapshot = {
   artifact_type: "guide";
   guide: {

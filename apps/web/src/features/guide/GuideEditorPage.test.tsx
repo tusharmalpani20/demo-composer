@@ -199,6 +199,7 @@ const renderPage = (overrides: {
   saveBlock?: GuideEditorPageProps["saveBlock"];
   loadScreenshotAssets?: GuideEditorPageProps["loadScreenshotAssets"];
   saveBlockScreenshot?: GuideEditorPageProps["saveBlockScreenshot"];
+  uploadBlockScreenshot?: GuideEditorPageProps["uploadBlockScreenshot"];
   reorderBlocks?: GuideEditorPageProps["reorderBlocks"];
   removeBlock?: GuideEditorPageProps["removeBlock"];
   loadPublishStatus?: GuideEditorPageProps["loadPublishStatus"];
@@ -316,6 +317,41 @@ const renderPage = (overrides: {
       },
     };
   });
+  const uploadBlockScreenshot = overrides.uploadBlockScreenshot ?? vi.fn(async (_projectId, _guideId, blockId) => {
+    const block = guideDetail.guide_blocks.find((candidate) => candidate.id === blockId);
+    const capture_asset: GuideSourceCaptureAsset = {
+      id: "asset_uploaded",
+      capture_session_id: "capture_session_1",
+      asset_type: "screenshot",
+      width: 1440,
+      height: 900,
+      device_pixel_ratio: 1,
+      page_url: "https://example.test/uploaded",
+      page_title: "Uploaded replacement",
+      captured_at: "2026-06-05T10:04:00.000Z",
+      file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_uploaded/file",
+      file: {
+        id: "file_uploaded",
+        original_name: "replacement.png",
+        mime_type: "image/png",
+        size_bytes: 456789,
+      },
+    };
+
+    if (!block) {
+      throw new Error("missing block fixture");
+    }
+
+    return {
+      guide_block: {
+        ...block,
+        selected_capture_asset_id: capture_asset.id,
+        screenshot_hidden: false,
+        display_capture_asset_id: capture_asset.id,
+      },
+      capture_asset,
+    };
+  });
   const reorderBlocks = overrides.reorderBlocks ?? vi.fn(async (
     _projectId: string,
     _guideId: string,
@@ -357,6 +393,7 @@ const renderPage = (overrides: {
       saveBlock={saveBlock}
       loadScreenshotAssets={loadScreenshotAssets}
       saveBlockScreenshot={saveBlockScreenshot}
+      uploadBlockScreenshot={uploadBlockScreenshot}
       reorderBlocks={reorderBlocks}
       removeBlock={removeBlock}
       publishCurrentGuide={publishCurrentGuide}
@@ -374,6 +411,7 @@ const renderPage = (overrides: {
     saveBlock,
     loadScreenshotAssets,
     saveBlockScreenshot,
+    uploadBlockScreenshot,
     reorderBlocks,
     removeBlock,
     publishCurrentGuide,
@@ -663,6 +701,63 @@ describe("GuideEditorPage", () => {
     });
     expect(screen.queryByRole("img", { name: "Review Department" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Attach screenshot for step 1" })).toBeInTheDocument();
+  });
+
+  it("uploads a replacement screenshot from the editor", async () => {
+    const uploadBlockScreenshot = vi.fn(async (_projectId, _guideId, blockId, input) => {
+      const block = guideDetail.guide_blocks.find((candidate) => candidate.id === blockId)!;
+      const capture_asset: GuideSourceCaptureAsset = {
+        id: "asset_uploaded",
+        capture_session_id: "capture_session_1",
+        asset_type: "screenshot",
+        width: 1440,
+        height: 900,
+        device_pixel_ratio: 1,
+        page_url: "https://example.test/uploaded",
+        page_title: "Uploaded replacement",
+        captured_at: "2026-06-05T10:04:00.000Z",
+        file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_uploaded/file",
+        file: {
+          id: "file_uploaded",
+          original_name: input.file.name,
+          mime_type: input.file.type,
+          size_bytes: input.file.size,
+        },
+      };
+
+      return {
+        guide_block: {
+          ...block,
+          selected_capture_asset_id: capture_asset.id,
+          screenshot_hidden: false,
+          display_capture_asset_id: capture_asset.id,
+        },
+        capture_asset,
+      };
+    });
+    renderPage({
+      loadPublishStatus: async () => publishedStatus(),
+      uploadBlockScreenshot,
+    });
+    const file = new File(["replacement"], "replacement.png", { type: "image/png" });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Upload screenshot for step 1"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(uploadBlockScreenshot).toHaveBeenCalledWith("project_1", "guide_1", "block_1", {
+        file,
+      });
+    });
+    expect(await screen.findByRole("img", { name: "Uploaded replacement" })).toHaveAttribute(
+      "src",
+      "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_uploaded/file"
+    );
+    expect(screen.getByText("Screenshot uploaded.")).toBeInTheDocument();
+    expect(screen.getByText("Draft has changes not yet published.")).toBeInTheDocument();
   });
 
   it("shows publish-panel busy labels without locking guide editing", async () => {
