@@ -1,6 +1,6 @@
 # Project Zoom-Out Status
 
-Date: 2026-06-10
+Date: 2026-06-11
 
 ## Product Intent
 
@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `031` exist and have been implemented through guide publish foundation.
+- Plans `001` through `032` exist and have been implemented through public guide reader.
 
 ### Backend Foundation
 
@@ -115,6 +115,7 @@ The agreed implementation style is:
   - update guide step
   - reorder guide blocks
   - delete guide block
+  - public publish-link resolution
   - asset URL resolution
 - Shared portal topbar supports sign out.
 - Login defaults to `/projects`.
@@ -125,6 +126,7 @@ The agreed implementation style is:
 - Guide list page shows project guides.
 - Guide editor page supports editing guide title/description/status, updating step title/body, reordering blocks, deleting blocks, rendering source screenshots inline, and opening editor screenshots in the focused screenshot viewer.
 - Guide preview page renders a private Scribe-style read-only guide with ordered steps, active source screenshots, and a focused screenshot viewer with zoom and previous/next navigation.
+- Public guide reader route `/p/:slug` resolves active published guide snapshots without portal authentication, renders ordered published steps and screenshots, handles missing/revoked/malformed links, and reuses the focused screenshot viewer.
 - Web has focused page, route, API, and app tests for the implemented screens.
 
 ## Not Built Yet
@@ -158,7 +160,6 @@ The agreed implementation style is:
 - Guide editor does not yet insert non-step blocks from the UI.
 - Guide editor does not yet attach/change screenshots per step.
 - Guide annotations/highlights are not implemented.
-- Public guide reader is not implemented.
 - Guide export is not implemented.
 - Portal publish controls are not implemented.
 
@@ -168,7 +169,7 @@ The agreed implementation style is:
 
 ### Publishing And Viewing
 
-- No public guide/demo viewer yet.
+- No public interactive demo viewer yet.
 - No embed flow.
 - No advanced access rules, passwords, expiry, or viewer sessions.
 
@@ -187,6 +188,6 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, and extension can now complete the first end-to-end capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their source screenshots, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, and publish that guide as an immutable backend snapshot behind a stable public link.
+The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their source screenshots, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, publish that guide as an immutable backend snapshot behind a stable public link, and open that public `/p/:slug` guide outside portal authentication.
 
-The next major milestone should build the public guide reader: a public web route that resolves a published guide snapshot by slug, renders the Scribe-style guide outside portal authentication, and reuses the published asset file URLs for screenshots.
+The next major milestone should add portal guide publish controls: publish/republish from the editor or guide list, show current public-link status, copy/open the public URL, and revoke the active link.
