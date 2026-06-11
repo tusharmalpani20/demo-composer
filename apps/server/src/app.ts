@@ -280,6 +280,13 @@ export const build = (opts: BuildOptions = {}) => {
   const default_capture_file_storage = build_local_file_storage_provider({
       root: default_local_storage_root(),
   });
+  const default_capture_asset_service = capture_asset_service ?? build_capture_asset_service(
+      build_capture_asset_repository(pool),
+      {
+          file_storage: default_capture_file_storage,
+          max_upload_bytes: max_screenshot_upload_bytes,
+      }
+  );
 
   app.register(build_project_routes({
       auth_service: {
@@ -307,13 +314,7 @@ export const build = (opts: BuildOptions = {}) => {
       auth_service: {
           get_current_auth_context: default_authentication_session_service.get_current_auth_context,
       },
-      capture_asset_service: capture_asset_service ?? build_capture_asset_service(
-          build_capture_asset_repository(pool),
-          {
-              file_storage: default_capture_file_storage,
-              max_upload_bytes: max_screenshot_upload_bytes,
-          }
-      ),
+      capture_asset_service: default_capture_asset_service,
   }), {
       prefix: "/api/v1/projects",
   });
@@ -336,6 +337,7 @@ export const build = (opts: BuildOptions = {}) => {
       guide_service: guide_service ?? build_guide_service(
           build_guide_repository(pool)
       ),
+      capture_asset_service: default_capture_asset_service,
   }), {
       prefix: "/api/v1/projects",
   });

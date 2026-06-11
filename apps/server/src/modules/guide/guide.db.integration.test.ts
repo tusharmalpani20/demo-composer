@@ -121,6 +121,40 @@ const create_capture_event = async (
   return response.json().capture_event.id as string;
 };
 
+const multipart_payload = (parts: Array<{
+  name: string;
+  value: string | Buffer;
+  filename?: string;
+  content_type?: string;
+}>) => {
+  const boundary = "----demo-composer-test-boundary";
+  const chunks: Buffer[] = [];
+
+  for (const part of parts) {
+    chunks.push(Buffer.from(`--${boundary}\r\n`));
+    chunks.push(Buffer.from(
+      `Content-Disposition: form-data; name="${part.name}"${
+        part.filename ? `; filename="${part.filename}"` : ""
+      }\r\n`
+    ));
+    if (part.content_type) {
+      chunks.push(Buffer.from(`Content-Type: ${part.content_type}\r\n`));
+    }
+    chunks.push(Buffer.from("\r\n"));
+    chunks.push(Buffer.isBuffer(part.value) ? part.value : Buffer.from(part.value));
+    chunks.push(Buffer.from("\r\n"));
+  }
+
+  chunks.push(Buffer.from(`--${boundary}--\r\n`));
+
+  return {
+    headers: {
+      "content-type": `multipart/form-data; boundary=${boundary}`,
+    },
+    payload: Buffer.concat(chunks),
+  };
+};
+
 describe("DB-backed guide API", () => {
   beforeEach(async () => {
     await reset_foundation_tables();
@@ -628,6 +662,152 @@ describe("DB-backed guide API", () => {
       display_capture_asset_id: null,
     });
     expect(after_hide_response.json().source_capture_assets).toEqual([]);
+
+    await app.close();
+  });
+
+  it("uploads a replacement guide step screenshot and publishes it in the snapshot", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const capture_session_id = await create_capture_session(session_token, project_id);
+    const source_asset_id = await create_capture_asset(session_token, project_id, capture_session_id);
+
+    await create_capture_event(session_token, project_id, capture_session_id, {
+      event_type: "capture",
+      event_index: 1,
+      capture_asset_id: source_asset_id,
+      page_title: "Department List",
+      page_url: "https://example.test/departments",
+    });
+
+    const app = build({ logger: false });
+    const create_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/from-capture-session/${capture_session_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        title: "Uploaded screenshot guide",
+      },
+    });
+
+    expect(create_response.statusCode).toBe(201);
+    const guide_id = create_response.json().guide.id as string;
+    const guide_block_id = create_response.json().guide_blocks[0].id as string;
+    const uploaded_bytes = Buffer.from("uploaded replacement png bytes");
+    const upload_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/${guide_block_id}/screenshot-upload`,
+      cookies: { demo_composer_session: session_token },
+      ...multipart_payload([
+        {
+          name: "file",
+          filename: "replacement.png",
+          content_type: "image/png",
+          value: uploaded_bytes,
+        },
+        { name: "width", value: "1440" },
+        { name: "height", value: "900" },
+        { name: "page_title", value: "Uploaded replacement" },
+        { name: "page_url", value: "https://example.test/replacement" },
+        { name: "metadata", value: JSON.stringify({ source: "editor" }) },
+        { name: "capture_session_id", value: "attacker_session" },
+      ]),
+    });
+
+    expect(upload_response.statusCode).toBe(201);
+    const uploaded_asset_id = upload_response.json().capture_asset.id as string;
+    expect(upload_response.json().capture_asset).toMatchObject({
+      id: uploaded_asset_id,
+      capture_session_id,
+      asset_type: "screenshot",
+      width: 1440,
+      height: 900,
+      page_title: "Uploaded replacement",
+      page_url: "https://example.test/replacement",
+      file_url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${uploaded_asset_id}/file`,
+      file: {
+        original_name: "replacement.png",
+        mime_type: "image/png",
+        size_bytes: uploaded_bytes.length,
+      },
+    });
+    expect(upload_response.json().guide_block).toMatchObject({
+      id: guide_block_id,
+      source_capture_asset_id: source_asset_id,
+      selected_capture_asset_id: uploaded_asset_id,
+      screenshot_hidden: false,
+      display_capture_asset_id: uploaded_asset_id,
+    });
+    expect(JSON.stringify(upload_response.json())).not.toContain("attacker_session");
+    expect(JSON.stringify(upload_response.json())).not.toContain("storage_key");
+
+    const uploaded_rows = await pool.query<{
+      asset_id: string;
+      file_id: string;
+      capture_session_id: string;
+      original_name: string;
+      mime_type: string;
+      size_bytes: string;
+      selected_capture_asset_id: string;
+      source_capture_asset_id: string;
+    }>(`
+      SELECT
+        capture_asset.id AS asset_id,
+        app_file.id AS file_id,
+        capture_asset.capture_session_id,
+        app_file.original_name,
+        app_file.mime_type,
+        app_file.size_bytes,
+        guide_block.selected_capture_asset_id,
+        guide_block.source_capture_asset_id
+      FROM capture_schema.capture_asset capture_asset
+      INNER JOIN file_schema.file app_file ON app_file.id = capture_asset.file_id
+      INNER JOIN guide_schema.guide_block guide_block ON guide_block.selected_capture_asset_id = capture_asset.id
+      WHERE capture_asset.id = $1
+    `, [uploaded_asset_id]);
+    expect(uploaded_rows.rows).toEqual([{
+      asset_id: uploaded_asset_id,
+      file_id: expect.any(String),
+      capture_session_id,
+      original_name: "replacement.png",
+      mime_type: "image/png",
+      size_bytes: String(uploaded_bytes.length),
+      selected_capture_asset_id: uploaded_asset_id,
+      source_capture_asset_id: source_asset_id,
+    }]);
+
+    const detail_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
+    expect(detail_response.statusCode).toBe(200);
+    expect(detail_response.json().guide_blocks[0].display_capture_asset_id).toBe(uploaded_asset_id);
+    expect(detail_response.json().source_capture_assets.map((asset: { id: string }) => asset.id))
+      .toEqual([uploaded_asset_id]);
+
+    const publish_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/publish`,
+      cookies: { demo_composer_session: session_token },
+    });
+    expect(publish_response.statusCode).toBe(201);
+    const slug = publish_response.json().publish_link.slug as string;
+
+    const public_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}`,
+    });
+    expect(public_response.statusCode).toBe(200);
+    expect(public_response.json().published_artifact.snapshot.blocks[0].source_asset).toMatchObject({
+      id: uploaded_asset_id,
+      file_url: `/api/v1/public/publish-links/${slug}/assets/${uploaded_asset_id}/file`,
+      file: {
+        original_name: "replacement.png",
+        mime_type: "image/png",
+        size_bytes: uploaded_bytes.length,
+      },
+    });
 
     await app.close();
   });

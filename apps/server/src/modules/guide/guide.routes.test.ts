@@ -1,8 +1,10 @@
 import cookie from "@fastify/cookie";
+import multipart from "@fastify/multipart";
 import fastify from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { UnauthenticatedSessionError } from "../authentication/session.service";
+import type { CaptureAsset } from "../capture-asset/capture-asset.service";
 import {
   CaptureEventNotFoundError,
   CaptureSessionNotFoundError,
@@ -114,17 +116,50 @@ const guide_detail: GuideDetail = {
 };
 const guide_block = guide_detail.guide_blocks[0]!;
 const guide_step = guide_block.step!;
+const uploaded_capture_asset: CaptureAsset = {
+  id: "uploaded_asset_1",
+  organization_id: "organization_1",
+  project_id: "project_1",
+  capture_session_id: "capture_session_1",
+  file: {
+    id: "file_uploaded_1",
+    storage_provider: "local",
+    mime_type: "image/png",
+    size_bytes: 123456,
+    original_name: "replacement.png",
+    checksum_sha256: "checksum",
+  },
+  asset_type: "screenshot",
+  width: 1440,
+  height: 900,
+  device_pixel_ratio: 1,
+  page_url: "https://example.test/departments/replacement",
+  page_title: "Replacement",
+  captured_at: "2026-06-05T00:10:00.000Z",
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-06-05T00:10:00.000Z",
+  updated_at: "2026-06-05T00:10:00.000Z",
+};
 
 const build_test_app = async (
   overrides: {
     auth_service?: Partial<Parameters<typeof build_guide_routes>[0]["auth_service"]>;
     guide_service?: Partial<Parameters<typeof build_guide_routes>[0]["guide_service"]>;
+    capture_asset_service?: Partial<NonNullable<Parameters<typeof build_guide_routes>[0]["capture_asset_service"]>>;
   } = {}
 ) => {
   const app = fastify();
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   await app.register(cookie);
+  await app.register(multipart, {
+    limits: {
+      files: 1,
+      fileSize: 20,
+    },
+  });
   await app.register(build_guide_routes({
     auth_service: {
       get_current_auth_context: async () => auth_context,
@@ -140,6 +175,7 @@ const build_test_app = async (
       create_guide_block: async () => guide_detail.guide_blocks,
       update_guide_block: async () => ({ ...guide_block, block_type: "tip", content: { title: "Tip", body: "Details" }, step: null }),
       delete_guide_block: async () => undefined,
+      prepare_guide_block_screenshot_upload: async () => ({ capture_session_id: "capture_session_1" }),
       ...overrides.guide_service,
       update_guide_block_screenshot: overrides.guide_service?.update_guide_block_screenshot ?? (async () => ({
         ...guide_block,
@@ -148,8 +184,46 @@ const build_test_app = async (
         display_capture_asset_id: "asset_1",
       })),
     },
+    capture_asset_service: {
+      upload_capture_asset: async () => uploaded_capture_asset,
+      ...overrides.capture_asset_service,
+    },
   }), { prefix: "/api/v1/projects" });
   return app;
+};
+
+const multipart_payload = (parts: Array<{
+  name: string;
+  value: string | Buffer;
+  filename?: string;
+  content_type?: string;
+}>) => {
+  const boundary = "----demo-composer-test-boundary";
+  const chunks: Buffer[] = [];
+
+  for (const part of parts) {
+    chunks.push(Buffer.from(`--${boundary}\r\n`));
+    chunks.push(Buffer.from(
+      `Content-Disposition: form-data; name="${part.name}"${
+        part.filename ? `; filename="${part.filename}"` : ""
+      }\r\n`
+    ));
+    if (part.content_type) {
+      chunks.push(Buffer.from(`Content-Type: ${part.content_type}\r\n`));
+    }
+    chunks.push(Buffer.from("\r\n"));
+    chunks.push(Buffer.isBuffer(part.value) ? part.value : Buffer.from(part.value));
+    chunks.push(Buffer.from("\r\n"));
+  }
+
+  chunks.push(Buffer.from(`--${boundary}--\r\n`));
+
+  return {
+    headers: {
+      "content-type": `multipart/form-data; boundary=${boundary}`,
+    },
+    payload: Buffer.concat(chunks),
+  };
 };
 
 describe("guide routes", () => {
@@ -541,6 +615,198 @@ describe("guide routes", () => {
       },
     ]);
     expect(JSON.stringify(replace_response.json())).not.toContain("attacker");
+    await app.close();
+  });
+
+  it("uploads a guide block screenshot then selects the uploaded asset", async () => {
+    const seen_inputs: unknown[] = [];
+    const seen_order: string[] = [];
+    const app = await build_test_app({
+      guide_service: {
+        prepare_guide_block_screenshot_upload: async (input) => {
+          seen_order.push("prepare");
+          seen_inputs.push({ step: "prepare", input });
+          return { capture_session_id: "capture_session_1" };
+        },
+        update_guide_block_screenshot: async (input) => {
+          seen_order.push("select");
+          seen_inputs.push({ step: "select", input });
+          return {
+            ...guide_block,
+            selected_capture_asset_id: input.data.capture_asset_id,
+            screenshot_hidden: false,
+            display_capture_asset_id: input.data.capture_asset_id,
+          };
+        },
+      },
+      capture_asset_service: {
+        upload_capture_asset: async (input) => {
+          seen_order.push("upload");
+          seen_inputs.push({ step: "upload", input });
+          return uploaded_capture_asset;
+        },
+      },
+    });
+    const request_body = multipart_payload([
+      {
+        name: "file",
+        filename: "replacement.png",
+        content_type: "image/png",
+        value: Buffer.from("replacement png bytes"),
+      },
+      { name: "width", value: "1440" },
+      { name: "height", value: "900" },
+      { name: "device_pixel_ratio", value: "2" },
+      { name: "page_url", value: " https://example.test/replacement " },
+      { name: "page_title", value: " Replacement " },
+      { name: "captured_at", value: "2026-06-05T10:00:00.000Z" },
+      { name: "metadata", value: JSON.stringify({ source: "editor" }) },
+      { name: "capture_session_id", value: "attacker_session" },
+    ]);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/screenshot-upload",
+      cookies: { demo_composer_session: "session-token" },
+      ...request_body,
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toEqual({
+      guide_block: {
+        ...guide_block,
+        selected_capture_asset_id: "uploaded_asset_1",
+        screenshot_hidden: false,
+        display_capture_asset_id: "uploaded_asset_1",
+      },
+      capture_asset: {
+        ...uploaded_capture_asset,
+        file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/uploaded_asset_1/file",
+      },
+    });
+    expect(seen_order).toEqual(["prepare", "upload", "select"]);
+    expect(seen_inputs).toEqual([
+      {
+        step: "prepare",
+        input: {
+          auth: {
+            organization_id: "organization_1",
+            actor_org_user_id: "org_user_1",
+          },
+          project_id: "project_1",
+          guide_id: "guide_1",
+          guide_block_id: "block_1",
+        },
+      },
+      {
+        step: "upload",
+        input: {
+          auth: {
+            organization_id: "organization_1",
+            actor_org_user_id: "org_user_1",
+          },
+          project_id: "project_1",
+          capture_session_id: "capture_session_1",
+          file: {
+            stream: expect.any(Object),
+            mime_type: "image/png",
+            original_name: "replacement.png",
+          },
+          data: {
+            width: 1440,
+            height: 900,
+            device_pixel_ratio: 2,
+            page_url: " https://example.test/replacement ",
+            page_title: " Replacement ",
+            captured_at: "2026-06-05T10:00:00.000Z",
+            metadata: { source: "editor" },
+          },
+        },
+      },
+      {
+        step: "select",
+        input: {
+          auth: {
+            organization_id: "organization_1",
+            actor_org_user_id: "org_user_1",
+          },
+          project_id: "project_1",
+          guide_id: "guide_1",
+          guide_block_id: "block_1",
+          data: {
+            capture_asset_id: "uploaded_asset_1",
+          },
+        },
+      },
+    ]);
+    expect(JSON.stringify(response.json())).not.toContain("attacker_session");
+    await app.close();
+  });
+
+  it("does not upload guide screenshot bytes when preflight fails", async () => {
+    const upload_capture_asset = vi.fn(async () => uploaded_capture_asset);
+    const app = await build_test_app({
+      guide_service: {
+        prepare_guide_block_screenshot_upload: async () => {
+          throw new GuideBlockNotFoundError();
+        },
+      },
+      capture_asset_service: {
+        upload_capture_asset,
+      },
+    });
+    const request_body = multipart_payload([
+      {
+        name: "file",
+        filename: "replacement.png",
+        content_type: "image/png",
+        value: Buffer.from("replacement png bytes"),
+      },
+    ]);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks/missing_block/screenshot-upload",
+      cookies: { demo_composer_session: "session-token" },
+      ...request_body,
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json().error.type).toBe("guide_block_not_found");
+    expect(upload_capture_asset).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it("does not report success when guide screenshot selection fails after upload", async () => {
+    const app = await build_test_app({
+      guide_service: {
+        prepare_guide_block_screenshot_upload: async () => ({ capture_session_id: "capture_session_1" }),
+        update_guide_block_screenshot: async () => {
+          throw new InvalidGuideBlockScreenshotError();
+        },
+      },
+      capture_asset_service: {
+        upload_capture_asset: async () => uploaded_capture_asset,
+      },
+    });
+    const request_body = multipart_payload([
+      {
+        name: "file",
+        filename: "replacement.png",
+        content_type: "image/png",
+        value: Buffer.from("replacement png bytes"),
+      },
+    ]);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/screenshot-upload",
+      cookies: { demo_composer_session: "session-token" },
+      ...request_body,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.type).toBe("invalid_guide_block_screenshot");
     await app.close();
   });
 

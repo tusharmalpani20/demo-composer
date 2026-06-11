@@ -6,6 +6,18 @@ import {
 } from "../authentication/session.service";
 import { web_session_cookie_name } from "../authentication/session-cookie";
 import {
+  FileStorageKeyConflictError,
+  FileStorageWriteFailedError,
+  InvalidCaptureAssetUploadError,
+  UnsupportedCaptureAssetUploadTypeError,
+  UploadFileRequiredError,
+  UploadTooLargeError,
+  type CaptureAsset,
+  type CaptureAssetAuthContext,
+  type CaptureAssetWithFileUrl,
+  type UploadCaptureAssetInput,
+} from "../capture-asset/capture-asset.service";
+import {
   CaptureEventNotFoundError,
   CaptureSessionNotFoundError,
   GuideBlockNotFoundError,
@@ -25,6 +37,7 @@ import {
   type GuideBlock,
   type GuideDetail,
   type GuideStep,
+  type PrepareGuideBlockScreenshotUploadResult,
   type UpdateGuideInput,
   type UpdateGuideBlockInput,
   type UpdateGuideBlockScreenshotInput,
@@ -90,12 +103,31 @@ export type GuideRouteDependencies = {
       guide_block_id: string;
       data: UpdateGuideBlockScreenshotInput;
     }) => Promise<GuideBlock>;
+    prepare_guide_block_screenshot_upload: (input: {
+      auth: GuideAuthContext;
+      project_id: string;
+      guide_id: string;
+      guide_block_id: string;
+    }) => Promise<PrepareGuideBlockScreenshotUploadResult>;
     delete_guide_block: (input: {
       auth: GuideAuthContext;
       project_id: string;
       guide_id: string;
       guide_block_id: string;
     }) => Promise<void>;
+  };
+  capture_asset_service: {
+    upload_capture_asset: (input: {
+      auth: CaptureAssetAuthContext;
+      project_id: string;
+      capture_session_id: string;
+      file: {
+        stream: NodeJS.ReadableStream;
+        mime_type: string;
+        original_name?: string | null;
+      };
+      data: UploadCaptureAssetInput;
+    }) => Promise<CaptureAsset>;
   };
 };
 
@@ -165,6 +197,11 @@ const guide_auth_context = (auth: AuthContext): GuideAuthContext => ({
   actor_org_user_id: auth.org_user.id,
 });
 
+const capture_asset_auth_context = (auth: AuthContext): CaptureAssetAuthContext => ({
+  organization_id: auth.organization.id,
+  actor_org_user_id: auth.org_user.id,
+});
+
 const pick_create_guide_data = (
   body: CreateGuideFromCaptureInput
 ): CreateGuideFromCaptureInput => ({
@@ -223,6 +260,120 @@ const pick_update_guide_block_screenshot_data = (
   body: UpdateGuideBlockScreenshotInput
 ): UpdateGuideBlockScreenshotInput => ({
   capture_asset_id: body.capture_asset_id,
+});
+
+const multipart_field_value = (
+  fields: Record<string, unknown>,
+  name: string
+) => {
+  const field = fields[name] as { value?: unknown } | { value?: unknown }[] | undefined;
+  const first_field = Array.isArray(field) ? field[0] : field;
+  const value = first_field?.value;
+
+  return typeof value === "string" ? value : undefined;
+};
+
+const optional_positive_number_field = (
+  fields: Record<string, unknown>,
+  name: string,
+  integer: boolean
+) => {
+  const value = multipart_field_value(fields, name);
+
+  if (value === undefined || value.trim() === "") {
+    return undefined;
+  }
+
+  const number = Number(value);
+
+  if (!Number.isFinite(number) || number <= 0 || (integer && !Number.isInteger(number))) {
+    throw new InvalidCaptureAssetUploadError();
+  }
+
+  return number;
+};
+
+const optional_metadata_field = (fields: Record<string, unknown>) => {
+  const value = multipart_field_value(fields, "metadata");
+
+  if (value === undefined || value.trim() === "") {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+
+    if (
+      parsed === null
+      || typeof parsed !== "object"
+      || Array.isArray(parsed)
+    ) {
+      throw new InvalidCaptureAssetUploadError();
+    }
+
+    return parsed;
+  } catch {
+    throw new InvalidCaptureAssetUploadError();
+  }
+};
+
+const optional_datetime_field = (
+  fields: Record<string, unknown>,
+  name: string
+) => {
+  const value = multipart_field_value(fields, name);
+
+  if (value === undefined || value.trim() === "") {
+    return undefined;
+  }
+
+  if (!z.string().datetime().safeParse(value).success) {
+    throw new InvalidCaptureAssetUploadError();
+  }
+
+  return value;
+};
+
+const pick_upload_capture_asset_data = (
+  fields: Record<string, unknown>
+): UploadCaptureAssetInput => {
+  const data: UploadCaptureAssetInput = {};
+  const width = optional_positive_number_field(fields, "width", true);
+  const height = optional_positive_number_field(fields, "height", true);
+  const device_pixel_ratio = optional_positive_number_field(fields, "device_pixel_ratio", false);
+  const page_url = multipart_field_value(fields, "page_url");
+  const page_title = multipart_field_value(fields, "page_title");
+  const captured_at = optional_datetime_field(fields, "captured_at");
+  const metadata = optional_metadata_field(fields);
+
+  if (width !== undefined) {
+    data.width = width;
+  }
+  if (height !== undefined) {
+    data.height = height;
+  }
+  if (device_pixel_ratio !== undefined) {
+    data.device_pixel_ratio = device_pixel_ratio;
+  }
+  if (page_url !== undefined) {
+    data.page_url = page_url;
+  }
+  if (page_title !== undefined) {
+    data.page_title = page_title;
+  }
+  if (captured_at !== undefined) {
+    data.captured_at = captured_at;
+  }
+  if (metadata !== undefined) {
+    data.metadata = metadata;
+  }
+
+  return data;
+};
+
+const with_file_url = (asset: CaptureAsset): CaptureAssetWithFileUrl => ({
+  ...asset,
+  file_url: `/api/v1/projects/${asset.project_id}/capture-sessions/${asset.capture_session_id}/assets/${asset.id}/file`,
 });
 
 export const build_guide_routes = (
@@ -286,6 +437,32 @@ export const build_guide_routes = (
 
       if (error instanceof InvalidGuideBlockScreenshotError) {
         return reply.status(400).send(error_response("invalid_guide_block_screenshot", "Guide block screenshot is invalid"));
+      }
+
+      if (error instanceof InvalidCaptureAssetUploadError) {
+        return reply.status(400).send(error_response("invalid_capture_asset_upload", "Capture asset upload input is invalid"));
+      }
+
+      if (error instanceof UnsupportedCaptureAssetUploadTypeError) {
+        return reply.status(400).send(
+          error_response("unsupported_capture_asset_upload_type", "Capture asset upload type is not supported")
+        );
+      }
+
+      if (error instanceof UploadFileRequiredError) {
+        return reply.status(400).send(error_response("upload_file_required", "Upload file is required"));
+      }
+
+      if (error instanceof UploadTooLargeError) {
+        return reply.status(413).send(error_response("upload_too_large", "Capture asset upload is too large"));
+      }
+
+      if (error instanceof FileStorageWriteFailedError) {
+        return reply.status(500).send(error_response("file_storage_write_failed", "File storage write failed"));
+      }
+
+      if (error instanceof FileStorageKeyConflictError) {
+        return reply.status(409).send(error_response("file_storage_key_conflict", "File storage key already exists"));
       }
 
       throw error;
@@ -486,6 +663,65 @@ export const build_guide_routes = (
         });
 
         return reply.status(200).send({ guide_block });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.post<{
+      Params: {
+        project_id: string;
+        guide_id: string;
+        guide_block_id: string;
+      };
+    }>("/:project_id/guides/:guide_id/blocks/:guide_block_id/screenshot-upload", async (request, reply) => {
+      try {
+        const auth_context = await dependencies.auth_service.get_current_auth_context(
+          request.cookies[web_session_cookie_name]
+        );
+        const guide_auth = guide_auth_context(auth_context);
+        const capture_asset_auth = capture_asset_auth_context(auth_context);
+        const upload = await request.file();
+
+        if (!upload || upload.fieldname !== "file") {
+          throw new UploadFileRequiredError();
+        }
+
+        if (!upload.filename?.trim()) {
+          throw new InvalidCaptureAssetUploadError();
+        }
+
+        const prepared = await dependencies.guide_service.prepare_guide_block_screenshot_upload({
+          auth: guide_auth,
+          project_id: request.params.project_id,
+          guide_id: request.params.guide_id,
+          guide_block_id: request.params.guide_block_id,
+        });
+        const capture_asset = await dependencies.capture_asset_service.upload_capture_asset({
+          auth: capture_asset_auth,
+          project_id: request.params.project_id,
+          capture_session_id: prepared.capture_session_id,
+          file: {
+            stream: upload.file,
+            mime_type: upload.mimetype,
+            original_name: upload.filename,
+          },
+          data: pick_upload_capture_asset_data(upload.fields),
+        });
+        const guide_block = await dependencies.guide_service.update_guide_block_screenshot({
+          auth: guide_auth,
+          project_id: request.params.project_id,
+          guide_id: request.params.guide_id,
+          guide_block_id: request.params.guide_block_id,
+          data: {
+            capture_asset_id: capture_asset.id,
+          },
+        });
+
+        return reply.status(201).send({
+          guide_block,
+          capture_asset: with_file_url(capture_asset),
+        });
       } catch (error) {
         return handle_domain_error(error, reply);
       }

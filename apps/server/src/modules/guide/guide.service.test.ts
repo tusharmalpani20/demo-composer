@@ -9,6 +9,7 @@ import {
   GuideBlockNotFoundError,
   InvalidGuideBlockContentError,
   InvalidGuideBlockOrderError,
+  InvalidGuideBlockScreenshotError,
   GuideStepNotFoundError,
   ProjectNotFoundError,
   type GuideDetail,
@@ -919,6 +920,124 @@ describe("guide service", () => {
         },
       },
     })).rejects.toBeInstanceOf(GuideBlockNotFoundError);
+  });
+
+  it("prepares a guide step screenshot upload using the block or guide source session", async () => {
+    const repository = build_repository();
+    const service = build_guide_service(repository);
+
+    await expect(service.prepare_guide_block_screenshot_upload({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "block_1",
+    })).resolves.toEqual({ capture_session_id: "capture_session_1" });
+
+    repository.list_guide_blocks = async () => [{
+      id: "manual_block",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: null,
+      source_capture_event_id: null,
+      source_capture_asset_id: null,
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: null,
+      block_type: "step",
+      content: null,
+      block_index: 3,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T00:00:00.000Z",
+      updated_at: "2026-06-05T00:00:00.000Z",
+      step: null,
+    }];
+
+    await expect(service.prepare_guide_block_screenshot_upload({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "manual_block",
+    })).resolves.toEqual({ capture_session_id: "capture_session_1" });
+  });
+
+  it("rejects invalid guide step screenshot upload targets", async () => {
+    const repository = build_repository();
+    const service = build_guide_service(repository);
+
+    await expect(service.prepare_guide_block_screenshot_upload({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "missing_block",
+    })).rejects.toBeInstanceOf(GuideBlockNotFoundError);
+
+    repository.list_guide_blocks = async () => [{
+      id: "tip_block",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: "capture_session_1",
+      source_capture_event_id: null,
+      source_capture_asset_id: null,
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: null,
+      block_type: "tip",
+      content: { body: "Use this carefully." },
+      block_index: 3,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T00:00:00.000Z",
+      updated_at: "2026-06-05T00:00:00.000Z",
+      step: null,
+    }];
+
+    await expect(service.prepare_guide_block_screenshot_upload({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "tip_block",
+    })).rejects.toBeInstanceOf(InvalidGuideBlockScreenshotError);
+
+    repository.find_guide_detail = async () => ({
+      ...guide_detail,
+      guide: {
+        ...guide_detail.guide,
+        source_capture_session_id: null,
+      },
+    });
+    repository.list_guide_blocks = async () => [{
+      id: "manual_block",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: null,
+      source_capture_event_id: null,
+      source_capture_asset_id: null,
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: null,
+      block_type: "step",
+      content: null,
+      block_index: 3,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T00:00:00.000Z",
+      updated_at: "2026-06-05T00:00:00.000Z",
+      step: null,
+    }];
+
+    await expect(service.prepare_guide_block_screenshot_upload({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "manual_block",
+    })).rejects.toBeInstanceOf(InvalidGuideBlockScreenshotError);
   });
 
   it("soft deletes a guide block for editable draft guides", async () => {

@@ -53,6 +53,9 @@ describe("guide app integration", () => {
         update_guide_block_screenshot: async () => {
           throw new Error("not needed");
         },
+        prepare_guide_block_screenshot_upload: async () => ({
+          capture_session_id: "capture_session_1",
+        }),
         reorder_guide_blocks: async () => [],
         delete_guide_block: async () => undefined,
       },

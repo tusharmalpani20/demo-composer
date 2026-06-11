@@ -143,6 +143,10 @@ export type UpdateGuideBlockScreenshotInput = {
   capture_asset_id: string | null;
 };
 
+export type PrepareGuideBlockScreenshotUploadResult = {
+  capture_session_id: string;
+};
+
 export type NormalizedUpdateGuideInput = {
   title?: string;
   description?: string | null;
@@ -1024,6 +1028,51 @@ export const build_guide_service = (repository: GuideRepository) => {
     });
   };
 
+  const prepare_guide_block_screenshot_upload = async (input: {
+    auth: GuideAuthContext;
+    project_id: string;
+    guide_id: string;
+    guide_block_id: string;
+  }): Promise<PrepareGuideBlockScreenshotUploadResult> => {
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      guide_id: input.guide_id,
+    };
+    await ensure_project_exists({
+      organization_id: scope.organization_id,
+      project_id: scope.project_id,
+    });
+    const guide = await ensure_editable_guide(scope);
+
+    const block = (await repository.list_guide_blocks(scope))
+      .find((candidate) => candidate.id === input.guide_block_id);
+
+    if (!block) {
+      throw new GuideBlockNotFoundError();
+    }
+
+    if (block.block_type !== "step") {
+      throw new InvalidGuideBlockScreenshotError();
+    }
+
+    const capture_session_id = compact_optional_string(
+      block.source_capture_session_id ?? guide.source_capture_session_id
+    );
+
+    if (!capture_session_id) {
+      throw new InvalidGuideBlockScreenshotError();
+    }
+
+    await ensure_capture_session_exists({
+      organization_id: scope.organization_id,
+      project_id: scope.project_id,
+      capture_session_id,
+    });
+
+    return { capture_session_id };
+  };
+
   const delete_guide_block = async (input: {
     auth: GuideAuthContext;
     project_id: string;
@@ -1062,6 +1111,7 @@ export const build_guide_service = (repository: GuideRepository) => {
     create_guide_block,
     update_guide_block,
     update_guide_block_screenshot,
+    prepare_guide_block_screenshot_upload,
     delete_guide_block,
   };
 };
