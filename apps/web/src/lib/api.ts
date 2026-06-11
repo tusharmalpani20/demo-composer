@@ -12,9 +12,11 @@ import type {
   GuidePublishResult,
   GuidePublishStatusResponse,
   GuideRevokePublishResult,
+  ProjectScreenshotAssetListResponse,
   GuideStep,
   PublicPublishLinkResponse,
   UpdateGuideBlockInput,
+  UpdateGuideBlockScreenshotInput,
 } from "../features/guide/types";
 import type { Project, ProjectStatus } from "../features/project/types";
 
@@ -253,6 +255,14 @@ export const listProjectGuides = async (
   )
 );
 
+export const listProjectScreenshotAssets = async (
+  projectId: string
+): Promise<ProjectScreenshotAssetListResponse> => (
+  requestJson<ProjectScreenshotAssetListResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-assets?asset_type=screenshot`
+  )
+);
+
 export const createGuideFromCaptureSession = async (
   projectId: string,
   captureSessionId: string,
@@ -340,6 +350,24 @@ export const updateGuideBlock = async (
 ): Promise<{ guide_block: GuideBlock }> => (
   requestJson<{ guide_block: GuideBlock }>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/${encodeURIComponent(blockId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
+export const updateGuideBlockScreenshot = async (
+  projectId: string,
+  guideId: string,
+  blockId: string,
+  data: UpdateGuideBlockScreenshotInput
+): Promise<{ guide_block: GuideBlock }> => (
+  requestJson<{ guide_block: GuideBlock }>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/${encodeURIComponent(blockId)}/screenshot`,
     {
       method: "PATCH",
       headers: {

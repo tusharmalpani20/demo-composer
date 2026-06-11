@@ -5,12 +5,14 @@ import {
   deleteGuideBlock,
   getGuideDetail,
   getGuidePublishStatus,
+  listProjectScreenshotAssets,
   publishGuide,
   reorderGuideBlocks,
   resolveApiAssetUrl,
   revokeGuidePublishLink,
   updateGuide,
   updateGuideBlock,
+  updateGuideBlockScreenshot,
   updateGuideStep,
 } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
@@ -70,6 +72,8 @@ export type GuideEditorPageProps = {
   saveStep?: typeof updateGuideStep;
   createBlock?: typeof createGuideBlock;
   saveBlock?: typeof updateGuideBlock;
+  loadScreenshotAssets?: typeof listProjectScreenshotAssets;
+  saveBlockScreenshot?: typeof updateGuideBlockScreenshot;
   reorderBlocks?: typeof reorderGuideBlocks;
   removeBlock?: typeof deleteGuideBlock;
   currentPath?: string;
@@ -156,7 +160,7 @@ const assetForBlock = (
   block: GuideBlock,
   assetsById: Map<string, GuideSourceCaptureAsset>
 ) => {
-  const source_capture_asset_id = block.source_capture_asset_id ?? block.step?.source_capture_asset_id ?? null;
+  const source_capture_asset_id = block.display_capture_asset_id;
   return source_capture_asset_id ? assetsById.get(source_capture_asset_id) : undefined;
 };
 
@@ -197,6 +201,20 @@ const updateBlockInBlocks = (blocks: GuideBlock[], guideBlock: GuideBlock) => (
       : block
   ))
 );
+
+const mergeAssetIntoDetail = (
+  detail: GuideDetail,
+  asset: GuideSourceCaptureAsset | undefined
+): GuideDetail => {
+  if (!asset || detail.source_capture_assets.some((candidate) => candidate.id === asset.id)) {
+    return detail;
+  }
+
+  return {
+    ...detail,
+    source_capture_assets: [...detail.source_capture_assets, asset],
+  };
+};
 
 const defaultBlockInput = (
   blockType: "step" | "header" | "tip" | "alert",
@@ -244,6 +262,8 @@ export const GuideEditorPage = ({
   saveStep = updateGuideStep,
   createBlock = createGuideBlock,
   saveBlock = updateGuideBlock,
+  loadScreenshotAssets = listProjectScreenshotAssets,
+  saveBlockScreenshot = updateGuideBlockScreenshot,
   reorderBlocks = reorderGuideBlocks,
   removeBlock = deleteGuideBlock,
   currentPath = currentBrowserPath(),
@@ -261,6 +281,8 @@ export const GuideEditorPage = ({
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [publishBusyAction, setPublishBusyAction] = useState<string | null>(null);
   const [locallyStalePublish, setLocallyStalePublish] = useState(false);
+  const [screenshotAssets, setScreenshotAssets] = useState<GuideSourceCaptureAsset[]>([]);
+  const [activeScreenshotPickerBlockId, setActiveScreenshotPickerBlockId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -312,6 +334,8 @@ export const GuideEditorPage = ({
 
   useEffect(() => {
     setLocallyStalePublish(false);
+    setScreenshotAssets([]);
+    setActiveScreenshotPickerBlockId(null);
   }, [projectId, guideId]);
 
   const reload = () => setReloadKey((key) => key + 1);
@@ -535,6 +559,55 @@ export const GuideEditorPage = ({
     }
   };
 
+  const openScreenshotPicker = async (block: GuideBlock) => {
+    setActiveScreenshotPickerBlockId(block.id);
+
+    if (screenshotAssets.length > 0) {
+      return;
+    }
+
+    setBusyAction(`screenshots:${block.id}`);
+    setNotice(null);
+
+    try {
+      const response = await loadScreenshotAssets(projectId);
+      setScreenshotAssets(response.capture_assets);
+    } catch {
+      setNotice("Could not load screenshots.");
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const saveScreenshot = async (block: GuideBlock, captureAssetId: string | null) => {
+    setBusyAction(`screenshot:${block.id}`);
+    setNotice(null);
+
+    try {
+      const response = await saveBlockScreenshot(projectId, guideId, block.id, {
+        capture_asset_id: captureAssetId,
+      });
+      const selectedAsset = captureAssetId
+        ? screenshotAssets.find((asset) => asset.id === captureAssetId)
+        : undefined;
+
+      patchDetail((detail) => {
+        const withAsset = mergeAssetIntoDetail(detail, selectedAsset);
+        return {
+          ...withAsset,
+          guide_blocks: updateBlockInBlocks(withAsset.guide_blocks, response.guide_block),
+        };
+      });
+      setActiveScreenshotPickerBlockId(null);
+      markPublishedDraftStale();
+      setNotice(captureAssetId ? "Screenshot updated." : "Screenshot removed.");
+    } catch (error: unknown) {
+      handleMutationError(error, "Could not update screenshot.");
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
   const moveBlock = async (blockId: string, direction: -1 | 1) => {
     if (state.status !== "loaded") {
       return;
@@ -654,6 +727,11 @@ export const GuideEditorPage = ({
       onSaveGuide={saveGuideDraft}
       onSaveStep={saveStepDraft}
       onSaveBlock={saveBlockDraft}
+      screenshotAssets={screenshotAssets}
+      activeScreenshotPickerBlockId={activeScreenshotPickerBlockId}
+      onOpenScreenshotPicker={openScreenshotPicker}
+      onCloseScreenshotPicker={() => setActiveScreenshotPickerBlockId(null)}
+      onSaveScreenshot={saveScreenshot}
       onAddBlock={addBlock}
       onMoveBlock={moveBlock}
       onDeleteBlock={deleteBlock}
@@ -704,6 +782,11 @@ const GuideEditorView = ({
   onSaveGuide,
   onSaveStep,
   onSaveBlock,
+  screenshotAssets,
+  activeScreenshotPickerBlockId,
+  onOpenScreenshotPicker,
+  onCloseScreenshotPicker,
+  onSaveScreenshot,
   onAddBlock,
   onMoveBlock,
   onDeleteBlock,
@@ -731,6 +814,11 @@ const GuideEditorView = ({
   onSaveGuide: () => void;
   onSaveStep: (step: GuideStep) => void;
   onSaveBlock: (block: GuideBlock) => void;
+  screenshotAssets: GuideSourceCaptureAsset[];
+  activeScreenshotPickerBlockId: string | null;
+  onOpenScreenshotPicker: (block: GuideBlock) => void;
+  onCloseScreenshotPicker: () => void;
+  onSaveScreenshot: (block: GuideBlock, captureAssetId: string | null) => void;
   onAddBlock: (blockType: "step" | "header" | "tip" | "alert", afterBlock?: GuideBlock) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
@@ -846,10 +934,15 @@ const GuideEditorView = ({
                   draft={block.step ? stepDrafts[block.step.id] : undefined}
                   contentDraft={blockContentDrafts[block.id]}
                   sourceAsset={assetForBlock(block, assetsById)}
+                  screenshotAssets={screenshotAssets}
+                  screenshotPickerOpen={activeScreenshotPickerBlockId === block.id}
                   onDraftChange={onStepDraftChange}
                   onContentDraftChange={onBlockContentDraftChange}
                   onSaveStep={onSaveStep}
                   onSaveBlock={onSaveBlock}
+                  onOpenScreenshotPicker={onOpenScreenshotPicker}
+                  onCloseScreenshotPicker={onCloseScreenshotPicker}
+                  onSaveScreenshot={onSaveScreenshot}
                   onAddBlock={onAddBlock}
                   onMoveBlock={onMoveBlock}
                   onDeleteBlock={onDeleteBlock}
@@ -1036,10 +1129,15 @@ const GuideBlockEditor = ({
   draft,
   contentDraft,
   sourceAsset,
+  screenshotAssets,
+  screenshotPickerOpen,
   onDraftChange,
   onContentDraftChange,
   onSaveStep,
   onSaveBlock,
+  onOpenScreenshotPicker,
+  onCloseScreenshotPicker,
+  onSaveScreenshot,
   onAddBlock,
   onMoveBlock,
   onDeleteBlock,
@@ -1054,10 +1152,15 @@ const GuideBlockEditor = ({
   draft?: StepDraft;
   contentDraft?: BlockContentDraft;
   sourceAsset?: GuideSourceCaptureAsset;
+  screenshotAssets: GuideSourceCaptureAsset[];
+  screenshotPickerOpen: boolean;
   onDraftChange: (stepId: string, draft: StepDraft) => void;
   onContentDraftChange: (blockId: string, draft: BlockContentDraft) => void;
   onSaveStep: (step: GuideStep) => void;
   onSaveBlock: (block: GuideBlock) => void;
+  onOpenScreenshotPicker: (block: GuideBlock) => void;
+  onCloseScreenshotPicker: () => void;
+  onSaveScreenshot: (block: GuideBlock, captureAssetId: string | null) => void;
   onAddBlock: (blockType: "step" | "header" | "tip" | "alert", afterBlock?: GuideBlock) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
@@ -1159,6 +1262,64 @@ const GuideBlockEditor = ({
                   alt={assetAltText(sourceAsset, blockNumber)}
                 />
               </button>
+            </div>
+          ) : null}
+          <div className={styles.mediaActions}>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              disabled={readOnly || actionBusy}
+              onClick={() => onOpenScreenshotPicker(block)}
+            >
+              {sourceAsset ? `Change screenshot for step ${blockNumber}` : `Attach screenshot for step ${blockNumber}`}
+            </button>
+            {sourceAsset ? (
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={readOnly || actionBusy}
+                onClick={() => onSaveScreenshot(block, null)}
+              >
+                Remove screenshot for step {blockNumber}
+              </button>
+            ) : null}
+          </div>
+          {screenshotPickerOpen ? (
+            <div className={styles.screenshotPicker} aria-label={`Screenshot choices for step ${blockNumber}`}>
+              <div className={styles.screenshotPickerHeader}>
+                <span>Choose screenshot</span>
+                <button
+                  className={styles.iconButton}
+                  type="button"
+                  aria-label={`Close screenshot choices for step ${blockNumber}`}
+                  onClick={onCloseScreenshotPicker}
+                >
+                  ×
+                </button>
+              </div>
+              {screenshotAssets.length === 0 ? (
+                <div className={styles.empty}>No screenshots available.</div>
+              ) : (
+                <div className={styles.screenshotChoices}>
+                  {screenshotAssets.map((asset) => (
+                    <button
+                      className={styles.screenshotChoice}
+                      type="button"
+                      key={asset.id}
+                      aria-label={`Select screenshot ${asset.page_title ?? asset.file.original_name ?? asset.id} for step ${blockNumber}`}
+                      disabled={readOnly || actionBusy || asset.id === block.display_capture_asset_id}
+                      onClick={() => onSaveScreenshot(block, asset.id)}
+                    >
+                      <img
+                        src={resolveApiAssetUrl(asset.file_url)}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                      <span>{asset.page_title ?? asset.file.original_name ?? "Untitled screenshot"}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ) : null}
         </div>

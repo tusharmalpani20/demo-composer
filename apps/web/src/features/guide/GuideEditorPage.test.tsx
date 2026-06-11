@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import { GuideEditorPage } from "./GuideEditorPage";
 import type { GuideEditorPageProps } from "./GuideEditorPage";
-import type { GuideDetail, GuidePublishStatusResponse } from "./types";
+import type { GuideDetail, GuidePublishStatusResponse, GuideSourceCaptureAsset } from "./types";
 
 const guideDetail: GuideDetail = {
   guide: {
@@ -29,6 +29,9 @@ const guideDetail: GuideDetail = {
       source_capture_session_id: "capture_session_1",
       source_capture_event_id: "event_2",
       source_capture_asset_id: "asset_2",
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: "asset_2",
       block_type: "step",
       content: null,
       block_index: 2,
@@ -63,6 +66,9 @@ const guideDetail: GuideDetail = {
       source_capture_session_id: "capture_session_1",
       source_capture_event_id: "event_1",
       source_capture_asset_id: "asset_1",
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: "asset_1",
       block_type: "step",
       content: null,
       block_index: 1,
@@ -127,6 +133,24 @@ const guideDetail: GuideDetail = {
         size_bytes: 234567,
       },
     },
+    {
+      id: "asset_3",
+      capture_session_id: "capture_session_1",
+      asset_type: "screenshot",
+      width: 1440,
+      height: 900,
+      device_pixel_ratio: 1,
+      page_url: "https://example.test/departments/review",
+      page_title: "Review Department",
+      captured_at: "2026-06-05T10:03:00.000Z",
+      file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_3/file",
+      file: {
+        id: "file_3",
+        original_name: "review-department.png",
+        mime_type: "image/png",
+        size_bytes: 345678,
+      },
+    },
   ],
 };
 
@@ -173,6 +197,8 @@ const renderPage = (overrides: {
   saveStep?: GuideEditorPageProps["saveStep"];
   createBlock?: GuideEditorPageProps["createBlock"];
   saveBlock?: GuideEditorPageProps["saveBlock"];
+  loadScreenshotAssets?: GuideEditorPageProps["loadScreenshotAssets"];
+  saveBlockScreenshot?: GuideEditorPageProps["saveBlockScreenshot"];
   reorderBlocks?: GuideEditorPageProps["reorderBlocks"];
   removeBlock?: GuideEditorPageProps["removeBlock"];
   loadPublishStatus?: GuideEditorPageProps["loadPublishStatus"];
@@ -217,6 +243,9 @@ const renderPage = (overrides: {
         source_capture_session_id: null,
         source_capture_event_id: null,
         source_capture_asset_id: null,
+        selected_capture_asset_id: null,
+        screenshot_hidden: false,
+        display_capture_asset_id: null,
         block_type: data.block_type,
         content: data.content ?? null,
         block_index: 3,
@@ -254,6 +283,9 @@ const renderPage = (overrides: {
       source_capture_session_id: null,
       source_capture_event_id: null,
       source_capture_asset_id: null,
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: null,
       block_type: "tip" as const,
       content: data.content ?? null,
       block_index: 3,
@@ -265,6 +297,25 @@ const renderPage = (overrides: {
       step: null,
     },
   }));
+  const loadScreenshotAssets = overrides.loadScreenshotAssets ?? vi.fn(async () => ({
+    capture_assets: guideDetail.source_capture_assets as GuideSourceCaptureAsset[],
+  }));
+  const saveBlockScreenshot = overrides.saveBlockScreenshot ?? vi.fn(async (_projectId, _guideId, blockId, data) => {
+    const block = guideDetail.guide_blocks.find((candidate) => candidate.id === blockId);
+
+    if (!block) {
+      throw new Error("missing block fixture");
+    }
+
+    return {
+      guide_block: {
+        ...block,
+        selected_capture_asset_id: data.capture_asset_id,
+        screenshot_hidden: data.capture_asset_id === null,
+        display_capture_asset_id: data.capture_asset_id,
+      },
+    };
+  });
   const reorderBlocks = overrides.reorderBlocks ?? vi.fn(async (
     _projectId: string,
     _guideId: string,
@@ -304,6 +355,8 @@ const renderPage = (overrides: {
       saveStep={saveStep}
       createBlock={createBlock}
       saveBlock={saveBlock}
+      loadScreenshotAssets={loadScreenshotAssets}
+      saveBlockScreenshot={saveBlockScreenshot}
       reorderBlocks={reorderBlocks}
       removeBlock={removeBlock}
       publishCurrentGuide={publishCurrentGuide}
@@ -319,6 +372,8 @@ const renderPage = (overrides: {
     saveStep,
     createBlock,
     saveBlock,
+    loadScreenshotAssets,
+    saveBlockScreenshot,
     reorderBlocks,
     removeBlock,
     publishCurrentGuide,
@@ -472,6 +527,9 @@ describe("GuideEditorPage", () => {
           source_capture_session_id: null,
           source_capture_event_id: null,
           source_capture_asset_id: null,
+          selected_capture_asset_id: null,
+          screenshot_hidden: false,
+          display_capture_asset_id: null,
           block_type: "tip" as const,
           content: {
             title: null,
@@ -500,6 +558,9 @@ describe("GuideEditorPage", () => {
         source_capture_session_id: null,
         source_capture_event_id: null,
         source_capture_asset_id: null,
+        selected_capture_asset_id: null,
+        screenshot_hidden: false,
+        display_capture_asset_id: null,
         block_type: "tip" as const,
         content: data.content ?? null,
         block_index: 2,
@@ -558,6 +619,50 @@ describe("GuideEditorPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add header after block 1" }));
 
     expect(await screen.findByText("Draft has changes not yet published.")).toBeInTheDocument();
+  });
+
+  it("changes and removes a step screenshot from the editor", async () => {
+    const saveBlockScreenshot = vi.fn(async (_projectId, _guideId, blockId, data) => ({
+      guide_block: {
+        ...guideDetail.guide_blocks.find((block) => block.id === blockId)!,
+        selected_capture_asset_id: data.capture_asset_id,
+        screenshot_hidden: data.capture_asset_id === null,
+        display_capture_asset_id: data.capture_asset_id,
+      },
+    }));
+    const { loadScreenshotAssets } = renderPage({
+      loadPublishStatus: vi.fn(async () => publishedStatus()),
+      saveBlockScreenshot,
+    });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Change screenshot for step 1" }));
+
+    expect(loadScreenshotAssets).toHaveBeenCalledWith("project_1");
+    expect(await screen.findByRole("button", { name: "Select screenshot Review Department for step 1" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Select screenshot Review Department for step 1" }));
+
+    await waitFor(() => {
+      expect(saveBlockScreenshot).toHaveBeenCalledWith("project_1", "guide_1", "block_1", {
+        capture_asset_id: "asset_3",
+      });
+    });
+    expect(await screen.findByRole("img", { name: "Review Department" })).toHaveAttribute(
+      "src",
+      "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_3/file"
+    );
+    expect(screen.getByText("Draft has changes not yet published.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove screenshot for step 1" }));
+
+    await waitFor(() => {
+      expect(saveBlockScreenshot).toHaveBeenLastCalledWith("project_1", "guide_1", "block_1", {
+        capture_asset_id: null,
+      });
+    });
+    expect(screen.queryByRole("img", { name: "Review Department" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Attach screenshot for step 1" })).toBeInTheDocument();
   });
 
   it("shows publish-panel busy labels without locking guide editing", async () => {
@@ -703,6 +808,7 @@ describe("GuideEditorPage", () => {
           ? {
             ...block,
             source_capture_asset_id: "asset_1",
+            display_capture_asset_id: "asset_1",
             step: block.step ? { ...block.step, source_capture_asset_id: "asset_1" } : null,
           }
           : block

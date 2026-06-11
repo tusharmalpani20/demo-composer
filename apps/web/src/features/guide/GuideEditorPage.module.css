@@ -352,6 +352,12 @@
   margin-top: 10px;
 }
 
+.mediaActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .mediaButton {
   display: block;
   width: 100%;
@@ -373,6 +379,65 @@
   width: 100%;
   max-height: 280px;
   object-fit: contain;
+}
+
+.screenshotPicker {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.screenshotPickerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.screenshotChoices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+}
+
+.screenshotChoice {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #c9d3df;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  text-align: left;
+}
+
+.screenshotChoice:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.screenshotChoice img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #eef2f7;
+}
+
+.screenshotChoice span {
+  overflow: hidden;
+  color: #374151;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .empty,

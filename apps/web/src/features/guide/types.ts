@@ -47,6 +47,9 @@ export type GuideBlock = {
   source_capture_session_id: string | null;
   source_capture_event_id: string | null;
   source_capture_asset_id: string | null;
+  selected_capture_asset_id: string | null;
+  screenshot_hidden: boolean;
+  display_capture_asset_id: string | null;
   block_type: GuideBlockType;
   content: GuideBlockContent | null;
   block_index: number;
@@ -127,6 +130,14 @@ export type CreateGuideBlockInput = {
 
 export type UpdateGuideBlockInput = {
   content?: GuideBlockContent | null;
+};
+
+export type UpdateGuideBlockScreenshotInput = {
+  capture_asset_id: string | null;
+};
+
+export type ProjectScreenshotAssetListResponse = {
+  capture_assets: GuideSourceCaptureAsset[];
 };
 
 export type PublishedGuideSnapshot = {

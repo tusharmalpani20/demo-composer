@@ -11,6 +11,7 @@ import {
   getProject,
   getPublicPublishLink,
   login,
+  listProjectScreenshotAssets,
   listProjects,
   listProjectCaptureSessions,
   listProjectGuides,
@@ -21,6 +22,7 @@ import {
   revokeGuidePublishLink,
   updateGuide,
   updateGuideBlock,
+  updateGuideBlockScreenshot,
   updateGuideStep,
 } from "./api";
 
@@ -807,6 +809,83 @@ describe("api client", () => {
         headers: {
           accept: "application/json",
         },
+      }
+    );
+  });
+
+  it("lists project screenshots and updates guide block screenshots", async () => {
+    const screenshot_response = {
+      capture_assets: [{
+        id: "asset_1",
+        capture_session_id: "capture_session_1",
+        asset_type: "screenshot",
+        file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_1/file",
+      }],
+    };
+    const screenshot_update_response = {
+      guide_block: {
+        id: "block_1",
+        selected_capture_asset_id: "asset_1",
+        screenshot_hidden: false,
+        display_capture_asset_id: "asset_1",
+      },
+    };
+    const fetch = vi.fn(async (url: string) => new Response(JSON.stringify(
+      url.includes("/capture-assets") ? screenshot_response : screenshot_update_response
+    ), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(listProjectScreenshotAssets("project_1")).resolves.toEqual(screenshot_response);
+    await expect(updateGuideBlockScreenshot("project_1", "guide_1", "block_1", {
+      capture_asset_id: "asset_1",
+    })).resolves.toEqual(screenshot_update_response);
+    await updateGuideBlockScreenshot("project_1", "guide_1", "block_1", {
+      capture_asset_id: null,
+    });
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "/api/v1/projects/project_1/capture-assets?asset_type=screenshot",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/screenshot",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          capture_asset_id: "asset_1",
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      3,
+      "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/screenshot",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          capture_asset_id: null,
+        }),
       }
     );
   });

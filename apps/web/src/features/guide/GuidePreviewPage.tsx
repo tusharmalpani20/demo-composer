@@ -228,7 +228,7 @@ const assetForBlock = (
   block: GuideBlock,
   assetsById: Map<string, GuideSourceCaptureAsset>
 ) => {
-  const source_capture_asset_id = block.source_capture_asset_id ?? block.step?.source_capture_asset_id ?? null;
+  const source_capture_asset_id = block.display_capture_asset_id;
   return source_capture_asset_id ? assetsById.get(source_capture_asset_id) : undefined;
 };
 
