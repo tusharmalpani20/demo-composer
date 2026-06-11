@@ -51,6 +51,7 @@ type GuideBlockRow = {
   source_capture_event_id: string | null;
   source_capture_asset_id: string | null;
   block_type: GuideBlock["block_type"];
+  content: GuideBlock["content"] | null;
   block_index: number;
   created_by_id: string;
   updated_by_id: string;
@@ -151,6 +152,7 @@ const map_block = (row: GuideBlockRow, step: GuideStep | null): GuideBlock => ({
   source_capture_event_id: row.source_capture_event_id,
   source_capture_asset_id: row.source_capture_asset_id,
   block_type: row.block_type,
+  content: row.content,
   block_index: row.block_index,
   created_by_id: row.created_by_id,
   updated_by_id: row.updated_by_id,
@@ -216,6 +218,7 @@ const guide_block_select = `
   source_capture_event_id,
   source_capture_asset_id,
   block_type,
+  content,
   block_index,
   created_by_id,
   updated_by_id,
@@ -558,13 +561,14 @@ export const build_guide_repository = (db: TransactionCapable): GuideRepository 
             guide_id,
             source_capture_session_id,
             source_capture_event_id,
-            source_capture_asset_id,
-            block_type,
-            block_index,
+          source_capture_asset_id,
+          block_type,
+          content,
+          block_index,
             created_by_id,
-            updated_by_id
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
+          updated_by_id
+        )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULL, $9, $10, $10)
           RETURNING ${guide_block_select}
         `, [
           ulid(),
@@ -887,6 +891,181 @@ export const build_guide_repository = (db: TransactionCapable): GuideRepository 
       await touch_guide(client, input);
 
       return read_guide_blocks(client, input);
+    });
+  },
+
+  async create_guide_block(input) {
+    return with_transaction(db, async (client) => {
+      const active_blocks = await read_guide_blocks(client, input);
+      const target_position = (() => {
+        if (!input.data.position) {
+          return active_blocks.length + 1;
+        }
+
+        const target = active_blocks.find((block) => block.id === input.data.position?.guide_block_id);
+
+        if (!target) {
+          return null;
+        }
+
+        return input.data.position.placement === "before"
+          ? target.block_index
+          : target.block_index + 1;
+      })();
+
+      if (!target_position) {
+        return active_blocks;
+      }
+
+      await client.query(`
+        UPDATE guide_schema.guide_block
+        SET
+          block_index = block_index + 1000000,
+          updated_by_id = $1,
+          updated_at = CURRENT_TIMESTAMP,
+          version = version + 1
+        WHERE guide_id = $2
+        AND project_id = $3
+        AND organization_id = $4
+        AND is_deleted = FALSE
+        AND block_index >= $5
+      `, [
+        input.actor_org_user_id,
+        input.guide_id,
+        input.project_id,
+        input.organization_id,
+        target_position,
+      ]);
+
+      const block_id = ulid();
+      const block_result = await client.query<GuideBlockRow>(`
+        INSERT INTO guide_schema.guide_block (
+          id,
+          organization_id,
+          project_id,
+          guide_id,
+          source_capture_session_id,
+          source_capture_event_id,
+          source_capture_asset_id,
+          block_type,
+          content,
+          block_index,
+          created_by_id,
+          updated_by_id
+        )
+        VALUES ($1, $2, $3, $4, NULL, NULL, NULL, $5, $6, $7, $8, $8)
+        RETURNING ${guide_block_select}
+      `, [
+        block_id,
+        input.organization_id,
+        input.project_id,
+        input.guide_id,
+        input.data.block_type,
+        input.data.content ? JSON.stringify(input.data.content) : null,
+        target_position,
+        input.actor_org_user_id,
+      ]);
+      const block_row = first_row(block_result);
+
+      if (!block_row) {
+        throw new Error("Failed to create guide block");
+      }
+
+      if (input.data.block_type === "step" && input.data.step) {
+        await client.query<GuideStepRow>(`
+          INSERT INTO guide_schema.guide_step (
+            id,
+            organization_id,
+            project_id,
+            guide_id,
+            guide_block_id,
+            source_capture_session_id,
+            source_capture_event_id,
+            source_capture_asset_id,
+            title,
+            body,
+            created_by_id,
+            updated_by_id
+          )
+          VALUES ($1, $2, $3, $4, $5, NULL, NULL, NULL, $6, $7, $8, $8)
+        `, [
+          ulid(),
+          input.organization_id,
+          input.project_id,
+          input.guide_id,
+          block_id,
+          input.data.step.title,
+          input.data.step.body,
+          input.actor_org_user_id,
+        ]);
+      }
+
+      const shifted_blocks = await read_guide_blocks(client, input);
+      const shifted_without_insert = shifted_blocks
+        .filter((block) => block.id !== block_id && block.block_index >= 1000000)
+        .sort((left, right) => left.block_index - right.block_index);
+
+      for (const [index, block] of shifted_without_insert.entries()) {
+        await client.query(`
+          UPDATE guide_schema.guide_block
+          SET
+            block_index = $1,
+            updated_by_id = $2,
+            updated_at = CURRENT_TIMESTAMP,
+            version = version + 1
+          WHERE id = $3
+          AND guide_id = $4
+          AND project_id = $5
+          AND organization_id = $6
+          AND is_deleted = FALSE
+        `, [
+          target_position + index + 1,
+          input.actor_org_user_id,
+          block.id,
+          input.guide_id,
+          input.project_id,
+          input.organization_id,
+        ]);
+      }
+
+      await touch_guide(client, input);
+
+      return read_guide_blocks(client, input);
+    });
+  },
+
+  async update_guide_block(input) {
+    return with_transaction(db, async (client) => {
+      const result = await client.query<GuideBlockRow>(`
+        UPDATE guide_schema.guide_block
+        SET
+          content = $1,
+          updated_by_id = $2,
+          updated_at = CURRENT_TIMESTAMP,
+          version = version + 1
+        WHERE id = $3
+        AND guide_id = $4
+        AND project_id = $5
+        AND organization_id = $6
+        AND is_deleted = FALSE
+        RETURNING ${guide_block_select}
+      `, [
+        JSON.stringify(input.data.content),
+        input.actor_org_user_id,
+        input.guide_block_id,
+        input.guide_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+      const row = first_row(result);
+
+      if (!row) {
+        throw new Error("Failed to update guide block");
+      }
+
+      await touch_guide(client, input);
+
+      return map_block(row, null);
     });
   },
 

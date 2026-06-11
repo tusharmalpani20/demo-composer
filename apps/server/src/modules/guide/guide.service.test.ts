@@ -7,6 +7,7 @@ import {
   InvalidGuideStepInputError,
   GuideNotEditableError,
   GuideBlockNotFoundError,
+  InvalidGuideBlockContentError,
   InvalidGuideBlockOrderError,
   GuideStepNotFoundError,
   ProjectNotFoundError,
@@ -121,12 +122,16 @@ const build_repository = (): GuideRepository & {
   created_inputs: unknown[];
   update_guide_inputs: unknown[];
   update_step_inputs: unknown[];
+  create_block_inputs: unknown[];
+  update_block_inputs: unknown[];
   reorder_inputs: unknown[];
   delete_block_inputs: unknown[];
 } => {
   const created_inputs: unknown[] = [];
   const update_guide_inputs: unknown[] = [];
   const update_step_inputs: unknown[] = [];
+  const create_block_inputs: unknown[] = [];
+  const update_block_inputs: unknown[] = [];
   const reorder_inputs: unknown[] = [];
   const delete_block_inputs: unknown[] = [];
 
@@ -134,6 +139,8 @@ const build_repository = (): GuideRepository & {
     created_inputs,
     update_guide_inputs,
     update_step_inputs,
+    create_block_inputs,
+    update_block_inputs,
     reorder_inputs,
     delete_block_inputs,
     async project_exists(input) {
@@ -225,6 +232,7 @@ const build_repository = (): GuideRepository & {
         source_capture_event_id: "event_1",
         source_capture_asset_id: "asset_1",
         block_type: "step",
+        content: null,
         block_index: 1,
         created_by_id: "org_user_1",
         updated_by_id: "org_user_1",
@@ -241,6 +249,7 @@ const build_repository = (): GuideRepository & {
         source_capture_event_id: "event_2",
         source_capture_asset_id: "asset_1",
         block_type: "step",
+        content: null,
         block_index: 2,
         created_by_id: "org_user_1",
         updated_by_id: "org_user_1",
@@ -261,6 +270,7 @@ const build_repository = (): GuideRepository & {
         source_capture_event_id: null,
         source_capture_asset_id: null,
         block_type: "step",
+        content: null,
         block_index: index + 1,
         created_by_id: "org_user_1",
         updated_by_id: input.actor_org_user_id,
@@ -269,6 +279,64 @@ const build_repository = (): GuideRepository & {
         updated_at: "2026-06-05T00:10:00.000Z",
         step: null,
       }));
+    },
+    async create_guide_block(input) {
+      create_block_inputs.push(input);
+      return [{
+        id: "block_1",
+        organization_id: input.organization_id,
+        project_id: input.project_id,
+        guide_id: input.guide_id,
+        source_capture_session_id: null,
+        source_capture_event_id: null,
+        source_capture_asset_id: null,
+        block_type: "step",
+        content: null,
+        block_index: 1,
+        created_by_id: "org_user_1",
+        updated_by_id: input.actor_org_user_id,
+        version: 1,
+        created_at: "2026-06-05T00:00:00.000Z",
+        updated_at: "2026-06-05T00:10:00.000Z",
+        step: {
+          id: "step_2",
+          organization_id: input.organization_id,
+          project_id: input.project_id,
+          guide_id: input.guide_id,
+          guide_block_id: "block_new",
+          source_capture_session_id: null,
+          source_capture_event_id: null,
+          source_capture_asset_id: null,
+          title: input.data.step?.title ?? "New step",
+          body: input.data.step?.body ?? null,
+          created_by_id: "org_user_1",
+          updated_by_id: input.actor_org_user_id,
+          version: 1,
+          created_at: "2026-06-05T00:00:00.000Z",
+          updated_at: "2026-06-05T00:10:00.000Z",
+        },
+      }];
+    },
+    async update_guide_block(input) {
+      update_block_inputs.push(input);
+      return {
+        id: input.guide_block_id,
+        organization_id: input.organization_id,
+        project_id: input.project_id,
+        guide_id: input.guide_id,
+        source_capture_session_id: null,
+        source_capture_event_id: null,
+        source_capture_asset_id: null,
+        block_type: "tip",
+        content: input.data.content,
+        block_index: 2,
+        created_by_id: "org_user_1",
+        updated_by_id: input.actor_org_user_id,
+        version: 2,
+        created_at: "2026-06-05T00:00:00.000Z",
+        updated_at: "2026-06-05T00:10:00.000Z",
+        step: null,
+      };
     },
     async delete_guide_block(input) {
       delete_block_inputs.push(input);
@@ -618,6 +686,193 @@ describe("guide service", () => {
       guide_id: "guide_1",
       block_ids: ["block_1"],
     })).rejects.toBeInstanceOf(InvalidGuideBlockOrderError);
+  });
+
+  it("creates manual guide blocks with normalized content and insertion position", async () => {
+    const repository = build_repository();
+    const service = build_guide_service(repository);
+
+    await expect(service.create_guide_block({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      data: {
+        block_type: "tip",
+        position: {
+          placement: "after",
+          guide_block_id: "block_1",
+        },
+        content: {
+          title: " Helpful hint ",
+          body: " Use this when needed. ",
+        },
+      },
+    })).resolves.toHaveLength(1);
+
+    expect(repository.create_block_inputs).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      actor_org_user_id: "org_user_1",
+      data: {
+        block_type: "tip",
+        position: {
+          placement: "after",
+          guide_block_id: "block_1",
+        },
+        content: {
+          title: "Helpful hint",
+          body: "Use this when needed.",
+        },
+      },
+    }]);
+  });
+
+  it("creates manual step blocks through the first-class step model", async () => {
+    const repository = build_repository();
+    const service = build_guide_service(repository);
+
+    await service.create_guide_block({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      data: {
+        block_type: "step",
+        step: {
+          title: " New manual step ",
+          body: " Step details ",
+        },
+      },
+    });
+
+    expect(repository.create_block_inputs).toEqual([expect.objectContaining({
+      data: {
+        block_type: "step",
+        step: {
+          title: "New manual step",
+          body: "Step details",
+        },
+      },
+    })]);
+  });
+
+  it("updates non-step guide block content", async () => {
+    const repository = build_repository();
+    repository.list_guide_blocks = async () => [{
+      id: "block_3",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: null,
+      source_capture_event_id: null,
+      source_capture_asset_id: null,
+      block_type: "tip",
+      content: {
+        title: "Old title",
+        body: null,
+      },
+      block_index: 3,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T00:00:00.000Z",
+      updated_at: "2026-06-05T00:00:00.000Z",
+      step: null,
+    }];
+    const service = build_guide_service(repository);
+
+    await expect(service.update_guide_block({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "block_3",
+      data: {
+        content: {
+          title: " Updated title ",
+          body: " Updated body ",
+        },
+      },
+    })).resolves.toMatchObject({
+      id: "block_3",
+      content: {
+        title: "Updated title",
+        body: "Updated body",
+      },
+    });
+
+    expect(repository.update_block_inputs).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "block_3",
+      actor_org_user_id: "org_user_1",
+      data: {
+        content: {
+          title: "Updated title",
+          body: "Updated body",
+        },
+      },
+    }]);
+  });
+
+  it("rejects invalid manual guide block content", async () => {
+    const repository = build_repository();
+    const service = build_guide_service(repository);
+
+    await expect(service.create_guide_block({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      data: {
+        block_type: "header",
+        content: {
+          title: " ",
+        },
+      },
+    })).rejects.toBeInstanceOf(InvalidGuideBlockContentError);
+
+    await expect(service.create_guide_block({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      data: {
+        block_type: "paragraph",
+        content: {
+          body: "Not in this slice",
+        },
+      },
+    })).rejects.toBeInstanceOf(InvalidGuideBlockContentError);
+  });
+
+  it("rejects invalid guide block content updates and step block content updates", async () => {
+    const repository = build_repository();
+    const service = build_guide_service(repository);
+
+    await expect(service.update_guide_block({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "block_1",
+      data: {
+        content: {
+          title: "Should use step endpoint",
+        },
+      },
+    })).rejects.toBeInstanceOf(InvalidGuideBlockContentError);
+
+    repository.list_guide_blocks = async () => [];
+
+    await expect(service.update_guide_block({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "missing_block",
+      data: {
+        content: {
+          title: "Missing",
+        },
+      },
+    })).rejects.toBeInstanceOf(GuideBlockNotFoundError);
   });
 
   it("soft deletes a guide block for editable draft guides", async () => {

@@ -10,6 +10,7 @@ import {
   GuideNotFoundError,
   GuideNotEditableError,
   GuideStepNotFoundError,
+  InvalidGuideBlockContentError,
   InvalidGuideBlockOrderError,
   InvalidGuideInputError,
   InvalidGuideStepInputError,
@@ -63,6 +64,7 @@ const guide_detail: GuideDetail = {
     source_capture_event_id: "event_1",
     source_capture_asset_id: "asset_1",
     block_type: "step",
+    content: null,
     block_index: 1,
     created_by_id: "org_user_1",
     updated_by_id: "org_user_1",
@@ -131,6 +133,8 @@ const build_test_app = async (
       update_guide: async () => ({ ...guide_detail.guide, version: 2 }),
       update_guide_step: async () => ({ ...guide_step, version: 2 }),
       reorder_guide_blocks: async () => guide_detail.guide_blocks,
+      create_guide_block: async () => guide_detail.guide_blocks,
+      update_guide_block: async () => ({ ...guide_block, block_type: "tip", content: { title: "Tip", body: "Details" }, step: null }),
       delete_guide_block: async () => undefined,
       ...overrides.guide_service,
     },
@@ -338,6 +342,119 @@ describe("guide routes", () => {
     ]);
   });
 
+  it("creates and updates guide blocks through the service while ignoring client-managed fields", async () => {
+    const seen_inputs: unknown[] = [];
+    const tip_block = {
+      ...guide_block,
+      id: "block_tip",
+      block_type: "tip" as const,
+      content: {
+        title: "Helpful hint",
+        body: "Use this when needed.",
+      },
+      step: null,
+    };
+    const app = await build_test_app({
+      guide_service: {
+        create_guide_block: async (input) => {
+          seen_inputs.push(input);
+          return [guide_block, tip_block];
+        },
+        update_guide_block: async (input) => {
+          seen_inputs.push(input);
+          return {
+            ...tip_block,
+            content: input.data.content ?? null,
+            version: 2,
+          };
+        },
+      },
+    });
+
+    const create_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        block_type: "tip",
+        position: {
+          placement: "after",
+          guide_block_id: "block_1",
+        },
+        content: {
+          title: "Helpful hint",
+          body: "Use this when needed.",
+        },
+        block_index: 999,
+        organization_id: "attacker",
+      },
+    });
+    const update_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_tip",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        content: {
+          title: "Updated tip",
+          body: "Updated body.",
+        },
+        block_type: "step",
+        version: 999,
+      },
+    });
+
+    expect(create_response.statusCode).toBe(201);
+    expect(create_response.json().guide_blocks).toEqual([guide_block, tip_block]);
+    expect(update_response.statusCode).toBe(200);
+    expect(update_response.json().guide_block).toMatchObject({
+      id: "block_tip",
+      content: {
+        title: "Updated tip",
+        body: "Updated body.",
+      },
+      version: 2,
+    });
+    expect(seen_inputs).toEqual([
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        guide_id: "guide_1",
+        data: {
+          block_type: "tip",
+          position: {
+            placement: "after",
+            guide_block_id: "block_1",
+          },
+          step: undefined,
+          content: {
+            title: "Helpful hint",
+            body: "Use this when needed.",
+          },
+        },
+      },
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        guide_id: "guide_1",
+        guide_block_id: "block_tip",
+        data: {
+          content: {
+            title: "Updated tip",
+            body: "Updated body.",
+          },
+        },
+      },
+    ]);
+    expect(JSON.stringify(create_response.json())).not.toContain("attacker");
+    await app.close();
+  });
+
   it("maps auth and domain errors to stable responses", async () => {
     const unauthenticated_app = await build_test_app({
       auth_service: {
@@ -363,6 +480,7 @@ describe("guide routes", () => {
       { error: new GuideStepNotFoundError(), status: 404, type: "guide_step_not_found" },
       { error: new GuideBlockNotFoundError(), status: 404, type: "guide_block_not_found" },
       { error: new InvalidGuideBlockOrderError(), status: 400, type: "invalid_guide_block_order" },
+      { error: new InvalidGuideBlockContentError(), status: 400, type: "invalid_guide_block_content" },
       { error: new InvalidGuideStepInputError(), status: 400, type: "invalid_guide_step" },
       { error: new GuideNotEditableError(), status: 409, type: "guide_not_editable" },
     ];

@@ -272,6 +272,38 @@ describe("DB-backed guide API", () => {
       url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
       cookies: { demo_composer_session: session_token },
     });
+    const create_header_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        block_type: "header",
+        position: {
+          placement: "before",
+          guide_block_id: second_block_id,
+        },
+        content: {
+          title: "Department details",
+        },
+      },
+    });
+    const created_header_block = create_header_response.json().guide_blocks
+      ?.find((block: { block_type: string }) => block.block_type === "header");
+    const update_header_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/${created_header_block?.id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        content: {
+          title: "Department setup details",
+        },
+      },
+    });
+    const after_header_update_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
     const archive_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
@@ -323,6 +355,38 @@ describe("DB-backed guide API", () => {
       { id: second_block_id, block_index: 2 },
     ]);
     expect(JSON.stringify(after_delete_response.json())).not.toContain(first_block_id);
+    expect(create_header_response.statusCode).toBe(201);
+    expect(create_header_response.json().guide_blocks.map((block: { id: string; block_index: number }) => ({
+      id: block.id,
+      block_index: block.block_index,
+    }))).toEqual([
+      { id: third_block_id, block_index: 1 },
+      { id: created_header_block.id, block_index: 2 },
+      { id: second_block_id, block_index: 3 },
+    ]);
+    expect(created_header_block).toMatchObject({
+      block_type: "header",
+      content: {
+        title: "Department details",
+      },
+      step: null,
+    });
+    expect(update_header_response.statusCode).toBe(200);
+    expect(update_header_response.json().guide_block).toMatchObject({
+      id: created_header_block.id,
+      content: {
+        title: "Department setup details",
+      },
+      step: null,
+    });
+    expect(after_header_update_response.statusCode).toBe(200);
+    expect(after_header_update_response.json().guide_blocks.map((block: { block_index: number }) => block.block_index)).toEqual([1, 2, 3]);
+    expect(after_header_update_response.json().guide_blocks[1]).toMatchObject({
+      id: created_header_block.id,
+      content: {
+        title: "Department setup details",
+      },
+    });
     expect(archive_response.statusCode).toBe(200);
     expect(archive_response.json().guide.status).toBe("archived");
     expect(archived_step_response.statusCode).toBe(409);

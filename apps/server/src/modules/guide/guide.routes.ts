@@ -13,9 +13,11 @@ import {
   GuideNotEditableError,
   GuideStepNotFoundError,
   InvalidGuideBlockOrderError,
+  InvalidGuideBlockContentError,
   InvalidGuideInputError,
   InvalidGuideStepInputError,
   ProjectNotFoundError,
+  type CreateGuideBlockInput,
   type CreateGuideFromCaptureInput,
   type Guide,
   type GuideAuthContext,
@@ -23,6 +25,7 @@ import {
   type GuideDetail,
   type GuideStep,
   type UpdateGuideInput,
+  type UpdateGuideBlockInput,
   type UpdateGuideStepInput,
 } from "./guide.service";
 
@@ -65,6 +68,19 @@ export type GuideRouteDependencies = {
       guide_id: string;
       block_ids: string[];
     }) => Promise<GuideBlock[]>;
+    create_guide_block: (input: {
+      auth: GuideAuthContext;
+      project_id: string;
+      guide_id: string;
+      data: CreateGuideBlockInput;
+    }) => Promise<GuideBlock[]>;
+    update_guide_block: (input: {
+      auth: GuideAuthContext;
+      project_id: string;
+      guide_id: string;
+      guide_block_id: string;
+      data: UpdateGuideBlockInput;
+    }) => Promise<GuideBlock>;
     delete_guide_block: (input: {
       auth: GuideAuthContext;
       project_id: string;
@@ -93,6 +109,28 @@ const update_guide_step_body_schema = z.object({
 
 const reorder_guide_blocks_body_schema = z.object({
   block_ids: z.array(z.string().trim().min(1)).min(1),
+}).passthrough();
+
+const guide_block_content_schema = z.object({
+  title: z.string().nullable().optional(),
+  body: z.string().nullable().optional(),
+}).passthrough();
+
+const create_guide_block_body_schema = z.object({
+  block_type: z.enum(["step", "header", "tip", "alert"]),
+  position: z.object({
+    placement: z.enum(["before", "after"]),
+    guide_block_id: z.string().trim().min(1),
+  }).nullable().optional(),
+  step: z.object({
+    title: z.string().optional(),
+    body: z.string().nullable().optional(),
+  }).nullable().optional(),
+  content: guide_block_content_schema.nullable().optional(),
+}).passthrough();
+
+const update_guide_block_body_schema = z.object({
+  content: guide_block_content_schema.nullable().optional(),
 }).passthrough();
 
 const unauthorized_response = () => ({
@@ -153,6 +191,21 @@ const pick_update_guide_step_data = (
   return data;
 };
 
+const pick_create_guide_block_data = (
+  body: CreateGuideBlockInput
+): CreateGuideBlockInput => ({
+  block_type: body.block_type,
+  position: body.position ?? undefined,
+  step: body.step ?? undefined,
+  content: body.content ?? undefined,
+});
+
+const pick_update_guide_block_data = (
+  body: UpdateGuideBlockInput
+): UpdateGuideBlockInput => ({
+  content: body.content ?? undefined,
+});
+
 export const build_guide_routes = (
   dependencies: GuideRouteDependencies
 ): FastifyPluginAsync => {
@@ -206,6 +259,10 @@ export const build_guide_routes = (
 
       if (error instanceof InvalidGuideBlockOrderError) {
         return reply.status(400).send(error_response("invalid_guide_block_order", "Guide block order is invalid"));
+      }
+
+      if (error instanceof InvalidGuideBlockContentError) {
+        return reply.status(400).send(error_response("invalid_guide_block_content", "Guide block content is invalid"));
       }
 
       throw error;
@@ -352,6 +409,60 @@ export const build_guide_routes = (
         });
 
         return reply.status(200).send({ guide_blocks });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.post<{
+      Params: {
+        project_id: string;
+        guide_id: string;
+      };
+      Body: CreateGuideBlockInput;
+    }>("/:project_id/guides/:guide_id/blocks", {
+      schema: {
+        body: create_guide_block_body_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const guide_blocks = await dependencies.guide_service.create_guide_block({
+          auth,
+          project_id: request.params.project_id,
+          guide_id: request.params.guide_id,
+          data: pick_create_guide_block_data(request.body),
+        });
+
+        return reply.status(201).send({ guide_blocks });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.patch<{
+      Params: {
+        project_id: string;
+        guide_id: string;
+        guide_block_id: string;
+      };
+      Body: UpdateGuideBlockInput;
+    }>("/:project_id/guides/:guide_id/blocks/:guide_block_id", {
+      schema: {
+        body: update_guide_block_body_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const guide_block = await dependencies.guide_service.update_guide_block({
+          auth,
+          project_id: request.params.project_id,
+          guide_id: request.params.guide_id,
+          guide_block_id: request.params.guide_block_id,
+          data: pick_update_guide_block_data(request.body),
+        });
+
+        return reply.status(200).send({ guide_block });
       } catch (error) {
         return handle_domain_error(error, reply);
       }

@@ -77,6 +77,10 @@ export type PublishedGuideSnapshot = {
     id: string;
     block_type: string;
     block_index: number;
+    content: {
+      title?: string | null;
+      body?: string | null;
+    } | null;
     step: {
       id: string;
       title: string;
@@ -273,6 +277,7 @@ const build_snapshot = (input: {
         id: block.id,
         block_type: block.block_type,
         block_index: block.block_index,
+        content: block.content,
         step: block.step
           ? {
             id: block.step.id,

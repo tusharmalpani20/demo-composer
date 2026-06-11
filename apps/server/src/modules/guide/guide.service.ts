@@ -49,6 +49,7 @@ export type GuideBlock = {
   source_capture_event_id: string | null;
   source_capture_asset_id: string | null;
   block_type: GuideBlockType;
+  content: GuideBlockContent | null;
   block_index: number;
   created_by_id: string;
   updated_by_id: string;
@@ -56,6 +57,11 @@ export type GuideBlock = {
   created_at: string;
   updated_at: string;
   step: GuideStep | null;
+};
+
+export type GuideBlockContent = {
+  title?: string | null;
+  body?: string | null;
 };
 
 export type GuideSourceCaptureAsset = {
@@ -113,6 +119,23 @@ export type UpdateGuideStepInput = {
   body?: string | null;
 };
 
+export type CreateGuideBlockInput = {
+  block_type: GuideBlockType;
+  position?: {
+    placement: "before" | "after";
+    guide_block_id: string;
+  } | null;
+  step?: {
+    title?: string;
+    body?: string | null;
+  } | null;
+  content?: GuideBlockContent | null;
+};
+
+export type UpdateGuideBlockInput = {
+  content?: GuideBlockContent | null;
+};
+
 export type NormalizedUpdateGuideInput = {
   title?: string;
   description?: string | null;
@@ -122,6 +145,23 @@ export type NormalizedUpdateGuideInput = {
 export type NormalizedUpdateGuideStepInput = {
   title?: string;
   body?: string | null;
+};
+
+export type NormalizedCreateGuideBlockInput = {
+  block_type: "step" | "header" | "tip" | "alert";
+  position?: {
+    placement: "before" | "after";
+    guide_block_id: string;
+  };
+  step?: {
+    title: string;
+    body: string | null;
+  };
+  content?: GuideBlockContent;
+};
+
+export type NormalizedUpdateGuideBlockInput = {
+  content: GuideBlockContent;
 };
 
 export type NormalizedCreateGuideFromCaptureInput = {
@@ -210,6 +250,21 @@ export type GuideRepository = {
     actor_org_user_id: string;
     block_ids: string[];
   }) => Promise<GuideBlock[]>;
+  create_guide_block: (input: {
+    organization_id: string;
+    project_id: string;
+    guide_id: string;
+    actor_org_user_id: string;
+    data: NormalizedCreateGuideBlockInput;
+  }) => Promise<GuideBlock[]>;
+  update_guide_block: (input: {
+    organization_id: string;
+    project_id: string;
+    guide_id: string;
+    guide_block_id: string;
+    actor_org_user_id: string;
+    data: NormalizedUpdateGuideBlockInput;
+  }) => Promise<GuideBlock>;
   delete_guide_block: (input: {
     organization_id: string;
     project_id: string;
@@ -279,6 +334,12 @@ export class InvalidGuideBlockOrderError extends Error {
   }
 }
 
+export class InvalidGuideBlockContentError extends Error {
+  constructor() {
+    super("Guide block content is invalid");
+  }
+}
+
 const compact_optional_string = (value: string | null | undefined) => {
   if (value === undefined || value === null) {
     return null;
@@ -326,6 +387,91 @@ const normalize_block_ids = (block_ids: string[]) => {
   }
 
   return normalized;
+};
+
+const normalize_position = (position: CreateGuideBlockInput["position"]) => {
+  if (!position) {
+    return undefined;
+  }
+
+  const guide_block_id = compact_optional_string(position.guide_block_id);
+
+  if (!guide_block_id || !["before", "after"].includes(position.placement)) {
+    throw new InvalidGuideBlockContentError();
+  }
+
+  return {
+    placement: position.placement,
+    guide_block_id,
+  };
+};
+
+const normalize_block_content = (
+  block_type: "header" | "tip" | "alert",
+  content: GuideBlockContent | null | undefined
+) => {
+  const title = compact_optional_string(content?.title);
+  const body = compact_optional_string(content?.body);
+
+  if (block_type === "header") {
+    if (!title) {
+      throw new InvalidGuideBlockContentError();
+    }
+
+    return { title };
+  }
+
+  if (!title && !body) {
+    throw new InvalidGuideBlockContentError();
+  }
+
+  return { title, body };
+};
+
+const normalize_create_guide_block_input = (
+  input: CreateGuideBlockInput
+): NormalizedCreateGuideBlockInput => {
+  const position = normalize_position(input.position);
+
+  if (input.block_type === "step") {
+    const title = compact_optional_string(input.step?.title);
+
+    if (!title) {
+      throw new InvalidGuideBlockContentError();
+    }
+
+    return {
+      block_type: "step",
+      ...(position ? { position } : {}),
+      step: {
+        title: cap_title(title),
+        body: compact_optional_string(input.step?.body),
+      },
+    };
+  }
+
+  if (input.block_type === "header" || input.block_type === "tip" || input.block_type === "alert") {
+    return {
+      block_type: input.block_type,
+      ...(position ? { position } : {}),
+      content: normalize_block_content(input.block_type, input.content),
+    };
+  }
+
+  throw new InvalidGuideBlockContentError();
+};
+
+const normalize_update_guide_block_input = (
+  block_type: GuideBlockType,
+  input: UpdateGuideBlockInput
+): NormalizedUpdateGuideBlockInput => {
+  if (block_type !== "header" && block_type !== "tip" && block_type !== "alert") {
+    throw new InvalidGuideBlockContentError();
+  }
+
+  return {
+    content: normalize_block_content(block_type, input.content),
+  };
 };
 
 const has_keys = (value: Record<string, unknown>) => Object.keys(value).length > 0;
@@ -711,6 +857,75 @@ export const build_guide_service = (repository: GuideRepository) => {
     });
   };
 
+  const create_guide_block = async (input: {
+    auth: GuideAuthContext;
+    project_id: string;
+    guide_id: string;
+    data: CreateGuideBlockInput;
+  }) => {
+    const data = normalize_create_guide_block_input(input.data);
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      guide_id: input.guide_id,
+    };
+    await ensure_project_exists({
+      organization_id: scope.organization_id,
+      project_id: scope.project_id,
+    });
+    await ensure_editable_guide(scope);
+
+    if (data.position) {
+      const active_blocks = await repository.list_guide_blocks(scope);
+      const target_exists = active_blocks.some((block) => block.id === data.position?.guide_block_id);
+
+      if (!target_exists) {
+        throw new GuideBlockNotFoundError();
+      }
+    }
+
+    return repository.create_guide_block({
+      ...scope,
+      actor_org_user_id: input.auth.actor_org_user_id,
+      data,
+    });
+  };
+
+  const update_guide_block = async (input: {
+    auth: GuideAuthContext;
+    project_id: string;
+    guide_id: string;
+    guide_block_id: string;
+    data: UpdateGuideBlockInput;
+  }) => {
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      guide_id: input.guide_id,
+    };
+    await ensure_project_exists({
+      organization_id: scope.organization_id,
+      project_id: scope.project_id,
+    });
+    await ensure_editable_guide(scope);
+
+    const block = (await repository.list_guide_blocks(scope))
+      .find((candidate) => candidate.id === input.guide_block_id);
+
+    if (!block) {
+      throw new GuideBlockNotFoundError();
+    }
+
+    const data = normalize_update_guide_block_input(block.block_type, input.data);
+
+    return repository.update_guide_block({
+      ...scope,
+      guide_block_id: input.guide_block_id,
+      actor_org_user_id: input.auth.actor_org_user_id,
+      data,
+    });
+  };
+
   const delete_guide_block = async (input: {
     auth: GuideAuthContext;
     project_id: string;
@@ -746,6 +961,8 @@ export const build_guide_service = (repository: GuideRepository) => {
     update_guide,
     update_guide_step,
     reorder_guide_blocks,
+    create_guide_block,
+    update_guide_block,
     delete_guide_block,
   };
 };
