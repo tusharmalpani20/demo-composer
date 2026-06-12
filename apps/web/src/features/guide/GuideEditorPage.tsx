@@ -12,6 +12,7 @@ import {
   revokeGuidePublishLink,
   updateGuide,
   updateGuideBlock,
+  updateGuideBlockAnnotations,
   updateGuideBlockScreenshot,
   uploadGuideBlockScreenshot,
   updateGuideStep,
@@ -29,8 +30,10 @@ import type {
   GuidePublishResult,
   GuidePublishStatusResponse,
   GuideRevokePublishResult,
+  GuideScreenshotAnnotation,
   GuideSourceCaptureAsset,
   GuideStep,
+  UpdateGuideBlockAnnotationsInput,
 } from "./types";
 import styles from "./GuideEditorPage.module.css";
 
@@ -75,6 +78,7 @@ export type GuideEditorPageProps = {
   saveBlock?: typeof updateGuideBlock;
   loadScreenshotAssets?: typeof listProjectScreenshotAssets;
   saveBlockScreenshot?: typeof updateGuideBlockScreenshot;
+  saveBlockAnnotations?: typeof updateGuideBlockAnnotations;
   uploadBlockScreenshot?: typeof uploadGuideBlockScreenshot;
   reorderBlocks?: typeof reorderGuideBlocks;
   removeBlock?: typeof deleteGuideBlock;
@@ -204,6 +208,20 @@ const updateBlockInBlocks = (blocks: GuideBlock[], guideBlock: GuideBlock) => (
   ))
 );
 
+const annotationsFromBlock = (block: GuideBlock): GuideScreenshotAnnotation[] => (
+  block.content?.annotations ?? []
+);
+
+const defaultHighlightAnnotation = (): UpdateGuideBlockAnnotationsInput["annotations"][number] => ({
+  type: "highlight",
+  x: 0.65,
+  y: 0.12,
+  width: 0.18,
+  height: 0.08,
+});
+
+const annotationPercent = (value: number) => `${Number((value * 100).toFixed(4))}%`;
+
 const mergeAssetIntoDetail = (
   detail: GuideDetail,
   asset: GuideSourceCaptureAsset | undefined
@@ -283,6 +301,7 @@ export const GuideEditorPage = ({
   saveBlock = updateGuideBlock,
   loadScreenshotAssets = listProjectScreenshotAssets,
   saveBlockScreenshot = updateGuideBlockScreenshot,
+  saveBlockAnnotations = updateGuideBlockAnnotations,
   uploadBlockScreenshot = uploadGuideBlockScreenshot,
   reorderBlocks = reorderGuideBlocks,
   removeBlock = deleteGuideBlock,
@@ -658,6 +677,42 @@ export const GuideEditorPage = ({
     }
   };
 
+  const saveAnnotations = async (
+    block: GuideBlock,
+    annotations: UpdateGuideBlockAnnotationsInput["annotations"]
+  ) => {
+    setBusyAction(`annotations:${block.id}`);
+    setNotice(null);
+
+    try {
+      const response = await saveBlockAnnotations(projectId, guideId, block.id, { annotations });
+      patchDetail((detail) => ({
+        ...detail,
+        guide_blocks: updateBlockInBlocks(detail.guide_blocks, response.guide_block),
+      }));
+      markPublishedDraftStale();
+      setNotice("Highlights saved.");
+    } catch (error: unknown) {
+      handleMutationError(error, "Could not save highlights.");
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const addHighlight = (block: GuideBlock) => {
+    void saveAnnotations(block, [
+      ...annotationsFromBlock(block),
+      defaultHighlightAnnotation(),
+    ]);
+  };
+
+  const removeHighlight = (block: GuideBlock, annotationIndex: number) => {
+    void saveAnnotations(
+      block,
+      annotationsFromBlock(block).filter((_, index) => index !== annotationIndex)
+    );
+  };
+
   const moveBlock = async (blockId: string, direction: -1 | 1) => {
     if (state.status !== "loaded") {
       return;
@@ -783,6 +838,8 @@ export const GuideEditorPage = ({
       onCloseScreenshotPicker={() => setActiveScreenshotPickerBlockId(null)}
       onSaveScreenshot={saveScreenshot}
       onUploadScreenshot={uploadScreenshot}
+      onAddHighlight={addHighlight}
+      onRemoveHighlight={removeHighlight}
       onAddBlock={addBlock}
       onMoveBlock={moveBlock}
       onDeleteBlock={deleteBlock}
@@ -839,6 +896,8 @@ const GuideEditorView = ({
   onCloseScreenshotPicker,
   onSaveScreenshot,
   onUploadScreenshot,
+  onAddHighlight,
+  onRemoveHighlight,
   onAddBlock,
   onMoveBlock,
   onDeleteBlock,
@@ -872,6 +931,8 @@ const GuideEditorView = ({
   onCloseScreenshotPicker: () => void;
   onSaveScreenshot: (block: GuideBlock, captureAssetId: string | null) => void;
   onUploadScreenshot: (block: GuideBlock, file: File) => void;
+  onAddHighlight: (block: GuideBlock) => void;
+  onRemoveHighlight: (block: GuideBlock, annotationIndex: number) => void;
   onAddBlock: (blockType: "step" | "header" | "paragraph" | "tip" | "alert" | "divider", afterBlock?: GuideBlock) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
@@ -997,6 +1058,8 @@ const GuideEditorView = ({
                   onCloseScreenshotPicker={onCloseScreenshotPicker}
                   onSaveScreenshot={onSaveScreenshot}
                   onUploadScreenshot={onUploadScreenshot}
+                  onAddHighlight={onAddHighlight}
+                  onRemoveHighlight={onRemoveHighlight}
                   onAddBlock={onAddBlock}
                   onMoveBlock={onMoveBlock}
                   onDeleteBlock={onDeleteBlock}
@@ -1193,6 +1256,8 @@ const GuideBlockEditor = ({
   onCloseScreenshotPicker,
   onSaveScreenshot,
   onUploadScreenshot,
+  onAddHighlight,
+  onRemoveHighlight,
   onAddBlock,
   onMoveBlock,
   onDeleteBlock,
@@ -1217,6 +1282,8 @@ const GuideBlockEditor = ({
   onCloseScreenshotPicker: () => void;
   onSaveScreenshot: (block: GuideBlock, captureAssetId: string | null) => void;
   onUploadScreenshot: (block: GuideBlock, file: File) => void;
+  onAddHighlight: (block: GuideBlock) => void;
+  onRemoveHighlight: (block: GuideBlock, annotationIndex: number) => void;
   onAddBlock: (blockType: "step" | "header" | "paragraph" | "tip" | "alert" | "divider", afterBlock?: GuideBlock) => void;
   onMoveBlock: (blockId: string, direction: -1 | 1) => void;
   onDeleteBlock: (block: GuideBlock) => void;
@@ -1226,6 +1293,8 @@ const GuideBlockEditor = ({
   const actionLabel = step ? "step" : "block";
   const actionBusy = busyAction !== null;
   const uploadBusy = busyAction === `upload-screenshot:${block.id}`;
+  const annotationsBusy = busyAction === `annotations:${block.id}`;
+  const annotations = annotationsFromBlock(block);
   const editableContentBlock = block.block_type === "header" || block.block_type === "paragraph" || block.block_type === "tip" || block.block_type === "alert";
 
   return (
@@ -1313,11 +1382,14 @@ const GuideBlockEditor = ({
                 aria-label={`Open screenshot for step ${blockNumber}`}
                 onClick={() => onOpenScreenshot(screenshotViewerImageId(block, sourceAsset))}
               >
-                <img
-                  className={styles.screenshot}
-                  src={resolveApiAssetUrl(sourceAsset.file_url)}
-                  alt={assetAltText(sourceAsset, blockNumber)}
-                />
+                <span className={styles.annotationFrame}>
+                  <img
+                    className={styles.screenshot}
+                    src={resolveApiAssetUrl(sourceAsset.file_url)}
+                    alt={assetAltText(sourceAsset, blockNumber)}
+                  />
+                  <ScreenshotAnnotationOverlay annotations={annotations} />
+                </span>
               </button>
             </div>
           ) : null}
@@ -1358,6 +1430,27 @@ const GuideBlockEditor = ({
                 Remove screenshot for step {blockNumber}
               </button>
             ) : null}
+            {sourceAsset ? (
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={readOnly || actionBusy || annotationsBusy || annotations.length >= 10}
+                onClick={() => onAddHighlight(block)}
+              >
+                Add highlight for step {blockNumber}
+              </button>
+            ) : null}
+            {sourceAsset ? annotations.map((annotation, index) => (
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                key={annotation.id}
+                disabled={readOnly || actionBusy || annotationsBusy}
+                onClick={() => onRemoveHighlight(block, index)}
+              >
+                Remove highlight {index + 1} from step {blockNumber}
+              </button>
+            )) : null}
           </div>
           {screenshotPickerOpen ? (
             <div className={styles.screenshotPicker} aria-label={`Screenshot choices for step ${blockNumber}`}>
@@ -1453,6 +1546,34 @@ const GuideBlockEditor = ({
         />
       ) : null}
     </article>
+  );
+};
+
+const ScreenshotAnnotationOverlay = ({
+  annotations,
+}: {
+  annotations: GuideScreenshotAnnotation[];
+}) => {
+  if (annotations.length === 0) {
+    return null;
+  }
+
+  return (
+    <span className={styles.annotationOverlay} aria-hidden="true">
+      {annotations.map((annotation) => (
+        <span
+          className={styles.annotationHighlight}
+          data-testid={`guide-highlight-${annotation.id}`}
+          key={annotation.id}
+          style={{
+            left: annotationPercent(annotation.x),
+            top: annotationPercent(annotation.y),
+            width: annotationPercent(annotation.width),
+            height: annotationPercent(annotation.height),
+          }}
+        />
+      ))}
+    </span>
   );
 };
 

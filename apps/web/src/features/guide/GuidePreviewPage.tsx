@@ -6,7 +6,12 @@ import {
   GuideScreenshotViewer,
   type GuideScreenshotViewerImage,
 } from "./GuideScreenshotViewer";
-import type { GuideBlock, GuideDetail, GuideSourceCaptureAsset } from "./types";
+import type {
+  GuideBlock,
+  GuideDetail,
+  GuideScreenshotAnnotation,
+  GuideSourceCaptureAsset,
+} from "./types";
 import styles from "./GuidePreviewPage.module.css";
 
 type LoadState =
@@ -232,6 +237,12 @@ const assetForBlock = (
   return source_capture_asset_id ? assetsById.get(source_capture_asset_id) : undefined;
 };
 
+const annotationsFromBlock = (block: GuideBlock): GuideScreenshotAnnotation[] => (
+  block.content?.annotations ?? []
+);
+
+const annotationPercent = (value: number) => `${Number((value * 100).toFixed(4))}%`;
+
 const screenshotImagesFromBlocks = (
   blocks: GuideBlock[],
   assetsById: Map<string, GuideSourceCaptureAsset>
@@ -323,11 +334,40 @@ const GuidePreviewBlock = ({
                 src={resolveApiAssetUrl(asset.file_url)}
                 alt={assetAltText(asset, stepNumber)}
               />
+              <ScreenshotAnnotationOverlay annotations={annotationsFromBlock(block)} />
             </button>
           </div>
         ) : null}
       </div>
     </article>
+  );
+};
+
+const ScreenshotAnnotationOverlay = ({
+  annotations,
+}: {
+  annotations: GuideScreenshotAnnotation[];
+}) => {
+  if (annotations.length === 0) {
+    return null;
+  }
+
+  return (
+    <span className={styles.annotationOverlay} aria-hidden="true">
+      {annotations.map((annotation) => (
+        <span
+          className={styles.annotationHighlight}
+          data-testid={`guide-highlight-${annotation.id}`}
+          key={annotation.id}
+          style={{
+            left: annotationPercent(annotation.x),
+            top: annotationPercent(annotation.y),
+            width: annotationPercent(annotation.width),
+            height: annotationPercent(annotation.height),
+          }}
+        />
+      ))}
+    </span>
   );
 };
 

@@ -16,6 +16,7 @@ import type {
   GuideStep,
   PublicPublishLinkResponse,
   UpdateGuideBlockInput,
+  UpdateGuideBlockAnnotationsInput,
   UpdateGuideBlockScreenshotInput,
   UploadGuideBlockScreenshotInput,
   UploadGuideBlockScreenshotResponse,
@@ -370,6 +371,24 @@ export const updateGuideBlockScreenshot = async (
 ): Promise<{ guide_block: GuideBlock }> => (
   requestJson<{ guide_block: GuideBlock }>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/${encodeURIComponent(blockId)}/screenshot`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
+export const updateGuideBlockAnnotations = async (
+  projectId: string,
+  guideId: string,
+  blockId: string,
+  data: UpdateGuideBlockAnnotationsInput
+): Promise<{ guide_block: GuideBlock }> => (
+  requestJson<{ guide_block: GuideBlock }>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/${encodeURIComponent(blockId)}/annotations`,
     {
       method: "PATCH",
       headers: {

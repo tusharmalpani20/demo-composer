@@ -290,6 +290,39 @@ describe("GuidePreviewPage", () => {
     expect(screen.getByRole("heading", { name: "Department guide" })).toBeInTheDocument();
   });
 
+  it("renders screenshot highlights in the guide preview", async () => {
+    renderPage({
+      detail: {
+        ...guideDetail,
+        guide_blocks: guideDetail.guide_blocks.map((block) => (
+          block.id === "block_1"
+            ? {
+              ...block,
+              content: {
+                annotations: [{
+                  id: "ann_preview",
+                  type: "highlight",
+                  x: 0.2,
+                  y: 0.15,
+                  width: 0.25,
+                  height: 0.1,
+                }],
+              },
+            }
+            : block
+        )),
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(screen.getByTestId("guide-highlight-ann_preview")).toHaveStyle({
+      left: "20%",
+      top: "15%",
+      width: "25%",
+      height: "10%",
+    });
+  });
+
   it("renders empty guides", async () => {
     renderPage({
       detail: {

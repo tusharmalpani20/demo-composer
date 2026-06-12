@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import { GuideEditorPage } from "./GuideEditorPage";
 import type { GuideEditorPageProps } from "./GuideEditorPage";
-import type { GuideDetail, GuidePublishStatusResponse, GuideSourceCaptureAsset } from "./types";
+import type {
+  GuideDetail,
+  GuidePublishStatusResponse,
+  GuideSourceCaptureAsset,
+  UpdateGuideBlockAnnotationsInput,
+} from "./types";
 
 const guideDetail: GuideDetail = {
   guide: {
@@ -199,6 +204,7 @@ const renderPage = (overrides: {
   saveBlock?: GuideEditorPageProps["saveBlock"];
   loadScreenshotAssets?: GuideEditorPageProps["loadScreenshotAssets"];
   saveBlockScreenshot?: GuideEditorPageProps["saveBlockScreenshot"];
+  saveBlockAnnotations?: GuideEditorPageProps["saveBlockAnnotations"];
   uploadBlockScreenshot?: GuideEditorPageProps["uploadBlockScreenshot"];
   reorderBlocks?: GuideEditorPageProps["reorderBlocks"];
   removeBlock?: GuideEditorPageProps["removeBlock"];
@@ -317,6 +323,29 @@ const renderPage = (overrides: {
       },
     };
   });
+  const saveBlockAnnotations = overrides.saveBlockAnnotations ?? vi.fn(async (_projectId, _guideId, blockId, data) => {
+    const block = guideDetail.guide_blocks.find((candidate) => candidate.id === blockId);
+
+    if (!block) {
+      throw new Error("missing block fixture");
+    }
+
+    return {
+      guide_block: {
+        ...block,
+        content: {
+          ...(block.content ?? {}),
+          annotations: data.annotations.map((
+            annotation: UpdateGuideBlockAnnotationsInput["annotations"][number],
+            index: number
+          ) => ({
+            id: annotation.id ?? `ann_saved_${index + 1}`,
+            ...annotation,
+          })),
+        },
+      },
+    };
+  });
   const uploadBlockScreenshot = overrides.uploadBlockScreenshot ?? vi.fn(async (_projectId, _guideId, blockId) => {
     const block = guideDetail.guide_blocks.find((candidate) => candidate.id === blockId);
     const capture_asset: GuideSourceCaptureAsset = {
@@ -393,6 +422,7 @@ const renderPage = (overrides: {
       saveBlock={saveBlock}
       loadScreenshotAssets={loadScreenshotAssets}
       saveBlockScreenshot={saveBlockScreenshot}
+      saveBlockAnnotations={saveBlockAnnotations}
       uploadBlockScreenshot={uploadBlockScreenshot}
       reorderBlocks={reorderBlocks}
       removeBlock={removeBlock}
@@ -411,6 +441,7 @@ const renderPage = (overrides: {
     saveBlock,
     loadScreenshotAssets,
     saveBlockScreenshot,
+    saveBlockAnnotations,
     uploadBlockScreenshot,
     reorderBlocks,
     removeBlock,
@@ -799,6 +830,88 @@ describe("GuideEditorPage", () => {
     });
     expect(screen.queryByRole("img", { name: "Review Department" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Attach screenshot for step 1" })).toBeInTheDocument();
+  });
+
+  it("renders adds and removes screenshot highlights from the editor", async () => {
+    const detail: GuideDetail = {
+      ...guideDetail,
+      guide_blocks: guideDetail.guide_blocks.map((block) => (
+        block.id === "block_1"
+          ? {
+            ...block,
+            content: {
+              annotations: [{
+                id: "ann_existing",
+                type: "highlight",
+                x: 0.1,
+                y: 0.2,
+                width: 0.3,
+                height: 0.4,
+              }],
+            },
+          }
+          : block
+      )),
+    };
+    const saveBlockAnnotations = vi.fn(async (_projectId, _guideId, blockId, data) => ({
+      guide_block: {
+        ...detail.guide_blocks.find((block) => block.id === blockId)!,
+        content: {
+          annotations: data.annotations.map((
+            annotation: UpdateGuideBlockAnnotationsInput["annotations"][number],
+            index: number
+          ) => ({
+            id: annotation.id ?? `ann_saved_${index + 1}`,
+            ...annotation,
+          })),
+        },
+      },
+    }));
+
+    renderPage({ detail, saveBlockAnnotations });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(screen.getByTestId("guide-highlight-ann_existing")).toHaveStyle({
+      left: "10%",
+      top: "20%",
+      width: "30%",
+      height: "40%",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Add highlight for step 1" }));
+
+    await waitFor(() => expect(saveBlockAnnotations).toHaveBeenCalledWith("project_1", "guide_1", "block_1", {
+      annotations: [
+        {
+          id: "ann_existing",
+          type: "highlight",
+          x: 0.1,
+          y: 0.2,
+          width: 0.3,
+          height: 0.4,
+        },
+        {
+          type: "highlight",
+          x: 0.65,
+          y: 0.12,
+          width: 0.18,
+          height: 0.08,
+        },
+      ],
+    }));
+
+    fireEvent.click(await screen.findByRole("button", { name: "Remove highlight 1 from step 1" }));
+
+    await waitFor(() => expect(saveBlockAnnotations).toHaveBeenLastCalledWith("project_1", "guide_1", "block_1", {
+      annotations: [{
+        id: "ann_saved_2",
+        type: "highlight",
+        x: 0.65,
+        y: 0.12,
+        width: 0.18,
+        height: 0.08,
+      }],
+    }));
   });
 
   it("uploads a replacement screenshot from the editor", async () => {

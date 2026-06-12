@@ -4,6 +4,16 @@ export type GuideBlockType = "step" | "header" | "paragraph" | "tip" | "alert" |
 export type GuideBlockContent = {
   title?: string | null;
   body?: string | null;
+  annotations?: GuideScreenshotAnnotation[] | null;
+};
+
+export type GuideScreenshotAnnotation = {
+  id: string;
+  type: "highlight";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 export type Guide = {
@@ -134,6 +144,17 @@ export type UpdateGuideBlockInput = {
 
 export type UpdateGuideBlockScreenshotInput = {
   capture_asset_id: string | null;
+};
+
+export type UpdateGuideBlockAnnotationsInput = {
+  annotations: Array<{
+    id?: string;
+    type: "highlight";
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>;
 };
 
 export type ProjectScreenshotAssetListResponse = {

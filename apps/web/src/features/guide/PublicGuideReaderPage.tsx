@@ -5,6 +5,7 @@ import {
   type GuideScreenshotViewerImage,
 } from "./GuideScreenshotViewer";
 import type {
+  GuideScreenshotAnnotation,
   PublishedGuideSnapshot,
   PublishedGuideSnapshotAsset,
   PublishedGuideSnapshotBlock,
@@ -32,6 +33,51 @@ const nullable_string = (value: unknown): string | null => (
   typeof value === "string" ? value : null
 );
 
+const valid_annotation_number = (value: unknown): value is number => (
+  typeof value === "number" && Number.isFinite(value)
+);
+
+const parse_annotations = (value: unknown): GuideScreenshotAnnotation[] | null => {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  return value.flatMap((annotation): GuideScreenshotAnnotation[] => {
+    if (!is_record(annotation)) {
+      return [];
+    }
+
+    const { id, type, x, y, width, height } = annotation;
+
+    if (
+      typeof id !== "string"
+      || id.length === 0
+      || type !== "highlight"
+      || !valid_annotation_number(x)
+      || !valid_annotation_number(y)
+      || !valid_annotation_number(width)
+      || !valid_annotation_number(height)
+      || x < 0
+      || y < 0
+      || width <= 0
+      || height <= 0
+      || x + width > 1
+      || y + height > 1
+    ) {
+      return [];
+    }
+
+    return [{
+      id,
+      type,
+      x,
+      y,
+      width,
+      height,
+    }];
+  });
+};
+
 const parse_block_content = (value: unknown) => {
   if (!is_record(value)) {
     return null;
@@ -40,6 +86,7 @@ const parse_block_content = (value: unknown) => {
   return {
     title: nullable_string(value.title),
     body: nullable_string(value.body),
+    annotations: parse_annotations(value.annotations),
   };
 };
 
@@ -167,6 +214,12 @@ const asset_alt_text = (asset: PublishedGuideSnapshotAsset, stepNumber: number) 
 const screenshot_viewer_image_id = (block: PublishedGuideSnapshotBlock, asset: PublishedGuideSnapshotAsset) => (
   `${block.id}:${asset.id}`
 );
+
+const annotations_from_block = (block: PublishedGuideSnapshotBlock): GuideScreenshotAnnotation[] => (
+  block.content?.annotations ?? []
+);
+
+const annotation_percent = (value: number) => `${Number((value * 100).toFixed(4))}%`;
 
 export const PublicGuideReaderPage = ({
   slug,
@@ -386,11 +439,40 @@ const PublicGuideBlock = ({
                 src={resolveApiAssetUrl(asset.file_url)}
                 alt={asset_alt_text(asset, stepNumber)}
               />
+              <ScreenshotAnnotationOverlay annotations={annotations_from_block(block)} />
             </button>
           </div>
         ) : null}
       </div>
     </article>
+  );
+};
+
+const ScreenshotAnnotationOverlay = ({
+  annotations,
+}: {
+  annotations: GuideScreenshotAnnotation[];
+}) => {
+  if (annotations.length === 0) {
+    return null;
+  }
+
+  return (
+    <span className={styles.annotationOverlay} aria-hidden="true">
+      {annotations.map((annotation) => (
+        <span
+          className={styles.annotationHighlight}
+          data-testid={`guide-highlight-${annotation.id}`}
+          key={annotation.id}
+          style={{
+            left: annotation_percent(annotation.x),
+            top: annotation_percent(annotation.y),
+            width: annotation_percent(annotation.width),
+            height: annotation_percent(annotation.height),
+          }}
+        />
+      ))}
+    </span>
   );
 };
 

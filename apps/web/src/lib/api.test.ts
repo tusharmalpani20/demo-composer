@@ -22,6 +22,7 @@ import {
   revokeGuidePublishLink,
   updateGuide,
   updateGuideBlock,
+  updateGuideBlockAnnotations,
   updateGuideBlockScreenshot,
   uploadGuideBlockScreenshot,
   updateGuideStep,
@@ -958,6 +959,64 @@ describe("api client", () => {
         },
         body: JSON.stringify({
           capture_asset_id: null,
+        }),
+      }
+    );
+  });
+
+  it("updates guide block annotations", async () => {
+    const response = {
+      guide_block: {
+        id: "block_1",
+        content: {
+          annotations: [{
+            id: "ann_saved",
+            type: "highlight",
+            x: 0.1,
+            y: 0.2,
+            width: 0.3,
+            height: 0.4,
+          }],
+        },
+      },
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(updateGuideBlockAnnotations("project_1", "guide_1", "block_1", {
+      annotations: [{
+        id: "ann_existing",
+        type: "highlight",
+        x: 0.1,
+        y: 0.2,
+        width: 0.3,
+        height: 0.4,
+      }],
+    })).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/annotations",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          annotations: [{
+            id: "ann_existing",
+            type: "highlight",
+            x: 0.1,
+            y: 0.2,
+            width: 0.3,
+            height: 0.4,
+          }],
         }),
       }
     );

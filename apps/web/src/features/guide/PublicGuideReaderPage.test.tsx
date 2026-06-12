@@ -185,6 +185,73 @@ describe("PublicGuideReaderPage", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("renders snapshotted screenshot highlights in the public reader", async () => {
+    renderPage({
+      response: {
+        ...publicGuideResponse,
+        published_artifact: {
+          ...publicGuideResponse.published_artifact,
+          snapshot: {
+            ...(publicGuideResponse.published_artifact.snapshot as Record<string, unknown>),
+            blocks: [
+              {
+                id: "block_1",
+                block_type: "step",
+                block_index: 1,
+                content: {
+                  annotations: [{
+                    id: "ann_public",
+                    type: "highlight",
+                    x: 0.12,
+                    y: 0.22,
+                    width: 0.32,
+                    height: 0.14,
+                  }, {
+                    id: "",
+                    type: "highlight",
+                    x: 0.2,
+                    y: 0.2,
+                    width: 0,
+                    height: 0.1,
+                  }],
+                },
+                step: {
+                  id: "step_1",
+                  title: "Navigate to Department List",
+                  body: null,
+                },
+                source_asset: {
+                  id: "asset_1",
+                  asset_type: "screenshot",
+                  width: 1440,
+                  height: 900,
+                  page_title: "Department List",
+                  page_url: "https://example.test/departments",
+                  file_url: "/api/v1/public/publish-links/abc123/assets/asset_1/file",
+                  file: {
+                    id: "file_1",
+                    original_name: "departments.png",
+                    mime_type: "image/png",
+                    size_bytes: 123456,
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(screen.getByTestId("guide-highlight-ann_public")).toHaveStyle({
+      left: "12%",
+      top: "22%",
+      width: "32%",
+      height: "14%",
+    });
+    expect(screen.queryByTestId("guide-highlight-")).not.toBeInTheDocument();
+  });
+
   it("renders public not found without portal login navigation", async () => {
     renderPage({
       loadPublishLink: async () => {
