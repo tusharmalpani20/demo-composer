@@ -27,6 +27,13 @@ export type CaptureSession = {
   updated_at: string;
 };
 
+export type CreateCaptureSessionInput = {
+  name: string;
+  description?: string | null;
+  source_type?: CaptureSessionSourceType;
+  start_url?: string | null;
+};
+
 export type CaptureEventType = "navigation" | "click" | "input" | "capture" | "note";
 
 export type CaptureEvent = {

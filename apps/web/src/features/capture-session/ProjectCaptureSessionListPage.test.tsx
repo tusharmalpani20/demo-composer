@@ -60,19 +60,38 @@ const captureSessions: CaptureSession[] = [
 const renderPage = (overrides: {
   projectId?: string;
   loadCaptureSessions?: () => Promise<{ capture_sessions: CaptureSession[] }>;
+  createCaptureSession?: (
+    projectId: string,
+    input: {
+      name: string;
+      description?: string | null;
+      source_type?: "manual" | "extension" | "import";
+      start_url?: string | null;
+    }
+  ) => Promise<{ capture_session: CaptureSession }>;
+  currentPath?: string;
+  performLogout?: () => Promise<void>;
+  navigate?: (path: string) => void;
 } = {}) => {
   const loadCaptureSessions = overrides.loadCaptureSessions ?? vi.fn(async () => ({
     capture_sessions: captureSessions,
+  }));
+  const createCaptureSession = overrides.createCaptureSession ?? vi.fn(async () => ({
+    capture_session: captureSessions[0]!,
   }));
 
   render(
     <ProjectCaptureSessionListPage
       projectId={overrides.projectId ?? "project_1"}
       loadCaptureSessions={loadCaptureSessions}
+      createCaptureSession={createCaptureSession}
+      currentPath={overrides.currentPath}
+      performLogout={overrides.performLogout}
+      navigate={overrides.navigate}
     />
   );
 
-  return { loadCaptureSessions };
+  return { loadCaptureSessions, createCaptureSession };
 };
 
 describe("ProjectCaptureSessionListPage", () => {
@@ -157,6 +176,186 @@ describe("ProjectCaptureSessionListPage", () => {
     });
 
     expect(await screen.findByText("No capture sessions yet.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New Capture Session" })).toBeInTheDocument();
+  });
+
+  it("opens and cancels the capture session creation form", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Capture sessions" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Capture Session" }));
+
+    expect(screen.getByRole("heading", { name: "Create capture session" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toHaveFocus();
+    expect(screen.getByLabelText("Start URL")).toBeInTheDocument();
+    expect(screen.getByLabelText("Description")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("heading", { name: "Create capture session" })).not.toBeInTheDocument();
+  });
+
+  it("resets capture session creation form values when reopened", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Capture sessions" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Capture Session" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Manual capture" } });
+    fireEvent.change(screen.getByLabelText("Start URL"), { target: { value: "https://example.internal/app" } });
+    fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Portal screenshots." } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "New Capture Session" }));
+
+    expect(screen.getByLabelText("Name")).toHaveValue("");
+    expect(screen.getByLabelText("Start URL")).toHaveValue("");
+    expect(screen.getByLabelText("Description")).toHaveValue("");
+  });
+
+  it("validates capture session names before creating capture sessions", async () => {
+    const { createCaptureSession } = renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Capture sessions" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Capture Session" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Capture Session" }));
+
+    expect(screen.getByText("Capture session name is required.")).toBeInTheDocument();
+    expect(createCaptureSession).not.toHaveBeenCalled();
+  });
+
+  it("creates manual capture sessions from normalized form data and opens detail", async () => {
+    const createCaptureSession = vi.fn(async () => ({
+      capture_session: {
+        ...captureSessions[0]!,
+        id: "capture_created",
+        name: "Manual capture",
+      },
+    }));
+    const navigate = vi.fn();
+    renderPage({ createCaptureSession, navigate });
+
+    expect(await screen.findByRole("heading", { name: "Capture sessions" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Capture Session" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: " Manual capture " } });
+    fireEvent.change(screen.getByLabelText("Start URL"), { target: { value: "   " } });
+    fireEvent.change(screen.getByLabelText("Description"), { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Capture Session" }));
+
+    await waitFor(() => expect(createCaptureSession).toHaveBeenCalledWith("project_1", {
+      name: "Manual capture",
+      description: null,
+      source_type: "manual",
+      start_url: null,
+    }));
+    expect(navigate).toHaveBeenCalledWith("/projects/project_1/capture-sessions/capture_created");
+  });
+
+  it("keeps capture session creation form values when creation fails", async () => {
+    renderPage({
+      createCaptureSession: async () => {
+        throw new Error("Network failed");
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture sessions" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Capture Session" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Manual capture" } });
+    fireEvent.change(screen.getByLabelText("Start URL"), { target: { value: "https://example.internal/app" } });
+    fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Portal screenshots." } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Capture Session" }));
+
+    expect(await screen.findByText("Could not create capture session.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toHaveValue("Manual capture");
+    expect(screen.getByLabelText("Start URL")).toHaveValue("https://example.internal/app");
+    expect(screen.getByLabelText("Description")).toHaveValue("Portal screenshots.");
+  });
+
+  it("renders capture session creation domain errors as form messages", async () => {
+    renderPage({
+      createCaptureSession: async () => {
+        throw new ApiClientError({
+          kind: "validation",
+          status: 400,
+          type: "invalid_capture_session",
+          message: "Capture session input is invalid",
+        });
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture sessions" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Capture Session" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Manual capture" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Capture Session" }));
+
+    expect(await screen.findByText("Capture session input is invalid.")).toBeInTheDocument();
+  });
+
+  it("renders capture session creation authentication and project errors as form messages", async () => {
+    const { rerender } = render(
+      <ProjectCaptureSessionListPage
+        projectId="project_1"
+        loadCaptureSessions={async () => ({ capture_sessions: captureSessions })}
+        createCaptureSession={async () => {
+          throw new ApiClientError({
+            kind: "unauthenticated",
+            status: 401,
+            type: "unauthenticated",
+            message: "Authentication is required",
+          });
+        }}
+      />
+    );
+
+    expect(await screen.findByRole("heading", { name: "Capture sessions" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Capture Session" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Manual capture" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Capture Session" }));
+
+    expect(await screen.findByText("Sign in to create a capture session.")).toBeInTheDocument();
+
+    rerender(
+      <ProjectCaptureSessionListPage
+        projectId="missing"
+        loadCaptureSessions={async () => ({ capture_sessions: captureSessions })}
+        createCaptureSession={async () => {
+          throw new ApiClientError({
+            kind: "not_found",
+            status: 404,
+            type: "project_not_found",
+            message: "Project was not found",
+          });
+        }}
+      />
+    );
+
+    expect(await screen.findByRole("heading", { name: "Capture sessions" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Capture Session" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Manual capture" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Capture Session" }));
+
+    expect(await screen.findByText("Project was not found.")).toBeInTheDocument();
+  });
+
+  it("disables capture session creation submit while the request is pending", async () => {
+    let resolveCreate: ((value: { capture_session: CaptureSession }) => void) | undefined;
+    const createCaptureSession = vi.fn(() => new Promise<{ capture_session: CaptureSession }>((resolve) => {
+      resolveCreate = resolve;
+    }));
+    const navigate = vi.fn();
+    renderPage({ createCaptureSession, navigate });
+
+    expect(await screen.findByRole("heading", { name: "Capture sessions" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Capture Session" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Manual capture" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Capture Session" }));
+
+    expect(screen.getByRole("button", { name: "Creating Capture Session..." })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Creating Capture Session..." }));
+    expect(createCaptureSession).toHaveBeenCalledTimes(1);
+
+    resolveCreate?.({ capture_session: captureSessions[0]! });
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/projects/project_1/capture-sessions/capture_session_2"));
   });
 
   it("renders unauthenticated and not-found states", async () => {

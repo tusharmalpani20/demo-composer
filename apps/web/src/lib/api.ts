@@ -2,6 +2,7 @@ import type {
   CaptureSession,
   CaptureSessionDetail,
   CaptureSessionStatus,
+  CreateCaptureSessionInput,
 } from "../features/capture-session/types";
 import type { AuthResponse } from "../features/auth/types";
 import type {
@@ -51,6 +52,10 @@ export type ProjectCreateResponse = {
 
 export type ProjectCaptureSessionListResponse = {
   capture_sessions: CaptureSession[];
+};
+
+export type CaptureSessionCreateResponse = {
+  capture_session: CaptureSession;
 };
 
 export type ListProjectsOptions = {
@@ -216,6 +221,22 @@ export const listProjectCaptureSessions = async (
     `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions${query}`
   );
 };
+
+export const createProjectCaptureSession = async (
+  projectId: string,
+  input: CreateCaptureSessionInput
+): Promise<CaptureSessionCreateResponse> => (
+  requestJson<CaptureSessionCreateResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }
+  )
+);
 
 export const getGuideDetail = async (
   projectId: string,

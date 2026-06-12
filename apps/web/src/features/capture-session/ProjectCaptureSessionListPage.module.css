@@ -31,7 +31,9 @@
 }
 
 .header {
-  display: grid;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 14px;
   padding-bottom: 24px;
   border-bottom: 1px solid #d9e0e7;
@@ -130,6 +132,7 @@
 }
 
 .openLink,
+.primaryButton,
 .secondaryButton {
   border: 1px solid #b8c3cf;
   border-radius: 6px;
@@ -147,10 +150,87 @@
   text-decoration: none;
 }
 
+.primaryButton {
+  min-height: 38px;
+  padding: 0 14px;
+  border-color: #1f2937;
+  background: #1f2937;
+  color: #ffffff;
+}
+
 .secondaryButton {
   min-height: 36px;
   margin-top: 14px;
   padding: 0 14px;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.createPanel {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.formTitle {
+  margin: 0 0 16px;
+  color: #111827;
+  font-size: 18px;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #111827;
+  font: inherit;
+  font-weight: 500;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.formActions .secondaryButton {
+  margin-top: 0;
+}
+
+.formError {
+  padding: 10px 12px;
+  border: 1px solid #f5b5b5;
+  border-radius: 6px;
+  background: #fff1f1;
+  color: #9f1d1d;
+  font-weight: 700;
 }
 
 .empty,
@@ -185,6 +265,10 @@
 
   .main {
     padding: 20px 16px 32px;
+  }
+
+  .header {
+    display: grid;
   }
 
   .captureSession {

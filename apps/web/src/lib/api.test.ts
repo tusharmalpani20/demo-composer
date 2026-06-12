@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ApiClientError,
   createProject,
+  createProjectCaptureSession,
   createGuideBlock,
   createGuideFromCaptureSession,
   deleteGuideBlock,
@@ -443,6 +444,44 @@ describe("api client", () => {
         headers: {
           accept: "application/json",
         },
+      }
+    );
+  });
+
+  it("creates capture sessions with session cookies", async () => {
+    const response = {
+      capture_session: detail_response.capture_session,
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(createProjectCaptureSession("project / 1", {
+      name: " Manual capture ",
+      description: "Portal source material",
+      source_type: "manual",
+      start_url: "https://example.internal/app",
+    })).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project%20%2F%201/capture-sessions",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          name: " Manual capture ",
+          description: "Portal source material",
+          source_type: "manual",
+          start_url: "https://example.internal/app",
+        }),
       }
     );
   });
