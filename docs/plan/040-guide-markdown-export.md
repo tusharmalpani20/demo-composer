@@ -179,6 +179,7 @@ Use screenshot alt text fallback order:
 ```text
 asset.page_title
 asset.file.original_name
+step.title
 Step {stepNumber} screenshot
 ```
 
