@@ -36,6 +36,7 @@ import {
   type GuideAuthContext,
   type GuideBlock,
   type GuideDetail,
+  type GuideMarkdownExport,
   type GuideStep,
   type PrepareGuideBlockScreenshotUploadResult,
   type UpdateGuideInput,
@@ -65,6 +66,11 @@ export type GuideRouteDependencies = {
       project_id: string;
       guide_id: string;
     }) => Promise<GuideDetail>;
+    export_guide_markdown: (input: {
+      auth: GuideAuthContext;
+      project_id: string;
+      guide_id: string;
+    }) => Promise<GuideMarkdownExport>;
     update_guide: (input: {
       auth: GuideAuthContext;
       project_id: string;
@@ -561,6 +567,26 @@ export const build_guide_routes = (
         });
 
         return reply.status(200).send(guide_detail);
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.get<{
+      Params: {
+        project_id: string;
+        guide_id: string;
+      };
+    }>("/:project_id/guides/:guide_id/export/markdown", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const markdown_export = await dependencies.guide_service.export_guide_markdown({
+          auth,
+          project_id: request.params.project_id,
+          guide_id: request.params.guide_id,
+        });
+
+        return reply.status(200).send(markdown_export);
       } catch (error) {
         return handle_domain_error(error, reply);
       }

@@ -104,6 +104,11 @@ export type GuideDetail = {
   source_capture_assets: GuideSourceCaptureAsset[];
 };
 
+export type GuideMarkdownExport = {
+  filename: string;
+  markdown: string;
+};
+
 export type GuideSourceEvent = {
   id: string;
   event_type: GuideSourceEventType;
@@ -717,6 +722,152 @@ const cap_title = (value: string) => (
   value.length > 180 ? value.slice(0, 180) : value
 );
 
+const default_public_base_url = "http://localhost:3000";
+
+const normalize_line_endings = (value: string) => (
+  value.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+);
+
+const escape_markdown_text = (value: string) => (
+  normalize_line_endings(value).replace(/([\\[\]])/g, "\\$1").trim()
+);
+
+const markdown_percent = (value: number) => `${Number((value * 100).toFixed(4))}%`;
+
+const markdown_asset_url = (file_url: string, public_base_url: string) => {
+  if (/^https?:\/\//i.test(file_url)) {
+    return encodeURI(file_url).replace(/\(/g, "%28").replace(/\)/g, "%29");
+  }
+
+  const base = public_base_url.replace(/\/$/, "");
+  const path = file_url.startsWith("/") ? file_url : `/${file_url}`;
+
+  return encodeURI(`${base}${path}`).replace(/\(/g, "%28").replace(/\)/g, "%29");
+};
+
+const markdown_filename = (guide: Guide) => {
+  const slug = guide.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+
+  return `${slug || `guide-${guide.id}`}.md`;
+};
+
+const step_number_for_block = (blocks: GuideBlock[], target: GuideBlock) => (
+  blocks
+    .filter((block) => block.block_type === "step" && block.block_index <= target.block_index)
+    .length
+);
+
+const markdown_asset_alt = (
+  asset: GuideSourceCaptureAsset,
+  fallback_title: string,
+  step_number: number
+) => (
+  escape_markdown_text(asset.page_title ?? asset.file.original_name ?? fallback_title ?? `Step ${step_number} screenshot`)
+);
+
+const markdown_sections = (...sections: Array<string | null | undefined>) => (
+  sections
+    .map((section) => section?.trim())
+    .filter((section): section is string => Boolean(section))
+    .join("\n\n")
+);
+
+const render_annotations_markdown = (annotations: GuideScreenshotAnnotation[] | null | undefined) => {
+  if (!annotations?.length) {
+    return null;
+  }
+
+  return [
+    "Highlights:",
+    "",
+    ...annotations.map((annotation, index) => (
+      `- Highlight ${index + 1}: x ${markdown_percent(annotation.x)}, y ${markdown_percent(annotation.y)}, width ${markdown_percent(annotation.width)}, height ${markdown_percent(annotation.height)}`
+    )),
+  ].join("\n");
+};
+
+const render_blockquote_markdown = (
+  label: "Tip" | "Alert",
+  content: GuideBlockContent | null
+) => {
+  const title = compact_optional_string(content?.title);
+  const body = compact_optional_string(content?.body);
+  const label_line = title
+    ? `> **${label}: ${escape_markdown_text(title)}**`
+    : `> **${label}:**${body ? ` ${escape_markdown_text(body)}` : ""}`;
+
+  if (!body || !title) {
+    return label_line;
+  }
+
+  return `${label_line}\n> ${escape_markdown_text(body).replace(/\n/g, "\n> ")}`;
+};
+
+const render_guide_block_markdown = (
+  blocks: GuideBlock[],
+  block: GuideBlock,
+  assets_by_id: Map<string, GuideSourceCaptureAsset>,
+  public_base_url: string
+) => {
+  if (block.block_type === "header" && block.content?.title) {
+    return `## ${escape_markdown_text(block.content.title)}`;
+  }
+
+  if (block.block_type === "paragraph" && block.content?.body) {
+    return escape_markdown_text(block.content.body);
+  }
+
+  if (block.block_type === "tip") {
+    return render_blockquote_markdown("Tip", block.content);
+  }
+
+  if (block.block_type === "alert") {
+    return render_blockquote_markdown("Alert", block.content);
+  }
+
+  if (block.block_type === "divider") {
+    return "---";
+  }
+
+  if (block.block_type === "step" && block.step) {
+    const step_number = step_number_for_block(blocks, block);
+    const asset = block.display_capture_asset_id
+      ? assets_by_id.get(block.display_capture_asset_id)
+      : undefined;
+    const screenshot_markdown = asset
+      ? `![${markdown_asset_alt(asset, block.step.title, step_number)}](${markdown_asset_url(asset.file_url, public_base_url)})`
+      : null;
+
+    return markdown_sections(
+      `## ${step_number}. ${escape_markdown_text(block.step.title)}`,
+      block.step.body ? escape_markdown_text(block.step.body) : null,
+      screenshot_markdown,
+      render_annotations_markdown(asset ? block.content?.annotations : null)
+    );
+  }
+
+  return `<!-- Unsupported guide block: ${block.block_type} -->`;
+};
+
+const render_guide_markdown = (
+  detail: GuideDetail,
+  public_base_url: string
+) => {
+  const sorted_blocks = [...detail.guide_blocks].sort((left, right) => left.block_index - right.block_index);
+  const assets_by_id = new Map(detail.source_capture_assets.map((asset) => [asset.id, asset]));
+  const sections = [
+    `# ${escape_markdown_text(detail.guide.title)}`,
+    detail.guide.description ? escape_markdown_text(detail.guide.description) : null,
+    ...sorted_blocks.map((block) => render_guide_block_markdown(sorted_blocks, block, assets_by_id, public_base_url)),
+  ];
+
+  return `${markdown_sections(...sections)}\n`;
+};
+
 const quoted = (value: string) => `"${value}"`;
 
 const generate_capture_step_title = (event: GuideSourceEvent) => {
@@ -797,7 +948,14 @@ const normalize_create_input = (input: CreateGuideFromCaptureInput) => {
   };
 };
 
-export const build_guide_service = (repository: GuideRepository) => {
+export const build_guide_service = (
+  repository: GuideRepository,
+  options: {
+    public_base_url?: string;
+  } = {}
+) => {
+  const public_base_url = compact_optional_string(options.public_base_url) ?? default_public_base_url;
+
   const ensure_project_exists = async (input: {
     organization_id: string;
     project_id: string;
@@ -911,6 +1069,32 @@ export const build_guide_service = (repository: GuideRepository) => {
     }
 
     return guide_detail;
+  };
+
+  const export_guide_markdown = async (input: {
+    auth: GuideAuthContext;
+    project_id: string;
+    guide_id: string;
+  }): Promise<GuideMarkdownExport> => {
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    };
+    await ensure_project_exists(scope);
+
+    const guide_detail = await repository.find_guide_detail({
+      ...scope,
+      guide_id: input.guide_id,
+    });
+
+    if (!guide_detail) {
+      throw new GuideNotFoundError();
+    }
+
+    return {
+      filename: markdown_filename(guide_detail.guide),
+      markdown: render_guide_markdown(guide_detail, public_base_url),
+    };
   };
 
   const update_guide = async (input: {
@@ -1280,6 +1464,7 @@ export const build_guide_service = (repository: GuideRepository) => {
     create_guide_from_capture,
     list_guides,
     get_guide_detail,
+    export_guide_markdown,
     update_guide,
     update_guide_step,
     reorder_guide_blocks,

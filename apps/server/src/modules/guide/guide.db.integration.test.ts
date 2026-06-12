@@ -704,6 +704,24 @@ describe("DB-backed guide API", () => {
       annotations_response.json().guide_block.content.annotations
     );
 
+    const annotated_export_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/export/markdown`,
+      cookies: { demo_composer_session: session_token },
+    });
+
+    expect(annotated_export_response.statusCode).toBe(200);
+    const public_base_url = (process.env.API_URL ?? "http://localhost:3000").replace(/\/$/, "");
+    expect(annotated_export_response.json().filename).toBe("screenshot-replacement-guide.md");
+    expect(annotated_export_response.json().markdown).toContain("# Screenshot replacement guide\n");
+    expect(annotated_export_response.json().markdown).toContain("## 1. Capture \"Department List\"");
+    expect(annotated_export_response.json().markdown).toContain(
+      `![Capture "Department List"](${public_base_url}/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${source_asset_id}/file)`
+    );
+    expect(annotated_export_response.json().markdown).toContain("- Highlight 1: x 20%, y 15%, width 25%, height 10%");
+    expect(annotated_export_response.json().markdown).not.toContain("storage_key");
+    expect(annotated_export_response.json().markdown).not.toContain("organization_id");
+
     const replace_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/${guide_block_id}/screenshot`,
@@ -790,6 +808,16 @@ describe("DB-backed guide API", () => {
       },
     });
     expect(after_hide_response.json().source_capture_assets).toEqual([]);
+
+    const hidden_export_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/export/markdown`,
+      cookies: { demo_composer_session: session_token },
+    });
+
+    expect(hidden_export_response.statusCode).toBe(200);
+    expect(hidden_export_response.json().markdown).not.toContain("![Department List]");
+    expect(hidden_export_response.json().markdown).not.toContain("Highlight 1");
 
     await app.close();
   });

@@ -42,6 +42,10 @@ describe("guide app integration", () => {
         create_guide_from_capture: async () => guide_detail,
         list_guides: async () => [guide_detail.guide],
         get_guide_detail: async () => guide_detail,
+        export_guide_markdown: async () => ({
+          filename: "department-guide.md",
+          markdown: "# Department guide\n",
+        }),
         update_guide: async () => ({ ...guide_detail.guide, version: 2 }),
         update_guide_step: async () => {
           throw new Error("not needed");

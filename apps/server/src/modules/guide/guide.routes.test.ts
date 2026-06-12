@@ -169,6 +169,10 @@ const build_test_app = async (
       create_guide_from_capture: async () => guide_detail,
       list_guides: async () => [guide_detail.guide],
       get_guide_detail: async () => guide_detail,
+      export_guide_markdown: async () => ({
+        filename: "department-guide.md",
+        markdown: "# Department guide\n",
+      }),
       update_guide: async () => ({ ...guide_detail.guide, version: 2 }),
       update_guide_step: async () => ({ ...guide_step, version: 2 }),
       reorder_guide_blocks: async () => guide_detail.guide_blocks,
@@ -312,6 +316,49 @@ describe("guide routes", () => {
     expect(get_response.json()).toEqual(guide_detail);
     expect(JSON.stringify(get_response.json())).not.toContain("storage_key");
     expect(JSON.stringify(get_response.json())).not.toContain("checksum_sha256");
+    await app.close();
+  });
+
+  it("exports guide markdown through the service", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      auth_service: {
+        get_current_auth_context: async (session_token) => {
+          expect(session_token).toBe("session-token");
+          return auth_context;
+        },
+      },
+      guide_service: {
+        export_guide_markdown: async (input) => {
+          seen_inputs.push(input);
+          return {
+            filename: "department-guide.md",
+            markdown: "# Department guide\n",
+          };
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects/project_1/guides/guide_1/export/markdown?organization_id=attacker",
+      cookies: { demo_composer_session: "session-token" },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      filename: "department-guide.md",
+      markdown: "# Department guide\n",
+    });
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      guide_id: "guide_1",
+    }]);
+    expect(JSON.stringify(response.json())).not.toContain("attacker");
     await app.close();
   });
 

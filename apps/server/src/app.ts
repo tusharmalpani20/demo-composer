@@ -335,7 +335,10 @@ export const build = (opts: BuildOptions = {}) => {
           get_current_auth_context: default_authentication_session_service.get_current_auth_context,
       },
       guide_service: guide_service ?? build_guide_service(
-          build_guide_repository(pool)
+          build_guide_repository(pool),
+          {
+              public_base_url: process.env.API_URL,
+          }
       ),
       capture_asset_service: default_capture_asset_service,
   }), {

@@ -4,6 +4,7 @@
   "globalEnv": [
     "DEMO_COMPOSER_LOCAL_STORAGE_ROOT",
     "DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES",
+    "API_URL",
     "VITE_DEMO_COMPOSER_API_URL"
   ],
   "tasks": {
