@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import type { GuideDetail } from "../guide/types";
-import type { CaptureSessionDetail } from "./types";
+import type { CaptureAsset, CaptureEvent, CaptureSessionDetail } from "./types";
 import { CaptureSessionDetailPage } from "./CaptureSessionDetailPage";
 
 const detail: CaptureSessionDetail = {
@@ -143,15 +143,116 @@ const guideDetail: GuideDetail = {
   source_capture_assets: [],
 };
 
+const uploadedAsset: CaptureAsset = {
+  id: "asset_uploaded",
+  organization_id: "organization_1",
+  project_id: "project_1",
+  capture_session_id: "capture_session_1",
+  file: {
+    id: "file_uploaded",
+    storage_provider: "local",
+    mime_type: "image/png",
+    size_bytes: 456,
+    original_name: "uploaded-department.png",
+    checksum_sha256: "uploaded_checksum",
+  },
+  asset_type: "screenshot",
+  width: null,
+  height: null,
+  device_pixel_ratio: null,
+  page_url: "https://example.internal/app/department",
+  page_title: "Department Upload",
+  captured_at: "2026-06-12T00:00:00.000Z",
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-06-12T00:00:00.000Z",
+  updated_at: "2026-06-12T00:00:00.000Z",
+  file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_uploaded/file",
+};
+
+const uploadedEvent: CaptureEvent = {
+  id: "event_uploaded",
+  organization_id: "organization_1",
+  project_id: "project_1",
+  capture_session_id: "capture_session_1",
+  capture_asset_id: "asset_uploaded",
+  event_type: "capture",
+  event_index: 3,
+  occurred_at: "2026-06-12T00:00:00.000Z",
+  page_url: "https://example.internal/app/department",
+  page_title: "Department Upload",
+  target_label: "Uploaded screenshot",
+  target_selector: null,
+  target_role: null,
+  target_test_id: null,
+  target_text: null,
+  client_x: null,
+  client_y: null,
+  viewport_width: null,
+  viewport_height: null,
+  device_pixel_ratio: null,
+  input_intent: null,
+  input_value_redacted: true,
+  note: "Uploaded screenshot: uploaded-department.png",
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-06-12T00:00:00.000Z",
+  updated_at: "2026-06-12T00:00:00.000Z",
+};
+
+const manualDetail = (): CaptureSessionDetail => ({
+  ...detail,
+  capture_session: {
+    ...detail.capture_session,
+    status: "draft",
+    source_type: "manual",
+    completed_at: null,
+    browser_name: null,
+    browser_version: null,
+    operating_system: null,
+    viewport_width: null,
+    viewport_height: null,
+    device_pixel_ratio: null,
+  },
+});
+
 const renderPage = (overrides: {
   loadDetail?: () => Promise<CaptureSessionDetail>;
   resolveAssetUrl?: (fileUrl: string) => string;
   createGuide?: () => Promise<GuideDetail>;
+  uploadAsset?: (
+    projectId: string,
+    captureSessionId: string,
+    input: {
+      file: File;
+      page_url?: string | null;
+      page_title?: string | null;
+      captured_at?: string;
+    }
+  ) => Promise<{ capture_asset: CaptureAsset }>;
+  createCaptureEvent?: (
+    projectId: string,
+    captureSessionId: string,
+    input: {
+      event_type: "capture";
+      event_index: number;
+      capture_asset_id?: string | null;
+      occurred_at?: string | null;
+      page_url?: string | null;
+      page_title?: string | null;
+      target_label?: string | null;
+      note?: string | null;
+    }
+  ) => Promise<{ capture_event: CaptureEvent }>;
   redirectTo?: (path: string) => void;
 } = {}) => {
   const loadDetail = overrides.loadDetail ?? vi.fn(async () => detail);
   const resolveAssetUrl = overrides.resolveAssetUrl ?? ((fileUrl: string) => `https://api.example.com${fileUrl}`);
   const createGuide = overrides.createGuide ?? vi.fn(async () => guideDetail);
+  const uploadAsset = overrides.uploadAsset ?? vi.fn(async () => ({ capture_asset: uploadedAsset }));
+  const createCaptureEvent = overrides.createCaptureEvent ?? vi.fn(async () => ({ capture_event: uploadedEvent }));
   const redirectTo = overrides.redirectTo ?? vi.fn();
 
   render(
@@ -161,11 +262,13 @@ const renderPage = (overrides: {
       loadDetail={loadDetail}
       resolveAssetUrl={resolveAssetUrl}
       createGuide={createGuide}
+      uploadAsset={uploadAsset}
+      createCaptureEvent={createCaptureEvent}
       redirectTo={redirectTo}
     />
   );
 
-  return { loadDetail, createGuide, redirectTo };
+  return { loadDetail, createGuide, uploadAsset, createCaptureEvent, redirectTo };
 };
 
 describe("CaptureSessionDetailPage", () => {
@@ -206,6 +309,223 @@ describe("CaptureSessionDetailPage", () => {
 
     expect(await screen.findByText("No capture events yet.")).toBeInTheDocument();
     expect(screen.getByText("No capture assets yet.")).toBeInTheDocument();
+  });
+
+  it("renders screenshot upload controls for manual capture sessions only", async () => {
+    renderPage({ loadDetail: async () => manualDetail() });
+
+    expect(await screen.findByRole("heading", { name: "Upload screenshot" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Screenshot file")).toBeInTheDocument();
+    expect(screen.getByLabelText("Page title")).toBeInTheDocument();
+    expect(screen.getByLabelText("Page URL")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload Screenshot" })).toBeInTheDocument();
+  });
+
+  it("hides screenshot upload controls for extension capture sessions", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Create department workflow" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Upload screenshot" })).not.toBeInTheDocument();
+  });
+
+  it("validates screenshot upload input before submitting", async () => {
+    const { uploadAsset, createCaptureEvent } = renderPage({ loadDetail: async () => manualDetail() });
+
+    await screen.findByRole("heading", { name: "Upload screenshot" });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Screenshot" }));
+
+    expect(screen.getByText("Choose a screenshot to upload.")).toBeInTheDocument();
+    expect(uploadAsset).not.toHaveBeenCalled();
+
+    const textFile = new File(["text"], "notes.txt", { type: "text/plain" });
+    fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [textFile] } });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Screenshot" }));
+
+    expect(screen.getByText("Only PNG, JPEG, and WebP screenshots can be uploaded.")).toBeInTheDocument();
+    expect(uploadAsset).not.toHaveBeenCalled();
+    expect(createCaptureEvent).not.toHaveBeenCalled();
+  });
+
+  it("clears screenshot upload validation errors when users edit the form", async () => {
+    renderPage({ loadDetail: async () => manualDetail() });
+
+    await screen.findByRole("heading", { name: "Upload screenshot" });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Screenshot" }));
+
+    expect(screen.getByText("Choose a screenshot to upload.")).toBeInTheDocument();
+
+    const file = new File(["png"], "uploaded-department.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [file] } });
+
+    expect(screen.queryByText("Choose a screenshot to upload.")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Upload Screenshot" }));
+
+    await waitFor(() => expect(screen.queryByText("Choose a screenshot to upload.")).not.toBeInTheDocument());
+  });
+
+  it("uploads screenshots creates linked capture events and reloads detail", async () => {
+    const firstDetail = manualDetail();
+    const secondDetail: CaptureSessionDetail = {
+      ...firstDetail,
+      capture_events: [...firstDetail.capture_events, uploadedEvent],
+      capture_assets: [...firstDetail.capture_assets, uploadedAsset],
+    };
+    const loadDetail = vi
+      .fn<() => Promise<CaptureSessionDetail>>()
+      .mockResolvedValueOnce(firstDetail)
+      .mockResolvedValueOnce(secondDetail);
+    const uploadAsset = vi.fn(async () => ({ capture_asset: uploadedAsset }));
+    const createCaptureEvent = vi.fn(async () => ({ capture_event: uploadedEvent }));
+    const file = new File(["png"], "uploaded-department.png", { type: "image/png" });
+
+    renderPage({ loadDetail, uploadAsset, createCaptureEvent });
+
+    await screen.findByRole("heading", { name: "Upload screenshot" });
+    fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [file] } });
+    fireEvent.change(screen.getByLabelText("Page title"), { target: { value: " Department Upload " } });
+    fireEvent.change(screen.getByLabelText("Page URL"), { target: { value: " https://example.internal/app/department " } });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Screenshot" }));
+
+    await waitFor(() => expect(uploadAsset).toHaveBeenCalledWith("project_1", "capture_session_1", {
+      file,
+      page_title: "Department Upload",
+      page_url: "https://example.internal/app/department",
+      captured_at: expect.any(String),
+    }));
+    const uploadCall = uploadAsset.mock.calls[0] as unknown as [
+      string,
+      string,
+      { captured_at?: string },
+    ];
+    const capturedAt = uploadCall[2].captured_at;
+    expect(createCaptureEvent).toHaveBeenCalledWith("project_1", "capture_session_1", {
+      event_type: "capture",
+      event_index: 3,
+      capture_asset_id: "asset_uploaded",
+      occurred_at: capturedAt,
+      page_title: "Department Upload",
+      page_url: "https://example.internal/app/department",
+      target_label: "Uploaded screenshot",
+      note: "Uploaded screenshot: uploaded-department.png",
+    });
+    await waitFor(() => expect(loadDetail).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("uploaded-department.png")).toBeInTheDocument();
+  });
+
+  it("disables screenshot upload while pending", async () => {
+    let resolveUpload: (value: { capture_asset: CaptureAsset }) => void = () => undefined;
+    const uploadAsset = vi.fn(() => new Promise<{ capture_asset: CaptureAsset }>((resolve) => {
+      resolveUpload = resolve;
+    }));
+    const createCaptureEvent = vi.fn(async () => ({ capture_event: uploadedEvent }));
+    const file = new File(["png"], "uploaded-department.png", { type: "image/png" });
+
+    renderPage({ loadDetail: async () => manualDetail(), uploadAsset, createCaptureEvent });
+
+    await screen.findByRole("heading", { name: "Upload screenshot" });
+    fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [file] } });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Screenshot" }));
+
+    expect(screen.getByRole("button", { name: "Uploading Screenshot..." })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Uploading Screenshot..." }));
+    expect(uploadAsset).toHaveBeenCalledTimes(1);
+
+    resolveUpload({ capture_asset: uploadedAsset });
+    await waitFor(() => expect(createCaptureEvent).toHaveBeenCalledTimes(1));
+  });
+
+  it("keeps screenshot upload form values when upload fails", async () => {
+    const uploadAsset = vi.fn(async () => {
+      throw new ApiClientError({
+        kind: "validation",
+        status: 400,
+        type: "invalid_capture_asset_upload",
+        message: "Upload input is invalid",
+      });
+    });
+    const file = new File(["png"], "uploaded-department.png", { type: "image/png" });
+
+    renderPage({ loadDetail: async () => manualDetail(), uploadAsset });
+
+    await screen.findByRole("heading", { name: "Upload screenshot" });
+    fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [file] } });
+    fireEvent.change(screen.getByLabelText("Page title"), { target: { value: "Department Upload" } });
+    fireEvent.change(screen.getByLabelText("Page URL"), { target: { value: "https://example.internal/app/department" } });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Screenshot" }));
+
+    expect(await screen.findByText("Screenshot input is invalid.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Page title")).toHaveValue("Department Upload");
+    expect(screen.getByLabelText("Page URL")).toHaveValue("https://example.internal/app/department");
+  });
+
+  it("shows a partial-success error when event creation fails after upload", async () => {
+    const createCaptureEvent = vi.fn(async () => {
+      throw new ApiClientError({
+        kind: "validation",
+        status: 409,
+        type: "capture_event_index_conflict",
+        message: "A capture event with this index already exists",
+      });
+    });
+    const file = new File(["png"], "uploaded-department.png", { type: "image/png" });
+
+    renderPage({ loadDetail: async () => manualDetail(), createCaptureEvent });
+
+    await screen.findByRole("heading", { name: "Upload screenshot" });
+    fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [file] } });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Screenshot" }));
+
+    expect(await screen.findByText("Screenshot uploaded, but another event used that order. Reload and try again.")).toBeInTheDocument();
+  });
+
+  it("maps screenshot upload authentication not-found and size errors", async () => {
+    const cases = [
+      {
+        error: new ApiClientError({
+          kind: "unauthenticated",
+          status: 401,
+          type: "unauthenticated",
+          message: "Authentication is required",
+        }),
+        message: "Sign in to upload screenshots.",
+      },
+      {
+        error: new ApiClientError({
+          kind: "not_found",
+          status: 404,
+          type: "capture_session_not_found",
+          message: "Capture session was not found",
+        }),
+        message: "Capture session was not found.",
+      },
+      {
+        error: new ApiClientError({
+          kind: "validation",
+          status: 413,
+          type: "upload_too_large",
+          message: "Upload is too large",
+        }),
+        message: "Screenshot is too large.",
+      },
+    ];
+
+    for (const { error, message } of cases) {
+      const file = new File(["png"], "uploaded-department.png", { type: "image/png" });
+      renderPage({
+        loadDetail: async () => manualDetail(),
+        uploadAsset: async () => {
+          throw error;
+        },
+      });
+
+      await screen.findByRole("heading", { name: "Upload screenshot" });
+      fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [file] } });
+      fireEvent.click(screen.getByRole("button", { name: "Upload Screenshot" }));
+
+      expect(await screen.findByText(message)).toBeInTheDocument();
+      cleanup();
+    }
   });
 
   it("creates a guide from the loaded capture session and redirects to the editor", async () => {

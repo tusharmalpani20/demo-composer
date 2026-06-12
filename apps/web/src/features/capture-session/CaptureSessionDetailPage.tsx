@@ -1,14 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ApiClientError,
+  createCaptureSessionEvent,
   createGuideFromCaptureSession,
   getCaptureSessionDetail,
   resolveApiAssetUrl,
+  uploadCaptureSessionAsset,
 } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
 import type { GuideDetail } from "../guide/types";
 import { PortalTopbar } from "../portal/PortalTopbar";
-import type { CaptureAsset, CaptureEvent, CaptureSessionDetail } from "./types";
+import type {
+  CaptureAsset,
+  CaptureEvent,
+  CaptureSessionDetail,
+  CreateCaptureEventResponse,
+  UploadCaptureAssetResponse,
+} from "./types";
 import styles from "./CaptureSessionDetailPage.module.css";
 
 type LoadState =
@@ -31,6 +39,30 @@ type CaptureSessionDetailPageProps = {
       description?: string | null;
     }
   ) => Promise<GuideDetail>;
+  uploadAsset?: (
+    projectId: string,
+    captureSessionId: string,
+    input: {
+      file: File;
+      page_url?: string | null;
+      page_title?: string | null;
+      captured_at?: string;
+    }
+  ) => Promise<UploadCaptureAssetResponse>;
+  createCaptureEvent?: (
+    projectId: string,
+    captureSessionId: string,
+    input: {
+      event_type: "capture";
+      event_index: number;
+      capture_asset_id?: string | null;
+      occurred_at?: string | null;
+      page_url?: string | null;
+      page_title?: string | null;
+      target_label?: string | null;
+      note?: string | null;
+    }
+  ) => Promise<CreateCaptureEventResponse>;
   redirectTo?: (path: string) => void;
   currentPath?: string;
   performLogout?: () => Promise<void>;
@@ -79,6 +111,48 @@ const assetTitle = (asset: CaptureAsset) => (
 
 const assetAltText = (asset: CaptureAsset) => `${asset.page_title ?? asset.file.original_name ?? "Capture"} screenshot`;
 
+const allowedScreenshotMimeTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+const optionalUploadField = (value: string) => {
+  const trimmed = value.trim();
+
+  return trimmed || null;
+};
+
+const nextEventIndex = (events: CaptureEvent[]) => (
+  events.reduce((nextIndex, event) => Math.max(nextIndex, event.event_index + 1), 1)
+);
+
+const uploadErrorMessage = (error: unknown) => {
+  if (error instanceof ApiClientError) {
+    if (error.kind === "unauthenticated") {
+      return "Sign in to upload screenshots.";
+    }
+
+    if (error.kind === "not_found") {
+      return "Capture session was not found.";
+    }
+
+    if (error.type === "invalid_capture_asset_upload" || error.type === "upload_file_required") {
+      return "Screenshot input is invalid.";
+    }
+
+    if (error.type === "upload_too_large") {
+      return "Screenshot is too large.";
+    }
+  }
+
+  return "Could not upload screenshot.";
+};
+
+const eventCreationAfterUploadErrorMessage = (error: unknown) => {
+  if (error instanceof ApiClientError && error.type === "capture_event_index_conflict") {
+    return "Screenshot uploaded, but another event used that order. Reload and try again.";
+  }
+
+  return "Screenshot uploaded, but the capture event could not be created. Reload and try again.";
+};
+
 const eventPageLabel = (event: CaptureEvent) => {
   if (!event.page_url) {
     return null;
@@ -111,6 +185,8 @@ export const CaptureSessionDetailPage = ({
   loadDetail = getCaptureSessionDetail,
   resolveAssetUrl = resolveApiAssetUrl,
   createGuide = createGuideFromCaptureSession,
+  uploadAsset = uploadCaptureSessionAsset,
+  createCaptureEvent: createCaptureEventAction = createCaptureSessionEvent,
   redirectTo = (path) => window.location.assign(path),
   currentPath = currentBrowserPath(),
   performLogout,
@@ -187,6 +263,9 @@ export const CaptureSessionDetailPage = ({
       captureSessionId={captureSessionId}
       resolveAssetUrl={resolveAssetUrl}
       createGuide={createGuide}
+      uploadAsset={uploadAsset}
+      createCaptureEvent={createCaptureEventAction}
+      reloadDetail={() => setReloadKey((key) => key + 1)}
       redirectTo={redirectTo}
       performLogout={performLogout}
       navigate={navigate}
@@ -219,6 +298,9 @@ const CaptureSessionDetailView = ({
   captureSessionId,
   resolveAssetUrl,
   createGuide,
+  uploadAsset,
+  createCaptureEvent,
+  reloadDetail,
   redirectTo,
   performLogout,
   navigate,
@@ -228,11 +310,20 @@ const CaptureSessionDetailView = ({
   captureSessionId: string;
   resolveAssetUrl: (fileUrl: string) => string;
   createGuide: NonNullable<CaptureSessionDetailPageProps["createGuide"]>;
+  uploadAsset: NonNullable<CaptureSessionDetailPageProps["uploadAsset"]>;
+  createCaptureEvent: NonNullable<CaptureSessionDetailPageProps["createCaptureEvent"]>;
+  reloadDetail: () => void;
   redirectTo: NonNullable<CaptureSessionDetailPageProps["redirectTo"]>;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
 }) => {
   const [createState, setCreateState] = useState<"idle" | "creating" | "error">("idle");
+  const [uploadState, setUploadState] = useState<"idle" | "uploading">("idle");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadPageTitle, setUploadPageTitle] = useState("");
+  const [uploadPageUrl, setUploadPageUrl] = useState("");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const uploadFileInputRef = useRef<HTMLInputElement | null>(null);
   const assetById = useMemo(() => new Map(
     detail.capture_assets.map((asset) => [asset.id, asset])
   ), [detail.capture_assets]);
@@ -240,6 +331,8 @@ const CaptureSessionDetailView = ({
   const session = detail.capture_session;
   const guideTitle = session.name.trim();
   const canCreateGuide = guideTitle.length > 0 && createState !== "creating";
+  const canUploadScreenshot = session.source_type === "manual";
+  const isUploading = uploadState === "uploading";
 
   const handleCreateGuide = async () => {
     if (!canCreateGuide) {
@@ -256,6 +349,87 @@ const CaptureSessionDetailView = ({
       redirectTo(`/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideDetail.guide.id)}`);
     } catch {
       setCreateState("error");
+    }
+  };
+
+  const clearUploadForm = () => {
+    setUploadFile(null);
+    setUploadPageTitle("");
+    setUploadPageUrl("");
+    if (uploadFileInputRef.current) {
+      uploadFileInputRef.current.value = "";
+    }
+  };
+
+  const updateUploadFile = (file: File | null) => {
+    setUploadFile(file);
+    setUploadError(null);
+  };
+
+  const updateUploadPageTitle = (value: string) => {
+    setUploadPageTitle(value);
+    setUploadError(null);
+  };
+
+  const updateUploadPageUrl = (value: string) => {
+    setUploadPageUrl(value);
+    setUploadError(null);
+  };
+
+  const handleUploadScreenshot = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isUploading) {
+      return;
+    }
+
+    if (!uploadFile) {
+      setUploadError("Choose a screenshot to upload.");
+      return;
+    }
+
+    if (!allowedScreenshotMimeTypes.has(uploadFile.type)) {
+      setUploadError("Only PNG, JPEG, and WebP screenshots can be uploaded.");
+      return;
+    }
+
+    const pageTitle = optionalUploadField(uploadPageTitle);
+    const pageUrl = optionalUploadField(uploadPageUrl);
+    const capturedAt = new Date().toISOString();
+
+    setUploadState("uploading");
+    setUploadError(null);
+
+    try {
+      const uploadResponse = await uploadAsset(projectId, captureSessionId, {
+        file: uploadFile,
+        page_title: pageTitle,
+        page_url: pageUrl,
+        captured_at: capturedAt,
+      });
+
+      try {
+        await createCaptureEvent(projectId, captureSessionId, {
+          event_type: "capture",
+          event_index: nextEventIndex(detail.capture_events),
+          capture_asset_id: uploadResponse.capture_asset.id,
+          occurred_at: capturedAt,
+          page_title: pageTitle,
+          page_url: pageUrl,
+          target_label: "Uploaded screenshot",
+          note: `Uploaded screenshot: ${uploadFile.name}`,
+        });
+      } catch (error: unknown) {
+        setUploadError(eventCreationAfterUploadErrorMessage(error));
+        return;
+      }
+
+      clearUploadForm();
+      reloadDetail();
+    } catch (error: unknown) {
+      setUploadError(uploadErrorMessage(error));
+    } finally {
+      setUploadState("idle");
     }
   };
 
@@ -301,6 +475,43 @@ const CaptureSessionDetailView = ({
           <Metric label="Device scale" value={session.device_pixel_ratio ? `${session.device_pixel_ratio}x` : "Not set"} />
         </div>
       </section>
+
+      {canUploadScreenshot ? (
+        <section className={styles.uploadPanel} aria-labelledby="upload-screenshot-heading">
+          <h2 className={styles.uploadTitle} id="upload-screenshot-heading">Upload screenshot</h2>
+          <form className={styles.uploadForm} onSubmit={handleUploadScreenshot}>
+            {uploadError ? <div className={styles.formError}>{uploadError}</div> : null}
+            <label className={styles.field}>
+              <span>Screenshot file</span>
+              <input
+                ref={uploadFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(event) => updateUploadFile(event.target.files?.[0] ?? null)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Page title</span>
+              <input
+                value={uploadPageTitle}
+                onChange={(event) => updateUploadPageTitle(event.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Page URL</span>
+              <input
+                value={uploadPageUrl}
+                onChange={(event) => updateUploadPageUrl(event.target.value)}
+              />
+            </label>
+            <div className={styles.uploadActions}>
+              <button className={styles.primaryButton} type="submit" disabled={isUploading}>
+                {isUploading ? "Uploading Screenshot..." : "Upload Screenshot"}
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : null}
 
       <div className={styles.content}>
         <section className={styles.section} aria-labelledby="events-heading">
