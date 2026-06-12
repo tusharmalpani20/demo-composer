@@ -5,6 +5,8 @@ import type {
   CreateCaptureEventInput,
   CreateCaptureEventResponse,
   CreateCaptureSessionInput,
+  ReorderCaptureEventsInput,
+  ReorderCaptureEventsResponse,
   UploadCaptureAssetInput,
   UploadCaptureAssetResponse,
 } from "../features/capture-session/types";
@@ -277,6 +279,23 @@ export const createCaptureSessionEvent = async (
     `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}/events`,
     {
       method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }
+  )
+);
+
+export const reorderCaptureSessionEvents = async (
+  projectId: string,
+  captureSessionId: string,
+  input: ReorderCaptureEventsInput
+): Promise<ReorderCaptureEventsResponse> => (
+  requestJson<ReorderCaptureEventsResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}/events/order`,
+    {
+      method: "PUT",
       headers: {
         "content-type": "application/json",
       },

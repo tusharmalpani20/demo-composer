@@ -246,6 +246,13 @@ const renderPage = (overrides: {
       note?: string | null;
     }
   ) => Promise<{ capture_event: CaptureEvent }>;
+  reorderEvents?: (
+    projectId: string,
+    captureSessionId: string,
+    input: {
+      event_ids: string[];
+    }
+  ) => Promise<{ capture_events: CaptureEvent[] }>;
   redirectTo?: (path: string) => void;
 } = {}) => {
   const loadDetail = overrides.loadDetail ?? vi.fn(async () => detail);
@@ -253,6 +260,7 @@ const renderPage = (overrides: {
   const createGuide = overrides.createGuide ?? vi.fn(async () => guideDetail);
   const uploadAsset = overrides.uploadAsset ?? vi.fn(async () => ({ capture_asset: uploadedAsset }));
   const createCaptureEvent = overrides.createCaptureEvent ?? vi.fn(async () => ({ capture_event: uploadedEvent }));
+  const reorderEvents = overrides.reorderEvents ?? vi.fn(async () => ({ capture_events: manualDetail().capture_events }));
   const redirectTo = overrides.redirectTo ?? vi.fn();
 
   render(
@@ -264,11 +272,12 @@ const renderPage = (overrides: {
       createGuide={createGuide}
       uploadAsset={uploadAsset}
       createCaptureEvent={createCaptureEvent}
+      reorderEvents={reorderEvents}
       redirectTo={redirectTo}
     />
   );
 
-  return { loadDetail, createGuide, uploadAsset, createCaptureEvent, redirectTo };
+  return { loadDetail, createGuide, uploadAsset, createCaptureEvent, reorderEvents, redirectTo };
 };
 
 describe("CaptureSessionDetailPage", () => {
@@ -526,6 +535,94 @@ describe("CaptureSessionDetailPage", () => {
       expect(await screen.findByText(message)).toBeInTheDocument();
       cleanup();
     }
+  });
+
+  it("shows manual event ordering controls with disabled boundaries", async () => {
+    renderPage({ loadDetail: async () => manualDetail() });
+
+    expect(await screen.findByRole("button", { name: "Move event 1 up" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move event 1 down" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Move event 2 up" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Move event 2 down" })).toBeDisabled();
+  });
+
+  it("hides event ordering controls for non-manual or single-event sessions", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Create department workflow" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Move event/i })).not.toBeInTheDocument();
+    cleanup();
+
+    renderPage({
+      loadDetail: async () => ({
+        ...manualDetail(),
+        capture_events: [manualDetail().capture_events[0] as CaptureEvent],
+      }),
+    });
+
+    expect(await screen.findByText("Start from department list")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Move event/i })).not.toBeInTheDocument();
+  });
+
+  it("moves manual capture events by sending the swapped full event order and reloading detail", async () => {
+    const firstDetail = manualDetail();
+    const secondDetail: CaptureSessionDetail = {
+      ...firstDetail,
+      capture_events: [
+        firstDetail.capture_events[1] as CaptureEvent,
+        firstDetail.capture_events[0] as CaptureEvent,
+      ],
+    };
+    const loadDetail = vi
+      .fn<() => Promise<CaptureSessionDetail>>()
+      .mockResolvedValueOnce(firstDetail)
+      .mockResolvedValueOnce(secondDetail);
+    const reorderEvents = vi.fn(async () => ({ capture_events: secondDetail.capture_events }));
+
+    renderPage({ loadDetail, reorderEvents });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Move event 2 up" }));
+
+    await waitFor(() => expect(reorderEvents).toHaveBeenCalledWith("project_1", "capture_session_1", {
+      event_ids: ["event_2", "event_1"],
+    }));
+    await waitFor(() => expect(loadDetail).toHaveBeenCalledTimes(2));
+  });
+
+  it("shows reorder failures and keeps the current event list visible", async () => {
+    const reorderEvents = vi.fn(async () => {
+      throw new ApiClientError({
+        kind: "validation",
+        status: 400,
+        type: "invalid_capture_event_order",
+        message: "Capture event order is invalid",
+      });
+    });
+
+    renderPage({ loadDetail: async () => manualDetail(), reorderEvents });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Move event 2 up" }));
+
+    expect(await screen.findByText("Capture event order is invalid.")).toBeInTheDocument();
+    expect(screen.getByText("Start from department list")).toBeInTheDocument();
+    expect(screen.getByText("Add Department")).toBeInTheDocument();
+  });
+
+  it("disables event ordering controls while a reorder request is pending", async () => {
+    let resolveReorder: (value: { capture_events: CaptureEvent[] }) => void = () => undefined;
+    const reorderEvents = vi.fn(() => new Promise<{ capture_events: CaptureEvent[] }>((resolve) => {
+      resolveReorder = resolve;
+    }));
+
+    renderPage({ loadDetail: async () => manualDetail(), reorderEvents });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Move event 2 up" }));
+
+    expect(screen.getByRole("button", { name: "Move event 1 down" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move event 2 up" })).toBeDisabled();
+
+    resolveReorder({ capture_events: manualDetail().capture_events });
+    await waitFor(() => expect(reorderEvents).toHaveBeenCalledTimes(1));
   });
 
   it("creates a guide from the loaded capture session and redirects to the editor", async () => {

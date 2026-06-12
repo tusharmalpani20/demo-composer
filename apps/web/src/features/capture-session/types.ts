@@ -54,6 +54,10 @@ export type CreateCaptureEventInput = {
   note?: string | null;
 };
 
+export type ReorderCaptureEventsInput = {
+  event_ids: string[];
+};
+
 export type CaptureEvent = {
   id: string;
   organization_id: string;
@@ -127,4 +131,8 @@ export type UploadCaptureAssetResponse = {
 
 export type CreateCaptureEventResponse = {
   capture_event: CaptureEvent;
+};
+
+export type ReorderCaptureEventsResponse = {
+  capture_events: CaptureEvent[];
 };

@@ -4,6 +4,7 @@ import {
   createCaptureSessionEvent,
   createGuideFromCaptureSession,
   getCaptureSessionDetail,
+  reorderCaptureSessionEvents,
   resolveApiAssetUrl,
   uploadCaptureSessionAsset,
 } from "../../lib/api";
@@ -15,6 +16,8 @@ import type {
   CaptureEvent,
   CaptureSessionDetail,
   CreateCaptureEventResponse,
+  ReorderCaptureEventsInput,
+  ReorderCaptureEventsResponse,
   UploadCaptureAssetResponse,
 } from "./types";
 import styles from "./CaptureSessionDetailPage.module.css";
@@ -63,6 +66,11 @@ type CaptureSessionDetailPageProps = {
       note?: string | null;
     }
   ) => Promise<CreateCaptureEventResponse>;
+  reorderEvents?: (
+    projectId: string,
+    captureSessionId: string,
+    input: ReorderCaptureEventsInput
+  ) => Promise<ReorderCaptureEventsResponse>;
   redirectTo?: (path: string) => void;
   currentPath?: string;
   performLogout?: () => Promise<void>;
@@ -153,6 +161,28 @@ const eventCreationAfterUploadErrorMessage = (error: unknown) => {
   return "Screenshot uploaded, but the capture event could not be created. Reload and try again.";
 };
 
+const reorderErrorMessage = (error: unknown) => {
+  if (error instanceof ApiClientError) {
+    if (error.kind === "unauthenticated") {
+      return "Sign in to reorder capture events.";
+    }
+
+    if (error.kind === "not_found") {
+      return "Capture session was not found.";
+    }
+
+    if (error.type === "invalid_capture_event_order") {
+      return "Capture event order is invalid.";
+    }
+
+    if (error.type === "capture_event_reorder_not_allowed") {
+      return "Only manual capture sessions can be reordered.";
+    }
+  }
+
+  return "Could not reorder capture events.";
+};
+
 const eventPageLabel = (event: CaptureEvent) => {
   if (!event.page_url) {
     return null;
@@ -187,6 +217,7 @@ export const CaptureSessionDetailPage = ({
   createGuide = createGuideFromCaptureSession,
   uploadAsset = uploadCaptureSessionAsset,
   createCaptureEvent: createCaptureEventAction = createCaptureSessionEvent,
+  reorderEvents = reorderCaptureSessionEvents,
   redirectTo = (path) => window.location.assign(path),
   currentPath = currentBrowserPath(),
   performLogout,
@@ -265,6 +296,7 @@ export const CaptureSessionDetailPage = ({
       createGuide={createGuide}
       uploadAsset={uploadAsset}
       createCaptureEvent={createCaptureEventAction}
+      reorderEvents={reorderEvents}
       reloadDetail={() => setReloadKey((key) => key + 1)}
       redirectTo={redirectTo}
       performLogout={performLogout}
@@ -300,6 +332,7 @@ const CaptureSessionDetailView = ({
   createGuide,
   uploadAsset,
   createCaptureEvent,
+  reorderEvents,
   reloadDetail,
   redirectTo,
   performLogout,
@@ -312,6 +345,7 @@ const CaptureSessionDetailView = ({
   createGuide: NonNullable<CaptureSessionDetailPageProps["createGuide"]>;
   uploadAsset: NonNullable<CaptureSessionDetailPageProps["uploadAsset"]>;
   createCaptureEvent: NonNullable<CaptureSessionDetailPageProps["createCaptureEvent"]>;
+  reorderEvents: NonNullable<CaptureSessionDetailPageProps["reorderEvents"]>;
   reloadDetail: () => void;
   redirectTo: NonNullable<CaptureSessionDetailPageProps["redirectTo"]>;
   performLogout?: () => Promise<void>;
@@ -319,6 +353,8 @@ const CaptureSessionDetailView = ({
 }) => {
   const [createState, setCreateState] = useState<"idle" | "creating" | "error">("idle");
   const [uploadState, setUploadState] = useState<"idle" | "uploading">("idle");
+  const [reorderState, setReorderState] = useState<"idle" | "reordering">("idle");
+  const [reorderError, setReorderError] = useState<string | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadPageTitle, setUploadPageTitle] = useState("");
   const [uploadPageUrl, setUploadPageUrl] = useState("");
@@ -333,6 +369,8 @@ const CaptureSessionDetailView = ({
   const canCreateGuide = guideTitle.length > 0 && createState !== "creating";
   const canUploadScreenshot = session.source_type === "manual";
   const isUploading = uploadState === "uploading";
+  const canReorderEvents = session.source_type === "manual" && detail.capture_events.length > 1;
+  const isReordering = reorderState === "reordering";
 
   const handleCreateGuide = async () => {
     if (!canCreateGuide) {
@@ -433,6 +471,41 @@ const CaptureSessionDetailView = ({
     }
   };
 
+  const moveEvent = async (fromIndex: number, direction: -1 | 1) => {
+    if (!canReorderEvents || isReordering) {
+      return;
+    }
+
+    const toIndex = fromIndex + direction;
+
+    if (toIndex < 0 || toIndex >= detail.capture_events.length) {
+      return;
+    }
+
+    const eventIds = detail.capture_events.map((event) => event.id);
+    const movingEventId = eventIds[fromIndex];
+    const targetEventId = eventIds[toIndex];
+
+    if (!movingEventId || !targetEventId) {
+      return;
+    }
+
+    eventIds[fromIndex] = targetEventId;
+    eventIds[toIndex] = movingEventId;
+
+    setReorderState("reordering");
+    setReorderError(null);
+
+    try {
+      await reorderEvents(projectId, captureSessionId, { event_ids: eventIds });
+      reloadDetail();
+    } catch (error: unknown) {
+      setReorderError(reorderErrorMessage(error));
+    } finally {
+      setReorderState("idle");
+    }
+  };
+
   return (
     <PortalShell projectId={projectId} captureSessionId={captureSessionId} performLogout={performLogout} navigate={navigate}>
       <section className={styles.header}>
@@ -516,6 +589,7 @@ const CaptureSessionDetailView = ({
       <div className={styles.content}>
         <section className={styles.section} aria-labelledby="events-heading">
           <h2 className={styles.sectionTitle} id="events-heading">Events</h2>
+          {reorderError ? <div className={styles.formError}>{reorderError}</div> : null}
           {detail.capture_events.length === 0 ? (
             <div className={styles.empty}>No capture events yet.</div>
           ) : (
@@ -526,6 +600,12 @@ const CaptureSessionDetailView = ({
                   event={event}
                   stepNumber={index + 1}
                   linkedAsset={event.capture_asset_id ? assetById.get(event.capture_asset_id) : undefined}
+                  canReorder={canReorderEvents}
+                  disableReorder={isReordering}
+                  isFirst={index === 0}
+                  isLast={index === detail.capture_events.length - 1}
+                  onMoveUp={() => moveEvent(index, -1)}
+                  onMoveDown={() => moveEvent(index, 1)}
                 />
               ))}
             </div>
@@ -565,17 +645,29 @@ const EventRow = ({
   event,
   stepNumber,
   linkedAsset,
+  canReorder,
+  disableReorder,
+  isFirst,
+  isLast,
+  onMoveUp,
+  onMoveDown,
 }: {
   event: CaptureEvent;
   stepNumber: number;
   linkedAsset?: CaptureAsset;
+  canReorder: boolean;
+  disableReorder: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }) => {
   const pageLabel = eventPageLabel(event);
 
   return (
     <article className={styles.event}>
       <div className={styles.eventIndex}>{stepNumber}</div>
-      <div>
+      <div className={styles.eventBody}>
         <div className={styles.eventHeader}>
           <span className={styles.eventTitle}>{eventTitle(event)}</span>
           <span className={styles.eventType}>{event.event_type}</span>
@@ -586,6 +678,28 @@ const EventRow = ({
         </div>
         {linkedAsset ? <div className={styles.linkedAsset}>Linked screenshot</div> : null}
       </div>
+      {canReorder ? (
+        <div className={styles.eventActions}>
+          <button
+            className={styles.eventMoveButton}
+            type="button"
+            disabled={disableReorder || isFirst}
+            aria-label={`Move event ${stepNumber} up`}
+            onClick={onMoveUp}
+          >
+            Up
+          </button>
+          <button
+            className={styles.eventMoveButton}
+            type="button"
+            disabled={disableReorder || isLast}
+            aria-label={`Move event ${stepNumber} down`}
+            onClick={onMoveDown}
+          >
+            Down
+          </button>
+        </div>
+      ) : null}
     </article>
   );
 };

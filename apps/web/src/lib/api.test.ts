@@ -21,6 +21,7 @@ import {
   listProjectGuides,
   logout,
   publishGuide,
+  reorderCaptureSessionEvents,
   reorderGuideBlocks,
   resolveApiAssetUrl,
   revokeGuidePublishLink,
@@ -625,6 +626,69 @@ describe("api client", () => {
           page_title: "Department",
           target_label: "Uploaded screenshot",
           note: "Uploaded screenshot: department.png",
+        }),
+      }
+    );
+  });
+
+  it("reorders capture session events with session cookies", async () => {
+    const response = {
+      capture_events: [
+        {
+          id: "event_2",
+          organization_id: "organization_1",
+          project_id: "project_1",
+          capture_session_id: "capture_session_1",
+          capture_asset_id: null,
+          event_type: "note",
+          event_index: 1,
+          occurred_at: "2026-06-12T00:00:00.000Z",
+          page_url: null,
+          page_title: null,
+          target_label: null,
+          target_selector: null,
+          target_role: null,
+          target_test_id: null,
+          target_text: null,
+          client_x: null,
+          client_y: null,
+          viewport_width: null,
+          viewport_height: null,
+          device_pixel_ratio: null,
+          input_intent: null,
+          input_value_redacted: true,
+          note: "Second step",
+          created_by_id: "org_user_1",
+          updated_by_id: "org_user_1",
+          version: 2,
+          created_at: "2026-06-12T00:00:00.000Z",
+          updated_at: "2026-06-12T00:01:00.000Z",
+        },
+      ],
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(reorderCaptureSessionEvents("project / 1", "capture / 1", {
+      event_ids: ["event_2", "event_1"],
+    })).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project%20%2F%201/capture-sessions/capture%20%2F%201/events/order",
+      {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          event_ids: ["event_2", "event_1"],
         }),
       }
     );
