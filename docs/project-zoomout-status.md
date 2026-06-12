@@ -1,6 +1,6 @@
 # Project Zoom-Out Status
 
-Date: 2026-06-11
+Date: 2026-06-12
 
 ## Product Intent
 
@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `037` exist and have been implemented through guide editor direct screenshot upload.
+- Plans `001` through `039` exist and have been implemented through guide screenshot annotation highlights.
 
 ### Backend Foundation
 
@@ -127,10 +127,10 @@ The agreed implementation style is:
 - Capture session list page shows project capture sessions.
 - Capture session detail page shows source capture detail and supports creating a guide from that capture.
 - Guide list page shows project guides with per-guide publish status, isolated status-load failures, and direct public-link open actions for active published guides.
-- Guide editor page supports editing guide title/description/status, updating step title/body, inserting step/header/paragraph/tip/alert/divider blocks, editing basic text content on header/paragraph/tip/alert blocks, attaching/changing/removing step screenshots from project screenshots, uploading a brand-new replacement screenshot directly from a step, reordering blocks, deleting blocks, rendering effective screenshots inline, and opening editor screenshots in the focused screenshot viewer.
+- Guide editor page supports editing guide title/description/status, updating step title/body, inserting step/header/paragraph/tip/alert/divider blocks, editing basic text content on header/paragraph/tip/alert blocks, attaching/changing/removing step screenshots from project screenshots, uploading a brand-new replacement screenshot directly from a step, adding/removing rectangle highlights on step screenshots, reordering blocks, deleting blocks, rendering effective screenshots inline, and opening editor screenshots in the focused screenshot viewer.
 - Guide editor page supports publishing, republishing, opening, copying, and revoking public guide links from an authenticated portal publishing panel, including clearer busy states, copy fallback messaging, and stale-draft cues when a published guide has unpublished draft changes.
-- Guide preview page renders a private Scribe-style read-only guide with ordered steps, supported header/paragraph/tip/alert/divider blocks, effective selected screenshots, and a focused screenshot viewer with zoom and previous/next navigation.
-- Public guide reader route `/p/:slug` resolves active published guide snapshots without portal authentication, renders ordered published steps, supported header/paragraph/tip/alert/divider blocks, and snapshotted selected screenshots, handles missing/revoked/malformed links, and reuses the focused screenshot viewer.
+- Guide preview page renders a private Scribe-style read-only guide with ordered steps, supported header/paragraph/tip/alert/divider blocks, effective selected screenshots, screenshot highlight overlays, and a focused screenshot viewer with zoom and previous/next navigation.
+- Public guide reader route `/p/:slug` resolves active published guide snapshots without portal authentication, renders ordered published steps, supported header/paragraph/tip/alert/divider blocks, snapshotted selected screenshots, and snapshotted screenshot highlight overlays, handles missing/revoked/malformed links, and reuses the focused screenshot viewer.
 - Web has focused page, route, API, and app tests for the implemented screens.
 
 ## Not Built Yet
@@ -162,7 +162,6 @@ The agreed implementation style is:
 ### Guide Product Depth
 
 - Guide editor does not yet support capture/GIF blocks from the UI.
-- Guide annotations/highlights are not implemented.
 - Guide export is not implemented.
 - Advanced guide sharing settings are not implemented yet.
 
@@ -191,6 +190,6 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their effective screenshots, attach/change/remove step screenshots from project screenshots, upload a brand-new replacement screenshot directly from the editor, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, publish or republish that guide from the portal as an immutable backend snapshot behind a stable public link, see guide-list publish status, copy/open the public URL, revoke the active link, and open that public `/p/:slug` guide outside portal authentication.
+The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their effective screenshots, attach/change/remove step screenshots from project screenshots, upload a brand-new replacement screenshot directly from the editor, add rectangle highlights to clarify important screenshot regions, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, publish or republish that guide from the portal as an immutable backend snapshot behind a stable public link, see guide-list publish status, copy/open the public URL, revoke the active link, and open that public `/p/:slug` guide outside portal authentication.
 
-The next major milestone should continue guide authoring depth with lightweight screenshot annotations or export/share polish, then move toward access modes, embed support, analytics, or the interactive demo product.
+The next major milestone should continue guide delivery depth with export/share polish, access modes, or embed support, then move toward analytics and the interactive demo product.
