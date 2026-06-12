@@ -1,3 +1,5 @@
+import { ulid } from "ulid";
+
 export type GuideAuthContext = {
   organization_id: string;
   actor_org_user_id: string;
@@ -65,6 +67,16 @@ export type GuideBlock = {
 export type GuideBlockContent = {
   title?: string | null;
   body?: string | null;
+  annotations?: GuideScreenshotAnnotation[] | null;
+};
+
+export type GuideScreenshotAnnotation = {
+  id: string;
+  type: "highlight";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 export type GuideSourceCaptureAsset = {
@@ -143,6 +155,17 @@ export type UpdateGuideBlockScreenshotInput = {
   capture_asset_id: string | null;
 };
 
+export type UpdateGuideBlockAnnotationsInput = {
+  annotations: Array<{
+    id?: string;
+    type: "highlight";
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>;
+};
+
 export type PrepareGuideBlockScreenshotUploadResult = {
   capture_session_id: string;
 };
@@ -178,6 +201,10 @@ export type NormalizedUpdateGuideBlockInput = {
 export type NormalizedUpdateGuideBlockScreenshotInput = {
   selected_capture_asset_id: string | null;
   screenshot_hidden: boolean;
+};
+
+export type NormalizedUpdateGuideBlockAnnotationsInput = {
+  content: GuideBlockContent;
 };
 
 export type NormalizedCreateGuideFromCaptureInput = {
@@ -293,6 +320,14 @@ export type GuideRepository = {
     guide_block_id: string;
     actor_org_user_id: string;
     data: NormalizedUpdateGuideBlockScreenshotInput;
+  }) => Promise<GuideBlock>;
+  update_guide_block_annotations: (input: {
+    organization_id: string;
+    project_id: string;
+    guide_id: string;
+    guide_block_id: string;
+    actor_org_user_id: string;
+    data: NormalizedUpdateGuideBlockAnnotationsInput;
   }) => Promise<GuideBlock>;
   delete_guide_block: (input: {
     organization_id: string;
@@ -559,6 +594,76 @@ const normalize_update_guide_block_screenshot_input = (
   return {
     selected_capture_asset_id: capture_asset_id,
     screenshot_hidden: false,
+  };
+};
+
+const annotation_id = () => `ann_${ulid()}`;
+
+const normalize_update_guide_block_annotations_input = (
+  block: GuideBlock,
+  input: UpdateGuideBlockAnnotationsInput
+): NormalizedUpdateGuideBlockAnnotationsInput => {
+  if (block.block_type !== "step" || !block.display_capture_asset_id || block.screenshot_hidden) {
+    throw new InvalidGuideBlockContentError();
+  }
+
+  if (!Array.isArray(input.annotations) || input.annotations.length > 10) {
+    throw new InvalidGuideBlockContentError();
+  }
+
+  const existing_ids = new Set((block.content?.annotations ?? []).map((annotation) => annotation.id));
+  const seen_input_ids = new Set<string>();
+  const annotations = input.annotations.map((annotation) => {
+    const x = Number(annotation.x);
+    const y = Number(annotation.y);
+    const width = Number(annotation.width);
+    const height = Number(annotation.height);
+
+    if (
+      annotation.type !== "highlight"
+      || !Number.isFinite(x)
+      || !Number.isFinite(y)
+      || !Number.isFinite(width)
+      || !Number.isFinite(height)
+      || x < 0
+      || y < 0
+      || width <= 0
+      || height <= 0
+      || x + width > 1
+      || y + height > 1
+    ) {
+      throw new InvalidGuideBlockContentError();
+    }
+
+    const id = compact_optional_string(annotation.id);
+
+    if (id && !existing_ids.has(id)) {
+      throw new InvalidGuideBlockContentError();
+    }
+
+    if (id && seen_input_ids.has(id)) {
+      throw new InvalidGuideBlockContentError();
+    }
+
+    if (id) {
+      seen_input_ids.add(id);
+    }
+
+    return {
+      id: id ?? annotation_id(),
+      type: "highlight" as const,
+      x,
+      y,
+      width,
+      height,
+    };
+  });
+
+  return {
+    content: {
+      ...(block.content ?? {}),
+      annotations,
+    },
   };
 };
 
@@ -1063,6 +1168,41 @@ export const build_guide_service = (repository: GuideRepository) => {
     });
   };
 
+  const update_guide_block_annotations = async (input: {
+    auth: GuideAuthContext;
+    project_id: string;
+    guide_id: string;
+    guide_block_id: string;
+    data: UpdateGuideBlockAnnotationsInput;
+  }) => {
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      guide_id: input.guide_id,
+    };
+    await ensure_project_exists({
+      organization_id: scope.organization_id,
+      project_id: scope.project_id,
+    });
+    await ensure_editable_guide(scope);
+
+    const block = (await repository.list_guide_blocks(scope))
+      .find((candidate) => candidate.id === input.guide_block_id);
+
+    if (!block) {
+      throw new GuideBlockNotFoundError();
+    }
+
+    const data = normalize_update_guide_block_annotations_input(block, input.data);
+
+    return repository.update_guide_block_annotations({
+      ...scope,
+      guide_block_id: input.guide_block_id,
+      actor_org_user_id: input.auth.actor_org_user_id,
+      data,
+    });
+  };
+
   const prepare_guide_block_screenshot_upload = async (input: {
     auth: GuideAuthContext;
     project_id: string;
@@ -1146,6 +1286,7 @@ export const build_guide_service = (repository: GuideRepository) => {
     create_guide_block,
     update_guide_block,
     update_guide_block_screenshot,
+    update_guide_block_annotations,
     prepare_guide_block_screenshot_upload,
     delete_guide_block,
   };

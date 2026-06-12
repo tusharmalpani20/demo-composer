@@ -174,6 +174,19 @@ const build_test_app = async (
       reorder_guide_blocks: async () => guide_detail.guide_blocks,
       create_guide_block: async () => guide_detail.guide_blocks,
       update_guide_block: async () => ({ ...guide_block, block_type: "tip", content: { title: "Tip", body: "Details" }, step: null }),
+      update_guide_block_annotations: async () => ({
+        ...guide_block,
+        content: {
+          annotations: [{
+            id: "ann_1",
+            type: "highlight",
+            x: 0.1,
+            y: 0.2,
+            width: 0.3,
+            height: 0.4,
+          }],
+        },
+      }),
       delete_guide_block: async () => undefined,
       prepare_guide_block_screenshot_upload: async () => ({ capture_session_id: "capture_session_1" }),
       ...overrides.guide_service,
@@ -706,6 +719,80 @@ describe("guide routes", () => {
       },
     ]);
     expect(JSON.stringify(replace_response.json())).not.toContain("attacker");
+    await app.close();
+  });
+
+  it("updates guide block annotations through the service", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      guide_service: {
+        update_guide_block_annotations: async (input) => {
+          seen_inputs.push(input);
+          return {
+            ...guide_block,
+            content: {
+              annotations: [{
+                id: "ann_saved",
+                type: "highlight" as const,
+                x: 0.1,
+                y: 0.2,
+                width: 0.3,
+                height: 0.4,
+              }],
+            },
+          };
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/annotations",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        annotations: [{
+          id: "client_managed",
+          type: "highlight",
+          x: 0.1,
+          y: 0.2,
+          width: 0.3,
+          height: 0.4,
+          organization_id: "attacker",
+        }],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().guide_block.content).toEqual({
+      annotations: [{
+        id: "ann_saved",
+        type: "highlight",
+        x: 0.1,
+        y: 0.2,
+        width: 0.3,
+        height: 0.4,
+      }],
+    });
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "block_1",
+      data: {
+        annotations: [{
+          id: "client_managed",
+          type: "highlight",
+          x: 0.1,
+          y: 0.2,
+          width: 0.3,
+          height: 0.4,
+        }],
+      },
+    }]);
+    expect(JSON.stringify(response.json())).not.toContain("attacker");
     await app.close();
   });
 

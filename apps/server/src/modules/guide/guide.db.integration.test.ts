@@ -668,6 +668,42 @@ describe("DB-backed guide API", () => {
     const guide_id = create_response.json().guide.id as string;
     const guide_block_id = create_response.json().guide_blocks[0].id as string;
 
+    const annotations_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/${guide_block_id}/annotations`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        annotations: [{
+          type: "highlight",
+          x: 0.2,
+          y: 0.15,
+          width: 0.25,
+          height: 0.1,
+        }],
+      },
+    });
+
+    expect(annotations_response.statusCode).toBe(200);
+    expect(annotations_response.json().guide_block.content.annotations).toEqual([{
+      id: expect.stringMatching(/^ann_/),
+      type: "highlight",
+      x: 0.2,
+      y: 0.15,
+      width: 0.25,
+      height: 0.1,
+    }]);
+
+    const annotated_detail_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
+
+    expect(annotated_detail_response.statusCode).toBe(200);
+    expect(annotated_detail_response.json().guide_blocks[0].content.annotations).toEqual(
+      annotations_response.json().guide_block.content.annotations
+    );
+
     const replace_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/${guide_block_id}/screenshot`,
@@ -684,6 +720,9 @@ describe("DB-backed guide API", () => {
       selected_capture_asset_id: replacement_asset_id,
       screenshot_hidden: false,
       display_capture_asset_id: replacement_asset_id,
+      content: {
+        annotations: [],
+      },
     });
 
     const after_replace_response = await app.inject({
@@ -699,6 +738,9 @@ describe("DB-backed guide API", () => {
       selected_capture_asset_id: replacement_asset_id,
       screenshot_hidden: false,
       display_capture_asset_id: replacement_asset_id,
+      content: {
+        annotations: [],
+      },
     });
     expect(after_replace_response.json().source_capture_assets.map((asset: { id: string }) => asset.id))
       .toEqual([replacement_asset_id]);
@@ -726,6 +768,9 @@ describe("DB-backed guide API", () => {
       selected_capture_asset_id: null,
       screenshot_hidden: true,
       display_capture_asset_id: null,
+      content: {
+        annotations: [],
+      },
     });
 
     const after_hide_response = await app.inject({
@@ -740,6 +785,9 @@ describe("DB-backed guide API", () => {
       selected_capture_asset_id: null,
       screenshot_hidden: true,
       display_capture_asset_id: null,
+      content: {
+        annotations: [],
+      },
     });
     expect(after_hide_response.json().source_capture_assets).toEqual([]);
 

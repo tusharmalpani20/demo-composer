@@ -39,6 +39,7 @@ import {
   type GuideStep,
   type PrepareGuideBlockScreenshotUploadResult,
   type UpdateGuideInput,
+  type UpdateGuideBlockAnnotationsInput,
   type UpdateGuideBlockInput,
   type UpdateGuideBlockScreenshotInput,
   type UpdateGuideStepInput,
@@ -102,6 +103,13 @@ export type GuideRouteDependencies = {
       guide_id: string;
       guide_block_id: string;
       data: UpdateGuideBlockScreenshotInput;
+    }) => Promise<GuideBlock>;
+    update_guide_block_annotations: (input: {
+      auth: GuideAuthContext;
+      project_id: string;
+      guide_id: string;
+      guide_block_id: string;
+      data: UpdateGuideBlockAnnotationsInput;
     }) => Promise<GuideBlock>;
     prepare_guide_block_screenshot_upload: (input: {
       auth: GuideAuthContext;
@@ -176,6 +184,19 @@ const update_guide_block_body_schema = z.object({
 
 const update_guide_block_screenshot_body_schema = z.object({
   capture_asset_id: z.string().trim().min(1).nullable(),
+}).passthrough();
+
+const guide_screenshot_annotation_schema = z.object({
+  id: z.string().trim().min(1).optional(),
+  type: z.literal("highlight"),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+}).passthrough();
+
+const update_guide_block_annotations_body_schema = z.object({
+  annotations: z.array(guide_screenshot_annotation_schema).max(10),
 }).passthrough();
 
 const unauthorized_response = () => ({
@@ -260,6 +281,19 @@ const pick_update_guide_block_screenshot_data = (
   body: UpdateGuideBlockScreenshotInput
 ): UpdateGuideBlockScreenshotInput => ({
   capture_asset_id: body.capture_asset_id,
+});
+
+const pick_update_guide_block_annotations_data = (
+  body: UpdateGuideBlockAnnotationsInput
+): UpdateGuideBlockAnnotationsInput => ({
+  annotations: body.annotations.map((annotation) => ({
+    id: annotation.id,
+    type: annotation.type,
+    x: annotation.x,
+    y: annotation.y,
+    width: annotation.width,
+    height: annotation.height,
+  })),
 });
 
 const multipart_field_value = (
@@ -660,6 +694,34 @@ export const build_guide_routes = (
           guide_id: request.params.guide_id,
           guide_block_id: request.params.guide_block_id,
           data: pick_update_guide_block_screenshot_data(request.body),
+        });
+
+        return reply.status(200).send({ guide_block });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.patch<{
+      Params: {
+        project_id: string;
+        guide_id: string;
+        guide_block_id: string;
+      };
+      Body: UpdateGuideBlockAnnotationsInput;
+    }>("/:project_id/guides/:guide_id/blocks/:guide_block_id/annotations", {
+      schema: {
+        body: update_guide_block_annotations_body_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const guide_block = await dependencies.guide_service.update_guide_block_annotations({
+          auth,
+          project_id: request.params.project_id,
+          guide_id: request.params.guide_id,
+          guide_block_id: request.params.guide_block_id,
+          data: pick_update_guide_block_annotations_data(request.body),
         });
 
         return reply.status(200).send({ guide_block });

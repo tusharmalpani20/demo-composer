@@ -1,5 +1,9 @@
 import { randomBytes } from "node:crypto";
-import type { GuideDetail, GuideSourceCaptureAsset } from "../guide/guide.service";
+import type {
+  GuideDetail,
+  GuideScreenshotAnnotation,
+  GuideSourceCaptureAsset,
+} from "../guide/guide.service";
 
 export type PublishAuthContext = {
   organization_id: string;
@@ -80,6 +84,7 @@ export type PublishedGuideSnapshot = {
     content: {
       title?: string | null;
       body?: string | null;
+      annotations?: GuideScreenshotAnnotation[] | null;
     } | null;
     step: {
       id: string;

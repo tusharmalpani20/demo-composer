@@ -1107,6 +1107,7 @@ export const build_guide_repository = (db: TransactionCapable): GuideRepository 
         SET
           selected_capture_asset_id = $1,
           screenshot_hidden = $2,
+          content = COALESCE(content, '{}'::jsonb) || '{"annotations":[]}'::jsonb,
           updated_by_id = $3,
           updated_at = CURRENT_TIMESTAMP,
           version = version + 1
@@ -1129,6 +1130,57 @@ export const build_guide_repository = (db: TransactionCapable): GuideRepository 
 
       if (!row) {
         throw new Error("Failed to update guide block screenshot");
+      }
+
+      const steps_result = await client.query<GuideStepRow>(`
+        SELECT ${guide_step_select}
+        FROM guide_schema.guide_step
+        WHERE guide_block_id = $1
+        AND guide_id = $2
+        AND project_id = $3
+        AND organization_id = $4
+        AND is_deleted = FALSE
+        LIMIT 1
+      `, [
+        input.guide_block_id,
+        input.guide_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+
+      await touch_guide(client, input);
+
+      return map_block(row, steps_result.rows[0] ? map_step(steps_result.rows[0]) : null);
+    });
+  },
+
+  async update_guide_block_annotations(input) {
+    return with_transaction(db, async (client) => {
+      const result = await client.query<GuideBlockRow>(`
+        UPDATE guide_schema.guide_block
+        SET
+          content = $1,
+          updated_by_id = $2,
+          updated_at = CURRENT_TIMESTAMP,
+          version = version + 1
+        WHERE id = $3
+        AND guide_id = $4
+        AND project_id = $5
+        AND organization_id = $6
+        AND is_deleted = FALSE
+        RETURNING ${guide_block_select}
+      `, [
+        JSON.stringify(input.data.content),
+        input.actor_org_user_id,
+        input.guide_block_id,
+        input.guide_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+      const row = first_row(result);
+
+      if (!row) {
+        throw new Error("Failed to update guide block annotations");
       }
 
       const steps_result = await client.query<GuideStepRow>(`

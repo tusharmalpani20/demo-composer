@@ -125,6 +125,7 @@ const build_repository = (): GuideRepository & {
   update_step_inputs: unknown[];
   create_block_inputs: unknown[];
   update_block_inputs: unknown[];
+  update_annotation_inputs: unknown[];
   reorder_inputs: unknown[];
   delete_block_inputs: unknown[];
 } => {
@@ -133,6 +134,7 @@ const build_repository = (): GuideRepository & {
   const update_step_inputs: unknown[] = [];
   const create_block_inputs: unknown[] = [];
   const update_block_inputs: unknown[] = [];
+  const update_annotation_inputs: unknown[] = [];
   const reorder_inputs: unknown[] = [];
   const delete_block_inputs: unknown[] = [];
 
@@ -142,6 +144,7 @@ const build_repository = (): GuideRepository & {
     update_step_inputs,
     create_block_inputs,
     update_block_inputs,
+    update_annotation_inputs,
     reorder_inputs,
     delete_block_inputs,
     async project_exists(input) {
@@ -373,6 +376,30 @@ const build_repository = (): GuideRepository & {
           : input.data.selected_capture_asset_id ?? "asset_1",
         block_type: "step",
         content: null,
+        block_index: 1,
+        created_by_id: "org_user_1",
+        updated_by_id: input.actor_org_user_id,
+        version: 2,
+        created_at: "2026-06-05T00:00:00.000Z",
+        updated_at: "2026-06-05T00:10:00.000Z",
+        step: null,
+      };
+    },
+    async update_guide_block_annotations(input) {
+      update_annotation_inputs.push(input);
+      return {
+        id: input.guide_block_id,
+        organization_id: input.organization_id,
+        project_id: input.project_id,
+        guide_id: input.guide_id,
+        source_capture_session_id: "capture_session_1",
+        source_capture_event_id: "event_1",
+        source_capture_asset_id: "asset_1",
+        selected_capture_asset_id: null,
+        screenshot_hidden: false,
+        display_capture_asset_id: "asset_1",
+        block_type: "step",
+        content: input.data.content,
         block_index: 1,
         created_by_id: "org_user_1",
         updated_by_id: input.actor_org_user_id,
@@ -1162,6 +1189,223 @@ describe("guide service", () => {
       guide_id: "guide_1",
       guide_block_id: "manual_block",
     })).rejects.toBeInstanceOf(InvalidGuideBlockScreenshotError);
+  });
+
+  it("updates step screenshot annotations with backend assigned ids", async () => {
+    const repository = build_repository();
+    const service = build_guide_service(repository) as ReturnType<typeof build_guide_service> & {
+      update_guide_block_annotations: (input: {
+        auth: typeof auth;
+        project_id: string;
+        guide_id: string;
+        guide_block_id: string;
+        data: {
+          annotations: Array<{
+            type: "highlight";
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+          }>;
+        };
+      }) => Promise<unknown>;
+    };
+
+    await expect(service.update_guide_block_annotations({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "block_1",
+      data: {
+        annotations: [{
+          type: "highlight",
+          x: 0.1,
+          y: 0.2,
+          width: 0.3,
+          height: 0.4,
+        }],
+      },
+    })).resolves.toMatchObject({
+      id: "block_1",
+      content: {
+        annotations: [{
+          id: expect.stringMatching(/^ann_/),
+          type: "highlight",
+          x: 0.1,
+          y: 0.2,
+          width: 0.3,
+          height: 0.4,
+        }],
+      },
+    });
+
+    expect(repository.update_annotation_inputs).toEqual([expect.objectContaining({
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "block_1",
+      actor_org_user_id: "org_user_1",
+      data: {
+        content: {
+          annotations: [{
+            id: expect.stringMatching(/^ann_/),
+            type: "highlight",
+            x: 0.1,
+            y: 0.2,
+            width: 0.3,
+            height: 0.4,
+          }],
+        },
+      },
+    })]);
+  });
+
+  it("rejects invalid guide screenshot annotations", async () => {
+    const repository = build_repository();
+    const service = build_guide_service(repository) as ReturnType<typeof build_guide_service> & {
+      update_guide_block_annotations: (input: {
+        auth: typeof auth;
+        project_id: string;
+        guide_id: string;
+        guide_block_id: string;
+        data: {
+          annotations: Array<{
+            id?: string;
+            type: "highlight";
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+          }>;
+        };
+      }) => Promise<unknown>;
+    };
+
+    await expect(service.update_guide_block_annotations({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "block_1",
+      data: {
+        annotations: [{
+          type: "highlight",
+          x: 0.9,
+          y: 0.2,
+          width: 0.2,
+          height: 0.2,
+        }],
+      },
+    })).rejects.toBeInstanceOf(InvalidGuideBlockContentError);
+
+    await expect(service.update_guide_block_annotations({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "block_1",
+      data: {
+        annotations: [{
+          id: "unknown_annotation",
+          type: "highlight",
+          x: 0.1,
+          y: 0.2,
+          width: 0.2,
+          height: 0.2,
+        }],
+      },
+    })).rejects.toBeInstanceOf(InvalidGuideBlockContentError);
+
+    repository.list_guide_blocks = async () => [{
+      id: "block_1",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: "capture_session_1",
+      source_capture_event_id: "event_1",
+      source_capture_asset_id: "asset_1",
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: "asset_1",
+      block_type: "step",
+      content: {
+        annotations: [{
+          id: "ann_existing",
+          type: "highlight",
+          x: 0.1,
+          y: 0.2,
+          width: 0.2,
+          height: 0.2,
+        }],
+      },
+      block_index: 1,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T00:00:00.000Z",
+      updated_at: "2026-06-05T00:00:00.000Z",
+      step: null,
+    }];
+
+    await expect(service.update_guide_block_annotations({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "block_1",
+      data: {
+        annotations: [{
+          id: "ann_existing",
+          type: "highlight",
+          x: 0.1,
+          y: 0.2,
+          width: 0.2,
+          height: 0.2,
+        }, {
+          id: "ann_existing",
+          type: "highlight",
+          x: 0.4,
+          y: 0.4,
+          width: 0.2,
+          height: 0.2,
+        }],
+      },
+    })).rejects.toBeInstanceOf(InvalidGuideBlockContentError);
+
+    repository.list_guide_blocks = async () => [{
+      id: "tip_block",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: null,
+      source_capture_event_id: null,
+      source_capture_asset_id: null,
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: null,
+      block_type: "tip",
+      content: { body: "Use this carefully." },
+      block_index: 3,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T00:00:00.000Z",
+      updated_at: "2026-06-05T00:00:00.000Z",
+      step: null,
+    }];
+
+    await expect(service.update_guide_block_annotations({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      guide_block_id: "tip_block",
+      data: {
+        annotations: [{
+          type: "highlight",
+          x: 0.1,
+          y: 0.2,
+          width: 0.2,
+          height: 0.2,
+        }],
+      },
+    })).rejects.toBeInstanceOf(InvalidGuideBlockContentError);
   });
 
   it("soft deletes a guide block for editable draft guides", async () => {

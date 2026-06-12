@@ -77,7 +77,16 @@ const guide_detail: GuideDetail = {
       screenshot_hidden: false,
       display_capture_asset_id: "asset_1",
       block_type: "step",
-      content: null,
+      content: {
+        annotations: [{
+          id: "ann_1",
+          type: "highlight",
+          x: 0.64,
+          y: 0.12,
+          width: 0.18,
+          height: 0.08,
+        }],
+      },
       block_index: 1,
       created_by_id: "org_user_1",
       updated_by_id: "org_user_1",
@@ -302,7 +311,16 @@ describe("publish service", () => {
           id: "block_1",
           block_type: "step",
           block_index: 1,
-          content: null,
+          content: {
+            annotations: [{
+              id: "ann_1",
+              type: "highlight",
+              x: 0.64,
+              y: 0.12,
+              width: 0.18,
+              height: 0.08,
+            }],
+          },
           step: {
             id: "step_1",
             title: "Navigate to Department List",
