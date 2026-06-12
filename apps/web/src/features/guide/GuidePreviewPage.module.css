@@ -84,7 +84,9 @@
   border-radius: 7px;
   padding: 0 14px;
   font-weight: 800;
+  font: inherit;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .primaryLink {
@@ -96,6 +98,18 @@
   border: 1px solid #c9d4e3;
   background: #ffffff;
   color: #26364f;
+}
+
+.primaryLink:disabled,
+.secondaryLink:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.notice {
+  margin-top: 12px;
+  color: #2453d4;
+  font-weight: 800;
 }
 
 .document {

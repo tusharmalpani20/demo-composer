@@ -3,6 +3,7 @@ import {
   ApiClientError,
   createGuideBlock,
   deleteGuideBlock,
+  exportGuideMarkdown,
   getGuideDetail,
   getGuidePublishStatus,
   listProjectScreenshotAssets,
@@ -27,6 +28,7 @@ import type {
   GuideBlock,
   GuideBlockContent,
   GuideDetail,
+  GuideMarkdownExport,
   GuidePublishResult,
   GuidePublishStatusResponse,
   GuideRevokePublishResult,
@@ -72,6 +74,8 @@ export type GuideEditorPageProps = {
   publishCurrentGuide?: (projectId: string, guideId: string) => Promise<GuidePublishResult>;
   revokePublishLink?: (projectId: string, guideId: string) => Promise<GuideRevokePublishResult>;
   copyText?: (text: string) => Promise<void>;
+  downloadTextFile?: (filename: string, contents: string, mimeType: string) => Promise<void>;
+  exportMarkdown?: typeof exportGuideMarkdown;
   saveGuide?: typeof updateGuide;
   saveStep?: typeof updateGuideStep;
   createBlock?: typeof createGuideBlock;
@@ -127,6 +131,22 @@ const defaultCopyText = async (text: string) => {
   }
 
   await navigator.clipboard.writeText(text);
+};
+
+const defaultDownloadTextFile = async (
+  filename: string,
+  contents: string,
+  mimeType: string
+) => {
+  const url = URL.createObjectURL(new Blob([contents], { type: mimeType }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 };
 
 const publicGuideUrl = (publicUrl: string) => {
@@ -295,6 +315,8 @@ export const GuideEditorPage = ({
   publishCurrentGuide = publishGuide,
   revokePublishLink = revokeGuidePublishLink,
   copyText = defaultCopyText,
+  downloadTextFile = defaultDownloadTextFile,
+  exportMarkdown = exportGuideMarkdown,
   saveGuide = updateGuide,
   saveStep = updateGuideStep,
   createBlock = createGuideBlock,
@@ -455,6 +477,40 @@ export const GuideEditorPage = ({
       setNotice("Could not copy public link. Select the URL above.");
     } finally {
       setPublishBusyAction(null);
+    }
+  };
+
+  const exportCurrentMarkdown = async (): Promise<GuideMarkdownExport> => (
+    exportMarkdown(projectId, guideId)
+  );
+
+  const copyMarkdown = async () => {
+    setBusyAction("export-copy");
+    setNotice(null);
+
+    try {
+      const response = await exportCurrentMarkdown();
+      await copyText(response.markdown);
+      setNotice("Markdown copied.");
+    } catch {
+      setNotice("Could not export Markdown.");
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const downloadMarkdown = async () => {
+    setBusyAction("export-download");
+    setNotice(null);
+
+    try {
+      const response = await exportCurrentMarkdown();
+      await downloadTextFile(response.filename, response.markdown, "text/markdown;charset=utf-8");
+      setNotice("Markdown downloaded.");
+    } catch {
+      setNotice("Could not export Markdown.");
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -846,6 +902,8 @@ export const GuideEditorPage = ({
       onPublish={publishCurrent}
       onRevokePublish={revokeCurrent}
       onCopyPublicLink={copyCurrent}
+      onCopyMarkdown={copyMarkdown}
+      onDownloadMarkdown={downloadMarkdown}
       onRetryPublishStatus={reloadPublishStatus}
       performLogout={performLogout}
       navigate={navigate}
@@ -904,6 +962,8 @@ const GuideEditorView = ({
   onPublish,
   onRevokePublish,
   onCopyPublicLink,
+  onCopyMarkdown,
+  onDownloadMarkdown,
   onRetryPublishStatus,
   performLogout,
   navigate,
@@ -939,6 +999,8 @@ const GuideEditorView = ({
   onPublish: () => void;
   onRevokePublish: () => void;
   onCopyPublicLink: (publicUrl: string) => void;
+  onCopyMarkdown: () => void;
+  onDownloadMarkdown: () => void;
   onRetryPublishStatus: () => void;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
@@ -973,6 +1035,22 @@ const GuideEditorView = ({
             {detail.guide.description ? <p className={styles.description}>{detail.guide.description}</p> : null}
           </div>
           <div className={styles.headerActions}>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              disabled={busyAction === "export-copy" || busyAction === "export-download"}
+              onClick={onCopyMarkdown}
+            >
+              {busyAction === "export-copy" ? "Copying Markdown..." : "Copy Markdown"}
+            </button>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              disabled={busyAction === "export-copy" || busyAction === "export-download"}
+              onClick={onDownloadMarkdown}
+            >
+              {busyAction === "export-download" ? "Downloading Markdown..." : "Download Markdown"}
+            </button>
             <a className={styles.previewLink} href={guidePreviewUrl(projectId, guideId)}>Preview guide</a>
             <span className={styles.badge}>{detail.guide.status}</span>
           </div>

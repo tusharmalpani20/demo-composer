@@ -10,6 +10,11 @@ import type {
   UpdateGuideBlockAnnotationsInput,
 } from "./types";
 
+type GuideMarkdownExport = {
+  filename: string;
+  markdown: string;
+};
+
 const guideDetail: GuideDetail = {
   guide: {
     id: "guide_1",
@@ -206,6 +211,8 @@ const renderPage = (overrides: {
   saveBlockScreenshot?: GuideEditorPageProps["saveBlockScreenshot"];
   saveBlockAnnotations?: GuideEditorPageProps["saveBlockAnnotations"];
   uploadBlockScreenshot?: GuideEditorPageProps["uploadBlockScreenshot"];
+  exportMarkdown?: GuideEditorPageProps["exportMarkdown"];
+  downloadTextFile?: GuideEditorPageProps["downloadTextFile"];
   reorderBlocks?: GuideEditorPageProps["reorderBlocks"];
   removeBlock?: GuideEditorPageProps["removeBlock"];
   loadPublishStatus?: GuideEditorPageProps["loadPublishStatus"];
@@ -400,6 +407,11 @@ const renderPage = (overrides: {
     }),
   }));
   const removeBlock = overrides.removeBlock ?? vi.fn(async () => undefined);
+  const exportMarkdown = overrides.exportMarkdown ?? vi.fn(async (): Promise<GuideMarkdownExport> => ({
+    filename: "department-guide.md",
+    markdown: "# Department guide\n",
+  }));
+  const downloadTextFile = overrides.downloadTextFile ?? vi.fn(async () => undefined);
   const publishCurrentGuide = overrides.publishCurrentGuide ?? vi.fn(async () => publishedStatus());
   const revokePublishLink = overrides.revokePublishLink ?? vi.fn(async () => ({
     publish_link: {
@@ -424,6 +436,8 @@ const renderPage = (overrides: {
       saveBlockScreenshot={saveBlockScreenshot}
       saveBlockAnnotations={saveBlockAnnotations}
       uploadBlockScreenshot={uploadBlockScreenshot}
+      exportMarkdown={exportMarkdown}
+      downloadTextFile={downloadTextFile}
       reorderBlocks={reorderBlocks}
       removeBlock={removeBlock}
       publishCurrentGuide={publishCurrentGuide}
@@ -443,6 +457,8 @@ const renderPage = (overrides: {
     saveBlockScreenshot,
     saveBlockAnnotations,
     uploadBlockScreenshot,
+    exportMarkdown,
+    downloadTextFile,
     reorderBlocks,
     removeBlock,
     publishCurrentGuide,
@@ -484,6 +500,50 @@ describe("GuideEditorPage", () => {
     expect(loadDetail).toHaveBeenCalledWith("project_1", "guide_1");
     expect(loadPublishStatus).toHaveBeenCalledWith("project_1", "guide_1");
     expect(screen.queryByText("organization_1")).not.toBeInTheDocument();
+  });
+
+  it("copies and downloads guide markdown from the editor", async () => {
+    const exportMarkdown = vi.fn(async () => ({
+      filename: "department-guide.md",
+      markdown: "# Department guide\n",
+    }));
+    const copyText = vi.fn(async () => undefined);
+    const downloadTextFile = vi.fn(async () => undefined);
+    renderPage({ exportMarkdown, copyText, downloadTextFile });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Copy Markdown" }));
+
+    await waitFor(() => {
+      expect(exportMarkdown).toHaveBeenCalledWith("project_1", "guide_1");
+    });
+    expect(copyText).toHaveBeenCalledWith("# Department guide\n");
+    expect(screen.getByText("Markdown copied.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download Markdown" }));
+
+    await waitFor(() => {
+      expect(downloadTextFile).toHaveBeenCalledWith(
+        "department-guide.md",
+        "# Department guide\n",
+        "text/markdown;charset=utf-8"
+      );
+    });
+    expect(exportMarkdown).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Markdown downloaded.")).toBeInTheDocument();
+  });
+
+  it("shows editor markdown export failures without marking the draft stale", async () => {
+    const exportMarkdown = vi.fn(async () => {
+      throw new Error("export failed");
+    });
+    renderPage({ exportMarkdown, loadPublishStatus: async () => publishedStatus() });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Copy Markdown" }));
+
+    expect(await screen.findByText("Could not export Markdown.")).toBeInTheDocument();
+    expect(screen.queryByText("Draft has changes not yet published.")).not.toBeInTheDocument();
   });
 
   it("loads unpublished publish status and publishes a guide", async () => {

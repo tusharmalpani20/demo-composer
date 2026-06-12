@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { ApiClientError, getGuideDetail, resolveApiAssetUrl } from "../../lib/api";
+import {
+  ApiClientError,
+  exportGuideMarkdown,
+  getGuideDetail,
+  resolveApiAssetUrl,
+} from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
 import { PortalTopbar } from "../portal/PortalTopbar";
 import {
@@ -9,6 +14,7 @@ import {
 import type {
   GuideBlock,
   GuideDetail,
+  GuideMarkdownExport,
   GuideScreenshotAnnotation,
   GuideSourceCaptureAsset,
 } from "./types";
@@ -25,6 +31,9 @@ export type GuidePreviewPageProps = {
   projectId: string;
   guideId: string;
   loadDetail?: (projectId: string, guideId: string) => Promise<GuideDetail>;
+  exportMarkdown?: typeof exportGuideMarkdown;
+  copyText?: (text: string) => Promise<void>;
+  downloadTextFile?: (filename: string, contents: string, mimeType: string) => Promise<void>;
   currentPath?: string;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
@@ -64,10 +73,33 @@ const screenshotViewerImageId = (block: GuideBlock, asset: GuideSourceCaptureAss
   `${block.id}:${asset.id}`
 );
 
+const defaultCopyText = async (text: string) => {
+  await navigator.clipboard.writeText(text);
+};
+
+const defaultDownloadTextFile = async (
+  filename: string,
+  contents: string,
+  mimeType: string
+) => {
+  const url = URL.createObjectURL(new Blob([contents], { type: mimeType }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
 export const GuidePreviewPage = ({
   projectId,
   guideId,
   loadDetail = getGuideDetail,
+  exportMarkdown = exportGuideMarkdown,
+  copyText = defaultCopyText,
+  downloadTextFile = defaultDownloadTextFile,
   currentPath = currentBrowserPath(),
   performLogout,
   navigate,
@@ -135,6 +167,9 @@ export const GuidePreviewPage = ({
       detail={state.detail}
       projectId={projectId}
       guideId={guideId}
+      exportMarkdown={exportMarkdown}
+      copyText={copyText}
+      downloadTextFile={downloadTextFile}
       performLogout={performLogout}
       navigate={navigate}
     />
@@ -164,17 +199,25 @@ const GuidePreviewView = ({
   detail,
   projectId,
   guideId,
+  exportMarkdown,
+  copyText,
+  downloadTextFile,
   performLogout,
   navigate,
 }: {
   detail: GuideDetail;
   projectId: string;
   guideId: string;
+  exportMarkdown: typeof exportGuideMarkdown;
+  copyText: (text: string) => Promise<void>;
+  downloadTextFile: (filename: string, contents: string, mimeType: string) => Promise<void>;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
 }) => {
   const sortedBlocks = useMemo(() => sortBlocks(detail.guide_blocks), [detail.guide_blocks]);
   const [activeScreenshotId, setActiveScreenshotId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<"copy-markdown" | "download-markdown" | null>(null);
   const assetsById = useMemo(() => new Map(
     detail.source_capture_assets.map((asset) => [asset.id, asset])
   ), [detail.source_capture_assets]);
@@ -189,6 +232,40 @@ const GuidePreviewView = ({
     }
   }, [activeScreenshotId, screenshotImages]);
 
+  const exportCurrentMarkdown = async (): Promise<GuideMarkdownExport> => (
+    exportMarkdown(projectId, guideId)
+  );
+
+  const copyMarkdown = async () => {
+    setBusyAction("copy-markdown");
+    setNotice(null);
+
+    try {
+      const response = await exportCurrentMarkdown();
+      await copyText(response.markdown);
+      setNotice("Markdown copied.");
+    } catch {
+      setNotice("Could not export Markdown.");
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const downloadMarkdown = async () => {
+    setBusyAction("download-markdown");
+    setNotice(null);
+
+    try {
+      const response = await exportCurrentMarkdown();
+      await downloadTextFile(response.filename, response.markdown, "text/markdown;charset=utf-8");
+      setNotice("Markdown downloaded.");
+    } catch {
+      setNotice("Could not export Markdown.");
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
   return (
     <PortalShell projectId={projectId} guideId={guideId} performLogout={performLogout} navigate={navigate}>
       <section className={styles.header}>
@@ -197,8 +274,25 @@ const GuidePreviewView = ({
           <h1 className={styles.title}>{detail.guide.title}</h1>
           {detail.guide.description ? <p className={styles.description}>{detail.guide.description}</p> : null}
           <span className={styles.badge}>{detail.guide.status}</span>
+          {notice ? <div className={styles.notice}>{notice}</div> : null}
         </div>
         <div className={styles.actions}>
+          <button
+            className={styles.secondaryLink}
+            type="button"
+            disabled={busyAction !== null}
+            onClick={copyMarkdown}
+          >
+            {busyAction === "copy-markdown" ? "Copying Markdown..." : "Copy Markdown"}
+          </button>
+          <button
+            className={styles.secondaryLink}
+            type="button"
+            disabled={busyAction !== null}
+            onClick={downloadMarkdown}
+          >
+            {busyAction === "download-markdown" ? "Downloading Markdown..." : "Download Markdown"}
+          </button>
           <a className={styles.secondaryLink} href={guidePreviewListUrl(projectId)}>Back to guides</a>
           <a className={styles.primaryLink} href={guideUrl(projectId, guideId)}>Edit guide</a>
         </div>

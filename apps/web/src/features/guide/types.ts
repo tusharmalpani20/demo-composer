@@ -96,6 +96,11 @@ export type GuideDetail = {
   source_capture_assets: GuideSourceCaptureAsset[];
 };
 
+export type GuideMarkdownExport = {
+  filename: string;
+  markdown: string;
+};
+
 export type PublishedGuideSnapshotAsset = {
   id: string;
   asset_type: "screenshot" | "html_snapshot" | "thumbnail" | "redacted_screenshot";

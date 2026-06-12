@@ -4,6 +4,7 @@ import {
   createGuideBlock,
   createGuideFromCaptureSession,
   deleteGuideBlock,
+  exportGuideMarkdown,
   getCurrentAuth,
   getCaptureSessionDetail,
   getGuideDetail,
@@ -425,6 +426,32 @@ describe("api client", () => {
 
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/projects/project_1/guides/guide_1",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("exports guide markdown with session cookies", async () => {
+    const response = {
+      filename: "department-guide.md",
+      markdown: "# Department guide\n",
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(exportGuideMarkdown("project 1", "guide/1")).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project%201/guides/guide%2F1/export/markdown",
       {
         credentials: "include",
         headers: {

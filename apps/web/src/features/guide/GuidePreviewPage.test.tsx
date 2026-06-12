@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import { GuidePreviewPage } from "./GuidePreviewPage";
-import type { GuideDetail } from "./types";
+import type { GuideDetail, GuideMarkdownExport } from "./types";
 
 const guideDetail: GuideDetail = {
   guide: {
@@ -222,9 +222,18 @@ const guideDetail: GuideDetail = {
 const renderPage = (overrides: {
   detail?: GuideDetail;
   loadDetail?: () => Promise<GuideDetail>;
+  exportMarkdown?: (projectId: string, guideId: string) => Promise<GuideMarkdownExport>;
+  copyText?: (text: string) => Promise<void>;
+  downloadTextFile?: (filename: string, contents: string, mimeType: string) => Promise<void>;
   currentPath?: string;
 } = {}) => {
   const loadDetail = overrides.loadDetail ?? vi.fn(async () => overrides.detail ?? guideDetail);
+  const exportMarkdown = overrides.exportMarkdown ?? vi.fn(async () => ({
+    filename: "department-guide.md",
+    markdown: "# Department guide\n",
+  }));
+  const copyText = overrides.copyText ?? vi.fn(async () => undefined);
+  const downloadTextFile = overrides.downloadTextFile ?? vi.fn(async () => undefined);
 
   render(
     <GuidePreviewPage
@@ -232,10 +241,13 @@ const renderPage = (overrides: {
       guideId="guide_1"
       currentPath={overrides.currentPath}
       loadDetail={loadDetail}
+      exportMarkdown={exportMarkdown}
+      copyText={copyText}
+      downloadTextFile={downloadTextFile}
     />
   );
 
-  return { loadDetail };
+  return { loadDetail, exportMarkdown, copyText, downloadTextFile };
 };
 
 describe("GuidePreviewPage", () => {
@@ -321,6 +333,50 @@ describe("GuidePreviewPage", () => {
       width: "25%",
       height: "10%",
     });
+  });
+
+  it("copies and downloads guide markdown from preview", async () => {
+    const exportMarkdown = vi.fn(async () => ({
+      filename: "department-guide.md",
+      markdown: "# Department guide\n",
+    }));
+    const copyText = vi.fn(async () => undefined);
+    const downloadTextFile = vi.fn(async () => undefined);
+    renderPage({ exportMarkdown, copyText, downloadTextFile });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Copy Markdown" }));
+
+    await waitFor(() => {
+      expect(exportMarkdown).toHaveBeenCalledWith("project_1", "guide_1");
+    });
+    expect(copyText).toHaveBeenCalledWith("# Department guide\n");
+    expect(screen.getByText("Markdown copied.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Download Markdown" }));
+
+    await waitFor(() => {
+      expect(downloadTextFile).toHaveBeenCalledWith(
+        "department-guide.md",
+        "# Department guide\n",
+        "text/markdown;charset=utf-8"
+      );
+    });
+    expect(exportMarkdown).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Markdown downloaded.")).toBeInTheDocument();
+  });
+
+  it("shows markdown export failures in preview", async () => {
+    renderPage({
+      exportMarkdown: async () => {
+        throw new Error("export failed");
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Copy Markdown" }));
+
+    expect(await screen.findByText("Could not export Markdown.")).toBeInTheDocument();
   });
 
   it("renders empty guides", async () => {

@@ -9,6 +9,7 @@ import type {
   GuideBlock,
   CreateGuideBlockInput,
   GuideDetail,
+  GuideMarkdownExport,
   GuidePublishResult,
   GuidePublishStatusResponse,
   GuideRevokePublishResult,
@@ -206,6 +207,15 @@ export const getGuideDetail = async (
 ): Promise<GuideDetail> => (
   requestJson<GuideDetail>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}`
+  )
+);
+
+export const exportGuideMarkdown = async (
+  projectId: string,
+  guideId: string
+): Promise<GuideMarkdownExport> => (
+  requestJson<GuideMarkdownExport>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/export/markdown`
   )
 );
 
