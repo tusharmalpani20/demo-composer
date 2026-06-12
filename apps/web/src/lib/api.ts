@@ -22,7 +22,7 @@ import type {
   UploadGuideBlockScreenshotInput,
   UploadGuideBlockScreenshotResponse,
 } from "../features/guide/types";
-import type { Project, ProjectStatus } from "../features/project/types";
+import type { CreateProjectInput, Project, ProjectStatus } from "../features/project/types";
 
 export type ApiClientErrorKind = "unauthenticated" | "not_found" | "validation" | "unknown";
 
@@ -43,6 +43,10 @@ export type ProjectDetailResponse = {
 
 export type ProjectListResponse = {
   projects: Project[];
+};
+
+export type ProjectCreateResponse = {
+  project: Project;
 };
 
 export type ProjectCaptureSessionListResponse = {
@@ -172,6 +176,18 @@ export const listProjects = async (
 
   return requestJson<ProjectListResponse>(`/api/v1/projects${query}`);
 };
+
+export const createProject = async (
+  input: CreateProjectInput
+): Promise<ProjectCreateResponse> => (
+  requestJson<ProjectCreateResponse>("/api/v1/projects", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(input),
+  })
+);
 
 export const getProject = async (
   projectId: string

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ApiClientError,
+  createProject,
   createGuideBlock,
   createGuideFromCaptureSession,
   deleteGuideBlock,
@@ -337,6 +338,39 @@ describe("api client", () => {
         headers: {
           accept: "application/json",
         },
+      }
+    );
+  });
+
+  it("creates projects with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(project_response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(createProject({
+      name: " Internal onboarding demos ",
+      description: "Reusable captures and guides.",
+      slug: "internal-onboarding",
+    })).resolves.toEqual(project_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          name: " Internal onboarding demos ",
+          description: "Reusable captures and guides.",
+          slug: "internal-onboarding",
+        }),
       }
     );
   });
