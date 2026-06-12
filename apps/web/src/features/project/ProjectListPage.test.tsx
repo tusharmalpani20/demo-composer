@@ -39,22 +39,29 @@ const projects: Project[] = [
 
 const renderPage = (overrides: {
   loadProjects?: () => Promise<{ projects: Project[] }>;
+  createProject?: (input: {
+    name: string;
+    description?: string | null;
+    slug?: string | null;
+  }) => Promise<{ project: Project }>;
   currentPath?: string;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
 } = {}) => {
   const loadProjects = overrides.loadProjects ?? vi.fn(async () => ({ projects }));
+  const createProject = overrides.createProject ?? vi.fn(async () => ({ project: projects[1]! }));
 
   render(
     <ProjectListPage
       loadProjects={loadProjects}
+      createProject={createProject}
       currentPath={overrides.currentPath}
       performLogout={overrides.performLogout}
       navigate={overrides.navigate}
     />
   );
 
-  return { loadProjects };
+  return { loadProjects, createProject };
 };
 
 describe("ProjectListPage", () => {
@@ -109,6 +116,164 @@ describe("ProjectListPage", () => {
     });
 
     expect(await screen.findByText("No projects yet.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New Project" })).toBeInTheDocument();
+  });
+
+  it("opens and cancels the project creation form", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Project" }));
+
+    expect(screen.getByRole("heading", { name: "Create project" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Project name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Slug")).toBeInTheDocument();
+    expect(screen.getByLabelText("Description")).toBeInTheDocument();
+    expect(screen.getByLabelText("Project name")).toHaveFocus();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("heading", { name: "Create project" })).not.toBeInTheDocument();
+  });
+
+  it("validates project names before creating projects", async () => {
+    const { createProject } = renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Project" }));
+    fireEvent.change(screen.getByLabelText("Project name"), { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Project" }));
+
+    expect(screen.getByText("Project name is required.")).toBeInTheDocument();
+    expect(createProject).not.toHaveBeenCalled();
+  });
+
+  it("creates projects from normalized form data and opens the new workspace", async () => {
+    const createProject = vi.fn(async () => ({
+      project: {
+        ...projects[1]!,
+        id: "project_created",
+        name: "Created project",
+      },
+    }));
+    const navigate = vi.fn();
+    renderPage({ createProject, navigate });
+
+    expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Project" }));
+    fireEvent.change(screen.getByLabelText("Project name"), { target: { value: " Created project " } });
+    fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "   " } });
+    fireEvent.change(screen.getByLabelText("Description"), { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Project" }));
+
+    await waitFor(() => expect(createProject).toHaveBeenCalledWith({
+      name: "Created project",
+      slug: null,
+      description: null,
+    }));
+    expect(navigate).toHaveBeenCalledWith("/projects/project_created");
+  });
+
+  it("keeps project creation form values when creation fails", async () => {
+    renderPage({
+      createProject: async () => {
+        throw new Error("Network failed");
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Project" }));
+    fireEvent.change(screen.getByLabelText("Project name"), { target: { value: "Created project" } });
+    fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "created-project" } });
+    fireEvent.change(screen.getByLabelText("Description"), { target: { value: "A useful project." } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Project" }));
+
+    expect(await screen.findByText("Could not create project.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Project name")).toHaveValue("Created project");
+    expect(screen.getByLabelText("Slug")).toHaveValue("created-project");
+    expect(screen.getByLabelText("Description")).toHaveValue("A useful project.");
+  });
+
+  it("renders project creation conflicts as form messages", async () => {
+    renderPage({
+      createProject: async () => {
+        throw new ApiClientError({
+          kind: "validation",
+          status: 409,
+          type: "project_name_conflict",
+          message: "A project with this name already exists",
+        });
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Project" }));
+    fireEvent.change(screen.getByLabelText("Project name"), { target: { value: "Created project" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Project" }));
+
+    expect(await screen.findByText("A project with this name already exists.")).toBeInTheDocument();
+  });
+
+  it("renders project slug conflicts as form messages", async () => {
+    renderPage({
+      createProject: async () => {
+        throw new ApiClientError({
+          kind: "validation",
+          status: 409,
+          type: "project_slug_conflict",
+          message: "A project with this slug already exists",
+        });
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Project" }));
+    fireEvent.change(screen.getByLabelText("Project name"), { target: { value: "Created project" } });
+    fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "created-project" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Project" }));
+
+    expect(await screen.findByText("A project with this slug already exists.")).toBeInTheDocument();
+  });
+
+  it("renders project creation authentication failures as form messages", async () => {
+    renderPage({
+      createProject: async () => {
+        throw new ApiClientError({
+          kind: "unauthenticated",
+          status: 401,
+          type: "unauthenticated",
+          message: "Authentication is required",
+        });
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Project" }));
+    fireEvent.change(screen.getByLabelText("Project name"), { target: { value: "Created project" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Project" }));
+
+    expect(await screen.findByText("Sign in to create a project.")).toBeInTheDocument();
+  });
+
+  it("disables project creation submit while the request is pending", async () => {
+    let resolveCreate: ((value: { project: Project }) => void) | undefined;
+    const createProject = vi.fn(() => new Promise<{ project: Project }>((resolve) => {
+      resolveCreate = resolve;
+    }));
+    const navigate = vi.fn();
+    renderPage({ createProject, navigate });
+
+    expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "New Project" }));
+    fireEvent.change(screen.getByLabelText("Project name"), { target: { value: "Created project" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Project" }));
+
+    expect(screen.getByRole("button", { name: "Creating Project..." })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Creating Project..." }));
+    expect(createProject).toHaveBeenCalledTimes(1);
+
+    resolveCreate?.({ project: projects[1]! });
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/projects/project_1"));
   });
 
   it("renders unauthenticated states with sign-in links", async () => {

@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
-import { ApiClientError, listProjects, type ProjectListResponse } from "../../lib/api";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import {
+  ApiClientError,
+  createProject,
+  listProjects,
+  type ProjectCreateResponse,
+  type ProjectListResponse,
+} from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
 import { PortalTopbar } from "../portal/PortalTopbar";
-import type { Project } from "./types";
+import type { CreateProjectInput, Project } from "./types";
 import styles from "./ProjectListPage.module.css";
 
 type LoadState =
@@ -13,9 +19,16 @@ type LoadState =
 
 type ProjectListPageProps = {
   loadProjects?: () => Promise<ProjectListResponse>;
+  createProject?: (input: CreateProjectInput) => Promise<ProjectCreateResponse>;
   currentPath?: string;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
+};
+
+type CreateProjectFormState = {
+  name: string;
+  slug: string;
+  description: string;
 };
 
 const loadStateFromError = (error: unknown): LoadState => {
@@ -41,14 +54,59 @@ const formatDateTime = (value: string) => {
 
 const projectUrl = (projectId: string) => `/projects/${encodeURIComponent(projectId)}`;
 
+const optionalProjectField = (value: string) => {
+  const trimmed = value.trim();
+
+  return trimmed || null;
+};
+
+const createProjectErrorMessage = (error: unknown) => {
+  if (error instanceof ApiClientError) {
+    if (error.kind === "unauthenticated") {
+      return "Sign in to create a project.";
+    }
+
+    if (error.type === "project_name_conflict") {
+      return "A project with this name already exists.";
+    }
+
+    if (error.type === "project_slug_conflict") {
+      return "A project with this slug already exists.";
+    }
+  }
+
+  return "Could not create project.";
+};
+
+const openProject = (projectId: string, navigate?: (path: string) => void) => {
+  const path = projectUrl(projectId);
+
+  if (navigate) {
+    navigate(path);
+    return;
+  }
+
+  window.location.assign(path);
+};
+
 export const ProjectListPage = ({
   loadProjects = listProjects,
+  createProject: createProjectAction = createProject,
   currentPath = currentBrowserPath(),
   performLogout,
   navigate,
 }: ProjectListPageProps) => {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createForm, setCreateForm] = useState<CreateProjectFormState>({
+    name: "",
+    slug: "",
+    description: "",
+  });
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const createNameInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -70,6 +128,60 @@ export const ProjectListPage = ({
       active = false;
     };
   }, [loadProjects, reloadKey]);
+
+  useEffect(() => {
+    if (showCreateForm) {
+      createNameInputRef.current?.focus();
+    }
+  }, [showCreateForm]);
+
+  const updateCreateField = (field: keyof CreateProjectFormState, value: string) => {
+    setCreateForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const openCreateForm = () => {
+    setShowCreateForm(true);
+    setCreateError(null);
+  };
+
+  const closeCreateForm = () => {
+    setShowCreateForm(false);
+    setCreateError(null);
+  };
+
+  const submitCreateProject = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isCreating) {
+      return;
+    }
+
+    const name = createForm.name.trim();
+
+    if (!name) {
+      setCreateError("Project name is required.");
+      return;
+    }
+
+    setIsCreating(true);
+    setCreateError(null);
+
+    try {
+      const response = await createProjectAction({
+        name,
+        slug: optionalProjectField(createForm.slug),
+        description: optionalProjectField(createForm.description),
+      });
+      openProject(response.project.id, navigate);
+    } catch (error: unknown) {
+      setCreateError(createProjectErrorMessage(error));
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   if (state.status === "loading") {
     return (
@@ -110,7 +222,50 @@ export const ProjectListPage = ({
           <div className={styles.eyebrow}>Portal home</div>
           <h1 className={styles.title}>Projects</h1>
         </div>
+        <button className={styles.primaryButton} type="button" onClick={openCreateForm}>
+          New Project
+        </button>
       </section>
+
+      {showCreateForm ? (
+        <section className={styles.createPanel} aria-labelledby="create-project-heading">
+          <h2 className={styles.formTitle} id="create-project-heading">Create project</h2>
+          <form className={styles.form} onSubmit={submitCreateProject}>
+            {createError ? <div className={styles.formError}>{createError}</div> : null}
+            <label className={styles.field}>
+              <span>Project name</span>
+              <input
+                ref={createNameInputRef}
+                value={createForm.name}
+                onChange={(event) => updateCreateField("name", event.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Slug</span>
+              <input
+                value={createForm.slug}
+                onChange={(event) => updateCreateField("slug", event.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Description</span>
+              <textarea
+                rows={4}
+                value={createForm.description}
+                onChange={(event) => updateCreateField("description", event.target.value)}
+              />
+            </label>
+            <div className={styles.formActions}>
+              <button className={styles.primaryButton} type="submit" disabled={isCreating}>
+                {isCreating ? "Creating Project..." : "Create Project"}
+              </button>
+              <button className={styles.secondaryButton} type="button" disabled={isCreating} onClick={closeCreateForm}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : null}
 
       <section className={styles.content} aria-labelledby="projects-heading">
         <h2 className={styles.sectionTitle} id="projects-heading">All projects</h2>
