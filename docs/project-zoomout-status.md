@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `041` exist and have been implemented through portal project creation.
+- Plans `001` through `042` exist and have been implemented through portal capture session creation.
 
 ### Backend Foundation
 
@@ -109,6 +109,7 @@ The agreed implementation style is:
   - logout
   - project creation
   - project list/detail
+  - capture session creation
   - capture session list/detail
   - guide list/detail
   - create guide from capture
@@ -126,7 +127,7 @@ The agreed implementation style is:
 - Login defaults to `/projects`.
 - Project list/home page shows accessible projects, lets users create new projects, and opens project workspaces.
 - Project workspace links to capture sessions and guides.
-- Capture session list page shows project capture sessions.
+- Capture session list page shows project capture sessions and lets users create manual portal capture sessions.
 - Capture session detail page shows source capture detail and supports creating a guide from that capture.
 - Guide list page shows project guides with per-guide publish status, isolated status-load failures, and direct public-link open actions for active published guides.
 - Guide editor page supports editing guide title/description/status, updating step title/body, inserting step/header/paragraph/tip/alert/divider blocks, editing basic text content on header/paragraph/tip/alert blocks, attaching/changing/removing step screenshots from project screenshots, uploading a brand-new replacement screenshot directly from a step, adding/removing rectangle highlights on step screenshots, reordering blocks, deleting blocks, rendering effective screenshots inline, and opening editor screenshots in the focused screenshot viewer.
@@ -156,7 +157,6 @@ The agreed implementation style is:
 
 ### Portal Creation Flows
 
-- No capture session creation UI in the portal.
 - No upload UI in the portal.
 - No manual capture event creation UI.
 - No project settings/edit/archive UI.
@@ -193,6 +193,6 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their effective screenshots, attach/change/remove step screenshots from project screenshots, upload a brand-new replacement screenshot directly from the editor, add rectangle highlights to clarify important screenshot regions, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, copy or download the current draft as Markdown, publish or republish that guide from the portal as an immutable backend snapshot behind a stable public link, see guide-list publish status, copy/open the public URL, revoke the active link, and open that public `/p/:slug` guide outside portal authentication.
+The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: create a manual portal capture session or start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their effective screenshots, attach/change/remove step screenshots from project screenshots, upload a brand-new replacement screenshot directly from the editor, add rectangle highlights to clarify important screenshot regions, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, copy or download the current draft as Markdown, publish or republish that guide from the portal as an immutable backend snapshot behind a stable public link, see guide-list publish status, copy/open the public URL, revoke the active link, and open that public `/p/:slug` guide outside portal authentication.
 
 The next major milestone should continue guide delivery depth with richer export/share polish, access modes, or embed support, then move toward analytics and the interactive demo product.
