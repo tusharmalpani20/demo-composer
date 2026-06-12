@@ -3,6 +3,7 @@ import {
   ApiClientError,
   createProject,
   createProjectCaptureSession,
+  createCaptureSessionEvent,
   createGuideBlock,
   createGuideFromCaptureSession,
   deleteGuideBlock,
@@ -27,6 +28,7 @@ import {
   updateGuideBlock,
   updateGuideBlockAnnotations,
   updateGuideBlockScreenshot,
+  uploadCaptureSessionAsset,
   uploadGuideBlockScreenshot,
   updateGuideStep,
 } from "./api";
@@ -481,6 +483,148 @@ describe("api client", () => {
           description: "Portal source material",
           source_type: "manual",
           start_url: "https://example.internal/app",
+        }),
+      }
+    );
+  });
+
+  it("uploads capture session screenshot assets with session cookies", async () => {
+    const response = {
+      capture_asset: {
+        id: "asset_uploaded",
+        organization_id: "organization_1",
+        project_id: "project_1",
+        capture_session_id: "capture_session_1",
+        file: {
+          id: "file_1",
+          storage_provider: "local",
+          mime_type: "image/png",
+          size_bytes: 123,
+          original_name: "department.png",
+          checksum_sha256: "checksum",
+        },
+        asset_type: "screenshot",
+        width: null,
+        height: null,
+        device_pixel_ratio: null,
+        page_url: "https://example.internal/app",
+        page_title: "Department",
+        captured_at: "2026-06-12T00:00:00.000Z",
+        created_by_id: "org_user_1",
+        updated_by_id: "org_user_1",
+        version: 1,
+        created_at: "2026-06-12T00:00:00.000Z",
+        updated_at: "2026-06-12T00:00:00.000Z",
+        file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_uploaded/file",
+      },
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+    const file = new File(["png"], "department.png", { type: "image/png" });
+
+    await expect(uploadCaptureSessionAsset("project / 1", "capture / 1", {
+      file,
+      page_url: "https://example.internal/app",
+      page_title: "Department",
+      captured_at: "2026-06-12T00:00:00.000Z",
+    })).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project%20%2F%201/capture-sessions/capture%20%2F%201/assets/upload",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+        body: expect.any(FormData),
+      }
+    );
+
+    const fetchCall = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    const body = fetchCall[1].body as FormData;
+    expect(body.get("file")).toBe(file);
+    expect(body.get("page_url")).toBe("https://example.internal/app");
+    expect(body.get("page_title")).toBe("Department");
+    expect(body.get("captured_at")).toBe("2026-06-12T00:00:00.000Z");
+    expect(body.has("asset_type")).toBe(false);
+  });
+
+  it("creates capture session events with session cookies", async () => {
+    const response = {
+      capture_event: {
+        id: "event_uploaded",
+        organization_id: "organization_1",
+        project_id: "project_1",
+        capture_session_id: "capture_session_1",
+        capture_asset_id: "asset_uploaded",
+        event_type: "capture",
+        event_index: 3,
+        occurred_at: "2026-06-12T00:00:00.000Z",
+        page_url: "https://example.internal/app",
+        page_title: "Department",
+        target_label: "Uploaded screenshot",
+        target_selector: null,
+        target_role: null,
+        target_test_id: null,
+        target_text: null,
+        client_x: null,
+        client_y: null,
+        viewport_width: null,
+        viewport_height: null,
+        device_pixel_ratio: null,
+        input_intent: null,
+        input_value_redacted: true,
+        note: "Uploaded screenshot: department.png",
+        created_by_id: "org_user_1",
+        updated_by_id: "org_user_1",
+        version: 1,
+        created_at: "2026-06-12T00:00:00.000Z",
+        updated_at: "2026-06-12T00:00:00.000Z",
+      },
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(createCaptureSessionEvent("project / 1", "capture / 1", {
+      event_type: "capture",
+      event_index: 3,
+      capture_asset_id: "asset_uploaded",
+      occurred_at: "2026-06-12T00:00:00.000Z",
+      page_url: "https://example.internal/app",
+      page_title: "Department",
+      target_label: "Uploaded screenshot",
+      note: "Uploaded screenshot: department.png",
+    })).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project%20%2F%201/capture-sessions/capture%20%2F%201/events",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          event_type: "capture",
+          event_index: 3,
+          capture_asset_id: "asset_uploaded",
+          occurred_at: "2026-06-12T00:00:00.000Z",
+          page_url: "https://example.internal/app",
+          page_title: "Department",
+          target_label: "Uploaded screenshot",
+          note: "Uploaded screenshot: department.png",
         }),
       }
     );

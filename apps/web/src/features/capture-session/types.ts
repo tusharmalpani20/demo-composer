@@ -36,6 +36,24 @@ export type CreateCaptureSessionInput = {
 
 export type CaptureEventType = "navigation" | "click" | "input" | "capture" | "note";
 
+export type UploadCaptureAssetInput = {
+  file: File;
+  page_url?: string | null;
+  page_title?: string | null;
+  captured_at?: string;
+};
+
+export type CreateCaptureEventInput = {
+  event_type: CaptureEventType;
+  event_index: number;
+  capture_asset_id?: string | null;
+  occurred_at?: string | null;
+  page_url?: string | null;
+  page_title?: string | null;
+  target_label?: string | null;
+  note?: string | null;
+};
+
 export type CaptureEvent = {
   id: string;
   organization_id: string;
@@ -101,4 +119,12 @@ export type CaptureSessionDetail = {
   capture_session: CaptureSession;
   capture_events: CaptureEvent[];
   capture_assets: CaptureAsset[];
+};
+
+export type UploadCaptureAssetResponse = {
+  capture_asset: CaptureAsset;
+};
+
+export type CreateCaptureEventResponse = {
+  capture_event: CaptureEvent;
 };

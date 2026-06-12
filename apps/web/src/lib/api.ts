@@ -2,7 +2,11 @@ import type {
   CaptureSession,
   CaptureSessionDetail,
   CaptureSessionStatus,
+  CreateCaptureEventInput,
+  CreateCaptureEventResponse,
   CreateCaptureSessionInput,
+  UploadCaptureAssetInput,
+  UploadCaptureAssetResponse,
 } from "../features/capture-session/types";
 import type { AuthResponse } from "../features/auth/types";
 import type {
@@ -228,6 +232,49 @@ export const createProjectCaptureSession = async (
 ): Promise<CaptureSessionCreateResponse> => (
   requestJson<CaptureSessionCreateResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }
+  )
+);
+
+const appendOptionalFormValue = (formData: FormData, key: string, value?: string | null) => {
+  if (value !== undefined && value !== null) {
+    formData.append(key, value);
+  }
+};
+
+export const uploadCaptureSessionAsset = async (
+  projectId: string,
+  captureSessionId: string,
+  input: UploadCaptureAssetInput
+): Promise<UploadCaptureAssetResponse> => {
+  const formData = new FormData();
+  formData.append("file", input.file);
+  appendOptionalFormValue(formData, "page_url", input.page_url);
+  appendOptionalFormValue(formData, "page_title", input.page_title);
+  appendOptionalFormValue(formData, "captured_at", input.captured_at);
+
+  return requestJson<UploadCaptureAssetResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}/assets/upload`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+};
+
+export const createCaptureSessionEvent = async (
+  projectId: string,
+  captureSessionId: string,
+  input: CreateCaptureEventInput
+): Promise<CreateCaptureEventResponse> => (
+  requestJson<CreateCaptureEventResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}/events`,
     {
       method: "POST",
       headers: {
