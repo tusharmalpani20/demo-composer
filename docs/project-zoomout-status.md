@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `040` exist and have been implemented through guide Markdown export.
+- Plans `001` through `041` exist and have been implemented through portal project creation.
 
 ### Backend Foundation
 
@@ -107,6 +107,7 @@ The agreed implementation style is:
   - current auth
   - login
   - logout
+  - project creation
   - project list/detail
   - capture session list/detail
   - guide list/detail
@@ -123,7 +124,7 @@ The agreed implementation style is:
   - authenticated guide Markdown export
 - Shared portal topbar supports sign out.
 - Login defaults to `/projects`.
-- Project list/home page shows accessible projects and opens project workspaces.
+- Project list/home page shows accessible projects, lets users create new projects, and opens project workspaces.
 - Project workspace links to capture sessions and guides.
 - Capture session list page shows project capture sessions.
 - Capture session detail page shows source capture detail and supports creating a guide from that capture.
@@ -155,7 +156,6 @@ The agreed implementation style is:
 
 ### Portal Creation Flows
 
-- No project creation UI.
 - No capture session creation UI in the portal.
 - No upload UI in the portal.
 - No manual capture event creation UI.
