@@ -4,6 +4,7 @@ import {
   CaptureEventIndexConflictError,
   type CaptureEventRepository,
   type CaptureEventType,
+  type CaptureSessionSourceType,
 } from "./capture-event.service";
 
 type QueryResult<Row> = {
@@ -12,6 +13,14 @@ type QueryResult<Row> = {
 
 type Queryable = {
   query: <Row = Record<string, unknown>>(sql: string, values?: unknown[]) => Promise<QueryResult<Row>>;
+};
+
+type TransactionClient = Queryable & {
+  release: () => void;
+};
+
+type TransactionCapableQueryable = Queryable & {
+  connect?: () => Promise<TransactionClient>;
 };
 
 type CaptureEventRow = {
@@ -115,7 +124,30 @@ const is_event_index_conflict = (error: unknown) => {
     && pg_error.constraint === "uq_capture_event_session_index_active";
 };
 
-export const build_capture_event_repository = (db: Queryable): CaptureEventRepository => ({
+const with_transaction = async <Result>(
+  db: TransactionCapableQueryable,
+  work: (client: Queryable) => Promise<Result>
+) => {
+  if (!db.connect) {
+    return work(db);
+  }
+
+  const client = await db.connect();
+
+  try {
+    await client.query("BEGIN");
+    const result = await work(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export const build_capture_event_repository = (db: TransactionCapableQueryable): CaptureEventRepository => ({
   async project_exists(input) {
     const result = await db.query<{ exists: boolean }>(`
       SELECT EXISTS (
@@ -147,6 +179,26 @@ export const build_capture_event_repository = (db: Queryable): CaptureEventRepos
     ]);
 
     return Boolean(result.rows[0]?.exists);
+  },
+
+  async get_capture_session_source_type(input) {
+    const result = await db.query<{ source_type: CaptureSessionSourceType }>(`
+      SELECT capture_session.source_type
+      FROM capture_schema.capture_session capture_session
+      INNER JOIN project_schema.project project ON project.id = capture_session.project_id
+      WHERE capture_session.id = $1
+      AND capture_session.project_id = $2
+      AND capture_session.organization_id = $3
+      AND capture_session.is_deleted = FALSE
+      AND project.is_deleted = FALSE
+      LIMIT 1
+    `, [
+      input.capture_session_id,
+      input.project_id,
+      input.organization_id,
+    ]);
+
+    return result.rows[0]?.source_type ?? null;
   },
 
   async capture_asset_exists(input) {
@@ -321,5 +373,74 @@ export const build_capture_event_repository = (db: Queryable): CaptureEventRepos
     ]);
 
     return result.rows.length > 0;
+  },
+
+  async reorder_capture_events(input) {
+    const event_ids = input.event_ids;
+    const final_indexes = event_ids.map((_, index) => index + 1);
+    const temporary_indexes = final_indexes.map((index) => index + event_ids.length + 100000);
+
+    return with_transaction(db, async (client) => {
+      await client.query(`
+        UPDATE capture_schema.capture_event capture_event
+        SET event_index = ordered.temporary_index
+        FROM (
+          SELECT *
+          FROM unnest($1::text[], $2::int[]) AS requested(id, temporary_index)
+        ) AS ordered
+        WHERE capture_event.id = ordered.id
+        AND capture_event.capture_session_id = $3
+        AND capture_event.project_id = $4
+        AND capture_event.organization_id = $5
+        AND capture_event.is_deleted = FALSE
+      `, [
+        event_ids,
+        temporary_indexes,
+        input.capture_session_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+
+      await client.query(`
+        UPDATE capture_schema.capture_event capture_event
+        SET
+          event_index = ordered.final_index,
+          updated_by_id = $6,
+          updated_at = CURRENT_TIMESTAMP,
+          version = capture_event.version + 1
+        FROM (
+          SELECT *
+          FROM unnest($1::text[], $2::int[]) AS requested(id, final_index)
+        ) AS ordered
+        WHERE capture_event.id = ordered.id
+        AND capture_event.capture_session_id = $3
+        AND capture_event.project_id = $4
+        AND capture_event.organization_id = $5
+        AND capture_event.is_deleted = FALSE
+      `, [
+        event_ids,
+        final_indexes,
+        input.capture_session_id,
+        input.project_id,
+        input.organization_id,
+        input.actor_org_user_id,
+      ]);
+
+      const result = await client.query<CaptureEventRow>(`
+        SELECT ${capture_event_select}
+        FROM capture_schema.capture_event
+        WHERE capture_session_id = $1
+        AND project_id = $2
+        AND organization_id = $3
+        AND is_deleted = FALSE
+        ORDER BY event_index ASC, created_at ASC, id ASC
+      `, [
+        input.capture_session_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+
+      return result.rows.map(map_capture_event);
+    });
   },
 });

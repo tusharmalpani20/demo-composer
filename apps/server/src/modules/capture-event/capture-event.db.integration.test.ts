@@ -73,7 +73,11 @@ const create_project = async (session_token: string) => {
   return response.json().project.id as string;
 };
 
-const create_capture_session = async (session_token: string, project_id: string) => {
+const create_capture_session = async (
+  session_token: string,
+  project_id: string,
+  source_type: "manual" | "extension" | "import" = "extension"
+) => {
   const app = build({ logger: false });
   const response = await app.inject({
     method: "POST",
@@ -81,7 +85,7 @@ const create_capture_session = async (session_token: string, project_id: string)
     cookies: { demo_composer_session: session_token },
     payload: {
       name: "Create department workflow",
-      source_type: "extension",
+      source_type,
     },
   });
 
@@ -362,6 +366,98 @@ describe("DB-backed capture event API", () => {
 
     expect(hidden_get_response.statusCode).toBe(404);
     expect(hidden_get_response.json().error.type).toBe("capture_event_not_found");
+
+    await app.close();
+  });
+
+  it("reorders manual capture events while preserving contiguous indexes", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const capture_session_id = await create_capture_session(session_token, project_id, "manual");
+    const app = build({ logger: false });
+
+    const first_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "note",
+        event_index: 1,
+        note: "First step",
+      },
+    });
+    const second_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "note",
+        event_index: 2,
+        note: "Second step",
+      },
+    });
+    const third_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "note",
+        event_index: 3,
+        note: "Third step",
+      },
+    });
+
+    expect(first_response.statusCode).toBe(201);
+    expect(second_response.statusCode).toBe(201);
+    expect(third_response.statusCode).toBe(201);
+
+    const first_id = first_response.json().capture_event.id as string;
+    const second_id = second_response.json().capture_event.id as string;
+    const third_id = third_response.json().capture_event.id as string;
+
+    await pool.query(`
+      UPDATE capture_schema.capture_event
+      SET is_deleted = TRUE
+      WHERE id = $1
+    `, [second_id]);
+
+    const reorder_response = await app.inject({
+      method: "PUT",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/order`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_ids: [third_id, first_id],
+      },
+    });
+    const list_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+    });
+    const invalid_extension_session_id = await create_capture_session(session_token, project_id, "extension");
+    const extension_reorder_response = await app.inject({
+      method: "PUT",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${invalid_extension_session_id}/events/order`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_ids: [third_id, first_id],
+      },
+    });
+
+    expect(reorder_response.statusCode).toBe(200);
+    expect(reorder_response.json().capture_events.map((event: { id: string }) => event.id)).toEqual([
+      third_id,
+      first_id,
+    ]);
+    expect(reorder_response.json().capture_events.map((event: { event_index: number }) => event.event_index)).toEqual([1, 2]);
+    expect(list_response.statusCode).toBe(200);
+    expect(list_response.json().capture_events.map((event: { id: string }) => event.id)).toEqual([
+      third_id,
+      first_id,
+    ]);
+    expect(list_response.json().capture_events.map((event: { event_index: number }) => event.event_index)).toEqual([1, 2]);
+    expect(extension_reorder_response.statusCode).toBe(409);
+    expect(extension_reorder_response.json().error.type).toBe("capture_event_reorder_not_allowed");
 
     await app.close();
   });

@@ -9,13 +9,16 @@ import {
   CaptureAssetNotFoundError,
   CaptureEventIndexConflictError,
   CaptureEventNotFoundError,
+  CaptureEventReorderNotAllowedError,
   CaptureSessionNotFoundError,
+  InvalidCaptureEventOrderError,
   InvalidCaptureEventInputError,
   ProjectNotFoundError,
   type CaptureEvent,
   type CaptureEventAuthContext,
   type CaptureEventType,
   type CreateCaptureEventInput,
+  type ReorderCaptureEventsInput,
 } from "./capture-event.service";
 
 export type CaptureEventRouteDependencies = {
@@ -47,6 +50,12 @@ export type CaptureEventRouteDependencies = {
       capture_session_id: string;
       capture_event_id: string;
     }) => Promise<void>;
+    reorder_capture_events: (input: {
+      auth: CaptureEventAuthContext;
+      project_id: string;
+      capture_session_id: string;
+      data: ReorderCaptureEventsInput;
+    }) => Promise<CaptureEvent[]>;
   };
 };
 
@@ -87,6 +96,10 @@ const create_capture_event_body_schema = z.object({
 
 const list_query_schema = z.object({
   event_type: event_type_schema.optional(),
+});
+
+const reorder_capture_events_body_schema = z.object({
+  event_ids: z.array(z.string().trim().min(1)).min(1),
 });
 
 const unauthorized_response = () => ({
@@ -207,6 +220,21 @@ export const build_capture_event_routes = (
         );
       }
 
+      if (error instanceof InvalidCaptureEventOrderError) {
+        return reply.status(400).send(
+          error_response("invalid_capture_event_order", "Capture event order is invalid")
+        );
+      }
+
+      if (error instanceof CaptureEventReorderNotAllowedError) {
+        return reply.status(409).send(
+          error_response(
+            "capture_event_reorder_not_allowed",
+            "Only manual capture sessions can be reordered"
+          )
+        );
+      }
+
       if (error instanceof CaptureEventIndexConflictError) {
         return reply.status(409).send(
           error_response(
@@ -240,6 +268,33 @@ export const build_capture_event_routes = (
           data: pick_create_capture_event_data(request.body),
         });
         return reply.status(201).send({ capture_event });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.put<{
+      Params: {
+        project_id: string;
+        capture_session_id: string;
+      };
+      Body: ReorderCaptureEventsInput;
+    }>("/:project_id/capture-sessions/:capture_session_id/events/order", {
+      schema: {
+        body: reorder_capture_events_body_schema,
+      },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(session_token_from_request(request));
+        const capture_events = await dependencies.capture_event_service.reorder_capture_events({
+          auth,
+          project_id: request.params.project_id,
+          capture_session_id: request.params.capture_session_id,
+          data: {
+            event_ids: request.body.event_ids,
+          },
+        });
+        return reply.status(200).send({ capture_events });
       } catch (error) {
         return handle_domain_error(error, reply);
       }

@@ -4,6 +4,7 @@ export type CaptureEventAuthContext = {
 };
 
 export type CaptureEventType = "navigation" | "click" | "input" | "capture" | "note";
+export type CaptureSessionSourceType = "manual" | "extension" | "import";
 
 export type CaptureEvent = {
   id: string;
@@ -59,6 +60,10 @@ export type CreateCaptureEventInput = {
   metadata?: unknown;
 } & Record<string, unknown>;
 
+export type ReorderCaptureEventsInput = {
+  event_ids: string[];
+};
+
 export type NormalizedCreateCaptureEventInput = {
   event_type: CaptureEventType;
   event_index: number;
@@ -92,6 +97,11 @@ export type CaptureEventRepository = {
     project_id: string;
     capture_session_id: string;
   }) => Promise<boolean>;
+  get_capture_session_source_type: (input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+  }) => Promise<CaptureSessionSourceType | null>;
   capture_asset_exists: (input: {
     organization_id: string;
     project_id: string;
@@ -124,6 +134,13 @@ export type CaptureEventRepository = {
     capture_event_id: string;
     actor_org_user_id: string;
   }) => Promise<boolean>;
+  reorder_capture_events: (input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+    actor_org_user_id: string;
+    event_ids: string[];
+  }) => Promise<CaptureEvent[]>;
 };
 
 export class ProjectNotFoundError extends Error {
@@ -159,6 +176,18 @@ export class InvalidCaptureEventInputError extends Error {
 export class CaptureEventIndexConflictError extends Error {
   constructor() {
     super("A capture event with this index already exists");
+  }
+}
+
+export class InvalidCaptureEventOrderError extends Error {
+  constructor() {
+    super("Capture event order is invalid");
+  }
+}
+
+export class CaptureEventReorderNotAllowedError extends Error {
+  constructor() {
+    super("Only manual capture sessions can be reordered");
   }
 }
 
@@ -240,6 +269,26 @@ const normalize_create_capture_event = (
   }
 
   return normalized;
+};
+
+const normalize_reorder_capture_events = (
+  input: ReorderCaptureEventsInput
+) => {
+  if (!Array.isArray(input.event_ids) || input.event_ids.length === 0) {
+    throw new InvalidCaptureEventOrderError();
+  }
+
+  const event_ids = input.event_ids.map((id) => id.trim());
+
+  if (event_ids.some((id) => id.length === 0)) {
+    throw new InvalidCaptureEventOrderError();
+  }
+
+  if (new Set(event_ids).size !== event_ids.length) {
+    throw new InvalidCaptureEventOrderError();
+  }
+
+  return event_ids;
 };
 
 export const build_capture_event_service = (repository: CaptureEventRepository) => {
@@ -394,10 +443,57 @@ export const build_capture_event_service = (repository: CaptureEventRepository) 
     }
   };
 
+  const reorder_capture_events = async (input: {
+    auth: CaptureEventAuthContext;
+    project_id: string;
+    capture_session_id: string;
+    data: ReorderCaptureEventsInput;
+  }) => {
+    const event_ids = normalize_reorder_capture_events(input.data);
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      capture_session_id: input.capture_session_id,
+    };
+
+    await ensure_project_exists({
+      organization_id: scope.organization_id,
+      project_id: scope.project_id,
+    });
+
+    const source_type = await repository.get_capture_session_source_type(scope);
+
+    if (!source_type) {
+      throw new CaptureSessionNotFoundError();
+    }
+
+    if (source_type !== "manual") {
+      throw new CaptureEventReorderNotAllowedError();
+    }
+
+    const active_events = await repository.list_capture_events(scope);
+    const active_ids = new Set(active_events.map((event) => event.id));
+
+    if (active_events.length !== event_ids.length) {
+      throw new InvalidCaptureEventOrderError();
+    }
+
+    if (event_ids.some((event_id) => !active_ids.has(event_id))) {
+      throw new InvalidCaptureEventOrderError();
+    }
+
+    return repository.reorder_capture_events({
+      ...scope,
+      actor_org_user_id: input.auth.actor_org_user_id,
+      event_ids,
+    });
+  };
+
   return {
     create_capture_event,
     list_capture_events,
     get_capture_event,
     delete_capture_event,
+    reorder_capture_events,
   };
 };

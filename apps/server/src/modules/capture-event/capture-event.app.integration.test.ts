@@ -55,6 +55,7 @@ describe("capture event app integration", () => {
         list_capture_events: async () => [capture_event],
         get_capture_event: async () => capture_event,
         delete_capture_event: async () => undefined,
+        reorder_capture_events: async () => [capture_event],
       },
     });
 

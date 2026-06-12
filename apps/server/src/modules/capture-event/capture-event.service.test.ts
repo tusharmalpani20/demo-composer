@@ -4,7 +4,9 @@ import {
   CaptureAssetNotFoundError,
   CaptureEventIndexConflictError,
   CaptureEventNotFoundError,
+  CaptureEventReorderNotAllowedError,
   CaptureSessionNotFoundError,
+  InvalidCaptureEventOrderError,
   InvalidCaptureEventInputError,
   ProjectNotFoundError,
   type CaptureEvent,
@@ -55,6 +57,8 @@ const build_repository = (): CaptureEventRepository & {
   lists: unknown[];
   finds: unknown[];
   deletes: unknown[];
+  source_type_checks: unknown[];
+  reorders: unknown[];
 } => {
   const project_checks: unknown[] = [];
   const session_checks: unknown[] = [];
@@ -63,6 +67,8 @@ const build_repository = (): CaptureEventRepository & {
   const lists: unknown[] = [];
   const finds: unknown[] = [];
   const deletes: unknown[] = [];
+  const source_type_checks: unknown[] = [];
+  const reorders: unknown[] = [];
 
   return {
     project_checks,
@@ -72,6 +78,8 @@ const build_repository = (): CaptureEventRepository & {
     lists,
     finds,
     deletes,
+    source_type_checks,
+    reorders,
     async project_exists(input) {
       project_checks.push(input);
       return input.project_id === "project_1";
@@ -79,6 +87,16 @@ const build_repository = (): CaptureEventRepository & {
     async capture_session_exists(input) {
       session_checks.push(input);
       return input.capture_session_id === "capture_session_1";
+    },
+    async get_capture_session_source_type(input) {
+      source_type_checks.push(input);
+      if (input.capture_session_id === "capture_session_1") {
+        return "manual";
+      }
+      if (input.capture_session_id === "extension_session") {
+        return "extension";
+      }
+      return null;
     },
     async capture_asset_exists(input) {
       asset_checks.push(input);
@@ -90,6 +108,16 @@ const build_repository = (): CaptureEventRepository & {
     },
     async list_capture_events(input) {
       lists.push(input);
+      if (input.event_type) {
+        return [capture_event];
+      }
+      if (input.capture_session_id === "capture_session_1") {
+        return [
+          { ...capture_event, id: "capture_event_1", event_index: 1, note: "First" },
+          { ...capture_event, id: "capture_event_2", event_index: 2, note: "Second" },
+          { ...capture_event, id: "capture_event_3", event_index: 3, note: "Third" },
+        ];
+      }
       return [capture_event];
     },
     async find_capture_event(input) {
@@ -99,6 +127,14 @@ const build_repository = (): CaptureEventRepository & {
     async delete_capture_event(input) {
       deletes.push(input);
       return input.capture_event_id === "capture_event_1";
+    },
+    async reorder_capture_events(input) {
+      reorders.push(input);
+      return input.event_ids.map((id, index) => ({
+        ...capture_event,
+        id,
+        event_index: index + 1,
+      }));
     },
   };
 };
@@ -292,5 +328,63 @@ describe("capture event service", () => {
       capture_event_id: "capture_event_1",
       actor_org_user_id: "org_user_1",
     }]);
+  });
+
+  it("reorders all manual capture session events with contiguous indexes", async () => {
+    const repository = build_repository();
+    const service = build_capture_event_service(repository);
+
+    await expect(service.reorder_capture_events({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      data: {
+        event_ids: [" capture_event_3 ", "capture_event_1", "capture_event_2"],
+      },
+    })).resolves.toEqual([
+      expect.objectContaining({ id: "capture_event_3", event_index: 1 }),
+      expect.objectContaining({ id: "capture_event_1", event_index: 2 }),
+      expect.objectContaining({ id: "capture_event_2", event_index: 3 }),
+    ]);
+
+    expect(repository.source_type_checks).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+    }]);
+    expect(repository.reorders).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      actor_org_user_id: "org_user_1",
+      event_ids: ["capture_event_3", "capture_event_1", "capture_event_2"],
+    }]);
+  });
+
+  it("rejects invalid manual capture event reorder input", async () => {
+    const repository = build_repository();
+    const service = build_capture_event_service(repository);
+
+    for (const event_ids of [
+      [],
+      ["capture_event_1", " "],
+      ["capture_event_1", "capture_event_1", "capture_event_2"],
+      ["capture_event_1", "capture_event_2"],
+      ["capture_event_1", "capture_event_2", "other_session_event"],
+    ]) {
+      await expect(service.reorder_capture_events({
+        auth,
+        project_id: "project_1",
+        capture_session_id: "capture_session_1",
+        data: { event_ids },
+      })).rejects.toBeInstanceOf(InvalidCaptureEventOrderError);
+    }
+
+    await expect(service.reorder_capture_events({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "extension_session",
+      data: { event_ids: ["capture_event_1"] },
+    })).rejects.toBeInstanceOf(CaptureEventReorderNotAllowedError);
   });
 });

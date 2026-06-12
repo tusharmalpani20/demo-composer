@@ -7,7 +7,9 @@ import {
   CaptureAssetNotFoundError,
   CaptureEventIndexConflictError,
   CaptureEventNotFoundError,
+  CaptureEventReorderNotAllowedError,
   CaptureSessionNotFoundError,
+  InvalidCaptureEventOrderError,
   InvalidCaptureEventInputError,
   ProjectNotFoundError,
   type CaptureEvent,
@@ -86,6 +88,7 @@ const build_test_app = async (
       list_capture_events: async () => [capture_event],
       get_capture_event: async () => capture_event,
       delete_capture_event: async () => undefined,
+      reorder_capture_events: async () => [capture_event],
       ...overrides.capture_event_service,
     },
   }), { prefix: "/api/v1/projects" });
@@ -109,6 +112,11 @@ describe("capture event routes", () => {
         payload: { event_type: "note", event_index: 1, note: "Hello" },
       },
       { method: "GET", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events" },
+      {
+        method: "PUT",
+        url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/order",
+        payload: { event_ids: ["capture_event_1"] },
+      },
       { method: "GET", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1" },
       { method: "DELETE", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1" },
     ] as const) {
@@ -332,6 +340,51 @@ describe("capture event routes", () => {
     await app.close();
   });
 
+  it("reorders capture events through the service with auth context and URL scope", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      capture_event_service: {
+        reorder_capture_events: async (input) => {
+          seen_inputs.push(input);
+          return [
+            { ...capture_event, id: "capture_event_2", event_index: 1 },
+            { ...capture_event, id: "capture_event_1", event_index: 2 },
+          ];
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "PUT",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/order",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        organization_id: "attacker_org",
+        event_ids: ["capture_event_2", "capture_event_1"],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      data: {
+        event_ids: ["capture_event_2", "capture_event_1"],
+      },
+    }]);
+    expect(response.json()).toEqual({
+      capture_events: [
+        { ...capture_event, id: "capture_event_2", event_index: 1 },
+        { ...capture_event, id: "capture_event_1", event_index: 2 },
+      ],
+    });
+    await app.close();
+  });
+
   it("maps capture event domain errors to stable responses", async () => {
     const cases = [
       { error: new ProjectNotFoundError(), status: 404, type: "project_not_found" },
@@ -339,6 +392,8 @@ describe("capture event routes", () => {
       { error: new CaptureAssetNotFoundError(), status: 404, type: "capture_asset_not_found" },
       { error: new CaptureEventNotFoundError(), status: 404, type: "capture_event_not_found" },
       { error: new InvalidCaptureEventInputError(), status: 400, type: "invalid_capture_event" },
+      { error: new InvalidCaptureEventOrderError(), status: 400, type: "invalid_capture_event_order" },
+      { error: new CaptureEventReorderNotAllowedError(), status: 409, type: "capture_event_reorder_not_allowed" },
       { error: new CaptureEventIndexConflictError(), status: 409, type: "capture_event_index_conflict" },
     ];
 
@@ -346,6 +401,9 @@ describe("capture event routes", () => {
       const app = await build_test_app({
         capture_event_service: {
           create_capture_event: async () => {
+            throw test_case.error;
+          },
+          reorder_capture_events: async () => {
             throw test_case.error;
           },
         },
@@ -360,6 +418,16 @@ describe("capture event routes", () => {
 
       expect(response.statusCode).toBe(test_case.status);
       expect(response.json().error.type).toBe(test_case.type);
+
+      const reorder_response = await app.inject({
+        method: "PUT",
+        url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/order",
+        cookies: { demo_composer_session: "session-token" },
+        payload: { event_ids: ["capture_event_1"] },
+      });
+
+      expect(reorder_response.statusCode).toBe(test_case.status);
+      expect(reorder_response.json().error.type).toBe(test_case.type);
       await app.close();
     }
   });
@@ -375,6 +443,22 @@ describe("capture event routes", () => {
       const response = await app.inject({
         method: "POST",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events",
+        cookies: { demo_composer_session: "session-token" },
+        payload,
+      });
+
+      expect(response.statusCode).toBe(400);
+    }
+
+    for (const payload of [
+      {},
+      { event_ids: [] },
+      { event_ids: [" "] },
+      { event_ids: [123] },
+    ]) {
+      const response = await app.inject({
+        method: "PUT",
+        url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/order",
         cookies: { demo_composer_session: "session-token" },
         payload,
       });
