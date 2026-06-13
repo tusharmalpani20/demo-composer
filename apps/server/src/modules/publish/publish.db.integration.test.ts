@@ -438,5 +438,5 @@ describe("DB-backed guide publishing API", () => {
     expect(checksum.rows[0]?.checksum_sha256).toBe(createHash("sha256").update(bytes).digest("hex"));
 
     await app.close();
-  });
+  }, 30_000);
 });

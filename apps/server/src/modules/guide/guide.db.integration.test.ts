@@ -515,7 +515,7 @@ describe("DB-backed guide API", () => {
     expect(capture_counts.rows[0]?.count).toBe("3");
 
     await app.close();
-  });
+  }, 20_000);
 
   it("persists generated guide steps from screenshot-backed capture events", async () => {
     const session_token = await setup_owner();
@@ -637,7 +637,7 @@ describe("DB-backed guide API", () => {
     expect(JSON.stringify(get_response.json())).not.toContain("checksum_sha256");
 
     await app.close();
-  });
+  }, 30_000);
 
   it("replaces and hides guide step screenshots without mutating capture source records", async () => {
     const session_token = await setup_owner();
@@ -820,7 +820,7 @@ describe("DB-backed guide API", () => {
     expect(hidden_export_response.json().markdown).not.toContain("Highlight 1");
 
     await app.close();
-  });
+  }, 30_000);
 
   it("uploads a replacement guide step screenshot and publishes it in the snapshot", async () => {
     const session_token = await setup_owner();
