@@ -155,7 +155,7 @@ export const umzug = new Umzug({
           // Read the migration file
           const content = await fs.readFile(migrationPath, 'utf-8');
           // Parse to extract UP and DOWN sections
-          const { up, down } = parseMigrationFile(content);
+          const { up } = parseMigrationFile(content);
 
           if (!up) {
             throw new Error(`No UP section found in migration ${name}`);
@@ -172,7 +172,7 @@ export const umzug = new Umzug({
         down: async () => {
           // Read the migration file again (needed for rollback)
           const content = await fs.readFile(migrationPath, 'utf-8');
-          const { up, down } = parseMigrationFile(content);
+          const { down } = parseMigrationFile(content);
 
           if (!down) {
             console.warn(`No DOWN section found in ${name}, skipping rollback`);

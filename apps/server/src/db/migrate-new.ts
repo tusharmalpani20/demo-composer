@@ -19,6 +19,16 @@ const __dirname = path.dirname(__filename);
 
 const migrationsPath = path.join(__dirname, 'migrations');
 
+const error_code = (error: unknown) => (
+  error && typeof error === 'object' && 'code' in error
+    ? String((error as { code: unknown }).code)
+    : null
+);
+
+const error_message = (error: unknown) => (
+  error instanceof Error ? error.message : String(error)
+);
+
 /**
  * Gets the next migration number by reading existing migration files.
  * @returns The next sequential number (e.g., 2 if 001 exists)
@@ -44,7 +54,7 @@ async function getNextMigrationNumber(): Promise<number> {
     
     const maxNumber = Math.max(...numbers);
     return maxNumber + 1;
-  } catch (error) {
+  } catch {
     // If directory doesn't exist or can't read, start with 1
     return 1;
   }
@@ -100,8 +110,8 @@ async function createMigrationFile(migrationName: string) {
   try {
     await fs.access(filePath);
     throw new Error(`Migration file ${filename} already exists`);
-  } catch (error: any) {
-    if (error.code !== 'ENOENT') {
+  } catch (error: unknown) {
+    if (error_code(error) !== 'ENOENT') {
       throw error;
     }
   }
@@ -122,8 +132,8 @@ async function createMigrationFile(migrationName: string) {
   // Ensure migrations directory exists
   try {
     await fs.mkdir(migrationsPath, { recursive: true });
-  } catch (error: any) {
-    if (error.code !== 'EEXIST') {
+  } catch (error: unknown) {
+    if (error_code(error) !== 'EEXIST') {
       throw error;
     }
   }
@@ -150,8 +160,8 @@ async function main() {
   
   try {
     await createMigrationFile(migrationName);
-  } catch (error: any) {
-    console.error('❌ Error creating migration:', error.message);
+  } catch (error: unknown) {
+    console.error('❌ Error creating migration:', error_message(error));
     process.exit(1);
   }
 }

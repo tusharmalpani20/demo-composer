@@ -19,10 +19,6 @@ const start = async () => {
         }
     });
 
-    if (!process.env.JWT_KEY) {
-        throw new Error("JWT_KEY must be defined!");
-    }
-
     if (!process.env.TZ) {
         throw new Error("Timezone must be defined!");
     }
@@ -56,7 +52,11 @@ const start = async () => {
         const yaml = app.swagger({ yaml: true })
         fs.mkdirSync('./temp_folder', { recursive: true });
         fs.writeFileSync('./temp_folder/swagger.yml', yaml)
-        console.info(`Server is listening on ${(app.server.address() as any).address}:${(app.server.address() as any).port} and DEV_TYPE is ${process.env.DEV_TYPE}!!!!!!!!`);
+        const address = app.server.address();
+        const addressLabel = typeof address === "string"
+            ? address
+            : `${address?.address ?? "0.0.0.0"}:${address?.port ?? process.env.SERVER_PORT}`;
+        console.info(`Server is listening on ${addressLabel} and DEV_TYPE is ${process.env.DEV_TYPE}`);
     } catch (err) {
         console.error(err);
         process.exit(1);

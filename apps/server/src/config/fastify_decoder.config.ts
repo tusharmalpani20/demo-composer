@@ -6,12 +6,12 @@ import {
 } from 'fastify'
 import fp from 'fastify-plugin'
 
-declare module 'fastify' {
-    interface FastifyRequest {
-        session: any | null
-        auth_session: Auth_Session_Type | null,
-        organization: Organization_Type | null,
-    }
+	declare module 'fastify' {
+	    interface FastifyRequest {
+	        session: unknown | null
+	        auth_session: Auth_Session_Type | null,
+	        organization: Organization_Type | null,
+	    }
 }
 
 const decorator_plugin: FastifyPluginCallback = (
