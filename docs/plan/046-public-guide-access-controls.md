@@ -2,6 +2,8 @@
 
 Date: 2026-06-13
 
+Status: Implemented on 2026-06-13.
+
 ## Goal
 
 Add first-class access controls to published guide links so teams can decide whether a guide link is publicly viewable and optionally set an expiry date.
