@@ -641,6 +641,15 @@ describe("CaptureSessionDetailPage", () => {
   });
 
   it("shows a partial-success error when event creation fails after upload", async () => {
+    const firstDetail = manualDetail();
+    const secondDetail: CaptureSessionDetail = {
+      ...firstDetail,
+      capture_assets: [...firstDetail.capture_assets, uploadedAsset],
+    };
+    const loadDetail = vi
+      .fn<() => Promise<CaptureSessionDetail>>()
+      .mockResolvedValueOnce(firstDetail)
+      .mockResolvedValueOnce(secondDetail);
     const createCaptureEvent = vi.fn(async () => {
       throw new ApiClientError({
         kind: "validation",
@@ -651,13 +660,16 @@ describe("CaptureSessionDetailPage", () => {
     });
     const file = new File(["png"], "uploaded-department.png", { type: "image/png" });
 
-    renderPage({ loadDetail: async () => manualDetail(), createCaptureEvent });
+    renderPage({ loadDetail, createCaptureEvent });
 
     await screen.findByRole("heading", { name: "Upload screenshot" });
     fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [file] } });
     fireEvent.click(screen.getByRole("button", { name: "Upload Screenshot" }));
 
     expect(await screen.findByText("Screenshot uploaded, but another event used that order. Reload and try again.")).toBeInTheDocument();
+    await waitFor(() => expect(loadDetail).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByText("2 assets")).toBeInTheDocument());
+    expect(screen.getAllByText("uploaded-department.png")).toHaveLength(2);
   });
 
   it("maps screenshot upload authentication not-found and size errors", async () => {

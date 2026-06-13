@@ -509,9 +509,7 @@ const CaptureSessionDetailView = ({
             itemIndex === index ? { ...item, status: "failed" } : item
           )));
           setUploadError(eventCreationAfterUploadErrorMessage(error));
-          if (createdEventCount > 0) {
-            reloadDetail();
-          }
+          reloadDetail();
           return;
         }
 
