@@ -246,6 +246,7 @@ const create_repository = (overrides: Partial<PublishRepository> = {}): PublishR
       status: "active" as const,
       published_at: "2026-06-10T00:00:00.000Z",
       revoked_at: null,
+      expires_at: null,
       public_url: `/p/${input.slug}`,
     })),
     update_publish_link_target: vi.fn(async (input) => ({
@@ -258,10 +259,12 @@ const create_repository = (overrides: Partial<PublishRepository> = {}): PublishR
       status: "active" as const,
       published_at: "2026-06-10T00:00:00.000Z",
       revoked_at: null,
+      expires_at: null,
       public_url: "/p/existing-slug",
     })),
     find_guide_publish_status: vi.fn(async () => null),
     revoke_active_publish_link: vi.fn(async () => null),
+    update_publish_link_access: vi.fn(async () => null),
     find_active_publish_link_by_slug: vi.fn(async () => null),
     find_public_asset_file: vi.fn(async () => null),
     ...overrides,
@@ -401,6 +404,7 @@ describe("publish service", () => {
         status: "active" as const,
         published_at: "2026-06-10T00:00:00.000Z",
         revoked_at: null,
+        expires_at: null,
         public_url: "/p/existing-slug",
       })),
       next_published_artifact_version: vi.fn(async () => 2),
@@ -546,6 +550,7 @@ describe("publish service", () => {
           status: "active" as const,
           published_at: "2026-06-10T00:00:00.000Z",
           revoked_at: null,
+          expires_at: null,
           public_url: "/p/abc123",
         },
         published_artifact: {
@@ -567,6 +572,7 @@ describe("publish service", () => {
         status: "revoked" as const,
         published_at: "2026-06-10T00:00:00.000Z",
         revoked_at: "2026-06-10T01:00:00.000Z",
+        expires_at: null,
         public_url: "/p/abc123",
       })),
       find_active_publish_link_by_slug: vi.fn(async () => ({
@@ -575,6 +581,7 @@ describe("publish service", () => {
           artifact_type: "guide" as const,
           visibility: "public" as const,
           status: "active" as const,
+          expires_at: null,
         },
         published_artifact: {
           id: "published_artifact_1",
@@ -597,8 +604,210 @@ describe("publish service", () => {
       .resolves.toMatchObject({ publish_link: { slug: "abc123" } });
   });
 
+  it("updates active guide publish link access settings", async () => {
+    const repository = create_repository();
+    const update_publish_link_access = vi.fn(async () => ({
+      publish_link: {
+        id: "publish_link_1",
+        artifact_type: "guide" as const,
+        artifact_id: "guide_1",
+        published_artifact_id: "published_artifact_1",
+        slug: "abc123",
+        visibility: "restricted" as const,
+        status: "active" as const,
+        published_at: "2026-06-10T00:00:00.000Z",
+        revoked_at: null,
+        expires_at: null,
+        public_url: "/p/abc123",
+      },
+      published_artifact: {
+        id: "published_artifact_1",
+        artifact_type: "guide" as const,
+        artifact_id: "guide_1",
+        version_number: 1,
+        title: "Department guide",
+        published_at: "2026-06-10T00:00:00.000Z",
+      },
+    }));
+    (repository as unknown as { update_publish_link_access: typeof update_publish_link_access })
+      .update_publish_link_access = update_publish_link_access;
+    const service = build_publish_service(repository);
+
+    await expect((service as unknown as {
+      update_guide_publish_access: (input: {
+        auth: typeof auth;
+        project_id: string;
+        guide_id: string;
+        visibility: "restricted";
+        expires_at: string | null;
+      }) => Promise<unknown>;
+    }).update_guide_publish_access({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      visibility: "restricted",
+      expires_at: null,
+    })).resolves.toMatchObject({
+      publish_link: {
+        slug: "abc123",
+        visibility: "restricted",
+        expires_at: null,
+      },
+    });
+    expect(update_publish_link_access).toHaveBeenCalledWith({
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      visibility: "restricted",
+      expires_at: null,
+    });
+  });
+
+  it("rejects invalid guide publish access settings before persistence", async () => {
+    const repository = create_repository();
+    const service = build_publish_service(repository);
+    const update_access = (service as unknown as {
+      update_guide_publish_access: (input: {
+        auth: typeof auth;
+        project_id: string;
+        guide_id: string;
+        visibility: "public";
+        expires_at: string | null;
+      }) => Promise<unknown>;
+    }).update_guide_publish_access;
+
+    await expect(update_access({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      visibility: "private" as never,
+      expires_at: null,
+    })).rejects.toThrow("Invalid publish access settings");
+
+    await expect(update_access({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      visibility: "public",
+      expires_at: "not-a-date",
+    })).rejects.toThrow("Invalid publish access settings");
+    expect(repository.update_publish_link_access).not.toHaveBeenCalled();
+  });
+
+  it("rejects restricted and expired public publish links", async () => {
+    const restricted_service = build_publish_service(create_repository({
+      find_active_publish_link_by_slug: vi.fn(async () => ({
+        publish_link: {
+          slug: "abc123",
+          artifact_type: "guide" as const,
+          visibility: "restricted" as never,
+          status: "active" as const,
+          expires_at: null,
+        },
+        published_artifact: {
+          id: "published_artifact_1",
+          artifact_type: "guide" as const,
+          artifact_id: "guide_1",
+          version_number: 1,
+          title: "Department guide",
+          published_at: "2026-06-10T00:00:00.000Z",
+          snapshot: { artifact_type: "guide", blocks: [] },
+        },
+      })),
+    }));
+    const expired_service = build_publish_service(create_repository({
+      find_active_publish_link_by_slug: vi.fn(async () => ({
+        publish_link: {
+          slug: "abc123",
+          artifact_type: "guide" as const,
+          visibility: "public" as const,
+          status: "active" as const,
+          expires_at: "2026-06-09T23:59:59.000Z" as never,
+        },
+        published_artifact: {
+          id: "published_artifact_1",
+          artifact_type: "guide" as const,
+          artifact_id: "guide_1",
+          version_number: 1,
+          title: "Department guide",
+          published_at: "2026-06-10T00:00:00.000Z",
+          snapshot: { artifact_type: "guide", blocks: [] },
+        },
+      })),
+    }), {
+      now: () => new Date("2026-06-10T00:00:00.000Z"),
+    });
+
+    await expect(restricted_service.resolve_public_publish_link({ slug: "abc123" }))
+      .rejects.toThrow("Publish link is not public");
+    await expect(expired_service.resolve_public_publish_link({ slug: "abc123" }))
+      .rejects.toThrow("Publish link has expired");
+  });
+
+  it("checks public access before streaming published asset files", async () => {
+    const repository = create_repository({
+      find_active_publish_link_by_slug: vi.fn(async () => ({
+        publish_link: {
+          slug: "abc123",
+          artifact_type: "guide" as const,
+          visibility: "restricted" as never,
+          status: "active" as const,
+          expires_at: null,
+        },
+        published_artifact: {
+          id: "published_artifact_1",
+          artifact_type: "guide" as const,
+          artifact_id: "guide_1",
+          version_number: 1,
+          title: "Department guide",
+          published_at: "2026-06-10T00:00:00.000Z",
+          snapshot: { artifact_type: "guide", blocks: [] },
+        },
+      })),
+      find_public_asset_file: vi.fn(async () => ({
+        file: {
+          storage_provider: "local" as const,
+          storage_key: "private/file.png",
+          mime_type: "image/png",
+        },
+      })),
+    });
+    const file_storage = {
+      get: vi.fn(async () => ({
+        stream: Readable.from(Buffer.from("file")),
+        size_bytes: 4,
+      })),
+    };
+    const service = build_publish_service(repository, { file_storage });
+
+    await expect(service.get_public_published_asset_file({
+      slug: "abc123",
+      capture_asset_id: "asset_1",
+    })).rejects.toThrow("Publish link is not public");
+    expect(repository.find_public_asset_file).not.toHaveBeenCalled();
+    expect(file_storage.get).not.toHaveBeenCalled();
+  });
+
   it("streams only assets referenced by the active snapshot", async () => {
     const repository = create_repository({
+      find_active_publish_link_by_slug: vi.fn(async () => ({
+        publish_link: {
+          slug: "abc123",
+          artifact_type: "guide" as const,
+          visibility: "public" as const,
+          status: "active" as const,
+          expires_at: null,
+        },
+        published_artifact: {
+          id: "published_artifact_1",
+          artifact_type: "guide" as const,
+          artifact_id: "guide_1",
+          version_number: 1,
+          title: "Department guide",
+          published_at: "2026-06-10T00:00:00.000Z",
+          snapshot: { artifact_type: "guide", blocks: [] },
+        },
+      })),
       find_public_asset_file: vi.fn(async () => ({
         file: {
           storage_provider: "local" as const,

@@ -11,7 +11,7 @@ export type PublishAuthContext = {
 };
 
 export type PublishArtifactType = "guide" | "interactive_demo";
-export type PublishVisibility = "public";
+export type PublishVisibility = "public" | "restricted";
 export type PublishLinkStatus = "active" | "revoked";
 
 export type PublishLink = {
@@ -24,6 +24,7 @@ export type PublishLink = {
   status: PublishLinkStatus;
   published_at: string;
   revoked_at: string | null;
+  expires_at: string | null;
   public_url: string;
 };
 
@@ -54,7 +55,7 @@ export type PublicPublishedArtifact = PublishedArtifact & {
   snapshot: unknown;
 };
 
-export type PublicPublishLink = Pick<PublishLink, "slug" | "artifact_type" | "visibility" | "status">;
+export type PublicPublishLink = Pick<PublishLink, "slug" | "artifact_type" | "visibility" | "status" | "expires_at">;
 
 export type PublicPublishResult = {
   publish_link: PublicPublishLink;
@@ -182,6 +183,13 @@ export type PublishRepository = {
     guide_id: string;
     actor_org_user_id: string;
   }) => Promise<PublishLink | null>;
+  update_publish_link_access: (input: {
+    organization_id: string;
+    project_id: string;
+    guide_id: string;
+    visibility: PublishVisibility;
+    expires_at: string | null;
+  }) => Promise<GuidePublishStatus | null>;
   find_active_publish_link_by_slug: (input: {
     slug: string;
   }) => Promise<PublicPublishResult | null>;
@@ -222,9 +230,27 @@ export class GuideHasNoPublishableBlocksError extends Error {
   }
 }
 
+export class InvalidPublishAccessSettingsError extends Error {
+  constructor() {
+    super("Invalid publish access settings");
+  }
+}
+
 export class PublishLinkNotFoundError extends Error {
   constructor() {
     super("Publish link was not found");
+  }
+}
+
+export class PublishLinkNotPublicError extends Error {
+  constructor() {
+    super("Publish link is not public");
+  }
+}
+
+export class PublishLinkExpiredError extends Error {
+  constructor() {
+    super("Publish link has expired");
   }
 }
 
@@ -471,6 +497,52 @@ export const build_publish_service = (
     return { publish_link };
   };
 
+  const update_guide_publish_access = async (input: {
+    auth: PublishAuthContext;
+    project_id: string;
+    guide_id: string;
+    visibility: PublishVisibility;
+    expires_at: string | null;
+  }) => {
+    if (!["public", "restricted"].includes(input.visibility)) {
+      throw new InvalidPublishAccessSettingsError();
+    }
+
+    if (input.expires_at !== null && !Number.isFinite(new Date(input.expires_at).getTime())) {
+      throw new InvalidPublishAccessSettingsError();
+    }
+
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    };
+
+    await ensure_project_exists(scope);
+
+    const result = await repository.update_publish_link_access({
+      ...scope,
+      guide_id: input.guide_id,
+      visibility: input.visibility,
+      expires_at: input.expires_at,
+    });
+
+    if (!result) {
+      throw new PublishLinkNotFoundError();
+    }
+
+    return result;
+  };
+
+  const assert_public_access = (publish_link: PublicPublishLink) => {
+    if (publish_link.visibility !== "public") {
+      throw new PublishLinkNotPublicError();
+    }
+
+    if (publish_link.expires_at && new Date(publish_link.expires_at).getTime() <= now().getTime()) {
+      throw new PublishLinkExpiredError();
+    }
+  };
+
   const resolve_public_publish_link = async (input: {
     slug: string;
   }) => {
@@ -479,6 +551,8 @@ export const build_publish_service = (
     if (!result) {
       throw new PublishLinkNotFoundError();
     }
+
+    assert_public_access(result.publish_link);
 
     return result;
   };
@@ -490,6 +564,14 @@ export const build_publish_service = (
     if (!options.file_storage) {
       throw new PublishedAssetNotFoundError();
     }
+
+    const public_result = await repository.find_active_publish_link_by_slug({ slug: input.slug });
+
+    if (!public_result) {
+      throw new PublishedAssetNotFoundError();
+    }
+
+    assert_public_access(public_result.publish_link);
 
     const asset_file = await repository.find_public_asset_file(input);
 
@@ -516,6 +598,7 @@ export const build_publish_service = (
     publish_guide,
     get_guide_publish_status,
     revoke_guide_publish_link,
+    update_guide_publish_access,
     resolve_public_publish_link,
     get_public_published_asset_file,
   };

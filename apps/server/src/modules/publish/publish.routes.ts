@@ -8,15 +8,19 @@ import {
   GuideHasNoPublishableBlocksError,
   GuideNotFoundError,
   GuideNotPublishableError,
+  InvalidPublishAccessSettingsError,
   ProjectNotFoundError,
   PublishedAssetNotFoundError,
+  PublishLinkExpiredError,
   PublishLinkNotFoundError,
+  PublishLinkNotPublicError,
   UnsupportedPublishedAssetStorageProviderError,
   type GuidePublishResult,
   type GuidePublishStatus,
   type PublishAuthContext,
   type PublicPublishResult,
   type PublishedAssetFileRead,
+  type PublishVisibility,
   type RevokedGuidePublishResult,
 } from "./publish.service";
 
@@ -40,6 +44,13 @@ export type PublishRouteDependencies = {
       project_id: string;
       guide_id: string;
     }) => Promise<RevokedGuidePublishResult>;
+    update_guide_publish_access: (input: {
+      auth: PublishAuthContext;
+      project_id: string;
+      guide_id: string;
+      visibility: PublishVisibility;
+      expires_at: string | null;
+    }) => Promise<GuidePublishStatus>;
     resolve_public_publish_link: (input: {
       slug: string;
     }) => Promise<PublicPublishResult>;
@@ -68,6 +79,34 @@ const publish_auth_context = (auth: AuthContext): PublishAuthContext => ({
   organization_id: auth.organization.id,
   actor_org_user_id: auth.org_user.id,
 });
+
+const parse_publish_access_body = (body: unknown): { visibility: PublishVisibility; expires_at: string | null } => {
+  if (!body || typeof body !== "object") {
+    throw new InvalidPublishAccessSettingsError();
+  }
+
+  const candidate = body as { visibility?: unknown; expires_at?: unknown };
+
+  if (candidate.visibility !== "public" && candidate.visibility !== "restricted") {
+    throw new InvalidPublishAccessSettingsError();
+  }
+
+  if (
+    candidate.expires_at !== undefined
+    && candidate.expires_at !== null
+    && (
+      typeof candidate.expires_at !== "string"
+      || !Number.isFinite(new Date(candidate.expires_at).getTime())
+    )
+  ) {
+    throw new InvalidPublishAccessSettingsError();
+  }
+
+  return {
+    visibility: candidate.visibility,
+    expires_at: candidate.expires_at ?? null,
+  };
+};
 
 export const build_publish_routes = (
   dependencies: PublishRouteDependencies
@@ -102,8 +141,22 @@ export const build_publish_routes = (
         );
       }
 
+      if (error instanceof InvalidPublishAccessSettingsError) {
+        return reply.status(400).send(
+          error_response("invalid_publish_access_settings", "Invalid publish access settings")
+        );
+      }
+
       if (error instanceof PublishLinkNotFoundError) {
         return reply.status(404).send(error_response("publish_link_not_found", "Publish link was not found"));
+      }
+
+      if (error instanceof PublishLinkNotPublicError) {
+        return reply.status(403).send(error_response("publish_link_not_public", "Publish link is not public"));
+      }
+
+      if (error instanceof PublishLinkExpiredError) {
+        return reply.status(410).send(error_response("publish_link_expired", "Publish link has expired"));
       }
 
       if (error instanceof PublishedAssetNotFoundError) {
@@ -174,6 +227,33 @@ export const build_publish_routes = (
           auth,
           project_id: request.params.project_id,
           guide_id: request.params.guide_id,
+        });
+
+        return reply.status(200).send(result);
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.patch<{
+      Params: {
+        project_id: string;
+        guide_id: string;
+      };
+      Body: {
+        visibility: PublishVisibility;
+        expires_at?: string | null;
+      };
+    }>("/projects/:project_id/guides/:guide_id/publish/access", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const access_body = parse_publish_access_body(request.body);
+        const result = await dependencies.publish_service.update_guide_publish_access({
+          auth,
+          project_id: request.params.project_id,
+          guide_id: request.params.guide_id,
+          visibility: access_body.visibility,
+          expires_at: access_body.expires_at,
         });
 
         return reply.status(200).send(result);

@@ -228,6 +228,7 @@ describe("DB-backed guide publishing API", () => {
       artifact_type: "guide",
       artifact_id: guide_id,
       visibility: "public",
+      expires_at: null,
       status: "active",
     });
     const slug = publish_response.json().publish_link.slug as string;
@@ -259,6 +260,83 @@ describe("DB-backed guide publishing API", () => {
     expect(public_asset_response.headers["content-length"]).toBe(String(bytes.length));
     expect(public_asset_response.body).toBe(bytes.toString());
 
+    const restrict_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/publish/access`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        visibility: "restricted",
+        expires_at: null,
+      },
+    });
+    expect(restrict_response.statusCode).toBe(200);
+    expect(restrict_response.json().publish_link).toMatchObject({
+      slug,
+      visibility: "restricted",
+      expires_at: null,
+      status: "active",
+    });
+
+    const restricted_public_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}`,
+    });
+    expect(restricted_public_response.statusCode).toBe(403);
+    expect(restricted_public_response.json().error.type).toBe("publish_link_not_public");
+
+    const restricted_asset_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}/assets/${capture_asset_id}/file`,
+    });
+    expect(restricted_asset_response.statusCode).toBe(403);
+    expect(restricted_asset_response.json().error.type).toBe("publish_link_not_public");
+
+    const expired_at = new Date(Date.now() - 60_000).toISOString();
+    const expire_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/publish/access`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        visibility: "public",
+        expires_at: expired_at,
+      },
+    });
+    expect(expire_response.statusCode).toBe(200);
+    expect(expire_response.json().publish_link).toMatchObject({
+      slug,
+      visibility: "public",
+      expires_at: expired_at,
+    });
+
+    const expired_public_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}`,
+    });
+    expect(expired_public_response.statusCode).toBe(410);
+    expect(expired_public_response.json().error.type).toBe("publish_link_expired");
+
+    const reopen_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/publish/access`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        visibility: "public",
+        expires_at: null,
+      },
+    });
+    expect(reopen_response.statusCode).toBe(200);
+    expect(reopen_response.json().publish_link).toMatchObject({
+      slug,
+      visibility: "public",
+      expires_at: null,
+    });
+
+    const reopened_public_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}`,
+    });
+    expect(reopened_public_response.statusCode).toBe(200);
+
     const update_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/guides/${guide_id}`,
@@ -276,6 +354,10 @@ describe("DB-backed guide publishing API", () => {
     });
     expect(republish_response.statusCode).toBe(201);
     expect(republish_response.json().publish_link.slug).toBe(slug);
+    expect(republish_response.json().publish_link).toMatchObject({
+      visibility: "public",
+      expires_at: null,
+    });
     expect(republish_response.json().published_artifact.version_number).toBe(2);
 
     const snapshot_rows = await pool.query<{

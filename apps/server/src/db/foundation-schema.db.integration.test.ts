@@ -344,6 +344,7 @@ describe("foundation schema migrations on postgres", () => {
       "published_artifact_id",
       "slug",
       "visibility",
+      "expires_at",
       "status",
       "created_by_id",
       "revoked_by_id",
@@ -356,6 +357,7 @@ describe("foundation schema migrations on postgres", () => {
     await expect(index_exists("publish_schema", "idx_published_artifact_source_created")).resolves.toBe(true);
     await expect(index_exists("publish_schema", "uq_publish_link_active_source")).resolves.toBe(true);
     await expect(index_exists("publish_schema", "idx_publish_link_slug_active")).resolves.toBe(true);
+    await expect(index_exists("publish_schema", "idx_publish_link_public_access")).resolves.toBe(true);
     await expect(table_comment("publish_schema", "published_artifact")).resolves.toMatch(/immutable/i);
     await expect(table_comment("publish_schema", "publish_link")).resolves.toMatch(/stable publish/i);
   });
@@ -518,6 +520,30 @@ describe("foundation schema migrations on postgres", () => {
     ])).rejects.toMatchObject({
       code: "23505",
       constraint: "uq_publish_link_active_source",
+    });
+
+    await pool.query(`
+      UPDATE publish_schema.publish_link
+      SET visibility = 'restricted',
+          expires_at = CURRENT_TIMESTAMP + INTERVAL '1 day'
+      WHERE slug = 'constraint-slug'
+    `);
+
+    const access_row = await pool.query<{ visibility: string; expires_at: Date | null }>(`
+      SELECT visibility, expires_at
+      FROM publish_schema.publish_link
+      WHERE slug = 'constraint-slug'
+    `);
+    expect(access_row.rows[0]?.visibility).toBe("restricted");
+    expect(access_row.rows[0]?.expires_at).toBeInstanceOf(Date);
+
+    await expect(pool.query(`
+      UPDATE publish_schema.publish_link
+      SET visibility = 'private'
+      WHERE slug = 'constraint-slug'
+    `)).rejects.toMatchObject({
+      code: "23514",
+      constraint: "chk_publish_link_visibility",
     });
   });
 

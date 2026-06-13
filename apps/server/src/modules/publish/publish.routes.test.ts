@@ -8,8 +8,11 @@ import {
   GuideHasNoPublishableBlocksError,
   GuideNotFoundError,
   GuideNotPublishableError,
+  InvalidPublishAccessSettingsError,
   ProjectNotFoundError,
   PublishLinkNotFoundError,
+  PublishLinkExpiredError,
+  PublishLinkNotPublicError,
   PublishedAssetNotFoundError,
   UnsupportedPublishedAssetStorageProviderError,
   type GuidePublishResult,
@@ -48,6 +51,7 @@ const publish_result: GuidePublishResult = {
     status: "active",
     published_at: "2026-06-10T00:00:00.000Z",
     revoked_at: null,
+    expires_at: null,
     public_url: "/p/abc123",
   },
   published_artifact: {
@@ -66,6 +70,7 @@ const public_result = {
     artifact_type: "guide" as const,
     visibility: "public" as const,
     status: "active" as const,
+    expires_at: null,
   },
   published_artifact: {
     ...publish_result.published_artifact,
@@ -111,6 +116,7 @@ const build_test_app = async (
           revoked_at: "2026-06-10T01:00:00.000Z",
         },
       }),
+      update_guide_publish_access: async () => publish_result,
       resolve_public_publish_link: async () => public_result,
       get_public_published_asset_file: async () => ({
         stream: Readable.from(Buffer.from("file-bytes")),
@@ -147,9 +153,9 @@ describe("publish routes", () => {
           return {
             publish_link: {
               ...publish_result.publish_link,
-              status: "revoked",
-              revoked_at: "2026-06-10T01:00:00.000Z",
-            },
+          status: "revoked",
+          revoked_at: "2026-06-10T01:00:00.000Z",
+        },
           };
         },
       },
@@ -279,6 +285,99 @@ describe("publish routes", () => {
     await app.close();
   });
 
+  it("updates guide publish access settings with authenticated scope", async () => {
+    const seen_inputs: unknown[] = [];
+    const access_result = {
+      ...publish_result,
+      publish_link: {
+        ...publish_result.publish_link,
+        visibility: "restricted" as const,
+        expires_at: null,
+      },
+    };
+    const app = await build_test_app({
+      auth_service: {
+        get_current_auth_context: async (session_token) => {
+          expect(session_token).toBe("session-token");
+          return auth_context;
+        },
+      },
+      publish_service: {
+        update_guide_publish_access: async (input) => {
+          seen_inputs.push(input);
+          return access_result;
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/publish/access",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        visibility: "restricted",
+        expires_at: null,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual(access_result);
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      guide_id: "guide_1",
+      visibility: "restricted",
+      expires_at: null,
+    }]);
+    await app.close();
+  });
+
+  it("rejects malformed guide publish access payloads before service dispatch", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      publish_service: {
+        update_guide_publish_access: async (input) => {
+          seen_inputs.push(input);
+          return publish_result;
+        },
+      },
+    });
+
+    const missing_body_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/publish/access",
+      cookies: { demo_composer_session: "session-token" },
+    });
+    const invalid_visibility_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/publish/access",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        visibility: "private",
+        expires_at: null,
+      },
+    });
+    const invalid_expiry_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/publish/access",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        visibility: "public",
+        expires_at: "not-a-date",
+      },
+    });
+
+    for (const response of [missing_body_response, invalid_visibility_response, invalid_expiry_response]) {
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error.type).toBe("invalid_publish_access_settings");
+    }
+    expect(seen_inputs).toEqual([]);
+    await app.close();
+  });
+
   it("maps auth and publish domain errors to stable responses", async () => {
     const unauthenticated_app = await build_test_app({
       auth_service: {
@@ -300,7 +399,10 @@ describe("publish routes", () => {
       { error: new GuideNotFoundError(), status: 404, type: "guide_not_found" },
       { error: new GuideNotPublishableError(), status: 409, type: "guide_not_publishable" },
       { error: new GuideHasNoPublishableBlocksError(), status: 400, type: "guide_has_no_publishable_blocks" },
+      { error: new InvalidPublishAccessSettingsError(), status: 400, type: "invalid_publish_access_settings" },
       { error: new PublishLinkNotFoundError(), status: 404, type: "publish_link_not_found" },
+      { error: new PublishLinkNotPublicError(), status: 403, type: "publish_link_not_public" },
+      { error: new PublishLinkExpiredError(), status: 410, type: "publish_link_expired" },
       { error: new PublishedAssetNotFoundError(), status: 404, type: "published_asset_not_found" },
     ];
 

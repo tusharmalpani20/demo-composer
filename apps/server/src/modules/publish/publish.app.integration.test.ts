@@ -11,6 +11,7 @@ const publish_result: GuidePublishResult = {
     published_artifact_id: "published_artifact_1",
     slug: "abc123",
     visibility: "public",
+    expires_at: null,
     status: "active",
     published_at: "2026-06-10T00:00:00.000Z",
     revoked_at: null,
@@ -46,11 +47,13 @@ describe("publish app integration", () => {
         publish_guide: async () => publish_result,
         get_guide_publish_status: async () => publish_result,
         revoke_guide_publish_link: async () => ({ publish_link: { ...publish_result.publish_link, status: "revoked" } }),
+        update_guide_publish_access: async () => publish_result,
         resolve_public_publish_link: async () => ({
           publish_link: {
             slug: "abc123",
             artifact_type: "guide",
             visibility: "public",
+            expires_at: null,
             status: "active",
           },
           published_artifact: {
