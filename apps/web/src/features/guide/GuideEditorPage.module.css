@@ -258,6 +258,35 @@
   font-size: 12px;
 }
 
+.accessPanel {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.compactField {
+  display: grid;
+  gap: 5px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.compactField input {
+  min-width: 0;
+  height: 34px;
+  padding: 0 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  font-weight: 500;
+}
+
 .publishActions {
   display: flex;
   flex-wrap: wrap;

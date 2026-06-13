@@ -9,6 +9,7 @@ const publicGuideResponse: PublicPublishLinkResponse = {
     slug: "abc123",
     artifact_type: "guide",
     visibility: "public",
+    expires_at: null,
     status: "active",
   },
   published_artifact: {
@@ -267,6 +268,40 @@ describe("PublicGuideReaderPage", () => {
     expect(await screen.findByText("Published guide was not found.")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
     expect(screen.queryByText("Demo Composer portal")).not.toBeInTheDocument();
+  });
+
+  it("renders restricted and expired public guide access states", async () => {
+    const { rerender } = render(
+      <PublicGuideReaderPage
+        slug="abc123"
+        loadPublishLink={async () => {
+          throw new ApiClientError({
+            kind: "unknown",
+            status: 403,
+            type: "publish_link_not_public",
+            message: "Publish link is not public",
+          });
+        }}
+      />
+    );
+
+    expect(await screen.findByText("This guide is not publicly accessible.")).toBeInTheDocument();
+
+    rerender(
+      <PublicGuideReaderPage
+        slug="abc123"
+        loadPublishLink={async () => {
+          throw new ApiClientError({
+            kind: "unknown",
+            status: 410,
+            type: "publish_link_expired",
+            message: "Publish link has expired",
+          });
+        }}
+      />
+    );
+
+    expect(await screen.findByText("This guide link has expired.")).toBeInTheDocument();
   });
 
   it("renders empty and metadata-light public guide snapshots", async () => {

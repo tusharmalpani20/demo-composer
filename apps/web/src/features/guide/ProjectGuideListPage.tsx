@@ -51,6 +51,24 @@ const formatDateTime = (value: string) => new Intl.DateTimeFormat(undefined, {
   timeStyle: "short",
 }).format(new Date(value));
 
+const isExpiredPublishLink = (expiresAt: string | null) => {
+  if (!expiresAt) {
+    return false;
+  }
+
+  const timestamp = new Date(expiresAt).getTime();
+  return Number.isFinite(timestamp) && timestamp <= Date.now();
+};
+
+const canOpenPublicGuide = (status: PublishStatusState) => {
+  const link = status.status === "published" ? status.response.publish_link : null;
+  return Boolean(
+    link
+    && link.visibility === "public"
+    && !isExpiredPublishLink(link.expires_at)
+  );
+};
+
 const guideUrl = (projectId: string, guideId: string) => (
   `/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}`
 );
@@ -247,7 +265,7 @@ const GuideRow = ({
       <GuidePublishStatus status={publishStatus} />
     </div>
     <div className={styles.guideActions}>
-      {publishStatus.status === "published" && publishStatus.response.publish_link ? (
+      {canOpenPublicGuide(publishStatus) && publishStatus.status === "published" && publishStatus.response.publish_link ? (
         <a className={styles.openLink} href={publishStatus.response.publish_link.public_url}>
           Open public guide {guide.title}
         </a>
@@ -268,6 +286,16 @@ const GuidePublishStatus = ({ status }: { status: PublishStatusState }) => {
   }
 
   if (status.status === "published") {
+    const link = status.response.publish_link;
+
+    if (link?.visibility === "restricted") {
+      return <div className={styles.publishStatus}>Published - access off</div>;
+    }
+
+    if (isExpiredPublishLink(link?.expires_at ?? null)) {
+      return <div className={styles.publishStatus}>Published - expired</div>;
+    }
+
     return <div className={styles.publishStatus}>Published</div>;
   }
 

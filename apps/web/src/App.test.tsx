@@ -275,6 +275,7 @@ describe("App", () => {
         slug: "abc123",
         artifact_type: "guide",
         visibility: "public",
+        expires_at: null,
         status: "active",
       },
       published_artifact: {

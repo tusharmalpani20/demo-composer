@@ -25,6 +25,7 @@ import {
   reorderGuideBlocks,
   resolveApiAssetUrl,
   revokeGuidePublishLink,
+  updateGuidePublishAccess,
   updateGuide,
   updateGuideBlock,
   updateGuideBlockAnnotations,
@@ -88,6 +89,7 @@ const public_publish_response = {
     slug: "abc123",
     artifact_type: "guide",
     visibility: "public",
+    expires_at: null,
     status: "active",
   },
   published_artifact: {
@@ -120,6 +122,7 @@ const guide_publish_response = {
     published_artifact_id: "published_artifact_1",
     slug: "abc123",
     visibility: "public",
+    expires_at: null,
     status: "active",
     published_at: "2026-06-11T00:00:00.000Z",
     revoked_at: null,
@@ -839,6 +842,45 @@ describe("api client", () => {
         headers: {
           accept: "application/json",
         },
+      }
+    );
+  });
+
+  it("updates guide publish access settings with session cookies", async () => {
+    const response = {
+      ...guide_publish_response,
+      publish_link: {
+        ...guide_publish_response.publish_link,
+        visibility: "restricted",
+        expires_at: null,
+      },
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(updateGuidePublishAccess("project_1", "guide_1", {
+      visibility: "restricted",
+      expires_at: null,
+    })).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project_1/guides/guide_1/publish/access",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          visibility: "restricted",
+          expires_at: null,
+        }),
       }
     );
   });

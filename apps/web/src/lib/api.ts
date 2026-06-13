@@ -26,6 +26,7 @@ import type {
   UpdateGuideBlockInput,
   UpdateGuideBlockAnnotationsInput,
   UpdateGuideBlockScreenshotInput,
+  UpdateGuidePublishAccessInput,
   UploadGuideBlockScreenshotInput,
   UploadGuideBlockScreenshotResponse,
 } from "../features/guide/types";
@@ -351,6 +352,23 @@ export const revokeGuidePublishLink = async (
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/publish`,
     {
       method: "DELETE",
+    }
+  )
+);
+
+export const updateGuidePublishAccess = async (
+  projectId: string,
+  guideId: string,
+  input: UpdateGuidePublishAccessInput
+): Promise<GuidePublishStatusResponse> => (
+  requestJson<GuidePublishStatusResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/publish/access`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
     }
   )
 );

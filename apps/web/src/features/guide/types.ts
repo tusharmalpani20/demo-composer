@@ -195,10 +195,13 @@ export type PublishedGuideSnapshot = {
   blocks: PublishedGuideSnapshotBlock[];
 };
 
+export type GuidePublishVisibility = "public" | "restricted";
+
 export type PublicPublishLink = {
   slug: string;
   artifact_type: "guide" | "interactive_demo";
-  visibility: "public";
+  visibility: GuidePublishVisibility;
+  expires_at: string | null;
   status: "active" | "revoked";
 };
 
@@ -223,7 +226,8 @@ export type GuidePublishLink = {
   artifact_id: string;
   published_artifact_id: string;
   slug: string;
-  visibility: "public";
+  visibility: GuidePublishVisibility;
+  expires_at: string | null;
   status: "active" | "revoked";
   published_at: string;
   revoked_at: string | null;
@@ -245,6 +249,11 @@ export type GuidePublishStatusResponse = {
 };
 
 export type GuidePublishResult = GuidePublishStatusResponse;
+
+export type UpdateGuidePublishAccessInput = {
+  visibility: GuidePublishVisibility;
+  expires_at: string | null;
+};
 
 export type GuideRevokePublishResult = {
   publish_link: {

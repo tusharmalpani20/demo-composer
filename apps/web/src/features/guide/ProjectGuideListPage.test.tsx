@@ -48,6 +48,7 @@ const publishedStatus = (guideId: string, publicUrl: string): GuidePublishStatus
     published_artifact_id: `published_artifact_${guideId}`,
     slug: publicUrl.replace("/p/", ""),
     visibility: "public",
+    expires_at: null,
     status: "active",
     published_at: "2026-06-11T00:00:00.000Z",
     revoked_at: null,
@@ -169,6 +170,38 @@ describe("ProjectGuideListPage", () => {
     expect(within(draftRow!).queryByRole("link", { name: /Open public guide/ })).not.toBeInTheDocument();
     expect(screen.queryByText("publish_link_guide_2")).not.toBeInTheDocument();
     expect(screen.queryByText("published_artifact_guide_2")).not.toBeInTheDocument();
+  });
+
+  it("does not expose public-open links for restricted or expired publish links", async () => {
+    const loadPublishStatus = vi.fn(async (_projectId: string, guideId: string) => {
+      if (guideId === "guide_2") {
+        return {
+          ...publishedStatus("guide_2", "/p/archived-guide"),
+          publish_link: {
+            ...publishedStatus("guide_2", "/p/archived-guide").publish_link!,
+            visibility: "restricted" as const,
+          },
+        };
+      }
+
+      return {
+        ...publishedStatus("guide_1", "/p/department-guide"),
+        publish_link: {
+          ...publishedStatus("guide_1", "/p/department-guide").publish_link!,
+          expires_at: "2020-01-01T00:00:00.000Z",
+        },
+      };
+    });
+
+    renderPage({ loadPublishStatus });
+
+    const archivedRow = (await screen.findByRole("heading", { name: "Archived onboarding guide" })).closest("article");
+    const draftRow = screen.getByRole("heading", { name: "Department guide" }).closest("article");
+
+    expect(await within(archivedRow!).findByText("Published - access off")).toBeInTheDocument();
+    expect(await within(draftRow!).findByText("Published - expired")).toBeInTheDocument();
+    expect(within(archivedRow!).queryByRole("link", { name: /Open public guide/ })).not.toBeInTheDocument();
+    expect(within(draftRow!).queryByRole("link", { name: /Open public guide/ })).not.toBeInTheDocument();
   });
 
   it("shows per-guide publish status failures without breaking the guide list", async () => {

@@ -17,6 +17,8 @@ type LoadState =
   | { status: "loading" }
   | { status: "loaded"; response: PublicPublishLinkResponse; snapshot: PublishedGuideSnapshot }
   | { status: "not_found" }
+  | { status: "restricted" }
+  | { status: "expired" }
   | { status: "malformed" }
   | { status: "error" };
 
@@ -186,6 +188,14 @@ const loadStateFromError = (error: unknown): LoadState => {
     return { status: "not_found" };
   }
 
+  if (error instanceof ApiClientError && error.type === "publish_link_not_public") {
+    return { status: "restricted" };
+  }
+
+  if (error instanceof ApiClientError && error.type === "publish_link_expired") {
+    return { status: "expired" };
+  }
+
   return { status: "error" };
 };
 
@@ -263,6 +273,14 @@ export const PublicGuideReaderPage = ({
 
   if (state.status === "not_found") {
     return <PublicState message="Published guide was not found." />;
+  }
+
+  if (state.status === "restricted") {
+    return <PublicState message="This guide is not publicly accessible." />;
+  }
+
+  if (state.status === "expired") {
+    return <PublicState message="This guide link has expired." />;
   }
 
   if (state.status === "malformed") {

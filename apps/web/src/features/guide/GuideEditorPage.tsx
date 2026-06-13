@@ -11,6 +11,7 @@ import {
   reorderGuideBlocks,
   resolveApiAssetUrl,
   revokeGuidePublishLink,
+  updateGuidePublishAccess,
   updateGuide,
   updateGuideBlock,
   updateGuideBlockAnnotations,
@@ -36,6 +37,7 @@ import type {
   GuideSourceCaptureAsset,
   GuideStep,
   UpdateGuideBlockAnnotationsInput,
+  UpdateGuidePublishAccessInput,
 } from "./types";
 import styles from "./GuideEditorPage.module.css";
 
@@ -73,6 +75,11 @@ export type GuideEditorPageProps = {
   loadPublishStatus?: (projectId: string, guideId: string) => Promise<GuidePublishStatusResponse>;
   publishCurrentGuide?: (projectId: string, guideId: string) => Promise<GuidePublishResult>;
   revokePublishLink?: (projectId: string, guideId: string) => Promise<GuideRevokePublishResult>;
+  updatePublishAccess?: (
+    projectId: string,
+    guideId: string,
+    input: UpdateGuidePublishAccessInput
+  ) => Promise<GuidePublishStatusResponse>;
   copyText?: (text: string) => Promise<void>;
   downloadTextFile?: (filename: string, contents: string, mimeType: string) => Promise<void>;
   exportMarkdown?: typeof exportGuideMarkdown;
@@ -314,6 +321,7 @@ export const GuideEditorPage = ({
   loadPublishStatus = getGuidePublishStatus,
   publishCurrentGuide = publishGuide,
   revokePublishLink = revokeGuidePublishLink,
+  updatePublishAccess = updateGuidePublishAccess,
   copyText = defaultCopyText,
   downloadTextFile = defaultDownloadTextFile,
   exportMarkdown = exportGuideMarkdown,
@@ -475,6 +483,21 @@ export const GuideEditorPage = ({
       setNotice("Public link copied.");
     } catch {
       setNotice("Could not copy public link. Select the URL above.");
+    } finally {
+      setPublishBusyAction(null);
+    }
+  };
+
+  const updateCurrentPublishAccess = async (input: UpdateGuidePublishAccessInput) => {
+    setPublishBusyAction("access");
+    setNotice(null);
+
+    try {
+      const response = await updatePublishAccess(projectId, guideId, input);
+      setPublishState({ status: "loaded", response });
+      setNotice("Publishing access updated.");
+    } catch (error: unknown) {
+      setNotice(publishErrorMessage(error, "Could not update publishing access."));
     } finally {
       setPublishBusyAction(null);
     }
@@ -901,6 +924,7 @@ export const GuideEditorPage = ({
       onDeleteBlock={deleteBlock}
       onPublish={publishCurrent}
       onRevokePublish={revokeCurrent}
+      onUpdatePublishAccess={updateCurrentPublishAccess}
       onCopyPublicLink={copyCurrent}
       onCopyMarkdown={copyMarkdown}
       onDownloadMarkdown={downloadMarkdown}
@@ -961,6 +985,7 @@ const GuideEditorView = ({
   onDeleteBlock,
   onPublish,
   onRevokePublish,
+  onUpdatePublishAccess,
   onCopyPublicLink,
   onCopyMarkdown,
   onDownloadMarkdown,
@@ -998,6 +1023,7 @@ const GuideEditorView = ({
   onDeleteBlock: (block: GuideBlock) => void;
   onPublish: () => void;
   onRevokePublish: () => void;
+  onUpdatePublishAccess: (input: UpdateGuidePublishAccessInput) => void;
   onCopyPublicLink: (publicUrl: string) => void;
   onCopyMarkdown: () => void;
   onDownloadMarkdown: () => void;
@@ -1069,6 +1095,7 @@ const GuideEditorView = ({
             locallyStale={locallyStalePublish}
             onPublish={onPublish}
             onRevoke={onRevokePublish}
+            onUpdateAccess={onUpdatePublishAccess}
             onCopyPublicLink={onCopyPublicLink}
             onRetry={onRetryPublishStatus}
           />
@@ -1172,6 +1199,42 @@ const formatPublishedAt = (value: string) => {
   }).format(date);
 };
 
+const isExpiredPublishLink = (expiresAt: string | null) => {
+  if (!expiresAt) {
+    return false;
+  }
+
+  const timestamp = new Date(expiresAt).getTime();
+  return Number.isFinite(timestamp) && timestamp <= Date.now();
+};
+
+const formatExpiryInputValue = (expiresAt: string | null) => {
+  if (!expiresAt) {
+    return "";
+  }
+
+  const date = new Date(expiresAt);
+  if (!Number.isFinite(date.getTime())) {
+    return "";
+  }
+
+  const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60_000));
+  return localDate.toISOString().slice(0, 16);
+};
+
+const expiryInputToIso = (value: string) => {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString();
+};
+
 const PublishPanel = ({
   state,
   readOnly,
@@ -1180,6 +1243,7 @@ const PublishPanel = ({
   locallyStale,
   onPublish,
   onRevoke,
+  onUpdateAccess,
   onCopyPublicLink,
   onRetry,
 }: {
@@ -1190,9 +1254,11 @@ const PublishPanel = ({
   locallyStale: boolean;
   onPublish: () => void;
   onRevoke: () => void;
+  onUpdateAccess: (input: UpdateGuidePublishAccessInput) => void;
   onCopyPublicLink: (publicUrl: string) => void;
   onRetry: () => void;
 }) => {
+  const [expiryInput, setExpiryInput] = useState("");
   const isBusy = busyAction !== null;
   const activeLink = state.status === "loaded" && state.response.publish_link?.status === "active"
     ? state.response.publish_link
@@ -1208,6 +1274,14 @@ const PublishPanel = ({
   const republishLabel = isBusy && busyAction === "publish" ? "Republishing..." : "Republish";
   const revokeLabel = isBusy && busyAction === "revoke" ? "Revoking..." : "Revoke link";
   const copyLabel = isBusy && busyAction === "copy" ? "Copying..." : "Copy link";
+  const accessLabel = isBusy && busyAction === "access" ? "Updating..." : null;
+  const expired = activeLink ? isExpiredPublishLink(activeLink.expires_at) : false;
+  const accessText = activeLink?.visibility === "restricted"
+    ? "Public access is off"
+    : expired
+      ? "Public link has expired"
+      : "Public access is on";
+  const expiryDisplay = activeLink?.expires_at ? formatPublishedAt(activeLink.expires_at) : null;
 
   return (
     <section className={styles.panel} aria-labelledby="publishing-heading">
@@ -1250,6 +1324,71 @@ const PublishPanel = ({
           {stale ? (
             <div className={styles.staleNotice}>Draft has changes not yet published.</div>
           ) : null}
+          <div className={styles.accessPanel}>
+            <div>
+              <div className={styles.publishText}>{accessText}</div>
+              <p className={styles.publishNote}>
+                {expiryDisplay ? `Expires on ${expiryDisplay}` : "No expiry is set."}
+              </p>
+            </div>
+            <div className={styles.publishActions}>
+              {activeLink.visibility === "public" ? (
+                <button
+                  className={styles.secondaryButton}
+                  type="button"
+                  disabled={readOnly || isBusy}
+                  onClick={() => onUpdateAccess({ visibility: "restricted", expires_at: null })}
+                >
+                  {accessLabel ?? "Disable public access"}
+                </button>
+              ) : (
+                <button
+                  className={styles.secondaryButton}
+                  type="button"
+                  disabled={readOnly || isBusy}
+                  onClick={() => onUpdateAccess({ visibility: "public", expires_at: null })}
+                >
+                  {accessLabel ?? "Enable public access"}
+                </button>
+              )}
+            </div>
+            <label className={styles.compactField}>
+              <span>Expiry</span>
+              <input
+                type="datetime-local"
+                value={expiryInput || formatExpiryInputValue(activeLink.expires_at)}
+                disabled={readOnly || isBusy}
+                onChange={(event) => setExpiryInput(event.target.value)}
+              />
+            </label>
+            <div className={styles.publishActions}>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={readOnly || isBusy || !(expiryInput || activeLink.expires_at)}
+                onClick={() => {
+                  onUpdateAccess({
+                    visibility: activeLink.visibility,
+                    expires_at: expiryInputToIso(expiryInput || formatExpiryInputValue(activeLink.expires_at)),
+                  });
+                  setExpiryInput("");
+                }}
+              >
+                {accessLabel ?? "Set expiry"}
+              </button>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={readOnly || isBusy || !activeLink.expires_at}
+                onClick={() => {
+                  onUpdateAccess({ visibility: activeLink.visibility, expires_at: null });
+                  setExpiryInput("");
+                }}
+              >
+                Clear expiry
+              </button>
+            </div>
+          </div>
           <div className={styles.publicUrl}>{activeLink.public_url}</div>
           <div className={styles.publishActions}>
             <button

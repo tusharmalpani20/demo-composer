@@ -177,6 +177,7 @@ const publishedStatus = (versionNumber = 1): GuidePublishStatusResponse => ({
     published_artifact_id: `published_artifact_${versionNumber}`,
     slug: "abc123",
     visibility: "public",
+    expires_at: null,
     status: "active",
     published_at: "2026-06-11T00:00:00.000Z",
     revoked_at: null,
@@ -218,6 +219,7 @@ const renderPage = (overrides: {
   loadPublishStatus?: GuideEditorPageProps["loadPublishStatus"];
   publishCurrentGuide?: GuideEditorPageProps["publishCurrentGuide"];
   revokePublishLink?: GuideEditorPageProps["revokePublishLink"];
+  updatePublishAccess?: GuideEditorPageProps["updatePublishAccess"];
   copyText?: GuideEditorPageProps["copyText"];
 } = {}) => {
   const loadDetail = overrides.loadDetail ?? vi.fn(async () => overrides.detail ?? guideDetail);
@@ -420,6 +422,14 @@ const renderPage = (overrides: {
       revoked_at: "2026-06-11T01:00:00.000Z",
     },
   }));
+  const updatePublishAccess = overrides.updatePublishAccess ?? vi.fn(async (_projectId, _guideId, input) => ({
+    ...publishedStatus(),
+    publish_link: {
+      ...publishedStatus().publish_link!,
+      visibility: input.visibility,
+      expires_at: input.expires_at,
+    },
+  }));
   const copyText = overrides.copyText ?? vi.fn(async () => undefined);
 
   render(
@@ -442,6 +452,7 @@ const renderPage = (overrides: {
       removeBlock={removeBlock}
       publishCurrentGuide={publishCurrentGuide}
       revokePublishLink={revokePublishLink}
+      updatePublishAccess={updatePublishAccess}
       copyText={copyText}
     />
   );
@@ -463,6 +474,7 @@ const renderPage = (overrides: {
     removeBlock,
     publishCurrentGuide,
     revokePublishLink,
+    updatePublishAccess,
     copyText,
   };
 };
@@ -1061,6 +1073,32 @@ describe("GuideEditorPage", () => {
     await waitFor(() => expect(copyText).toHaveBeenCalledWith("http://localhost:3000/p/abc123"));
     expect(screen.getByText("Could not copy public link. Select the URL above.")).toBeInTheDocument();
     expect(screen.getByText("/p/abc123")).toBeInTheDocument();
+  });
+
+  it("updates publish access from the editor panel", async () => {
+    const updatePublishAccess = vi.fn(async (_projectId, _guideId, input) => ({
+      ...publishedStatus(1),
+      publish_link: {
+        ...publishedStatus(1).publish_link!,
+        visibility: input.visibility,
+        expires_at: input.expires_at,
+      },
+    }));
+
+    renderPage({
+      loadPublishStatus: async () => publishedStatus(1),
+      updatePublishAccess,
+    });
+
+    expect(await screen.findByText("Public access is on")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Disable public access" }));
+
+    await waitFor(() => expect(updatePublishAccess).toHaveBeenCalledWith("project_1", "guide_1", {
+      visibility: "restricted",
+      expires_at: null,
+    }));
+    expect(await screen.findByText("Public access is off")).toBeInTheDocument();
+    expect(screen.getByText("Publishing access updated.")).toBeInTheDocument();
   });
 
   it("keeps the editor usable when publish status fails to load", async () => {
