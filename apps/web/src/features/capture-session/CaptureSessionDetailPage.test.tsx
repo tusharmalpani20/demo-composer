@@ -2,7 +2,15 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import type { GuideDetail } from "../guide/types";
-import type { CaptureAsset, CaptureEvent, CaptureSessionDetail } from "./types";
+import type {
+  CaptureAsset,
+  CaptureEvent,
+  CaptureSessionDetail,
+  CreateCaptureEventInput,
+  CreateCaptureEventResponse,
+  UploadCaptureAssetInput,
+  UploadCaptureAssetResponse,
+} from "./types";
 import { CaptureSessionDetailPage } from "./CaptureSessionDetailPage";
 
 const detail: CaptureSessionDetail = {
@@ -202,6 +210,26 @@ const uploadedEvent: CaptureEvent = {
   updated_at: "2026-06-12T00:00:00.000Z",
 };
 
+const secondUploadedAsset: CaptureAsset = {
+  ...uploadedAsset,
+  id: "asset_uploaded_second",
+  file: {
+    ...uploadedAsset.file,
+    id: "file_uploaded_second",
+    original_name: "uploaded-review.png",
+    checksum_sha256: "uploaded_second_checksum",
+  },
+  file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_uploaded_second/file",
+};
+
+const secondUploadedEvent: CaptureEvent = {
+  ...uploadedEvent,
+  id: "event_uploaded_second",
+  capture_asset_id: "asset_uploaded_second",
+  event_index: 4,
+  note: "Uploaded screenshot: uploaded-review.png",
+};
+
 const manualDetail = (): CaptureSessionDetail => ({
   ...detail,
   capture_session: {
@@ -324,7 +352,7 @@ describe("CaptureSessionDetailPage", () => {
     renderPage({ loadDetail: async () => manualDetail() });
 
     expect(await screen.findByRole("heading", { name: "Upload screenshot" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Screenshot file")).toBeInTheDocument();
+    expect(screen.getByLabelText("Screenshot file")).toHaveAttribute("multiple");
     expect(screen.getByLabelText("Page title")).toBeInTheDocument();
     expect(screen.getByLabelText("Page URL")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload Screenshot" })).toBeInTheDocument();
@@ -422,6 +450,108 @@ describe("CaptureSessionDetailPage", () => {
     expect(await screen.findByText("uploaded-department.png")).toBeInTheDocument();
   });
 
+  it("uploads multiple screenshots sequentially and creates linked capture events in selected order", async () => {
+    const firstDetail = manualDetail();
+    const secondDetail: CaptureSessionDetail = {
+      ...firstDetail,
+      capture_events: [...firstDetail.capture_events, uploadedEvent, secondUploadedEvent],
+      capture_assets: [...firstDetail.capture_assets, uploadedAsset, secondUploadedAsset],
+    };
+    const loadDetail = vi
+      .fn<() => Promise<CaptureSessionDetail>>()
+      .mockResolvedValueOnce(firstDetail)
+      .mockResolvedValueOnce(secondDetail);
+    const uploadAsset = vi
+      .fn<(projectId: string, captureSessionId: string, input: UploadCaptureAssetInput) => Promise<UploadCaptureAssetResponse>>()
+      .mockResolvedValueOnce({ capture_asset: uploadedAsset })
+      .mockResolvedValueOnce({ capture_asset: secondUploadedAsset });
+    const createCaptureEvent = vi
+      .fn<
+        (projectId: string, captureSessionId: string, input: CreateCaptureEventInput) => Promise<CreateCaptureEventResponse>
+      >()
+      .mockResolvedValueOnce({ capture_event: uploadedEvent })
+      .mockResolvedValueOnce({ capture_event: secondUploadedEvent });
+    const firstFile = new File(["png"], "uploaded-department.png", { type: "image/png" });
+    const secondFile = new File(["png"], "uploaded-review.png", { type: "image/png" });
+
+    renderPage({ loadDetail, uploadAsset, createCaptureEvent });
+
+    await screen.findByRole("heading", { name: "Upload screenshot" });
+    fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [firstFile, secondFile] } });
+    fireEvent.change(screen.getByLabelText("Page title"), { target: { value: " Department Upload " } });
+    fireEvent.change(screen.getByLabelText("Page URL"), { target: { value: " https://example.internal/app/department " } });
+    expect(screen.getByText("uploaded-department.png")).toBeInTheDocument();
+    expect(screen.getByText("uploaded-review.png")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Upload Screenshots" }));
+
+    await waitFor(() => expect(uploadAsset).toHaveBeenCalledTimes(2));
+    const firstUploadInput = uploadAsset.mock.calls[0]![2];
+    const secondUploadInput = uploadAsset.mock.calls[1]![2];
+    expect(firstUploadInput).toMatchObject({
+      file: firstFile,
+      page_title: "Department Upload",
+      page_url: "https://example.internal/app/department",
+      captured_at: expect.any(String),
+    });
+    expect(secondUploadInput).toMatchObject({
+      file: secondFile,
+      page_title: "Department Upload",
+      page_url: "https://example.internal/app/department",
+      captured_at: expect.any(String),
+    });
+    expect(createCaptureEvent).toHaveBeenNthCalledWith(1, "project_1", "capture_session_1", {
+      event_type: "capture",
+      event_index: 3,
+      capture_asset_id: "asset_uploaded",
+      occurred_at: firstUploadInput.captured_at,
+      page_title: "Department Upload",
+      page_url: "https://example.internal/app/department",
+      target_label: "Uploaded screenshot",
+      note: "Uploaded screenshot: uploaded-department.png",
+    });
+    expect(createCaptureEvent).toHaveBeenNthCalledWith(2, "project_1", "capture_session_1", {
+      event_type: "capture",
+      event_index: 4,
+      capture_asset_id: "asset_uploaded_second",
+      occurred_at: secondUploadInput.captured_at,
+      page_title: "Department Upload",
+      page_url: "https://example.internal/app/department",
+      target_label: "Uploaded screenshot",
+      note: "Uploaded screenshot: uploaded-review.png",
+    });
+    await waitFor(() => expect(loadDetail).toHaveBeenCalledTimes(2));
+  });
+
+  it("rejects the whole screenshot batch before uploading when any selected file is invalid", async () => {
+    const { uploadAsset, createCaptureEvent } = renderPage({ loadDetail: async () => manualDetail() });
+    const imageFile = new File(["png"], "uploaded-department.png", { type: "image/png" });
+    const textFile = new File(["text"], "notes.txt", { type: "text/plain" });
+
+    await screen.findByRole("heading", { name: "Upload screenshot" });
+    fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [imageFile, textFile] } });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Screenshots" }));
+
+    expect(screen.getByText("Only PNG, JPEG, and WebP screenshots can be uploaded.")).toBeInTheDocument();
+    expect(uploadAsset).not.toHaveBeenCalled();
+    expect(createCaptureEvent).not.toHaveBeenCalled();
+  });
+
+  it("replaces queued screenshot statuses when users select different files", async () => {
+    renderPage({ loadDetail: async () => manualDetail() });
+    const firstFile = new File(["png"], "uploaded-department.png", { type: "image/png" });
+    const secondFile = new File(["png"], "uploaded-review.png", { type: "image/png" });
+
+    await screen.findByRole("heading", { name: "Upload screenshot" });
+    fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [firstFile] } });
+
+    expect(screen.getByText("uploaded-department.png")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [secondFile] } });
+
+    expect(screen.queryByText("uploaded-department.png")).not.toBeInTheDocument();
+    expect(screen.getByText("uploaded-review.png")).toBeInTheDocument();
+  });
+
   it("disables screenshot upload while pending", async () => {
     let resolveUpload: (value: { capture_asset: CaptureAsset }) => void = () => undefined;
     const uploadAsset = vi.fn(() => new Promise<{ capture_asset: CaptureAsset }>((resolve) => {
@@ -436,8 +566,8 @@ describe("CaptureSessionDetailPage", () => {
     fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [file] } });
     fireEvent.click(screen.getByRole("button", { name: "Upload Screenshot" }));
 
-    expect(screen.getByRole("button", { name: "Uploading Screenshot..." })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Uploading Screenshot..." }));
+    expect(screen.getByRole("button", { name: "Uploading Screenshots..." })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Uploading Screenshots..." }));
     expect(uploadAsset).toHaveBeenCalledTimes(1);
 
     resolveUpload({ capture_asset: uploadedAsset });
@@ -466,6 +596,48 @@ describe("CaptureSessionDetailPage", () => {
     expect(await screen.findByText("Screenshot input is invalid.")).toBeInTheDocument();
     expect(screen.getByLabelText("Page title")).toHaveValue("Department Upload");
     expect(screen.getByLabelText("Page URL")).toHaveValue("https://example.internal/app/department");
+  });
+
+  it("stops a screenshot batch on upload failure after prior success and reloads partial results", async () => {
+    const firstDetail = manualDetail();
+    const secondDetail: CaptureSessionDetail = {
+      ...firstDetail,
+      capture_events: [...firstDetail.capture_events, uploadedEvent],
+      capture_assets: [...firstDetail.capture_assets, uploadedAsset],
+    };
+    const loadDetail = vi
+      .fn<() => Promise<CaptureSessionDetail>>()
+      .mockResolvedValueOnce(firstDetail)
+      .mockResolvedValueOnce(secondDetail);
+    const uploadAsset = vi
+      .fn<() => Promise<{ capture_asset: CaptureAsset }>>()
+      .mockResolvedValueOnce({ capture_asset: uploadedAsset })
+      .mockRejectedValueOnce(new ApiClientError({
+        kind: "validation",
+        status: 413,
+        type: "upload_too_large",
+        message: "Upload is too large",
+      }));
+    const createCaptureEvent = vi.fn(async () => ({ capture_event: uploadedEvent }));
+    const firstFile = new File(["png"], "uploaded-department.png", { type: "image/png" });
+    const secondFile = new File(["png"], "uploaded-review.png", { type: "image/png" });
+
+    renderPage({ loadDetail, uploadAsset, createCaptureEvent });
+
+    await screen.findByRole("heading", { name: "Upload screenshot" });
+    fireEvent.change(screen.getByLabelText("Screenshot file"), { target: { files: [firstFile, secondFile] } });
+    fireEvent.change(screen.getByLabelText("Page title"), { target: { value: "Department Upload" } });
+    fireEvent.change(screen.getByLabelText("Page URL"), { target: { value: "https://example.internal/app/department" } });
+    fireEvent.click(screen.getByRole("button", { name: "Upload Screenshots" }));
+
+    expect(await screen.findByText("Screenshot is too large.")).toBeInTheDocument();
+    expect(uploadAsset).toHaveBeenCalledTimes(2);
+    expect(createCaptureEvent).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("uploaded-review.png")).toBeInTheDocument();
+    expect(screen.getByText("Failed")).toBeInTheDocument();
+    expect(screen.getByLabelText("Page title")).toHaveValue("Department Upload");
+    expect(screen.getByLabelText("Page URL")).toHaveValue("https://example.internal/app/department");
+    await waitFor(() => expect(loadDetail).toHaveBeenCalledTimes(2));
   });
 
   it("shows a partial-success error when event creation fails after upload", async () => {

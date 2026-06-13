@@ -29,6 +29,12 @@ type LoadState =
   | { status: "not_found" }
   | { status: "error" };
 
+type UploadQueueItem = {
+  id: string;
+  name: string;
+  status: "queued" | "uploading" | "event_created" | "failed";
+};
+
 type CaptureSessionDetailPageProps = {
   projectId: string;
   captureSessionId: string;
@@ -159,6 +165,22 @@ const eventCreationAfterUploadErrorMessage = (error: unknown) => {
   }
 
   return "Screenshot uploaded, but the capture event could not be created. Reload and try again.";
+};
+
+const uploadStatusLabel = (status: UploadQueueItem["status"]) => {
+  if (status === "uploading") {
+    return "Uploading";
+  }
+
+  if (status === "event_created") {
+    return "Event created";
+  }
+
+  if (status === "failed") {
+    return "Failed";
+  }
+
+  return "Queued";
 };
 
 const reorderErrorMessage = (error: unknown) => {
@@ -355,7 +377,8 @@ const CaptureSessionDetailView = ({
   const [uploadState, setUploadState] = useState<"idle" | "uploading">("idle");
   const [reorderState, setReorderState] = useState<"idle" | "reordering">("idle");
   const [reorderError, setReorderError] = useState<string | null>(null);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
   const [uploadPageTitle, setUploadPageTitle] = useState("");
   const [uploadPageUrl, setUploadPageUrl] = useState("");
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -369,6 +392,11 @@ const CaptureSessionDetailView = ({
   const canCreateGuide = guideTitle.length > 0 && createState !== "creating";
   const canUploadScreenshot = session.source_type === "manual";
   const isUploading = uploadState === "uploading";
+  const uploadButtonText = isUploading
+    ? "Uploading Screenshots..."
+    : uploadFiles.length > 1
+      ? "Upload Screenshots"
+      : "Upload Screenshot";
   const canReorderEvents = session.source_type === "manual" && detail.capture_events.length > 1;
   const isReordering = reorderState === "reordering";
 
@@ -391,7 +419,8 @@ const CaptureSessionDetailView = ({
   };
 
   const clearUploadForm = () => {
-    setUploadFile(null);
+    setUploadFiles([]);
+    setUploadQueue([]);
     setUploadPageTitle("");
     setUploadPageUrl("");
     if (uploadFileInputRef.current) {
@@ -399,8 +428,13 @@ const CaptureSessionDetailView = ({
     }
   };
 
-  const updateUploadFile = (file: File | null) => {
-    setUploadFile(file);
+  const updateUploadFiles = (files: File[]) => {
+    setUploadFiles(files);
+    setUploadQueue(files.map((file, index) => ({
+      id: `${file.name}-${file.lastModified}-${index}`,
+      name: file.name,
+      status: "queued",
+    })));
     setUploadError(null);
   };
 
@@ -421,51 +455,83 @@ const CaptureSessionDetailView = ({
       return;
     }
 
-    if (!uploadFile) {
+    if (uploadFiles.length === 0) {
       setUploadError("Choose a screenshot to upload.");
       return;
     }
 
-    if (!allowedScreenshotMimeTypes.has(uploadFile.type)) {
+    if (uploadFiles.some((file) => !allowedScreenshotMimeTypes.has(file.type))) {
       setUploadError("Only PNG, JPEG, and WebP screenshots can be uploaded.");
       return;
     }
 
     const pageTitle = optionalUploadField(uploadPageTitle);
     const pageUrl = optionalUploadField(uploadPageUrl);
-    const capturedAt = new Date().toISOString();
+    const baseEventIndex = nextEventIndex(detail.capture_events);
+    let createdEventCount = 0;
 
     setUploadState("uploading");
     setUploadError(null);
+    setUploadQueue(uploadFiles.map((file, index) => ({
+      id: `${file.name}-${file.lastModified}-${index}`,
+      name: file.name,
+      status: "queued",
+    })));
 
     try {
-      const uploadResponse = await uploadAsset(projectId, captureSessionId, {
-        file: uploadFile,
-        page_title: pageTitle,
-        page_url: pageUrl,
-        captured_at: capturedAt,
-      });
+      for (const [index, uploadFile] of uploadFiles.entries()) {
+        const capturedAt = new Date().toISOString();
 
-      try {
-        await createCaptureEvent(projectId, captureSessionId, {
-          event_type: "capture",
-          event_index: nextEventIndex(detail.capture_events),
-          capture_asset_id: uploadResponse.capture_asset.id,
-          occurred_at: capturedAt,
+        setUploadQueue((items) => items.map((item, itemIndex) => (
+          itemIndex === index ? { ...item, status: "uploading" } : item
+        )));
+
+        const uploadResponse = await uploadAsset(projectId, captureSessionId, {
+          file: uploadFile,
           page_title: pageTitle,
           page_url: pageUrl,
-          target_label: "Uploaded screenshot",
-          note: `Uploaded screenshot: ${uploadFile.name}`,
+          captured_at: capturedAt,
         });
-      } catch (error: unknown) {
-        setUploadError(eventCreationAfterUploadErrorMessage(error));
-        return;
+
+        try {
+          await createCaptureEvent(projectId, captureSessionId, {
+            event_type: "capture",
+            event_index: baseEventIndex + index,
+            capture_asset_id: uploadResponse.capture_asset.id,
+            occurred_at: capturedAt,
+            page_title: pageTitle,
+            page_url: pageUrl,
+            target_label: "Uploaded screenshot",
+            note: `Uploaded screenshot: ${uploadFile.name}`,
+          });
+        } catch (error: unknown) {
+          setUploadQueue((items) => items.map((item, itemIndex) => (
+            itemIndex === index ? { ...item, status: "failed" } : item
+          )));
+          setUploadError(eventCreationAfterUploadErrorMessage(error));
+          if (createdEventCount > 0) {
+            reloadDetail();
+          }
+          return;
+        }
+
+        createdEventCount += 1;
+        setUploadQueue((items) => items.map((item, itemIndex) => (
+          itemIndex === index ? { ...item, status: "event_created" } : item
+        )));
       }
 
       clearUploadForm();
       reloadDetail();
     } catch (error: unknown) {
+      const failedIndex = createdEventCount;
+      setUploadQueue((items) => items.map((item, itemIndex) => (
+        itemIndex === failedIndex ? { ...item, status: "failed" } : item
+      )));
       setUploadError(uploadErrorMessage(error));
+      if (createdEventCount > 0) {
+        reloadDetail();
+      }
     } finally {
       setUploadState("idle");
     }
@@ -559,14 +625,27 @@ const CaptureSessionDetailView = ({
               <input
                 ref={uploadFileInputRef}
                 type="file"
+                multiple
                 accept="image/png,image/jpeg,image/webp"
-                onChange={(event) => updateUploadFile(event.target.files?.[0] ?? null)}
+                disabled={isUploading}
+                onChange={(event) => updateUploadFiles(Array.from(event.target.files ?? []))}
               />
             </label>
+            {uploadQueue.length > 0 ? (
+              <div className={styles.uploadQueue} aria-label="Selected screenshots">
+                {uploadQueue.map((item) => (
+                  <div className={styles.uploadQueueItem} key={item.id}>
+                    <span className={styles.uploadQueueName}>{item.name}</span>
+                    <span className={styles.uploadQueueStatus}>{uploadStatusLabel(item.status)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <label className={styles.field}>
               <span>Page title</span>
               <input
                 value={uploadPageTitle}
+                disabled={isUploading}
                 onChange={(event) => updateUploadPageTitle(event.target.value)}
               />
             </label>
@@ -574,12 +653,13 @@ const CaptureSessionDetailView = ({
               <span>Page URL</span>
               <input
                 value={uploadPageUrl}
+                disabled={isUploading}
                 onChange={(event) => updateUploadPageUrl(event.target.value)}
               />
             </label>
             <div className={styles.uploadActions}>
               <button className={styles.primaryButton} type="submit" disabled={isUploading}>
-                {isUploading ? "Uploading Screenshot..." : "Upload Screenshot"}
+                {uploadButtonText}
               </button>
             </div>
           </form>

@@ -159,6 +159,37 @@
   align-items: center;
 }
 
+.uploadQueue {
+  display: grid;
+  gap: 8px;
+}
+
+.uploadQueueItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid #d9e0e7;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.uploadQueueName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.uploadQueueStatus {
+  color: #637083;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
 .formError {
   padding: 10px 12px;
   border: 1px solid #f5b5b5;
