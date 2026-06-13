@@ -471,7 +471,11 @@ const CaptureSessionDetailView = ({
       : "Upload Screenshot";
   const canReorderEvents = session.source_type === "manual" && detail.capture_events.length > 1;
   const isReordering = reorderState === "reordering";
-  const canEditEvents = session.source_type === "manual";
+  const canEditEvents = (
+    session.source_type === "manual"
+    && session.status !== "archived"
+    && session.status !== "canceled"
+  );
   const isSavingEvent = eventEditState === "saving";
 
   const handleCreateGuide = async () => {

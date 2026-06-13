@@ -876,6 +876,24 @@ describe("CaptureSessionDetailPage", () => {
     expect(screen.queryByRole("button", { name: /Edit event/i })).not.toBeInTheDocument();
   });
 
+  it.each(["archived", "canceled"] as const)(
+    "hides manual event edit controls for %s manual sessions",
+    async (status) => {
+      renderPage({
+        loadDetail: async () => ({
+          ...manualDetail(),
+          capture_session: {
+            ...manualDetail().capture_session,
+            status,
+          },
+        }),
+      });
+
+      expect(await screen.findByRole("heading", { name: "Create department workflow" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Edit event/i })).not.toBeInTheDocument();
+    }
+  );
+
   it("cancels manual capture event editing without saving", async () => {
     const { updateEvent } = renderPage({ loadDetail: async () => manualDetail() });
 
