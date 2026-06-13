@@ -26,7 +26,7 @@ The target outcome is a repo that has:
 - clearer deployment/runtime expectations
 - an updated project status document that reflects the real implementation state
 
-This should happen after `docs/plan/046-public-guide-access-controls.md` unless access controls are intentionally postponed.
+This should happen after `docs/plan/046-public-guide-access-controls.md`, which is now implemented.
 
 ## Why This Comes Next
 
@@ -44,7 +44,7 @@ The risk now is not lack of feature code. The risk is accumulated project fricti
 - lint passes but still reports many server warnings
 - DB integration tests depend on external `.env-cmdrc` configuration and are easy to skip
 - setup/development commands are scattered across memory, package scripts, and prior conversation
-- the status doc is close but not fully current after plans `046` and future implementation
+- the status doc should stay current as hardening changes the actual project shape
 - production runtime requirements are not documented strongly enough for open-source users
 
 Before opening the next big domain, especially interactive demos, we should tighten the foundation.
@@ -94,7 +94,7 @@ Included:
 Excluded:
 
 - new user-facing product features
-- public guide access controls, unless `046` is intentionally folded into this pass
+- additional public guide access-control feature work beyond what was implemented in `046`
 - interactive demo implementation
 - analytics
 - AI
@@ -108,20 +108,21 @@ Excluded:
 
 ## Current Health Baseline
 
-As of the deep-dive pass on 2026-06-13:
+As of the post-`046` verification pass on 2026-06-13:
 
 ```text
-server non-DB tests: 161 passed
-web tests: 193 passed
+focused server publish/access tests: 21 passed
+focused web publish/access tests: 99 passed
+focused publish DB integration tests: 13 passed
 extension tests: 57 passed
 check-types: passed
-build: passed
+build: not rerun after 046 in the focused access-control pass
 lint: passed with server warnings
 ```
 
 Known caveat:
 
-- DB integration tests were not run in that pass.
+- The focused schema + publish DB integration tests pass, but the full `server test:db` script should still be rerun during this hardening pass.
 - `rtk pnpm lint` exits successfully but reports many warnings, mostly from server env vars and older backend code.
 - Most current product route registration uses `apps/server/src/modules/*`.
 - `apps/server/src/app.ts` still registers `index_root_routes`, and `root_router/*` plus `passport.config.ts` still import older `apps/server/src/module/*` code.
@@ -202,10 +203,11 @@ Recommended approach:
 2. List every route currently exposed through `index_root_routes`.
 3. Compare those routes against the newer `apps/server/src/modules/*` contracts.
 4. Decide whether each old route is still required, duplicated, or unused.
-5. If duplicated/unused, remove route registration first and prove tests/build still pass.
-6. If the old passport hook is unused by cookie/session auth, remove or replace it.
-7. If old files become unreachable, remove them in a dedicated commit.
-8. If deletion is too risky for this pass, mark the tree explicitly with a `LEGACY.md` note and exclude it from lint only if the current product path remains covered.
+5. Record the audit in `docs/backend-route-inventory.md` before deleting anything.
+6. If duplicated/unused, remove route registration first and prove tests/build still pass.
+7. If the old passport hook is unused by cookie/session auth, remove or replace it.
+8. If old files become unreachable, remove them in a dedicated commit.
+9. If deletion is too risky for this pass, mark the tree explicitly with a `LEGACY.md` note and exclude it from lint only if the current product path remains covered.
 
 Preferred outcome:
 
@@ -227,6 +229,7 @@ Acceptance:
 - DB tests still pass
 - lint warning count meaningfully drops
 - no current product route disappears
+- a route inventory document exists before route deletion
 - old API routes are either intentionally preserved and documented, or removed with tests proving the current product path still works
 
 ## Workstream 3: Lint And Config Noise
@@ -328,7 +331,7 @@ docs/project-zoomout-status.md
 
 Refresh it to include:
 
-- implemented plan count after `046` if access controls are done first
+- implemented plan count after `046`
 - current test counts if useful
 - current product maturity:
   - internal guide loop mostly built
@@ -427,19 +430,21 @@ rtk git diff --check
 2. Run DB integration tests against `.env-cmdrc` testing config.
 3. Fix DB/test failures if any.
 4. Audit imports and route wiring for `apps/server/src/module/*`, `root_router/*`, and `passport.config.ts`.
-5. Decide whether old root routes are still part of the supported API surface.
-6. Remove duplicated/unneeded old route registration first, then delete unreachable legacy backend files in a dedicated commit.
-7. Update Turbo env var tracking and fix low-risk lint warnings in current product files.
-8. Add `docs/development-setup.md`.
-9. Add `docs/production-readiness-checklist.md`.
-10. Refresh `docs/project-zoomout-status.md`.
-11. Run full verification again.
+5. Record the current route/import audit in `docs/backend-route-inventory.md`.
+6. Decide whether old root routes are still part of the supported API surface.
+7. Remove duplicated/unneeded old route registration first, then delete unreachable legacy backend files in a dedicated commit.
+8. Update Turbo env var tracking and fix low-risk lint warnings in current product files.
+9. Add `docs/development-setup.md`.
+10. Add `docs/production-readiness-checklist.md`.
+11. Refresh `docs/project-zoomout-status.md`.
+12. Run full verification again.
 
 ## Acceptance Criteria
 
 - Full non-DB verification passes.
 - DB integration verification passes or the blocker is documented with exact failing command/output.
 - Current backend product path is clearly separated from old root route/passport wiring.
+- Backend route inventory documents current, legacy, and removed route surfaces.
 - Legacy backend code is removed, migrated, or explicitly quarantined with documented route impact.
 - Server lint warning noise is reduced meaningfully.
 - Development setup docs exist and are accurate.
@@ -469,4 +474,4 @@ docs: add production readiness checklist
 docs: refresh project status after hardening
 ```
 
-If access controls from `046` are implemented immediately before this plan, keep those commits separate from hardening commits.
+Access-control commits from `046` are already separate from this hardening plan.
