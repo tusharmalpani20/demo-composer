@@ -67,4 +67,21 @@ describe("authentication session app routes", () => {
 
     await app.close();
   });
+
+  it("does not mount legacy ORCA authentication routes", async () => {
+    const app = build({ logger: false });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/authentication/signin/password",
+      payload: {
+        email: "owner@example.com",
+        password: "safe local password",
+      },
+    });
+
+    expect(response.statusCode).toBe(404);
+
+    await app.close();
+  });
 });

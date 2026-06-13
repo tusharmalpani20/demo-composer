@@ -1,8 +1,12 @@
 import { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 import { hasZodFastifySchemaValidationErrors, isResponseSerializationError } from "fastify-type-provider-zod";
 import { response_message } from "@repo/types";
-import { CustomError } from "../errors/custom_error";
-import { general_error_message } from "../constants/error_message.constant";
+
+const default_error = {
+    code: 500,
+    message: "Something went wrong",
+    type: "internal_server_error",
+};
 
 export const error_handler = (
     error: FastifyError,
@@ -59,20 +63,15 @@ export const error_handler = (
         })
     }
 
-    if (error instanceof CustomError) {
-        const response = error.serializeErrors();
-        return reply.status(response.code).send(response);
-    }
-
-    return reply.status(general_error_message.default_error.code).send({
-        code: general_error_message.default_error.code,
+    return reply.status(default_error.code).send({
+        code: default_error.code,
         path: request.url,
         message: response_message.enum.error,
         timestamp: new Date().toISOString(),
         result: [
             {
-                message: general_error_message.default_error.message,
-                type: general_error_message.default_error.type,
+                message: default_error.message,
+                type: default_error.type,
                 field: ""
             },
         ],

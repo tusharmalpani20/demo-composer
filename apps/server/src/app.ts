@@ -9,7 +9,6 @@ import { error_handler } from './common/helper_function/error_handler.helper.js'
 import { cookieConfig } from "./config/cookie.config.js";
 import { initialize_event_emitter } from './config/event.config.js';
 import requestDec from './config/fastify_decoder.config.js';
-import { configure_passport } from './config/passport.config.js';
 import { pool } from './config/database.config.js';
 import {
   build_public_instance_routes,
@@ -66,7 +65,6 @@ import {
 } from './modules/publish/publish.routes.js';
 import { build_publish_repository } from './modules/publish/publish.repository.js';
 import { build_publish_service } from './modules/publish/publish.service.js';
-import { index_root_routes } from './root_router/index.root_router.js';
 
 type BuildOptions = FastifyServerOptions & {
   public_instance_service?: PublicInstanceRouteService;
@@ -161,9 +159,6 @@ export const build = (opts: BuildOptions = {}) => {
       error_handler(error as FastifyError, request, response)
   });
 
-  // Then register authentication/security plugins
-  configure_passport(app);
-
   // Set up Zod as the validator and serializer
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -244,11 +239,6 @@ export const build = (opts: BuildOptions = {}) => {
   }
 
   initialize_event_emitter();
-
-  // Register routes
-  app.register(index_root_routes, {
-      prefix: "/api/v1"
-  });
 
   app.register(build_public_instance_routes(
       public_instance_service ?? build_public_instance_service(
