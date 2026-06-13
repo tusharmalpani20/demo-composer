@@ -5,6 +5,7 @@ import {
   CaptureEventIndexConflictError,
   CaptureEventNotFoundError,
   CaptureEventReorderNotAllowedError,
+  CaptureEventUpdateNotAllowedError,
   CaptureSessionNotFoundError,
   InvalidCaptureEventOrderError,
   InvalidCaptureEventInputError,
@@ -58,7 +59,9 @@ const build_repository = (): CaptureEventRepository & {
   finds: unknown[];
   deletes: unknown[];
   source_type_checks: unknown[];
+  editability_checks: unknown[];
   reorders: unknown[];
+  updates: unknown[];
 } => {
   const project_checks: unknown[] = [];
   const session_checks: unknown[] = [];
@@ -68,7 +71,9 @@ const build_repository = (): CaptureEventRepository & {
   const finds: unknown[] = [];
   const deletes: unknown[] = [];
   const source_type_checks: unknown[] = [];
+  const editability_checks: unknown[] = [];
   const reorders: unknown[] = [];
+  const updates: unknown[] = [];
 
   return {
     project_checks,
@@ -79,7 +84,9 @@ const build_repository = (): CaptureEventRepository & {
     finds,
     deletes,
     source_type_checks,
+    editability_checks,
     reorders,
+    updates,
     async project_exists(input) {
       project_checks.push(input);
       return input.project_id === "project_1";
@@ -95,6 +102,22 @@ const build_repository = (): CaptureEventRepository & {
       }
       if (input.capture_session_id === "extension_session") {
         return "extension";
+      }
+      return null;
+    },
+    async get_capture_session_editability(input) {
+      editability_checks.push(input);
+      if (input.capture_session_id === "capture_session_1") {
+        return { source_type: "manual", status: "draft" };
+      }
+      if (input.capture_session_id === "completed_session") {
+        return { source_type: "manual", status: "completed" };
+      }
+      if (input.capture_session_id === "archived_session") {
+        return { source_type: "manual", status: "archived" };
+      }
+      if (input.capture_session_id === "extension_session") {
+        return { source_type: "extension", status: "capturing" };
       }
       return null;
     },
@@ -135,6 +158,18 @@ const build_repository = (): CaptureEventRepository & {
         id,
         event_index: index + 1,
       }));
+    },
+    async update_capture_event(input) {
+      updates.push(input);
+      if (input.capture_event_id !== "capture_event_1") {
+        return null;
+      }
+      return {
+        ...capture_event,
+        ...input.data,
+        updated_by_id: input.actor_org_user_id,
+        version: capture_event.version + 1,
+      };
     },
   };
 };
@@ -386,5 +421,110 @@ describe("capture event service", () => {
       capture_session_id: "extension_session",
       data: { event_ids: ["capture_event_1"] },
     })).rejects.toBeInstanceOf(CaptureEventReorderNotAllowedError);
+  });
+
+  it("updates safe manual capture event fields after validating editability", async () => {
+    const repository = build_repository();
+    const service = build_capture_event_service(repository);
+
+    await expect(service.update_capture_event({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      capture_event_id: "capture_event_1",
+      data: {
+        page_url: " https://example.internal/app/departments ",
+        page_title: " Department list ",
+        target_label: " Add Department ",
+        target_text: " ",
+        input_intent: " ",
+        note: " Open the department list. ",
+      },
+    })).resolves.toMatchObject({
+      id: "capture_event_1",
+      event_type: "click",
+      event_index: 2,
+      capture_asset_id: "capture_asset_1",
+      occurred_at: "2026-06-05T00:00:00.000Z",
+      input_value_redacted: true,
+      page_url: "https://example.internal/app/departments",
+      page_title: "Department list",
+      target_label: "Add Department",
+      target_text: null,
+      input_intent: null,
+      note: "Open the department list.",
+      version: 2,
+    });
+
+    expect(repository.editability_checks).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+    }]);
+    expect(repository.updates).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      capture_event_id: "capture_event_1",
+      actor_org_user_id: "org_user_1",
+      data: {
+        page_url: "https://example.internal/app/departments",
+        page_title: "Department list",
+        target_label: "Add Department",
+        target_text: null,
+        input_intent: null,
+        note: "Open the department list.",
+      },
+    }]);
+  });
+
+  it("rejects unsafe manual capture event updates", async () => {
+    const repository = build_repository();
+    const service = build_capture_event_service(repository);
+
+    for (const data of [
+      {},
+      { page_title: "Department", input_value: "secret" },
+      { page_title: "Department", metadata: { raw_input: "secret" } },
+      { page_title: "Department", event_index: 99 },
+      { page_title: "Department", capture_asset_id: "other_asset" },
+    ]) {
+      await expect(service.update_capture_event({
+        auth,
+        project_id: "project_1",
+        capture_session_id: "capture_session_1",
+        capture_event_id: "capture_event_1",
+        data,
+      })).rejects.toBeInstanceOf(InvalidCaptureEventInputError);
+    }
+  });
+
+  it("rejects updates for non-manual archived or missing capture events", async () => {
+    const repository = build_repository();
+    const service = build_capture_event_service(repository);
+
+    await expect(service.update_capture_event({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "extension_session",
+      capture_event_id: "capture_event_1",
+      data: { page_title: "Department" },
+    })).rejects.toBeInstanceOf(CaptureEventUpdateNotAllowedError);
+
+    await expect(service.update_capture_event({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "archived_session",
+      capture_event_id: "capture_event_1",
+      data: { page_title: "Department" },
+    })).rejects.toBeInstanceOf(CaptureEventUpdateNotAllowedError);
+
+    await expect(service.update_capture_event({
+      auth,
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      capture_event_id: "missing",
+      data: { page_title: "Department" },
+    })).rejects.toBeInstanceOf(CaptureEventNotFoundError);
   });
 });

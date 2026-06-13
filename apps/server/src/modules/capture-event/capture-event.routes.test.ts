@@ -8,6 +8,7 @@ import {
   CaptureEventIndexConflictError,
   CaptureEventNotFoundError,
   CaptureEventReorderNotAllowedError,
+  CaptureEventUpdateNotAllowedError,
   CaptureSessionNotFoundError,
   InvalidCaptureEventOrderError,
   InvalidCaptureEventInputError,
@@ -89,6 +90,7 @@ const build_test_app = async (
       get_capture_event: async () => capture_event,
       delete_capture_event: async () => undefined,
       reorder_capture_events: async () => [capture_event],
+      update_capture_event: async () => capture_event,
       ...overrides.capture_event_service,
     },
   }), { prefix: "/api/v1/projects" });
@@ -116,6 +118,11 @@ describe("capture event routes", () => {
         method: "PUT",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/order",
         payload: { event_ids: ["capture_event_1"] },
+      },
+      {
+        method: "PATCH",
+        url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1",
+        payload: { page_title: "Department" },
       },
       { method: "GET", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1" },
       { method: "DELETE", url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1" },
@@ -385,6 +392,73 @@ describe("capture event routes", () => {
     await app.close();
   });
 
+  it("updates capture event safe fields through the service with auth context and URL scope", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      capture_event_service: {
+        update_capture_event: async (input) => {
+          seen_inputs.push(input);
+          return {
+            ...capture_event,
+            page_title: "Department list",
+            page_url: "https://example.internal/app/departments",
+            target_label: "Add Department",
+            target_text: null,
+            input_intent: null,
+            note: "Open the department list.",
+            version: 2,
+          };
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        page_title: "Department list",
+        page_url: "https://example.internal/app/departments",
+        target_label: "Add Department",
+        target_text: null,
+        input_intent: null,
+        note: "Open the department list.",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      capture_event_id: "capture_event_1",
+      data: {
+        page_title: "Department list",
+        page_url: "https://example.internal/app/departments",
+        target_label: "Add Department",
+        target_text: null,
+        input_intent: null,
+        note: "Open the department list.",
+      },
+    }]);
+    expect(response.json()).toEqual({
+      capture_event: {
+        ...capture_event,
+        page_title: "Department list",
+        page_url: "https://example.internal/app/departments",
+        target_label: "Add Department",
+        target_text: null,
+        input_intent: null,
+        note: "Open the department list.",
+        version: 2,
+      },
+    });
+    await app.close();
+  });
+
   it("maps capture event domain errors to stable responses", async () => {
     const cases = [
       { error: new ProjectNotFoundError(), status: 404, type: "project_not_found" },
@@ -394,6 +468,7 @@ describe("capture event routes", () => {
       { error: new InvalidCaptureEventInputError(), status: 400, type: "invalid_capture_event" },
       { error: new InvalidCaptureEventOrderError(), status: 400, type: "invalid_capture_event_order" },
       { error: new CaptureEventReorderNotAllowedError(), status: 409, type: "capture_event_reorder_not_allowed" },
+      { error: new CaptureEventUpdateNotAllowedError(), status: 409, type: "capture_event_update_not_allowed" },
       { error: new CaptureEventIndexConflictError(), status: 409, type: "capture_event_index_conflict" },
     ];
 
@@ -404,6 +479,9 @@ describe("capture event routes", () => {
             throw test_case.error;
           },
           reorder_capture_events: async () => {
+            throw test_case.error;
+          },
+          update_capture_event: async () => {
             throw test_case.error;
           },
         },
@@ -428,6 +506,16 @@ describe("capture event routes", () => {
 
       expect(reorder_response.statusCode).toBe(test_case.status);
       expect(reorder_response.json().error.type).toBe(test_case.type);
+
+      const update_response = await app.inject({
+        method: "PATCH",
+        url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1",
+        cookies: { demo_composer_session: "session-token" },
+        payload: { page_title: "Department" },
+      });
+
+      expect(update_response.statusCode).toBe(test_case.status);
+      expect(update_response.json().error.type).toBe(test_case.type);
       await app.close();
     }
   });
@@ -459,6 +547,22 @@ describe("capture event routes", () => {
       const response = await app.inject({
         method: "PUT",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/order",
+        cookies: { demo_composer_session: "session-token" },
+        payload,
+      });
+
+      expect(response.statusCode).toBe(400);
+    }
+
+    for (const payload of [
+      {},
+      { page_title: "Department", input_value: "secret" },
+      { page_title: "Department", event_index: 99 },
+      { page_title: "Department", metadata: { raw_input: "secret" } },
+    ]) {
+      const response = await app.inject({
+        method: "PATCH",
+        url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1",
         cookies: { demo_composer_session: "session-token" },
         payload,
       });

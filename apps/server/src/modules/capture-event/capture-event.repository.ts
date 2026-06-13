@@ -3,6 +3,7 @@ import {
   type CaptureEvent,
   CaptureEventIndexConflictError,
   type CaptureEventRepository,
+  type CaptureSessionStatus,
   type CaptureEventType,
   type CaptureSessionSourceType,
 } from "./capture-event.service";
@@ -201,6 +202,29 @@ export const build_capture_event_repository = (db: TransactionCapableQueryable):
     return result.rows[0]?.source_type ?? null;
   },
 
+  async get_capture_session_editability(input) {
+    const result = await db.query<{
+      source_type: CaptureSessionSourceType;
+      status: CaptureSessionStatus;
+    }>(`
+      SELECT capture_session.source_type, capture_session.status
+      FROM capture_schema.capture_session capture_session
+      INNER JOIN project_schema.project project ON project.id = capture_session.project_id
+      WHERE capture_session.id = $1
+      AND capture_session.project_id = $2
+      AND capture_session.organization_id = $3
+      AND capture_session.is_deleted = FALSE
+      AND project.is_deleted = FALSE
+      LIMIT 1
+    `, [
+      input.capture_session_id,
+      input.project_id,
+      input.organization_id,
+    ]);
+
+    return result.rows[0] ?? null;
+  },
+
   async capture_asset_exists(input) {
     const result = await db.query<{ exists: boolean }>(`
       SELECT EXISTS (
@@ -373,6 +397,49 @@ export const build_capture_event_repository = (db: TransactionCapableQueryable):
     ]);
 
     return result.rows.length > 0;
+  },
+
+  async update_capture_event(input) {
+    const result = await db.query<CaptureEventRow>(`
+      UPDATE capture_schema.capture_event
+      SET
+        page_url = CASE WHEN $1::boolean THEN $2 ELSE page_url END,
+        page_title = CASE WHEN $3::boolean THEN $4 ELSE page_title END,
+        target_label = CASE WHEN $5::boolean THEN $6 ELSE target_label END,
+        target_text = CASE WHEN $7::boolean THEN $8 ELSE target_text END,
+        input_intent = CASE WHEN $9::boolean THEN $10 ELSE input_intent END,
+        note = CASE WHEN $11::boolean THEN $12 ELSE note END,
+        updated_by_id = $13,
+        updated_at = CURRENT_TIMESTAMP,
+        version = version + 1
+      WHERE id = $14
+      AND capture_session_id = $15
+      AND project_id = $16
+      AND organization_id = $17
+      AND is_deleted = FALSE
+      RETURNING ${capture_event_select}
+    `, [
+      Object.hasOwn(input.data, "page_url"),
+      input.data.page_url ?? null,
+      Object.hasOwn(input.data, "page_title"),
+      input.data.page_title ?? null,
+      Object.hasOwn(input.data, "target_label"),
+      input.data.target_label ?? null,
+      Object.hasOwn(input.data, "target_text"),
+      input.data.target_text ?? null,
+      Object.hasOwn(input.data, "input_intent"),
+      input.data.input_intent ?? null,
+      Object.hasOwn(input.data, "note"),
+      input.data.note ?? null,
+      input.actor_org_user_id,
+      input.capture_event_id,
+      input.capture_session_id,
+      input.project_id,
+      input.organization_id,
+    ]);
+    const row = first_row(result);
+
+    return row ? map_capture_event(row) : null;
   },
 
   async reorder_capture_events(input) {

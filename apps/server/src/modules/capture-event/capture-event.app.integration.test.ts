@@ -56,6 +56,12 @@ describe("capture event app integration", () => {
         get_capture_event: async () => capture_event,
         delete_capture_event: async () => undefined,
         reorder_capture_events: async () => [capture_event],
+        update_capture_event: async () => ({
+          ...capture_event,
+          page_title: "Department list",
+          note: "Open the department list.",
+          version: 2,
+        }),
       },
     });
 
@@ -67,6 +73,26 @@ describe("capture event app integration", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ capture_events: [capture_event] });
+
+    const update_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        page_title: "Department list",
+        note: "Open the department list.",
+      },
+    });
+
+    expect(update_response.statusCode).toBe(200);
+    expect(update_response.json()).toEqual({
+      capture_event: {
+        ...capture_event,
+        page_title: "Department list",
+        note: "Open the department list.",
+        version: 2,
+      },
+    });
     await app.close();
   });
 

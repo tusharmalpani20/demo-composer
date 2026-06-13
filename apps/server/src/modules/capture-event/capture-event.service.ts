@@ -5,6 +5,7 @@ export type CaptureEventAuthContext = {
 
 export type CaptureEventType = "navigation" | "click" | "input" | "capture" | "note";
 export type CaptureSessionSourceType = "manual" | "extension" | "import";
+export type CaptureSessionStatus = "draft" | "capturing" | "completed" | "canceled" | "archived";
 
 export type CaptureEvent = {
   id: string;
@@ -64,6 +65,15 @@ export type ReorderCaptureEventsInput = {
   event_ids: string[];
 };
 
+export type UpdateCaptureEventInput = {
+  page_url?: string | null;
+  page_title?: string | null;
+  target_label?: string | null;
+  target_text?: string | null;
+  input_intent?: string | null;
+  note?: string | null;
+} & Record<string, unknown>;
+
 export type NormalizedCreateCaptureEventInput = {
   event_type: CaptureEventType;
   event_index: number;
@@ -87,6 +97,15 @@ export type NormalizedCreateCaptureEventInput = {
   metadata?: unknown;
 };
 
+export type NormalizedUpdateCaptureEventInput = {
+  page_url?: string | null;
+  page_title?: string | null;
+  target_label?: string | null;
+  target_text?: string | null;
+  input_intent?: string | null;
+  note?: string | null;
+};
+
 export type CaptureEventRepository = {
   project_exists: (input: {
     organization_id: string;
@@ -102,6 +121,14 @@ export type CaptureEventRepository = {
     project_id: string;
     capture_session_id: string;
   }) => Promise<CaptureSessionSourceType | null>;
+  get_capture_session_editability: (input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+  }) => Promise<{
+    source_type: CaptureSessionSourceType;
+    status: CaptureSessionStatus;
+  } | null>;
   capture_asset_exists: (input: {
     organization_id: string;
     project_id: string;
@@ -141,6 +168,14 @@ export type CaptureEventRepository = {
     actor_org_user_id: string;
     event_ids: string[];
   }) => Promise<CaptureEvent[]>;
+  update_capture_event: (input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+    capture_event_id: string;
+    actor_org_user_id: string;
+    data: NormalizedUpdateCaptureEventInput;
+  }) => Promise<CaptureEvent | null>;
 };
 
 export class ProjectNotFoundError extends Error {
@@ -191,6 +226,12 @@ export class CaptureEventReorderNotAllowedError extends Error {
   }
 }
 
+export class CaptureEventUpdateNotAllowedError extends Error {
+  constructor() {
+    super("Only active manual capture sessions can be edited");
+  }
+}
+
 const raw_input_field_names = new Set([
   "input_value",
   "value",
@@ -214,6 +255,22 @@ const compact_optional_string = (value: string | null | undefined) => {
 
 const has_raw_input_field = (input: CreateCaptureEventInput) => (
   Object.keys(input).some((key) => raw_input_field_names.has(key))
+);
+
+const editable_update_field_names = new Set([
+  "page_url",
+  "page_title",
+  "target_label",
+  "target_text",
+  "input_intent",
+  "note",
+]);
+
+const has_forbidden_update_field = (input: UpdateCaptureEventInput) => (
+  Object.keys(input).some((key) => (
+    raw_input_field_names.has(key)
+    || !editable_update_field_names.has(key)
+  ))
 );
 
 const has_click_target = (input: NormalizedCreateCaptureEventInput) => (
@@ -289,6 +346,27 @@ const normalize_reorder_capture_events = (
   }
 
   return event_ids;
+};
+
+const normalize_update_capture_event = (
+  input: UpdateCaptureEventInput
+): NormalizedUpdateCaptureEventInput => {
+  const keys = Object.keys(input);
+
+  if (keys.length === 0 || has_forbidden_update_field(input)) {
+    throw new InvalidCaptureEventInputError();
+  }
+
+  const normalized: NormalizedUpdateCaptureEventInput = {};
+
+  for (const key of editable_update_field_names) {
+    if (input[key] !== undefined) {
+      normalized[key as keyof NormalizedUpdateCaptureEventInput] =
+        compact_optional_string(input[key] as string | null | undefined);
+    }
+  }
+
+  return normalized;
 };
 
 export const build_capture_event_service = (repository: CaptureEventRepository) => {
@@ -489,11 +567,59 @@ export const build_capture_event_service = (repository: CaptureEventRepository) 
     });
   };
 
+  const update_capture_event = async (input: {
+    auth: CaptureEventAuthContext;
+    project_id: string;
+    capture_session_id: string;
+    capture_event_id: string;
+    data: UpdateCaptureEventInput;
+  }) => {
+    const data = normalize_update_capture_event(input.data);
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      capture_session_id: input.capture_session_id,
+    };
+
+    await ensure_project_exists({
+      organization_id: scope.organization_id,
+      project_id: scope.project_id,
+    });
+
+    const editability = await repository.get_capture_session_editability(scope);
+
+    if (!editability) {
+      throw new CaptureSessionNotFoundError();
+    }
+
+    if (
+      editability.source_type !== "manual"
+      || editability.status === "archived"
+      || editability.status === "canceled"
+    ) {
+      throw new CaptureEventUpdateNotAllowedError();
+    }
+
+    const capture_event = await repository.update_capture_event({
+      ...scope,
+      capture_event_id: input.capture_event_id,
+      actor_org_user_id: input.auth.actor_org_user_id,
+      data,
+    });
+
+    if (!capture_event) {
+      throw new CaptureEventNotFoundError();
+    }
+
+    return capture_event;
+  };
+
   return {
     create_capture_event,
     list_capture_events,
     get_capture_event,
     delete_capture_event,
     reorder_capture_events,
+    update_capture_event,
   };
 };

@@ -6,6 +6,9 @@ const reset_foundation_tables = async () => {
   await pool.query(`
     TRUNCATE TABLE
       auth_schema.auth_session,
+      guide_schema.guide_step,
+      guide_schema.guide_block,
+      guide_schema.guide,
       capture_schema.capture_event,
       capture_schema.capture_asset,
       file_schema.file,
@@ -458,6 +461,164 @@ describe("DB-backed capture event API", () => {
     expect(list_response.json().capture_events.map((event: { event_index: number }) => event.event_index)).toEqual([1, 2]);
     expect(extension_reorder_response.statusCode).toBe(409);
     expect(extension_reorder_response.json().error.type).toBe("capture_event_reorder_not_allowed");
+
+    await app.close();
+  });
+
+  it("updates safe manual capture event text and uses it for later guide generation", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const capture_session_id = await create_capture_session(session_token, project_id, "manual");
+    const owner_context = await get_owner_context();
+    const app = build({ logger: false });
+
+    const create_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "note",
+        event_index: 1,
+        note: "Original source note",
+      },
+    });
+    expect(create_response.statusCode).toBe(201);
+    const capture_event_id = create_response.json().capture_event.id as string;
+
+    const update_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        page_title: " Department list ",
+        page_url: " https://example.internal/app/departments ",
+        target_label: " Add Department ",
+        target_text: " ",
+        input_intent: " ",
+        note: " Open the corrected department list. ",
+      },
+    });
+    expect(update_response.statusCode).toBe(200);
+    expect(update_response.json().capture_event).toMatchObject({
+      id: capture_event_id,
+      event_type: "note",
+      event_index: 1,
+      page_title: "Department list",
+      page_url: "https://example.internal/app/departments",
+      target_label: "Add Department",
+      target_text: null,
+      input_intent: null,
+      note: "Open the corrected department list.",
+      updated_by_id: owner_context?.org_user_id,
+      version: 2,
+    });
+
+    const persisted = await pool.query<{
+      event_index: number;
+      page_title: string | null;
+      page_url: string | null;
+      target_label: string | null;
+      target_text: string | null;
+      input_intent: string | null;
+      note: string | null;
+      updated_by_id: string;
+      version: number;
+    }>(`
+      SELECT
+        event_index,
+        page_title,
+        page_url,
+        target_label,
+        target_text,
+        input_intent,
+        note,
+        updated_by_id,
+        version
+      FROM capture_schema.capture_event
+      WHERE id = $1
+    `, [capture_event_id]);
+    expect(persisted.rows[0]).toEqual({
+      event_index: 1,
+      page_title: "Department list",
+      page_url: "https://example.internal/app/departments",
+      target_label: "Add Department",
+      target_text: null,
+      input_intent: null,
+      note: "Open the corrected department list.",
+      updated_by_id: owner_context?.org_user_id,
+      version: 2,
+    });
+
+    const partial_update_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        page_title: "Department list v2",
+      },
+    });
+    expect(partial_update_response.statusCode).toBe(200);
+    expect(partial_update_response.json().capture_event).toMatchObject({
+      page_title: "Department list v2",
+      page_url: "https://example.internal/app/departments",
+      target_label: "Add Department",
+      note: "Open the corrected department list.",
+      version: 3,
+    });
+
+    const create_guide_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/from-capture-session/${capture_session_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        title: "Department guide",
+      },
+    });
+    expect(create_guide_response.statusCode).toBe(201);
+    expect(create_guide_response.json().guide_blocks[0].step).toMatchObject({
+      title: "Open the corrected department list.",
+      body: null,
+      source_capture_event_id: capture_event_id,
+    });
+
+    const extension_session_id = await create_capture_session(session_token, project_id, "extension");
+    const extension_event_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${extension_session_id}/events`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        event_type: "note",
+        event_index: 1,
+        note: "Extension note",
+      },
+    });
+    expect(extension_event_response.statusCode).toBe(201);
+    const extension_update_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${extension_session_id}/events/${extension_event_response.json().capture_event.id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        note: "Should not update",
+      },
+    });
+    expect(extension_update_response.statusCode).toBe(409);
+    expect(extension_update_response.json().error.type).toBe("capture_event_update_not_allowed");
+
+    await pool.query(`
+      UPDATE capture_schema.capture_session
+      SET status = 'archived'
+      WHERE id = $1
+    `, [capture_session_id]);
+    const archived_update_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        note: "Should not update archived session",
+      },
+    });
+    expect(archived_update_response.statusCode).toBe(409);
+    expect(archived_update_response.json().error.type).toBe("capture_event_update_not_allowed");
 
     await app.close();
   });
