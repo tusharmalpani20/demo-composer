@@ -58,6 +58,15 @@ export type ReorderCaptureEventsInput = {
   event_ids: string[];
 };
 
+export type UpdateCaptureEventInput = {
+  page_url?: string | null;
+  page_title?: string | null;
+  target_label?: string | null;
+  target_text?: string | null;
+  input_intent?: string | null;
+  note?: string | null;
+};
+
 export type CaptureEvent = {
   id: string;
   organization_id: string;
@@ -135,4 +144,8 @@ export type CreateCaptureEventResponse = {
 
 export type ReorderCaptureEventsResponse = {
   capture_events: CaptureEvent[];
+};
+
+export type UpdateCaptureEventResponse = {
+  capture_event: CaptureEvent;
 };

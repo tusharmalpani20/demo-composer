@@ -6,6 +6,7 @@ import {
   getCaptureSessionDetail,
   reorderCaptureSessionEvents,
   resolveApiAssetUrl,
+  updateCaptureSessionEvent,
   uploadCaptureSessionAsset,
 } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
@@ -18,6 +19,8 @@ import type {
   CreateCaptureEventResponse,
   ReorderCaptureEventsInput,
   ReorderCaptureEventsResponse,
+  UpdateCaptureEventInput,
+  UpdateCaptureEventResponse,
   UploadCaptureAssetResponse,
 } from "./types";
 import styles from "./CaptureSessionDetailPage.module.css";
@@ -33,6 +36,15 @@ type UploadQueueItem = {
   id: string;
   name: string;
   status: "queued" | "uploading" | "event_created" | "failed";
+};
+
+type EventEditDraft = {
+  page_title: string;
+  page_url: string;
+  target_label: string;
+  target_text: string;
+  input_intent: string;
+  note: string;
 };
 
 type CaptureSessionDetailPageProps = {
@@ -77,6 +89,12 @@ type CaptureSessionDetailPageProps = {
     captureSessionId: string,
     input: ReorderCaptureEventsInput
   ) => Promise<ReorderCaptureEventsResponse>;
+  updateEvent?: (
+    projectId: string,
+    captureSessionId: string,
+    eventId: string,
+    input: UpdateCaptureEventInput
+  ) => Promise<UpdateCaptureEventResponse>;
   redirectTo?: (path: string) => void;
   currentPath?: string;
   performLogout?: () => Promise<void>;
@@ -132,6 +150,30 @@ const optionalUploadField = (value: string) => {
 
   return trimmed || null;
 };
+
+const optionalEventField = (value: string) => {
+  const trimmed = value.trim();
+
+  return trimmed || null;
+};
+
+const draftFromEvent = (event: CaptureEvent): EventEditDraft => ({
+  page_title: event.page_title ?? "",
+  page_url: event.page_url ?? "",
+  target_label: event.target_label ?? "",
+  target_text: event.target_text ?? "",
+  input_intent: event.input_intent ?? "",
+  note: event.note ?? "",
+});
+
+const inputFromDraft = (draft: EventEditDraft): UpdateCaptureEventInput => ({
+  page_title: optionalEventField(draft.page_title),
+  page_url: optionalEventField(draft.page_url),
+  target_label: optionalEventField(draft.target_label),
+  target_text: optionalEventField(draft.target_text),
+  input_intent: optionalEventField(draft.input_intent),
+  note: optionalEventField(draft.note),
+});
 
 const nextEventIndex = (events: CaptureEvent[]) => (
   events.reduce((nextIndex, event) => Math.max(nextIndex, event.event_index + 1), 1)
@@ -205,6 +247,28 @@ const reorderErrorMessage = (error: unknown) => {
   return "Could not reorder capture events.";
 };
 
+const updateEventErrorMessage = (error: unknown) => {
+  if (error instanceof ApiClientError) {
+    if (error.kind === "unauthenticated") {
+      return "Sign in to edit capture events.";
+    }
+
+    if (error.kind === "not_found") {
+      return "Capture event was not found.";
+    }
+
+    if (error.type === "capture_event_update_not_allowed") {
+      return "Only active manual capture sessions can be edited.";
+    }
+
+    if (error.type === "invalid_capture_event") {
+      return "Capture event input is invalid.";
+    }
+  }
+
+  return "Could not update capture event.";
+};
+
 const eventPageLabel = (event: CaptureEvent) => {
   if (!event.page_url) {
     return null;
@@ -240,6 +304,7 @@ export const CaptureSessionDetailPage = ({
   uploadAsset = uploadCaptureSessionAsset,
   createCaptureEvent: createCaptureEventAction = createCaptureSessionEvent,
   reorderEvents = reorderCaptureSessionEvents,
+  updateEvent = updateCaptureSessionEvent,
   redirectTo = (path) => window.location.assign(path),
   currentPath = currentBrowserPath(),
   performLogout,
@@ -319,6 +384,7 @@ export const CaptureSessionDetailPage = ({
       uploadAsset={uploadAsset}
       createCaptureEvent={createCaptureEventAction}
       reorderEvents={reorderEvents}
+      updateEvent={updateEvent}
       reloadDetail={() => setReloadKey((key) => key + 1)}
       redirectTo={redirectTo}
       performLogout={performLogout}
@@ -355,6 +421,7 @@ const CaptureSessionDetailView = ({
   uploadAsset,
   createCaptureEvent,
   reorderEvents,
+  updateEvent,
   reloadDetail,
   redirectTo,
   performLogout,
@@ -368,6 +435,7 @@ const CaptureSessionDetailView = ({
   uploadAsset: NonNullable<CaptureSessionDetailPageProps["uploadAsset"]>;
   createCaptureEvent: NonNullable<CaptureSessionDetailPageProps["createCaptureEvent"]>;
   reorderEvents: NonNullable<CaptureSessionDetailPageProps["reorderEvents"]>;
+  updateEvent: NonNullable<CaptureSessionDetailPageProps["updateEvent"]>;
   reloadDetail: () => void;
   redirectTo: NonNullable<CaptureSessionDetailPageProps["redirectTo"]>;
   performLogout?: () => Promise<void>;
@@ -376,6 +444,10 @@ const CaptureSessionDetailView = ({
   const [createState, setCreateState] = useState<"idle" | "creating" | "error">("idle");
   const [uploadState, setUploadState] = useState<"idle" | "uploading">("idle");
   const [reorderState, setReorderState] = useState<"idle" | "reordering">("idle");
+  const [eventEditState, setEventEditState] = useState<"idle" | "saving">("idle");
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [eventEditDraft, setEventEditDraft] = useState<EventEditDraft | null>(null);
+  const [eventEditError, setEventEditError] = useState<string | null>(null);
   const [reorderError, setReorderError] = useState<string | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
@@ -399,6 +471,8 @@ const CaptureSessionDetailView = ({
       : "Upload Screenshot";
   const canReorderEvents = session.source_type === "manual" && detail.capture_events.length > 1;
   const isReordering = reorderState === "reordering";
+  const canEditEvents = session.source_type === "manual";
+  const isSavingEvent = eventEditState === "saving";
 
   const handleCreateGuide = async () => {
     if (!canCreateGuide) {
@@ -570,6 +644,51 @@ const CaptureSessionDetailView = ({
     }
   };
 
+  const startEditingEvent = (event: CaptureEvent) => {
+    if (!canEditEvents || isSavingEvent) {
+      return;
+    }
+
+    setEditingEventId(event.id);
+    setEventEditDraft(draftFromEvent(event));
+    setEventEditError(null);
+  };
+
+  const cancelEditingEvent = () => {
+    if (isSavingEvent) {
+      return;
+    }
+
+    setEditingEventId(null);
+    setEventEditDraft(null);
+    setEventEditError(null);
+  };
+
+  const updateEventDraft = (field: keyof EventEditDraft, value: string) => {
+    setEventEditDraft((draft) => draft ? { ...draft, [field]: value } : draft);
+    setEventEditError(null);
+  };
+
+  const saveEvent = async (event: CaptureEvent) => {
+    if (!eventEditDraft || isSavingEvent) {
+      return;
+    }
+
+    setEventEditState("saving");
+    setEventEditError(null);
+
+    try {
+      await updateEvent(projectId, captureSessionId, event.id, inputFromDraft(eventEditDraft));
+      setEditingEventId(null);
+      setEventEditDraft(null);
+      reloadDetail();
+    } catch (error: unknown) {
+      setEventEditError(updateEventErrorMessage(error));
+    } finally {
+      setEventEditState("idle");
+    }
+  };
+
   return (
     <PortalShell projectId={projectId} captureSessionId={captureSessionId} performLogout={performLogout} navigate={navigate}>
       <section className={styles.header}>
@@ -680,10 +799,20 @@ const CaptureSessionDetailView = ({
                   linkedAsset={event.capture_asset_id ? assetById.get(event.capture_asset_id) : undefined}
                   canReorder={canReorderEvents}
                   disableReorder={isReordering}
+                  canEdit={canEditEvents}
+                  disableEdit={isSavingEvent}
+                  isEditing={editingEventId === event.id}
+                  editDraft={editingEventId === event.id ? eventEditDraft : null}
+                  editError={editingEventId === event.id ? eventEditError : null}
+                  isSaving={editingEventId === event.id && isSavingEvent}
                   isFirst={index === 0}
                   isLast={index === detail.capture_events.length - 1}
                   onMoveUp={() => moveEvent(index, -1)}
                   onMoveDown={() => moveEvent(index, 1)}
+                  onEdit={() => startEditingEvent(event)}
+                  onCancelEdit={cancelEditingEvent}
+                  onChangeDraft={updateEventDraft}
+                  onSave={() => saveEvent(event)}
                 />
               ))}
             </div>
@@ -725,57 +854,175 @@ const EventRow = ({
   linkedAsset,
   canReorder,
   disableReorder,
+  canEdit,
+  disableEdit,
+  isEditing,
+  editDraft,
+  editError,
+  isSaving,
   isFirst,
   isLast,
   onMoveUp,
   onMoveDown,
+  onEdit,
+  onCancelEdit,
+  onChangeDraft,
+  onSave,
 }: {
   event: CaptureEvent;
   stepNumber: number;
   linkedAsset?: CaptureAsset;
   canReorder: boolean;
   disableReorder: boolean;
+  canEdit: boolean;
+  disableEdit: boolean;
+  isEditing: boolean;
+  editDraft: EventEditDraft | null;
+  editError: string | null;
+  isSaving: boolean;
   isFirst: boolean;
   isLast: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onEdit: () => void;
+  onCancelEdit: () => void;
+  onChangeDraft: (field: keyof EventEditDraft, value: string) => void;
+  onSave: () => void;
 }) => {
   const pageLabel = eventPageLabel(event);
+  const title = eventTitle(event);
+  const secondaryDetails = [event.target_label, event.target_text, event.input_intent]
+    .filter((value): value is string => Boolean(value) && value !== title);
 
   return (
     <article className={styles.event}>
       <div className={styles.eventIndex}>{stepNumber}</div>
       <div className={styles.eventBody}>
-        <div className={styles.eventHeader}>
-          <span className={styles.eventTitle}>{eventTitle(event)}</span>
-          <span className={styles.eventType}>{event.event_type}</span>
-        </div>
-        <div className={styles.eventMeta}>
-          {formatDateTime(event.occurred_at)}
-          {pageLabel ? ` · ${pageLabel}` : ""}
-        </div>
-        {linkedAsset ? <div className={styles.linkedAsset}>Linked screenshot</div> : null}
+        {isEditing && editDraft ? (
+          <form
+            className={styles.eventEditForm}
+            onSubmit={(submitEvent) => {
+              submitEvent.preventDefault();
+              onSave();
+            }}
+          >
+            {editError ? <div className={styles.formError}>{editError}</div> : null}
+            <label className={styles.field}>
+              <span>Event page title</span>
+              <input
+                value={editDraft.page_title}
+                disabled={isSaving}
+                onChange={(changeEvent) => onChangeDraft("page_title", changeEvent.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Event page URL</span>
+              <input
+                value={editDraft.page_url}
+                disabled={isSaving}
+                onChange={(changeEvent) => onChangeDraft("page_url", changeEvent.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Event target label</span>
+              <input
+                value={editDraft.target_label}
+                disabled={isSaving}
+                onChange={(changeEvent) => onChangeDraft("target_label", changeEvent.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Event target text</span>
+              <input
+                value={editDraft.target_text}
+                disabled={isSaving}
+                onChange={(changeEvent) => onChangeDraft("target_text", changeEvent.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Event input intent</span>
+              <input
+                value={editDraft.input_intent}
+                disabled={isSaving}
+                onChange={(changeEvent) => onChangeDraft("input_intent", changeEvent.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Event note</span>
+              <textarea
+                value={editDraft.note}
+                disabled={isSaving}
+                onChange={(changeEvent) => onChangeDraft("note", changeEvent.target.value)}
+              />
+            </label>
+            <div className={styles.eventEditActions}>
+              <button className={styles.primaryButton} type="submit" disabled={isSaving}>
+                {isSaving ? `Saving event ${stepNumber}` : `Save event ${stepNumber}`}
+              </button>
+              <button
+                className={styles.eventMoveButton}
+                type="button"
+                disabled={isSaving}
+                onClick={onCancelEdit}
+              >
+                {`Cancel event ${stepNumber} edit`}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <div className={styles.eventHeader}>
+              <span className={styles.eventTitle}>{title}</span>
+              <span className={styles.eventType}>{event.event_type}</span>
+            </div>
+            <div className={styles.eventMeta}>
+              {formatDateTime(event.occurred_at)}
+              {pageLabel ? ` · ${pageLabel}` : ""}
+            </div>
+            {secondaryDetails.length > 0 ? (
+              <div className={styles.eventMeta}>
+                {secondaryDetails.join(" · ")}
+              </div>
+            ) : null}
+            {linkedAsset ? <div className={styles.linkedAsset}>Linked screenshot</div> : null}
+          </>
+        )}
       </div>
-      {canReorder ? (
+      {canReorder || canEdit ? (
         <div className={styles.eventActions}>
-          <button
-            className={styles.eventMoveButton}
-            type="button"
-            disabled={disableReorder || isFirst}
-            aria-label={`Move event ${stepNumber} up`}
-            onClick={onMoveUp}
-          >
-            Up
-          </button>
-          <button
-            className={styles.eventMoveButton}
-            type="button"
-            disabled={disableReorder || isLast}
-            aria-label={`Move event ${stepNumber} down`}
-            onClick={onMoveDown}
-          >
-            Down
-          </button>
+          {canEdit ? (
+            <button
+              className={styles.eventMoveButton}
+              type="button"
+              disabled={disableEdit || isEditing}
+              aria-label={`Edit event ${stepNumber}`}
+              onClick={onEdit}
+            >
+              Edit
+            </button>
+          ) : null}
+          {canReorder ? (
+            <>
+              <button
+                className={styles.eventMoveButton}
+                type="button"
+                disabled={disableReorder || isFirst}
+                aria-label={`Move event ${stepNumber} up`}
+                onClick={onMoveUp}
+              >
+                Up
+              </button>
+              <button
+                className={styles.eventMoveButton}
+                type="button"
+                disabled={disableReorder || isLast}
+                aria-label={`Move event ${stepNumber} down`}
+                onClick={onMoveDown}
+              >
+                Down
+              </button>
+            </>
+          ) : null}
         </div>
       ) : null}
     </article>

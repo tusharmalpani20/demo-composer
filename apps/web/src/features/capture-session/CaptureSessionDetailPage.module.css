@@ -141,7 +141,8 @@
   font-weight: 700;
 }
 
-.field input {
+.field input,
+.field textarea {
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
@@ -150,6 +151,11 @@
   color: #111827;
   font: inherit;
   font-weight: 500;
+}
+
+.field textarea {
+  min-height: 86px;
+  resize: vertical;
 }
 
 .uploadActions {
@@ -307,7 +313,20 @@
 
 .eventActions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+}
+
+.eventEditForm {
+  display: grid;
+  gap: 12px;
+}
+
+.eventEditActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .eventMoveButton {

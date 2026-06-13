@@ -8,6 +8,8 @@ import type {
   CaptureSessionDetail,
   CreateCaptureEventInput,
   CreateCaptureEventResponse,
+  UpdateCaptureEventInput,
+  UpdateCaptureEventResponse,
   UploadCaptureAssetInput,
   UploadCaptureAssetResponse,
 } from "./types";
@@ -281,6 +283,12 @@ const renderPage = (overrides: {
       event_ids: string[];
     }
   ) => Promise<{ capture_events: CaptureEvent[] }>;
+  updateEvent?: (
+    projectId: string,
+    captureSessionId: string,
+    eventId: string,
+    input: UpdateCaptureEventInput
+  ) => Promise<UpdateCaptureEventResponse>;
   redirectTo?: (path: string) => void;
 } = {}) => {
   const loadDetail = overrides.loadDetail ?? vi.fn(async () => detail);
@@ -289,6 +297,7 @@ const renderPage = (overrides: {
   const uploadAsset = overrides.uploadAsset ?? vi.fn(async () => ({ capture_asset: uploadedAsset }));
   const createCaptureEvent = overrides.createCaptureEvent ?? vi.fn(async () => ({ capture_event: uploadedEvent }));
   const reorderEvents = overrides.reorderEvents ?? vi.fn(async () => ({ capture_events: manualDetail().capture_events }));
+  const updateEvent = overrides.updateEvent ?? vi.fn(async () => ({ capture_event: manualDetail().capture_events[0] as CaptureEvent }));
   const redirectTo = overrides.redirectTo ?? vi.fn();
 
   render(
@@ -301,11 +310,12 @@ const renderPage = (overrides: {
       uploadAsset={uploadAsset}
       createCaptureEvent={createCaptureEvent}
       reorderEvents={reorderEvents}
+      updateEvent={updateEvent}
       redirectTo={redirectTo}
     />
   );
 
-  return { loadDetail, createGuide, uploadAsset, createCaptureEvent, reorderEvents, redirectTo };
+  return { loadDetail, createGuide, uploadAsset, createCaptureEvent, reorderEvents, updateEvent, redirectTo };
 };
 
 describe("CaptureSessionDetailPage", () => {
@@ -807,6 +817,114 @@ describe("CaptureSessionDetailPage", () => {
 
     resolveReorder({ capture_events: manualDetail().capture_events });
     await waitFor(() => expect(reorderEvents).toHaveBeenCalledTimes(1));
+  });
+
+  it("edits manual capture event text inline and reloads detail after save", async () => {
+    const firstDetail = manualDetail();
+    const updatedEvent = {
+      ...(firstDetail.capture_events[0] as CaptureEvent),
+      page_title: "Department list",
+      page_url: "https://example.internal/app/departments",
+      target_label: "Add Department",
+      target_text: null,
+      input_intent: null,
+      note: "Open the corrected department list.",
+      version: 2,
+    };
+    const secondDetail: CaptureSessionDetail = {
+      ...firstDetail,
+      capture_events: [
+        updatedEvent,
+        firstDetail.capture_events[1] as CaptureEvent,
+      ],
+    };
+    const loadDetail = vi
+      .fn<() => Promise<CaptureSessionDetail>>()
+      .mockResolvedValueOnce(firstDetail)
+      .mockResolvedValueOnce(secondDetail);
+    const updateEvent = vi.fn(async () => ({ capture_event: updatedEvent }));
+
+    renderPage({ loadDetail, updateEvent });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit event 1" }));
+    expect(screen.getByLabelText("Event page title")).toHaveValue("");
+    expect(screen.getByLabelText("Event note")).toHaveValue("Start from department list");
+
+    fireEvent.change(screen.getByLabelText("Event page title"), { target: { value: "Department list" } });
+    fireEvent.change(screen.getByLabelText("Event page URL"), { target: { value: "https://example.internal/app/departments" } });
+    fireEvent.change(screen.getByLabelText("Event target label"), { target: { value: "Add Department" } });
+    fireEvent.change(screen.getByLabelText("Event note"), { target: { value: "Open the corrected department list." } });
+    fireEvent.click(screen.getByRole("button", { name: "Save event 1" }));
+
+    await waitFor(() => expect(updateEvent).toHaveBeenCalledWith("project_1", "capture_session_1", "event_1", {
+      page_title: "Department list",
+      page_url: "https://example.internal/app/departments",
+      target_label: "Add Department",
+      target_text: null,
+      input_intent: null,
+      note: "Open the corrected department list.",
+    }));
+    await waitFor(() => expect(loadDetail).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Open the corrected department list.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save event 1" })).not.toBeInTheDocument();
+  });
+
+  it("hides manual event edit controls for non-manual sessions", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Create department workflow" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Edit event/i })).not.toBeInTheDocument();
+  });
+
+  it("cancels manual capture event editing without saving", async () => {
+    const { updateEvent } = renderPage({ loadDetail: async () => manualDetail() });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit event 1" }));
+    fireEvent.change(screen.getByLabelText("Event note"), { target: { value: "Changed locally" } });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel event 1 edit" }));
+
+    expect(updateEvent).not.toHaveBeenCalled();
+    expect(screen.getByText("Start from department list")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("Changed locally")).not.toBeInTheDocument();
+  });
+
+  it("keeps manual capture event edit form open when save fails", async () => {
+    const updateEvent = vi.fn(async () => {
+      throw new ApiClientError({
+        kind: "validation",
+        status: 409,
+        type: "capture_event_update_not_allowed",
+        message: "Only active manual capture sessions can be edited",
+      });
+    });
+
+    renderPage({ loadDetail: async () => manualDetail(), updateEvent });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit event 1" }));
+    fireEvent.change(screen.getByLabelText("Event note"), { target: { value: "Changed note" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save event 1" }));
+
+    expect(await screen.findByText("Only active manual capture sessions can be edited.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Event note")).toHaveValue("Changed note");
+  });
+
+  it("disables manual capture event edit controls while save is pending", async () => {
+    let resolveUpdate: (value: UpdateCaptureEventResponse) => void = () => undefined;
+    const updateEvent = vi.fn(() => new Promise<UpdateCaptureEventResponse>((resolve) => {
+      resolveUpdate = resolve;
+    }));
+
+    renderPage({ loadDetail: async () => manualDetail(), updateEvent });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Edit event 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save event 1" }));
+
+    expect(screen.getByRole("button", { name: "Saving event 1" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel event 1 edit" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Edit event 2" })).toBeDisabled();
+
+    resolveUpdate({ capture_event: manualDetail().capture_events[0] as CaptureEvent });
+    await waitFor(() => expect(updateEvent).toHaveBeenCalledTimes(1));
   });
 
   it("creates a guide from the loaded capture session and redirects to the editor", async () => {
