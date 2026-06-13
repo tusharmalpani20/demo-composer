@@ -2,6 +2,8 @@
 
 Date: 2026-06-13
 
+Status: Implemented on 2026-06-13.
+
 ## Goal
 
 Let authenticated portal users clean up manual capture event text before generating a guide, so uploaded screenshot sessions can produce stronger Scribe-style guide drafts.

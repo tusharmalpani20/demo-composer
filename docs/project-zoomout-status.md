@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `047` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering from the portal, public guide access controls, and project health hardening.
+- Plans `001` through `048` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering and editing from the portal, public guide access controls, and project health hardening.
 - Development setup, backend route inventory, and production readiness docs now exist:
   - `docs/development-setup.md`
   - `docs/backend-route-inventory.md`
@@ -92,7 +92,7 @@ The agreed implementation style is:
 - Project module supports create, list, get, update, and soft delete/archive behavior.
 - Capture session module supports create, list, get, detail read model, update, complete/finalize, and delete/archive behavior.
 - Capture asset module supports metadata creation, multipart screenshot upload to local storage, guide-editor screenshot upload reuse, list, get metadata, read file bytes, and delete/archive behavior.
-- Capture event module supports create, list, get, reorder for manual capture sessions, and delete/archive behavior, with raw input-value protection.
+- Capture event module supports create, list, get, safe manual event text editing, reorder for manual capture sessions, and delete/archive behavior, with raw input-value protection.
 - Guide module supports creating a guide from a capture session, listing guides, reading guide detail with safe effective screenshot asset display data, updating guide metadata, updating guide steps, inserting/editing basic guide blocks, changing/removing step screenshots, preparing direct guide-step screenshot uploads, reordering guide blocks, and deleting guide blocks.
 - Guide generation uses ordered capture events as source material and creates better deterministic steps for screenshot-backed `capture` events.
 - Publish module supports authenticated guide publish/republish, immutable guide snapshot creation using selected or hidden step screenshot state, stable active slugs, publish status reads, publish-link public/restricted access mode updates, optional publish-link expiry, revoke/unpublish, public publish-link resolution with access enforcement, and public asset file streaming constrained to assets referenced by the active accessible snapshot.
@@ -121,6 +121,7 @@ The agreed implementation style is:
   - capture session screenshot upload
   - capture session event creation
   - manual capture session event reordering
+  - manual capture session event editing
   - capture session list/detail
   - guide list/detail
   - create guide from capture
@@ -140,7 +141,7 @@ The agreed implementation style is:
 - Project list/home page shows accessible projects, lets users create new projects, and opens project workspaces.
 - Project workspace links to capture sessions and guides.
 - Capture session list page shows project capture sessions and lets users create manual portal capture sessions.
-- Capture session detail page shows source capture detail, lets users upload one or more screenshots into manual capture sessions with linked capture events, shows per-file bulk upload status and partial-success failures, lets users move manual capture events up/down before guide generation, and supports creating a guide from that capture.
+- Capture session detail page shows source capture detail, lets users upload one or more screenshots into manual capture sessions with linked capture events, shows per-file bulk upload status and partial-success failures, lets users move manual capture events up/down, edit safe manual event text fields before guide generation, and supports creating a guide from that capture.
 - Guide list page shows project guides with per-guide publish status, isolated status-load failures, direct public-link open actions for active accessible published guides, and restricted/expired publish-link status labels.
 - Guide editor page supports editing guide title/description/status, updating step title/body, inserting step/header/paragraph/tip/alert/divider blocks, editing basic text content on header/paragraph/tip/alert blocks, attaching/changing/removing step screenshots from project screenshots, uploading a brand-new replacement screenshot directly from a step, adding/removing rectangle highlights on step screenshots, reordering blocks, deleting blocks, rendering effective screenshots inline, and opening editor screenshots in the focused screenshot viewer.
 - Guide editor page supports publishing, republishing, opening, copying, access-mode updates, expiry updates, and revoking guide links from an authenticated portal publishing panel, including clearer busy states, copy fallback messaging, and stale-draft cues when a published guide has unpublished draft changes.
@@ -169,7 +170,6 @@ The agreed implementation style is:
 
 ### Portal Creation Flows
 
-- No manual capture event text/content edit UI.
 - No project settings/edit/archive UI.
 - No organization/user/member invitation UI.
 
@@ -204,6 +204,6 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: create a manual portal capture session, upload one or more screenshot-backed `capture` events into it, correct the manual event order before generation, or start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their effective screenshots, attach/change/remove step screenshots from project screenshots, upload a brand-new replacement screenshot directly from the editor, add rectangle highlights to clarify important screenshot regions, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, copy or download the current draft as Markdown, publish or republish that guide from the portal as an immutable backend snapshot behind a stable link, set that link public or restricted, optionally set/clear an expiry, see guide-list publish/access status, copy/open the public URL when accessible, revoke the active link, and open accessible public `/p/:slug` guides outside portal authentication.
+The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: create a manual portal capture session, upload one or more screenshot-backed `capture` events into it, correct the manual event order and safe event text fields before generation, or start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their effective screenshots, attach/change/remove step screenshots from project screenshots, upload a brand-new replacement screenshot directly from the editor, add rectangle highlights to clarify important screenshot regions, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, copy or download the current draft as Markdown, publish or republish that guide from the portal as an immutable backend snapshot behind a stable link, set that link public or restricted, optionally set/clear an expiry, see guide-list publish/access status, copy/open the public URL when accessible, revoke the active link, and open accessible public `/p/:slug` guides outside portal authentication.
 
-The next major milestone should continue guide delivery depth with project settings/archive UI or manual capture event editing, then richer export/share polish, embed support, password/viewer-session sharing, analytics, and the interactive demo product.
+The next major milestone should continue guide delivery depth with project settings/archive UI, richer export/share polish, embed support, password/viewer-session sharing, analytics, and the interactive demo product.
