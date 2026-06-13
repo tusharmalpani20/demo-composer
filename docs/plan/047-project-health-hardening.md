@@ -2,6 +2,8 @@
 
 Date: 2026-06-13
 
+Status: Implemented on 2026-06-13.
+
 ## Goal
 
 Stabilize Demo Composer after the first working capture-to-guide loop so the project is easier to run, verify, maintain, and extend before starting the larger interactive demo product.

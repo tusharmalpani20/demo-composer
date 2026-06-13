@@ -436,15 +436,16 @@ Repositories should:
 Server modules should look like:
 
 ```text
-apps/server/src/module/<domain>/
-  router/
-  controller/
-  service/
+apps/server/src/modules/<domain>/
+  <domain>.routes.ts
+  <domain>.service.ts
+  <domain>.repository.ts
+  <domain>.*.test.ts
 ```
 
-Use `model/` only if the domain has not been moved into a package yet.
+Do not add new code under the removed legacy `apps/server/src/module/*` tree. Use `model/` only if the domain has not been moved into a package yet.
 
-For new core domains, prefer no server `model/` folder. Persistence should live in the domain package repository.
+For new core domains, prefer no server `model/` folder. Persistence should live in the domain repository or a package repository when the domain is extracted.
 
 The server service should:
 
@@ -570,4 +571,3 @@ The most important product boundary is:
 capture source data is shared
 guide artifacts and interactive demo artifacts are separate
 ```
-

@@ -1,159 +1,92 @@
-# Turborepo starter
+# Demo Composer
 
-This Turborepo starter is maintained by the Turborepo core team.
+Demo Composer is an open-source capture-to-guide product. It captures browser workflows and turns them into Scribe-style walkthrough docs with screenshots, editable steps, annotations, Markdown export, and publishable public guide links.
 
-## Using this example
+The first product loop is focused on internal documentation:
 
-Run the following command:
-
-```sh
-npx create-turbo@latest
+```text
+capture screenshots
+  -> create capture events
+  -> generate an editable guide
+  -> preview and edit the guide
+  -> publish an immutable public snapshot
 ```
 
-## What's inside?
+Interactive demos, analytics, sales tracking, and AI are intentionally deferred.
 
-This Turborepo includes the following packages/apps:
+## Apps
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+```text
+apps/server     Fastify REST API
+apps/web        React/Vite portal and public guide reader
+apps/extension  React/Vite Chrome extension popup
+apps/docs       Next.js docs app scaffold
 ```
 
-Without global `turbo`, use your package manager:
+Shared packages live under `packages/`.
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
+## Setup
+
+Start with:
+
+```bash
+pnpm install
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Detailed local setup, environment variables, database commands, storage configuration, and verification commands are documented in:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
+```text
+docs/development-setup.md
 ```
 
-Without global `turbo`:
+## Verification
 
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+Common non-DB verification:
+
+```bash
+rtk pnpm --filter server test
+rtk pnpm --filter web test
+rtk pnpm --filter extension test
+rtk pnpm check-types
+rtk pnpm build
+rtk pnpm lint
+rtk git diff --check
 ```
 
-### Develop
+DB-backed verification:
 
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
+```bash
+rtk pnpm --filter server run test:db
 ```
 
-Without global `turbo`, use your package manager:
+The DB tests require a real PostgreSQL testing database configured through `.env-cmdrc`.
 
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
+## Backend Shape
+
+The current backend product path is:
+
+```text
+apps/server/src/modules/*
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Route ownership and the removed legacy route surface are documented in:
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
+```text
+docs/backend-route-inventory.md
 ```
 
-Without global `turbo`:
+## Deployment Checklist
 
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+Before deploying, use:
+
+```text
+docs/production-readiness-checklist.md
 ```
 
-### Remote Caching
+## Product Status
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+Current product progress and known gaps are tracked in:
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
+```text
+docs/project-zoomout-status.md
 ```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)

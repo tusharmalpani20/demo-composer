@@ -59,12 +59,19 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `046` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering from the portal, and public guide access controls.
+- Plans `001` through `047` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering from the portal, public guide access controls, and project health hardening.
+- Development setup, backend route inventory, and production readiness docs now exist:
+  - `docs/development-setup.md`
+  - `docs/backend-route-inventory.md`
+  - `docs/production-readiness-checklist.md`
 
 ### Backend Foundation
 
 - Fastify app wired under `/api/v1`.
 - CORS, cookies, multipart upload, Swagger/Scalar setup, and shared error handling are present.
+- The active backend route path is the current `apps/server/src/modules/*` tree.
+- The old ORCA-style `apps/server/src/module/*`, `apps/server/src/root_router/*`, and passport wiring have been removed from the runtime and source tree.
+- Lint now passes without server warnings after legacy cleanup and Turbo env tracking updates.
 - Database migrations currently cover:
   - users
   - organizations
@@ -90,6 +97,7 @@ The agreed implementation style is:
 - Guide generation uses ordered capture events as source material and creates better deterministic steps for screenshot-backed `capture` events.
 - Publish module supports authenticated guide publish/republish, immutable guide snapshot creation using selected or hidden step screenshot state, stable active slugs, publish status reads, publish-link public/restricted access mode updates, optional publish-link expiry, revoke/unpublish, public publish-link resolution with access enforcement, and public asset file streaming constrained to assets referenced by the active accessible snapshot.
 - Server has unit, route, app integration, and DB integration coverage across the implemented modules.
+- Full DB integration verification passes against the configured `.env-cmdrc` testing database.
 
 ### Web Portal
 
@@ -178,8 +186,8 @@ The agreed implementation style is:
 ### Publishing And Viewing
 
 - No public interactive demo viewer yet.
-- No embed flow.
-- No password-protected public links, viewer sessions, embed flow, or public interactive demo viewer yet.
+- No public guide embed flow yet.
+- No password-protected public links or viewer sessions yet.
 
 ### Analytics And Sales Layer
 
@@ -198,4 +206,4 @@ The agreed implementation style is:
 
 The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: create a manual portal capture session, upload one or more screenshot-backed `capture` events into it, correct the manual event order before generation, or start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their effective screenshots, attach/change/remove step screenshots from project screenshots, upload a brand-new replacement screenshot directly from the editor, add rectangle highlights to clarify important screenshot regions, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, copy or download the current draft as Markdown, publish or republish that guide from the portal as an immutable backend snapshot behind a stable link, set that link public or restricted, optionally set/clear an expiry, see guide-list publish/access status, copy/open the public URL when accessible, revoke the active link, and open accessible public `/p/:slug` guides outside portal authentication.
 
-The next major milestone should continue guide delivery depth with project health hardening, richer export/share polish, embed support, or password/viewer-session sharing, then move toward analytics and the interactive demo product.
+The next major milestone should continue guide delivery depth with project settings/archive UI or manual capture event editing, then richer export/share polish, embed support, password/viewer-session sharing, analytics, and the interactive demo product.
