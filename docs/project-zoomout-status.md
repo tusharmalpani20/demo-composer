@@ -1,6 +1,6 @@
 # Project Zoom-Out Status
 
-Date: 2026-06-13
+Date: 2026-06-14
 
 ## Product Intent
 
@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `049` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering and editing from the portal, public guide access controls, project health hardening, and project settings/archive controls.
+- Plans `001` through `050` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering and editing from the portal, public guide access controls, project health hardening, project settings/archive controls, and public guide embed foundation.
 - Development setup, backend route inventory, and production readiness docs now exist:
   - `docs/development-setup.md`
   - `docs/backend-route-inventory.md`
@@ -112,6 +112,8 @@ The agreed implementation style is:
   - `/projects/:project_id/guides`
   - `/projects/:project_id/guides/:guide_id`
   - `/projects/:project_id/guides/:guide_id/preview`
+  - `/p/:slug`
+  - `/p/:slug/embed`
 - API client helpers currently cover:
   - current auth
   - login
@@ -146,11 +148,11 @@ The agreed implementation style is:
 - Capture session detail page shows source capture detail, lets users upload one or more screenshots into manual capture sessions with linked capture events, shows per-file bulk upload status and partial-success failures, lets users move manual capture events up/down, edit safe manual event text fields before guide generation, and supports creating a guide from that capture.
 - Guide list page shows project guides with per-guide publish status, isolated status-load failures, direct public-link open actions for active accessible published guides, and restricted/expired publish-link status labels.
 - Guide editor page supports editing guide title/description/status, updating step title/body, inserting step/header/paragraph/tip/alert/divider blocks, editing basic text content on header/paragraph/tip/alert blocks, attaching/changing/removing step screenshots from project screenshots, uploading a brand-new replacement screenshot directly from a step, adding/removing rectangle highlights on step screenshots, reordering blocks, deleting blocks, rendering effective screenshots inline, and opening editor screenshots in the focused screenshot viewer.
-- Guide editor page supports publishing, republishing, opening, copying, access-mode updates, expiry updates, and revoking guide links from an authenticated portal publishing panel, including clearer busy states, copy fallback messaging, and stale-draft cues when a published guide has unpublished draft changes.
+- Guide editor page supports publishing, republishing, opening, copying, embed-code copying, access-mode updates, expiry updates, and revoking guide links from an authenticated portal publishing panel, including clearer busy states, copy fallback messaging, embed-code fallback display, and stale-draft cues when a published guide has unpublished draft changes.
 - Guide editor page supports copying and downloading the current draft guide as deterministic Markdown.
 - Guide preview page renders a private Scribe-style read-only guide with ordered steps, supported header/paragraph/tip/alert/divider blocks, effective selected screenshots, screenshot highlight overlays, and a focused screenshot viewer with zoom and previous/next navigation.
 - Guide preview page supports copying and downloading the current draft guide as deterministic Markdown.
-- Public guide reader route `/p/:slug` resolves active accessible published guide snapshots without portal authentication, renders ordered published steps, supported header/paragraph/tip/alert/divider blocks, snapshotted selected screenshots, and snapshotted screenshot highlight overlays, handles missing/revoked/restricted/expired/malformed links, and reuses the focused screenshot viewer.
+- Public guide reader routes `/p/:slug` and `/p/:slug/embed` resolve active accessible published guide snapshots without portal authentication, render ordered published steps, supported header/paragraph/tip/alert/divider blocks, snapshotted selected screenshots, and snapshotted screenshot highlight overlays, handle missing/revoked/restricted/expired/malformed links, and reuse the focused screenshot viewer. The embed route uses a compact chrome-free reader layout for iframe placement.
 - Web has focused page, route, API, and app tests for the implemented screens.
 
 ## Not Built Yet
@@ -187,7 +189,6 @@ The agreed implementation style is:
 ### Publishing And Viewing
 
 - No public interactive demo viewer yet.
-- No public guide embed flow yet.
 - No password-protected public links or viewer sessions yet.
 
 ### Analytics And Sales Layer
@@ -205,6 +206,6 @@ The agreed implementation style is:
 
 ## Recommended Next Direction
 
-The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: create a manual portal capture session, upload one or more screenshot-backed `capture` events into it, correct the manual event order and safe event text fields before generation, or start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their effective screenshots, attach/change/remove step screenshots from project screenshots, upload a brand-new replacement screenshot directly from the editor, add rectangle highlights to clarify important screenshot regions, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, copy or download the current draft as Markdown, publish or republish that guide from the portal as an immutable backend snapshot behind a stable link, set that link public or restricted, optionally set/clear an expiry, see guide-list publish/access status, copy/open the public URL when accessible, revoke the active link, and open accessible public `/p/:slug` guides outside portal authentication.
+The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: create a manual portal capture session, upload one or more screenshot-backed `capture` events into it, correct the manual event order and safe event text fields before generation, or start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their effective screenshots, attach/change/remove step screenshots from project screenshots, upload a brand-new replacement screenshot directly from the editor, add rectangle highlights to clarify important screenshot regions, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, copy or download the current draft as Markdown, publish or republish that guide from the portal as an immutable backend snapshot behind a stable link, set that link public or restricted, optionally set/clear an expiry, see guide-list publish/access status, copy/open the public URL when accessible, copy iframe embed code for active public non-expired links, revoke the active link, and open accessible public `/p/:slug` or embed `/p/:slug/embed` guides outside portal authentication.
 
-The next major milestone should continue guide delivery depth with project settings/archive UI, richer export/share polish, embed support, password/viewer-session sharing, analytics, and the interactive demo product.
+The next major milestone should continue guide delivery depth with richer export/share polish, password/viewer-session sharing, analytics, and the interactive demo product.
