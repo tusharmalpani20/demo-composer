@@ -203,6 +203,7 @@ export type PublicPublishLink = {
   visibility: GuidePublishVisibility;
   expires_at: string | null;
   status: "active" | "revoked";
+  password_protected: boolean;
 };
 
 export type PublicPublishedArtifact = {
@@ -232,6 +233,7 @@ export type GuidePublishLink = {
   published_at: string;
   revoked_at: string | null;
   public_url: string;
+  password_protected: boolean;
 };
 
 export type GuidePublishedArtifact = {
@@ -253,6 +255,10 @@ export type GuidePublishResult = GuidePublishStatusResponse;
 export type UpdateGuidePublishAccessInput = {
   visibility: GuidePublishVisibility;
   expires_at: string | null;
+};
+
+export type UpdateGuidePublishPasswordInput = {
+  password: string | null;
 };
 
 export type GuideRevokePublishResult = {

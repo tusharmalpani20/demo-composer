@@ -29,6 +29,7 @@ import type {
   UpdateGuideBlockAnnotationsInput,
   UpdateGuideBlockScreenshotInput,
   UpdateGuidePublishAccessInput,
+  UpdateGuidePublishPasswordInput,
   UploadGuideBlockScreenshotInput,
   UploadGuideBlockScreenshotResponse,
 } from "../features/guide/types";
@@ -413,11 +414,44 @@ export const updateGuidePublishAccess = async (
   )
 );
 
+export const updateGuidePublishPassword = async (
+  projectId: string,
+  guideId: string,
+  input: UpdateGuidePublishPasswordInput
+): Promise<GuidePublishStatusResponse> => (
+  requestJson<GuidePublishStatusResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/publish/password`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }
+  )
+);
+
 export const getPublicPublishLink = async (
   slug: string
 ): Promise<PublicPublishLinkResponse> => (
   requestJson<PublicPublishLinkResponse>(
     `/api/v1/public/publish-links/${encodeURIComponent(slug)}`
+  )
+);
+
+export const createPublicPublishViewerSession = async (
+  slug: string,
+  input: { password: string }
+): Promise<void> => (
+  requestJson<void>(
+    `/api/v1/public/publish-links/${encodeURIComponent(slug)}/viewer-sessions`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }
   )
 );
 

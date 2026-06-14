@@ -14,6 +14,7 @@ import {
   getGuidePublishStatus,
   getProject,
   getPublicPublishLink,
+  createPublicPublishViewerSession,
   login,
   listProjectScreenshotAssets,
   listProjects,
@@ -26,6 +27,7 @@ import {
   resolveApiAssetUrl,
   revokeGuidePublishLink,
   updateGuidePublishAccess,
+  updateGuidePublishPassword,
   updateGuide,
   updateGuideBlock,
   updateGuideBlockAnnotations,
@@ -93,6 +95,7 @@ const public_publish_response = {
     visibility: "public",
     expires_at: null,
     status: "active",
+    password_protected: false,
   },
   published_artifact: {
     id: "published_artifact_1",
@@ -129,6 +132,7 @@ const guide_publish_response = {
     published_at: "2026-06-11T00:00:00.000Z",
     revoked_at: null,
     public_url: "/p/abc123",
+    password_protected: false,
   },
   published_artifact: {
     id: "published_artifact_1",
@@ -1001,6 +1005,66 @@ describe("api client", () => {
         body: JSON.stringify({
           visibility: "restricted",
           expires_at: null,
+        }),
+      }
+    );
+  });
+
+  it("updates guide publish password settings with session cookies", async () => {
+    const response = {
+      ...guide_publish_response,
+      publish_link: {
+        ...guide_publish_response.publish_link,
+        password_protected: true,
+      },
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(updateGuidePublishPassword("project_1", "guide_1", {
+      password: "shared password",
+    })).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project_1/guides/guide_1/publish/password",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          password: "shared password",
+        }),
+      }
+    );
+  });
+
+  it("creates public publish viewer sessions with credentials", async () => {
+    const fetch = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(createPublicPublishViewerSession("abc 123", {
+      password: "shared password",
+    })).resolves.toBeUndefined();
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/public/publish-links/abc%20123/viewer-sessions",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          password: "shared password",
         }),
       }
     );

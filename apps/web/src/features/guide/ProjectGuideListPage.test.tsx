@@ -53,6 +53,7 @@ const publishedStatus = (guideId: string, publicUrl: string): GuidePublishStatus
     published_at: "2026-06-11T00:00:00.000Z",
     revoked_at: null,
     public_url: publicUrl,
+    password_protected: false,
   },
   published_artifact: {
     id: `published_artifact_${guideId}`,

@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { ApiClientError, getPublicPublishLink, resolveApiAssetUrl } from "../../lib/api";
+import {
+  ApiClientError,
+  createPublicPublishViewerSession,
+  getPublicPublishLink,
+  resolveApiAssetUrl,
+} from "../../lib/api";
 import {
   GuideScreenshotViewer,
   type GuideScreenshotViewerImage,
@@ -19,6 +24,7 @@ type LoadState =
   | { status: "not_found" }
   | { status: "restricted" }
   | { status: "expired" }
+  | { status: "password_required" }
   | { status: "malformed" }
   | { status: "error" };
 
@@ -26,6 +32,7 @@ export type PublicGuideReaderPageProps = {
   slug: string;
   mode?: "page" | "embed";
   loadPublishLink?: (slug: string) => Promise<PublicPublishLinkResponse>;
+  createViewerSession?: (slug: string, input: { password: string }) => Promise<void>;
 };
 
 const is_record = (value: unknown): value is Record<string, unknown> => (
@@ -197,6 +204,10 @@ const loadStateFromError = (error: unknown): LoadState => {
     return { status: "expired" };
   }
 
+  if (error instanceof ApiClientError && error.type === "publish_link_password_required") {
+    return { status: "password_required" };
+  }
+
   return { status: "error" };
 };
 
@@ -236,8 +247,10 @@ export const PublicGuideReaderPage = ({
   slug,
   mode = "page",
   loadPublishLink = getPublicPublishLink,
+  createViewerSession = createPublicPublishViewerSession,
 }: PublicGuideReaderPageProps) => {
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -267,7 +280,7 @@ export const PublicGuideReaderPage = ({
     return () => {
       active = false;
     };
-  }, [loadPublishLink, slug]);
+  }, [loadPublishLink, reloadKey, slug]);
 
   if (state.status === "loading") {
     return <PublicState message="Loading published guide..." mode={mode} />;
@@ -283,6 +296,17 @@ export const PublicGuideReaderPage = ({
 
   if (state.status === "expired") {
     return <PublicState message="This guide link has expired." mode={mode} />;
+  }
+
+  if (state.status === "password_required") {
+    return (
+      <PublicPasswordGate
+        slug={slug}
+        mode={mode}
+        createViewerSession={createViewerSession}
+        onUnlocked={() => setReloadKey((key) => key + 1)}
+      />
+    );
   }
 
   if (state.status === "malformed") {
@@ -318,6 +342,69 @@ const PublicState = ({
     </main>
   </div>
 );
+
+const PublicPasswordGate = ({
+  slug,
+  mode,
+  createViewerSession,
+  onUnlocked,
+}: {
+  slug: string;
+  mode: "page" | "embed";
+  createViewerSession: (slug: string, input: { password: string }) => Promise<void>;
+  onUnlocked: () => void;
+}) => {
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const compact = mode === "embed";
+
+  const unlock = async () => {
+    setBusy(true);
+    setError(null);
+
+    try {
+      await createViewerSession(slug, { password });
+      onUnlocked();
+    } catch {
+      setError("Password is incorrect.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className={`${styles.page} ${compact ? styles.embedPage : ""}`}>
+      <main
+        className={`${styles.main} ${compact ? styles.embedMain : ""}`}
+        role="main"
+      >
+        <section className={styles.state} aria-label="Password protected guide">
+          <h1 className={styles.passwordTitle}>
+            {compact ? "Password required" : "This guide is password protected."}
+          </h1>
+          <label className={styles.passwordField}>
+            <span>Password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+          {error ? <div className={styles.passwordError}>{error}</div> : null}
+          <button
+            className={styles.unlockButton}
+            type="button"
+            disabled={busy || password.length === 0}
+            onClick={unlock}
+          >
+            {busy ? "Unlocking..." : compact ? "Unlock" : "Unlock guide"}
+          </button>
+        </section>
+      </main>
+    </div>
+  );
+};
 
 const PublicGuideReaderView = ({
   response,

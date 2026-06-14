@@ -11,6 +11,7 @@ import {
   reorderGuideBlocks,
   resolveApiAssetUrl,
   revokeGuidePublishLink,
+  updateGuidePublishPassword,
   updateGuidePublishAccess,
   updateGuide,
   updateGuideBlock,
@@ -39,6 +40,7 @@ import type {
   GuideStep,
   UpdateGuideBlockAnnotationsInput,
   UpdateGuidePublishAccessInput,
+  UpdateGuidePublishPasswordInput,
 } from "./types";
 import styles from "./GuideEditorPage.module.css";
 
@@ -80,6 +82,11 @@ export type GuideEditorPageProps = {
     projectId: string,
     guideId: string,
     input: UpdateGuidePublishAccessInput
+  ) => Promise<GuidePublishStatusResponse>;
+  updatePublishPassword?: (
+    projectId: string,
+    guideId: string,
+    input: UpdateGuidePublishPasswordInput
   ) => Promise<GuidePublishStatusResponse>;
   copyText?: (text: string) => Promise<void>;
   downloadTextFile?: (filename: string, contents: string, mimeType: string) => Promise<void>;
@@ -315,6 +322,7 @@ export const GuideEditorPage = ({
   publishCurrentGuide = publishGuide,
   revokePublishLink = revokeGuidePublishLink,
   updatePublishAccess = updateGuidePublishAccess,
+  updatePublishPassword = updateGuidePublishPassword,
   copyText = defaultCopyText,
   downloadTextFile = defaultDownloadTextFile,
   exportMarkdown = exportGuideMarkdown,
@@ -513,6 +521,24 @@ export const GuideEditorPage = ({
       setNotice("Publishing access updated.");
     } catch (error: unknown) {
       setNotice(publishErrorMessage(error, "Could not update publishing access."));
+    } finally {
+      setPublishBusyAction(null);
+    }
+  };
+
+  const updateCurrentPublishPassword = async (input: UpdateGuidePublishPasswordInput) => {
+    setPublishBusyAction("password");
+    setNotice(null);
+    setEmbedCopyFallback(null);
+
+    try {
+      const response = await updatePublishPassword(projectId, guideId, input);
+      setPublishState({ status: "loaded", response });
+      setNotice(input.password === null
+        ? "Password protection cleared."
+        : "Password updated. Existing viewers must unlock again.");
+    } catch (error: unknown) {
+      setNotice(publishErrorMessage(error, "Could not update password protection."));
     } finally {
       setPublishBusyAction(null);
     }
@@ -941,6 +967,7 @@ export const GuideEditorPage = ({
       onPublish={publishCurrent}
       onRevokePublish={revokeCurrent}
       onUpdatePublishAccess={updateCurrentPublishAccess}
+      onUpdatePublishPassword={updateCurrentPublishPassword}
       onCopyPublicLink={copyCurrent}
       onCopyEmbedCode={(publicUrl) => copyCurrentEmbed(publicUrl, state.detail.guide.title)}
       onCopyMarkdown={copyMarkdown}
@@ -1004,6 +1031,7 @@ const GuideEditorView = ({
   onPublish,
   onRevokePublish,
   onUpdatePublishAccess,
+  onUpdatePublishPassword,
   onCopyPublicLink,
   onCopyEmbedCode,
   onCopyMarkdown,
@@ -1044,6 +1072,7 @@ const GuideEditorView = ({
   onPublish: () => void;
   onRevokePublish: () => void;
   onUpdatePublishAccess: (input: UpdateGuidePublishAccessInput) => void;
+  onUpdatePublishPassword: (input: UpdateGuidePublishPasswordInput) => void;
   onCopyPublicLink: (publicUrl: string) => void;
   onCopyEmbedCode: (publicUrl: string) => void;
   onCopyMarkdown: () => void;
@@ -1117,6 +1146,7 @@ const GuideEditorView = ({
             onPublish={onPublish}
             onRevoke={onRevokePublish}
             onUpdateAccess={onUpdatePublishAccess}
+            onUpdatePassword={onUpdatePublishPassword}
             onCopyPublicLink={onCopyPublicLink}
             onCopyEmbedCode={onCopyEmbedCode}
             embedCopyFallback={embedCopyFallback}
@@ -1267,6 +1297,7 @@ const PublishPanel = ({
   onPublish,
   onRevoke,
   onUpdateAccess,
+  onUpdatePassword,
   onCopyPublicLink,
   onCopyEmbedCode,
   embedCopyFallback,
@@ -1280,12 +1311,14 @@ const PublishPanel = ({
   onPublish: () => void;
   onRevoke: () => void;
   onUpdateAccess: (input: UpdateGuidePublishAccessInput) => void;
+  onUpdatePassword: (input: UpdateGuidePublishPasswordInput) => void;
   onCopyPublicLink: (publicUrl: string) => void;
   onCopyEmbedCode: (publicUrl: string) => void;
   embedCopyFallback: string | null;
   onRetry: () => void;
 }) => {
   const [expiryInput, setExpiryInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
   const isBusy = busyAction !== null;
   const activeLink = state.status === "loaded" && state.response.publish_link?.status === "active"
     ? state.response.publish_link
@@ -1303,6 +1336,11 @@ const PublishPanel = ({
   const copyLabel = isBusy && busyAction === "copy" ? "Copying..." : "Copy link";
   const copyEmbedLabel = isBusy && busyAction === "copy_embed" ? "Copying..." : "Copy embed code";
   const accessLabel = isBusy && busyAction === "access" ? "Updating..." : null;
+  const passwordLabel = isBusy && busyAction === "password"
+    ? "Updating..."
+    : activeLink?.password_protected
+      ? "Update password"
+      : "Set password";
   const expired = activeLink ? isExpiredPublishLink(activeLink.expires_at) : false;
   const canCopyEmbed = Boolean(activeLink && activeLink.visibility === "public" && !expired);
   const accessText = activeLink?.visibility === "restricted"
@@ -1416,6 +1454,51 @@ const PublishPanel = ({
               >
                 Clear expiry
               </button>
+            </div>
+          </div>
+          <div className={styles.accessPanel}>
+            <div>
+              <div className={styles.publishText}>
+                {activeLink.password_protected ? "Password protection is on." : "Password protection is off."}
+              </div>
+              <p className={styles.publishNote}>
+                Updating the password requires existing viewers to unlock again.
+              </p>
+            </div>
+            <label className={styles.compactField}>
+              <span>Publish link password</span>
+              <input
+                type="password"
+                value={passwordInput}
+                disabled={readOnly || isBusy}
+                onChange={(event) => setPasswordInput(event.target.value)}
+              />
+            </label>
+            <div className={styles.publishActions}>
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={readOnly || isBusy || passwordInput.length === 0}
+                onClick={() => {
+                  onUpdatePassword({ password: passwordInput });
+                  setPasswordInput("");
+                }}
+              >
+                {passwordLabel}
+              </button>
+              {activeLink.password_protected ? (
+                <button
+                  className={styles.secondaryButton}
+                  type="button"
+                  disabled={readOnly || isBusy}
+                  onClick={() => {
+                    onUpdatePassword({ password: null });
+                    setPasswordInput("");
+                  }}
+                >
+                  Clear password
+                </button>
+              ) : null}
             </div>
           </div>
           <div className={styles.publicUrl}>{activeLink.public_url}</div>

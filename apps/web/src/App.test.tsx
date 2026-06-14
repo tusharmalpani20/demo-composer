@@ -308,6 +308,7 @@ describe("App", () => {
         visibility: "public",
         expires_at: null,
         status: "active",
+        password_protected: false,
       },
       published_artifact: {
         id: "published_artifact_1",
@@ -353,6 +354,7 @@ describe("App", () => {
         visibility: "public",
         expires_at: null,
         status: "active",
+        password_protected: false,
       },
       published_artifact: {
         id: "published_artifact_1",

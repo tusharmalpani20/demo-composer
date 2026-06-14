@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import { PublicGuideReaderPage } from "./PublicGuideReaderPage";
@@ -11,6 +11,7 @@ const publicGuideResponse: PublicPublishLinkResponse = {
     visibility: "public",
     expires_at: null,
     status: "active",
+    password_protected: false,
   },
   published_artifact: {
     id: "published_artifact_1",
@@ -118,6 +119,7 @@ const publicGuideResponse: PublicPublishLinkResponse = {
 const renderPage = (overrides: {
   response?: PublicPublishLinkResponse;
   loadPublishLink?: (slug: string) => Promise<PublicPublishLinkResponse>;
+  createViewerSession?: (slug: string, input: { password: string }) => Promise<void>;
   mode?: "page" | "embed";
 } = {}) => {
   const loadPublishLink = overrides.loadPublishLink ?? vi.fn(async () => overrides.response ?? publicGuideResponse);
@@ -126,6 +128,7 @@ const renderPage = (overrides: {
     <PublicGuideReaderPage
       slug="abc123"
       loadPublishLink={loadPublishLink}
+      createViewerSession={overrides.createViewerSession}
       mode={overrides.mode}
     />
   );
@@ -182,6 +185,48 @@ describe("PublicGuideReaderPage", () => {
       "/api/v1/public/publish-links/abc123/assets/asset_1/file"
     );
     expect(loadPublishLink).toHaveBeenCalledWith("abc123");
+  });
+
+  it("unlocks password protected public guides and reloads the snapshot", async () => {
+    const loadPublishLink = vi.fn()
+      .mockRejectedValueOnce(new ApiClientError({
+        kind: "unauthenticated",
+        status: 401,
+        type: "publish_link_password_required",
+        message: "Publish link password is required",
+      }))
+      .mockResolvedValueOnce(publicGuideResponse);
+    const createViewerSession = vi.fn(async () => undefined);
+    renderPage({ loadPublishLink, createViewerSession });
+
+    expect(await screen.findByText("This guide is password protected.")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "shared password" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Unlock guide" }));
+
+    await waitFor(() => expect(createViewerSession).toHaveBeenCalledWith("abc123", {
+      password: "shared password",
+    }));
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(loadPublishLink).toHaveBeenCalledTimes(2);
+  });
+
+  it("renders compact password gate in embed mode", async () => {
+    renderPage({
+      mode: "embed",
+      loadPublishLink: async () => {
+        throw new ApiClientError({
+          kind: "unauthenticated",
+          status: 401,
+          type: "publish_link_password_required",
+          message: "Publish link password is required",
+        });
+      },
+    });
+
+    expect(await screen.findByText("Password required")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unlock" })).toBeInTheDocument();
   });
 
   it("opens and navigates public guide screenshots", async () => {

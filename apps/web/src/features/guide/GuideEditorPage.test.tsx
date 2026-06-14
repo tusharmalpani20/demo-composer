@@ -182,6 +182,7 @@ const publishedStatus = (versionNumber = 1): GuidePublishStatusResponse => ({
     published_at: "2026-06-11T00:00:00.000Z",
     revoked_at: null,
     public_url: "/p/abc123",
+    password_protected: false,
   },
   published_artifact: {
     id: `published_artifact_${versionNumber}`,
@@ -220,6 +221,7 @@ const renderPage = (overrides: {
   publishCurrentGuide?: GuideEditorPageProps["publishCurrentGuide"];
   revokePublishLink?: GuideEditorPageProps["revokePublishLink"];
   updatePublishAccess?: GuideEditorPageProps["updatePublishAccess"];
+  updatePublishPassword?: GuideEditorPageProps["updatePublishPassword"];
   copyText?: GuideEditorPageProps["copyText"];
 } = {}) => {
   const loadDetail = overrides.loadDetail ?? vi.fn(async () => overrides.detail ?? guideDetail);
@@ -430,6 +432,13 @@ const renderPage = (overrides: {
       expires_at: input.expires_at,
     },
   }));
+  const updatePublishPassword = overrides.updatePublishPassword ?? vi.fn(async (_projectId, _guideId, input) => ({
+    ...publishedStatus(),
+    publish_link: {
+      ...publishedStatus().publish_link!,
+      password_protected: input.password !== null,
+    },
+  }));
   const copyText = overrides.copyText ?? vi.fn(async () => undefined);
 
   render(
@@ -453,6 +462,7 @@ const renderPage = (overrides: {
       publishCurrentGuide={publishCurrentGuide}
       revokePublishLink={revokePublishLink}
       updatePublishAccess={updatePublishAccess}
+      updatePublishPassword={updatePublishPassword}
       copyText={copyText}
     />
   );
@@ -475,6 +485,7 @@ const renderPage = (overrides: {
     publishCurrentGuide,
     revokePublishLink,
     updatePublishAccess,
+    updatePublishPassword,
     copyText,
   };
 };
@@ -1190,6 +1201,38 @@ describe("GuideEditorPage", () => {
     }));
     expect(await screen.findByText("Public access is off")).toBeInTheDocument();
     expect(screen.getByText("Publishing access updated.")).toBeInTheDocument();
+  });
+
+  it("sets and clears guide publish password protection", async () => {
+    const updatePublishPassword = vi.fn(async (_projectId, _guideId, input) => ({
+      ...publishedStatus(1),
+      publish_link: {
+        ...publishedStatus(1).publish_link!,
+        password_protected: input.password !== null,
+      },
+    }));
+    renderPage({
+      loadPublishStatus: async () => publishedStatus(1),
+      updatePublishPassword,
+    });
+
+    expect(await screen.findByText("Password protection is off.")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Publish link password"), {
+      target: { value: "shared password" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Set password" }));
+
+    await waitFor(() => expect(updatePublishPassword).toHaveBeenCalledWith("project_1", "guide_1", {
+      password: "shared password",
+    }));
+    expect(await screen.findByText("Password updated. Existing viewers must unlock again.")).toBeInTheDocument();
+    expect(screen.getByText("Password protection is on.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear password" }));
+    await waitFor(() => expect(updatePublishPassword).toHaveBeenCalledWith("project_1", "guide_1", {
+      password: null,
+    }));
+    expect(await screen.findByText("Password protection cleared.")).toBeInTheDocument();
   });
 
   it("keeps the editor usable when publish status fails to load", async () => {
