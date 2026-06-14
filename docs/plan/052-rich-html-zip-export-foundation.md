@@ -2,7 +2,7 @@
 
 Date: 2026-06-14
 
-Status: Planned.
+Status: Implemented.
 
 ## Goal
 
