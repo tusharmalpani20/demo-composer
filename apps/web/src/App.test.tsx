@@ -91,6 +91,37 @@ describe("App", () => {
     expect(screen.getByRole("link", { name: "Open guides" })).toBeInTheDocument();
   });
 
+  it("renders project settings routes", async () => {
+    window.history.pushState({}, "", "/projects/project_1/settings?tab=lifecycle");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      project: {
+        id: "project_1",
+        organization_id: "organization_1",
+        name: "Internal onboarding demos",
+        description: "Reusable captures and guides for internal teams.",
+        slug: "internal-onboarding-demos",
+        color: "#2563eb",
+        icon: "folder",
+        status: "active",
+        created_by_id: "org_user_1",
+        updated_by_id: "org_user_1",
+        version: 1,
+        created_at: "2026-06-05T10:00:00.000Z",
+        updated_at: "2026-06-05T10:05:00.000Z",
+      },
+    }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Project settings" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Internal onboarding demos")).toBeInTheDocument();
+  });
+
   it("renders capture session detail routes", async () => {
     window.history.pushState({}, "", "/projects/project_1/capture-sessions/capture_session_1");
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({

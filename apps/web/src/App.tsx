@@ -6,6 +6,7 @@ import { GuidePreviewPage } from "./features/guide/GuidePreviewPage";
 import { PublicGuideReaderPage } from "./features/guide/PublicGuideReaderPage";
 import { ProjectGuideListPage } from "./features/guide/ProjectGuideListPage";
 import { ProjectListPage } from "./features/project/ProjectListPage";
+import { ProjectSettingsPage } from "./features/project/ProjectSettingsPage";
 import { ProjectWorkspacePage } from "./features/project/ProjectWorkspacePage";
 import { parsePortalRoute } from "./lib/routes";
 import styles from "./App.module.css";
@@ -37,6 +38,15 @@ export default function App() {
   if (route.type === "project_workspace") {
     return (
       <ProjectWorkspacePage
+        projectId={route.projectId}
+        currentPath={currentPath}
+      />
+    );
+  }
+
+  if (route.type === "project_settings") {
+    return (
+      <ProjectSettingsPage
         projectId={route.projectId}
         currentPath={currentPath}
       />

@@ -61,6 +61,10 @@ describe("ProjectWorkspacePage", () => {
       "href",
       "/projects/project_1/guides"
     );
+    expect(screen.getByRole("link", { name: "Project settings" })).toHaveAttribute(
+      "href",
+      "/projects/project_1/settings"
+    );
     expect(loadProject).toHaveBeenCalledWith("project_1");
     expect(screen.queryByText("organization_1")).not.toBeInTheDocument();
     expect(screen.queryByText("org_user_1")).not.toBeInTheDocument();
@@ -79,6 +83,10 @@ describe("ProjectWorkspacePage", () => {
     expect(screen.getByRole("link", { name: "Open guides" })).toHaveAttribute(
       "href",
       "/projects/project%20%2F%201/guides"
+    );
+    expect(screen.getByRole("link", { name: "Project settings" })).toHaveAttribute(
+      "href",
+      "/projects/project%20%2F%201/settings"
     );
   });
 
@@ -111,6 +119,10 @@ describe("ProjectWorkspacePage", () => {
     });
 
     expect(await screen.findByText("archived")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Project settings" })).toHaveAttribute(
+      "href",
+      "/projects/project_1/settings"
+    );
   });
 
   it("does not crash on invalid project timestamps", async () => {

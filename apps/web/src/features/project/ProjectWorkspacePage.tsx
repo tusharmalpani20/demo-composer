@@ -55,6 +55,10 @@ const guidesUrl = (projectId: string) => (
   `/projects/${encodeURIComponent(projectId)}/guides`
 );
 
+const settingsUrl = (projectId: string) => (
+  `/projects/${encodeURIComponent(projectId)}/settings`
+);
+
 export const ProjectWorkspacePage = ({
   projectId,
   loadProject = getProject,
@@ -144,6 +148,9 @@ export const ProjectWorkspacePage = ({
             <span>Created {formatDateTime(state.project.created_at)}</span>
           </div>
         </div>
+        <a className={styles.settingsLink} href={settingsUrl(projectId)}>
+          Project settings
+        </a>
       </section>
 
       <section className={styles.content} aria-labelledby="workspace-heading">
