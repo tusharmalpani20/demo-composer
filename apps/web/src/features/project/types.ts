@@ -21,3 +21,10 @@ export type CreateProjectInput = {
   description?: string | null;
   slug?: string | null;
 };
+
+export type UpdateProjectInput = Partial<{
+  name: string;
+  description: string | null;
+  slug: string | null;
+  status: ProjectStatus;
+}>;

@@ -24,6 +24,17 @@ describe("parsePortalRoute", () => {
     });
   });
 
+  it("parses project settings routes", () => {
+    expect(parsePortalRoute("/projects/project_1/settings")).toEqual({
+      type: "project_settings",
+      projectId: "project_1",
+    });
+    expect(parsePortalRoute("/projects/project%20%2F%201/settings")).toEqual({
+      type: "project_settings",
+      projectId: "project / 1",
+    });
+  });
+
   it("parses capture session detail routes", () => {
     expect(parsePortalRoute("/projects/project_1/capture-sessions/capture_session_1")).toEqual({
       type: "capture_session_detail",

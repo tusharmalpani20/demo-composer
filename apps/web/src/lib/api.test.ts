@@ -31,6 +31,7 @@ import {
   updateGuideBlockAnnotations,
   updateGuideBlockScreenshot,
   updateCaptureSessionEvent,
+  updateProject,
   uploadCaptureSessionAsset,
   uploadGuideBlockScreenshot,
   updateGuideStep,
@@ -378,6 +379,58 @@ describe("api client", () => {
           name: " Internal onboarding demos ",
           description: "Reusable captures and guides.",
           slug: "internal-onboarding",
+        }),
+      }
+    );
+  });
+
+  it("updates projects with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({
+      project: {
+        ...project_response.project,
+        name: "Internal training demos",
+        description: null,
+        slug: null,
+        status: "archived",
+        version: 2,
+      },
+    }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(updateProject("project / 1", {
+      name: "Internal training demos",
+      description: null,
+      slug: null,
+      status: "archived",
+    })).resolves.toMatchObject({
+      project: {
+        name: "Internal training demos",
+        description: null,
+        slug: null,
+        status: "archived",
+        version: 2,
+      },
+    });
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project%20%2F%201",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "Internal training demos",
+          description: null,
+          slug: null,
+          status: "archived",
         }),
       }
     );
