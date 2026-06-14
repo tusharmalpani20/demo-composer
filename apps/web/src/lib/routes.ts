@@ -41,6 +41,10 @@ export type PortalRoute =
     slug: string;
   }
   | {
+    type: "public_guide_embed";
+    slug: string;
+  }
+  | {
     type: "unsupported";
   };
 
@@ -76,6 +80,23 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
 
     return {
       type: "public_guide_reader",
+      slug: decodeURIComponent(slug),
+    };
+  }
+
+  if (
+    segments.length === 3
+    && segments[0] === "p"
+    && segments[2] === "embed"
+  ) {
+    const slug = segments[1];
+
+    if (!slug) {
+      return { type: "unsupported" };
+    }
+
+    return {
+      type: "public_guide_embed",
       slug: decodeURIComponent(slug),
     };
   }

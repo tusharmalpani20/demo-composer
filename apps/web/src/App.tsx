@@ -29,6 +29,12 @@ export default function App() {
     );
   }
 
+  if (route.type === "public_guide_embed") {
+    return (
+      <PublicGuideReaderPage slug={route.slug} mode="embed" />
+    );
+  }
+
   if (route.type === "project_list") {
     return (
       <ProjectListPage currentPath={currentPath} />

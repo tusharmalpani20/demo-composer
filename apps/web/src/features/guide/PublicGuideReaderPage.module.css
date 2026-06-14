@@ -10,6 +10,15 @@
   padding: 44px 0 64px;
 }
 
+.embedPage {
+  background: #ffffff;
+}
+
+.embedMain {
+  width: min(940px, calc(100% - 20px));
+  padding: 20px 0 32px;
+}
+
 .state {
   border: 1px solid #d9e0ea;
   border-radius: 8px;
@@ -20,6 +29,10 @@
 
 .header {
   margin-bottom: 28px;
+}
+
+.embedHeader {
+  margin-bottom: 18px;
 }
 
 .eyebrow {

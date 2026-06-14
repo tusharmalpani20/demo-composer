@@ -118,6 +118,7 @@ const publicGuideResponse: PublicPublishLinkResponse = {
 const renderPage = (overrides: {
   response?: PublicPublishLinkResponse;
   loadPublishLink?: (slug: string) => Promise<PublicPublishLinkResponse>;
+  mode?: "page" | "embed";
 } = {}) => {
   const loadPublishLink = overrides.loadPublishLink ?? vi.fn(async () => overrides.response ?? publicGuideResponse);
 
@@ -125,6 +126,7 @@ const renderPage = (overrides: {
     <PublicGuideReaderPage
       slug="abc123"
       loadPublishLink={loadPublishLink}
+      mode={overrides.mode}
     />
   );
 
@@ -162,6 +164,23 @@ describe("PublicGuideReaderPage", () => {
     expect(screen.queryByText("file_1")).not.toBeInTheDocument();
     expect(screen.queryByText("organization_1")).not.toBeInTheDocument();
     expect(screen.queryByText("storage_key")).not.toBeInTheDocument();
+    expect(loadPublishLink).toHaveBeenCalledWith("abc123");
+  });
+
+  it("renders public guide snapshots in embed mode with compact public layout", async () => {
+    const { loadPublishLink } = renderPage({ mode: "embed" });
+
+    expect(screen.getByText("Loading published guide...")).toBeInTheDocument();
+    expect(await screen.findByRole("main", { name: "Embedded published guide" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(screen.getByText("Set up departments from the list view.")).toBeInTheDocument();
+    expect(screen.queryByText("Published guide")).not.toBeInTheDocument();
+    expect(screen.queryByText("Published version 1")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Navigate to Department List" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Department List" })).toHaveAttribute(
+      "src",
+      "/api/v1/public/publish-links/abc123/assets/asset_1/file"
+    );
     expect(loadPublishLink).toHaveBeenCalledWith("abc123");
   });
 
@@ -302,6 +321,46 @@ describe("PublicGuideReaderPage", () => {
     );
 
     expect(await screen.findByText("This guide link has expired.")).toBeInTheDocument();
+  });
+
+  it.each([
+    {
+      error: new ApiClientError({
+        kind: "unknown",
+        status: 403,
+        type: "publish_link_not_public",
+        message: "Publish link is not public",
+      }),
+      message: "This guide is not publicly accessible.",
+    },
+    {
+      error: new ApiClientError({
+        kind: "unknown",
+        status: 410,
+        type: "publish_link_expired",
+        message: "Publish link has expired",
+      }),
+      message: "This guide link has expired.",
+    },
+    {
+      error: new ApiClientError({
+        kind: "not_found",
+        status: 404,
+        type: "publish_link_not_found",
+        message: "Publish link was not found",
+      }),
+      message: "Published guide was not found.",
+    },
+  ])("uses public access errors in embed mode: $message", async ({ error, message }) => {
+    renderPage({
+      mode: "embed",
+      loadPublishLink: async () => {
+        throw error;
+      },
+    });
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
   });
 
   it("renders empty and metadata-light public guide snapshots", async () => {

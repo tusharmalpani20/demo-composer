@@ -97,9 +97,21 @@ describe("parsePortalRoute", () => {
     });
   });
 
+  it("parses public guide embed routes", () => {
+    expect(parsePortalRoute("/p/abc123/embed")).toEqual({
+      type: "public_guide_embed",
+      slug: "abc123",
+    });
+    expect(parsePortalRoute("/p/abc%20123/embed")).toEqual({
+      type: "public_guide_embed",
+      slug: "abc 123",
+    });
+  });
+
   it("rejects unsupported routes", () => {
     expect(parsePortalRoute("/unknown")).toEqual({ type: "unsupported" });
     expect(parsePortalRoute("/p")).toEqual({ type: "unsupported" });
     expect(parsePortalRoute("/p/abc123/extra")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/p/abc123/embed/extra")).toEqual({ type: "unsupported" });
   });
 });

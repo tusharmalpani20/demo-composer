@@ -24,6 +24,7 @@ type LoadState =
 
 export type PublicGuideReaderPageProps = {
   slug: string;
+  mode?: "page" | "embed";
   loadPublishLink?: (slug: string) => Promise<PublicPublishLinkResponse>;
 };
 
@@ -233,6 +234,7 @@ const annotation_percent = (value: number) => `${Number((value * 100).toFixed(4)
 
 export const PublicGuideReaderPage = ({
   slug,
+  mode = "page",
   loadPublishLink = getPublicPublishLink,
 }: PublicGuideReaderPageProps) => {
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -268,40 +270,50 @@ export const PublicGuideReaderPage = ({
   }, [loadPublishLink, slug]);
 
   if (state.status === "loading") {
-    return <PublicState message="Loading published guide..." />;
+    return <PublicState message="Loading published guide..." mode={mode} />;
   }
 
   if (state.status === "not_found") {
-    return <PublicState message="Published guide was not found." />;
+    return <PublicState message="Published guide was not found." mode={mode} />;
   }
 
   if (state.status === "restricted") {
-    return <PublicState message="This guide is not publicly accessible." />;
+    return <PublicState message="This guide is not publicly accessible." mode={mode} />;
   }
 
   if (state.status === "expired") {
-    return <PublicState message="This guide link has expired." />;
+    return <PublicState message="This guide link has expired." mode={mode} />;
   }
 
   if (state.status === "malformed") {
-    return <PublicState message="Published artifact cannot be displayed." />;
+    return <PublicState message="Published artifact cannot be displayed." mode={mode} />;
   }
 
   if (state.status === "error") {
-    return <PublicState message="Could not load published guide." />;
+    return <PublicState message="Could not load published guide." mode={mode} />;
   }
 
   return (
     <PublicGuideReaderView
       response={state.response}
       snapshot={state.snapshot}
+      mode={mode}
     />
   );
 };
 
-const PublicState = ({ message }: { message: string }) => (
-  <div className={styles.page}>
-    <main className={styles.main}>
+const PublicState = ({
+  message,
+  mode,
+}: {
+  message: string;
+  mode: "page" | "embed";
+}) => (
+  <div className={`${styles.page} ${mode === "embed" ? styles.embedPage : ""}`}>
+    <main
+      className={`${styles.main} ${mode === "embed" ? styles.embedMain : ""}`}
+      role="main"
+    >
       <div className={styles.state}>{message}</div>
     </main>
   </div>
@@ -310,9 +322,11 @@ const PublicState = ({ message }: { message: string }) => (
 const PublicGuideReaderView = ({
   response,
   snapshot,
+  mode,
 }: {
   response: PublicPublishLinkResponse;
   snapshot: PublishedGuideSnapshot;
+  mode: "page" | "embed";
 }) => {
   const sortedBlocks = useMemo(() => sort_blocks(snapshot.blocks), [snapshot.blocks]);
   const [activeScreenshotId, setActiveScreenshotId] = useState<string | null>(null);
@@ -330,16 +344,22 @@ const PublicGuideReaderView = ({
   }, [activeScreenshotId, screenshotImages]);
 
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <section className={styles.header}>
-          <div className={styles.eyebrow}>Published guide</div>
+    <div className={`${styles.page} ${mode === "embed" ? styles.embedPage : ""}`}>
+      <main
+        className={`${styles.main} ${mode === "embed" ? styles.embedMain : ""}`}
+        role="main"
+        aria-label={mode === "embed" ? "Embedded published guide" : undefined}
+      >
+        <section className={`${styles.header} ${mode === "embed" ? styles.embedHeader : ""}`}>
+          {mode === "page" ? <div className={styles.eyebrow}>Published guide</div> : null}
           <h1 className={styles.title}>{snapshot.guide.title}</h1>
           {snapshot.guide.description ? <p className={styles.description}>{snapshot.guide.description}</p> : null}
-          <div className={styles.metadata}>
-            {version ? <span>Published version {version}</span> : null}
-            {publishedAt ? <span>Published {publishedAt}</span> : null}
-          </div>
+          {mode === "page" ? (
+            <div className={styles.metadata}>
+              {version ? <span>Published version {version}</span> : null}
+              {publishedAt ? <span>Published {publishedAt}</span> : null}
+            </div>
+          ) : null}
         </section>
 
         <section className={styles.document} aria-label="Published guide steps">
