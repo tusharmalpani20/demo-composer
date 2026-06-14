@@ -1075,6 +1075,97 @@ describe("GuideEditorPage", () => {
     expect(screen.getByText("/p/abc123")).toBeInTheDocument();
   });
 
+  it("copies public guide embed code for active public links", async () => {
+    const copyText = vi.fn(async () => undefined);
+    renderPage({
+      detail: {
+        ...guideDetail,
+        guide: {
+          ...guideDetail.guide,
+          title: "Department \"setup\" <guide>",
+        },
+      },
+      loadPublishStatus: async () => publishedStatus(1),
+      copyText,
+    });
+
+    expect(await screen.findByText("Published version 1 on Jun 11, 2026, 12:00 AM")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Copy embed code" }));
+
+    await waitFor(() => expect(copyText).toHaveBeenCalledWith(
+      "<iframe src=\"http://localhost:3000/p/abc123/embed\" title=\"Department &quot;setup&quot; &lt;guide&gt;\" width=\"100%\" height=\"720\" loading=\"lazy\" style=\"border:0;\"></iframe>"
+    ));
+    expect(screen.getByText("Embed code copied.")).toBeInTheDocument();
+  });
+
+  it("shows selectable embed code when embed copy fails", async () => {
+    const copyText = vi.fn(async () => {
+      throw new Error("clipboard blocked");
+    });
+    renderPage({
+      loadPublishStatus: async () => publishedStatus(1),
+      copyText,
+    });
+
+    expect(await screen.findByText("Published version 1 on Jun 11, 2026, 12:00 AM")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Copy embed code" }));
+
+    const expectedEmbedCode = "<iframe src=\"http://localhost:3000/p/abc123/embed\" title=\"Department guide\" width=\"100%\" height=\"720\" loading=\"lazy\" style=\"border:0;\"></iframe>";
+    await waitFor(() => expect(copyText).toHaveBeenCalledWith(expectedEmbedCode));
+    expect(screen.getByText("Could not copy embed code. Select the embed code below.")).toBeInTheDocument();
+    expect(screen.getByText(expectedEmbedCode)).toBeInTheDocument();
+  });
+
+  it("hides embed copy controls for restricted expired and unpublished links", async () => {
+    const { rerender } = render(
+      <GuideEditorPage
+        projectId="project_1"
+        guideId="guide_1"
+        loadDetail={async () => guideDetail}
+        loadPublishStatus={async () => ({
+          ...publishedStatus(1),
+          publish_link: {
+            ...publishedStatus(1).publish_link!,
+            visibility: "restricted",
+          },
+        })}
+      />
+    );
+
+    expect(await screen.findByText("Public access is off")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy embed code" })).not.toBeInTheDocument();
+
+    rerender(
+      <GuideEditorPage
+        projectId="project_1"
+        guideId="guide_1"
+        loadDetail={async () => guideDetail}
+        loadPublishStatus={async () => ({
+          ...publishedStatus(1),
+          publish_link: {
+            ...publishedStatus(1).publish_link!,
+            expires_at: "2020-01-01T00:00:00.000Z",
+          },
+        })}
+      />
+    );
+
+    expect(await screen.findByText("Public link has expired")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy embed code" })).not.toBeInTheDocument();
+
+    rerender(
+      <GuideEditorPage
+        projectId="project_1"
+        guideId="guide_1"
+        loadDetail={async () => guideDetail}
+        loadPublishStatus={async () => unpublishedStatus}
+      />
+    );
+
+    expect(await screen.findByText("This guide is not published.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy embed code" })).not.toBeInTheDocument();
+  });
+
   it("updates publish access from the editor panel", async () => {
     const updatePublishAccess = vi.fn(async (_projectId, _guideId, input) => ({
       ...publishedStatus(1),

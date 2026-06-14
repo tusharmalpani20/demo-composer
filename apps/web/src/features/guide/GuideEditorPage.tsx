@@ -25,6 +25,7 @@ import {
   GuideScreenshotViewer,
   type GuideScreenshotViewerImage,
 } from "./GuideScreenshotViewer";
+import { publicGuideEmbedCode, publicGuideUrl } from "./publishLinks";
 import type {
   GuideBlock,
   GuideBlockContent,
@@ -154,14 +155,6 @@ const defaultDownloadTextFile = async (
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
-};
-
-const publicGuideUrl = (publicUrl: string) => {
-  if (publicUrl.startsWith("/")) {
-    return new URL(publicUrl, window.location.origin).toString();
-  }
-
-  return publicUrl;
 };
 
 const isDateAfter = (left: string, right: string) => {
@@ -347,6 +340,7 @@ export const GuideEditorPage = ({
   const [stepDrafts, setStepDrafts] = useState<Record<string, StepDraft>>({});
   const [blockContentDrafts, setBlockContentDrafts] = useState<Record<string, BlockContentDraft>>({});
   const [notice, setNotice] = useState<string | null>(null);
+  const [embedCopyFallback, setEmbedCopyFallback] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [publishBusyAction, setPublishBusyAction] = useState<string | null>(null);
   const [locallyStalePublish, setLocallyStalePublish] = useState(false);
@@ -439,6 +433,7 @@ export const GuideEditorPage = ({
   const publishCurrent = async () => {
     setPublishBusyAction("publish");
     setNotice(null);
+    setEmbedCopyFallback(null);
 
     try {
       const response = await publishCurrentGuide(projectId, guideId);
@@ -455,6 +450,7 @@ export const GuideEditorPage = ({
   const revokeCurrent = async () => {
     setPublishBusyAction("revoke");
     setNotice(null);
+    setEmbedCopyFallback(null);
 
     try {
       await revokePublishLink(projectId, guideId);
@@ -477,6 +473,7 @@ export const GuideEditorPage = ({
   const copyCurrent = async (publicUrl: string) => {
     setPublishBusyAction("copy");
     setNotice(null);
+    setEmbedCopyFallback(null);
 
     try {
       await copyText(publicGuideUrl(publicUrl));
@@ -488,9 +485,27 @@ export const GuideEditorPage = ({
     }
   };
 
+  const copyCurrentEmbed = async (publicUrl: string, title: string) => {
+    const embedCode = publicGuideEmbedCode({ publicUrl, title });
+    setPublishBusyAction("copy_embed");
+    setNotice(null);
+    setEmbedCopyFallback(null);
+
+    try {
+      await copyText(embedCode);
+      setNotice("Embed code copied.");
+    } catch {
+      setEmbedCopyFallback(embedCode);
+      setNotice("Could not copy embed code. Select the embed code below.");
+    } finally {
+      setPublishBusyAction(null);
+    }
+  };
+
   const updateCurrentPublishAccess = async (input: UpdateGuidePublishAccessInput) => {
     setPublishBusyAction("access");
     setNotice(null);
+    setEmbedCopyFallback(null);
 
     try {
       const response = await updatePublishAccess(projectId, guideId, input);
@@ -901,6 +916,7 @@ export const GuideEditorPage = ({
       publishState={publishState}
       locallyStalePublish={locallyStalePublish}
       notice={notice}
+      embedCopyFallback={embedCopyFallback}
       busyAction={busyAction}
       publishBusyAction={publishBusyAction}
       projectId={projectId}
@@ -926,6 +942,7 @@ export const GuideEditorPage = ({
       onRevokePublish={revokeCurrent}
       onUpdatePublishAccess={updateCurrentPublishAccess}
       onCopyPublicLink={copyCurrent}
+      onCopyEmbedCode={(publicUrl) => copyCurrentEmbed(publicUrl, state.detail.guide.title)}
       onCopyMarkdown={copyMarkdown}
       onDownloadMarkdown={downloadMarkdown}
       onRetryPublishStatus={reloadPublishStatus}
@@ -962,6 +979,7 @@ const GuideEditorView = ({
   publishState,
   locallyStalePublish,
   notice,
+  embedCopyFallback,
   busyAction,
   publishBusyAction,
   projectId,
@@ -987,6 +1005,7 @@ const GuideEditorView = ({
   onRevokePublish,
   onUpdatePublishAccess,
   onCopyPublicLink,
+  onCopyEmbedCode,
   onCopyMarkdown,
   onDownloadMarkdown,
   onRetryPublishStatus,
@@ -1000,6 +1019,7 @@ const GuideEditorView = ({
   publishState: PublishState;
   locallyStalePublish: boolean;
   notice: string | null;
+  embedCopyFallback: string | null;
   busyAction: string | null;
   publishBusyAction: string | null;
   projectId: string;
@@ -1025,6 +1045,7 @@ const GuideEditorView = ({
   onRevokePublish: () => void;
   onUpdatePublishAccess: (input: UpdateGuidePublishAccessInput) => void;
   onCopyPublicLink: (publicUrl: string) => void;
+  onCopyEmbedCode: (publicUrl: string) => void;
   onCopyMarkdown: () => void;
   onDownloadMarkdown: () => void;
   onRetryPublishStatus: () => void;
@@ -1097,6 +1118,8 @@ const GuideEditorView = ({
             onRevoke={onRevokePublish}
             onUpdateAccess={onUpdatePublishAccess}
             onCopyPublicLink={onCopyPublicLink}
+            onCopyEmbedCode={onCopyEmbedCode}
+            embedCopyFallback={embedCopyFallback}
             onRetry={onRetryPublishStatus}
           />
           <section className={styles.panel} aria-labelledby="metadata-heading">
@@ -1245,6 +1268,8 @@ const PublishPanel = ({
   onRevoke,
   onUpdateAccess,
   onCopyPublicLink,
+  onCopyEmbedCode,
+  embedCopyFallback,
   onRetry,
 }: {
   state: PublishState;
@@ -1256,6 +1281,8 @@ const PublishPanel = ({
   onRevoke: () => void;
   onUpdateAccess: (input: UpdateGuidePublishAccessInput) => void;
   onCopyPublicLink: (publicUrl: string) => void;
+  onCopyEmbedCode: (publicUrl: string) => void;
+  embedCopyFallback: string | null;
   onRetry: () => void;
 }) => {
   const [expiryInput, setExpiryInput] = useState("");
@@ -1274,8 +1301,10 @@ const PublishPanel = ({
   const republishLabel = isBusy && busyAction === "publish" ? "Republishing..." : "Republish";
   const revokeLabel = isBusy && busyAction === "revoke" ? "Revoking..." : "Revoke link";
   const copyLabel = isBusy && busyAction === "copy" ? "Copying..." : "Copy link";
+  const copyEmbedLabel = isBusy && busyAction === "copy_embed" ? "Copying..." : "Copy embed code";
   const accessLabel = isBusy && busyAction === "access" ? "Updating..." : null;
   const expired = activeLink ? isExpiredPublishLink(activeLink.expires_at) : false;
+  const canCopyEmbed = Boolean(activeLink && activeLink.visibility === "public" && !expired);
   const accessText = activeLink?.visibility === "restricted"
     ? "Public access is off"
     : expired
@@ -1399,6 +1428,16 @@ const PublishPanel = ({
             >
               {copyLabel}
             </button>
+            {canCopyEmbed ? (
+              <button
+                className={styles.secondaryButton}
+                type="button"
+                disabled={isBusy}
+                onClick={() => onCopyEmbedCode(activeLink.public_url)}
+              >
+                {copyEmbedLabel}
+              </button>
+            ) : null}
             <a
               className={styles.previewLink}
               href={activeLink.public_url}
@@ -1424,6 +1463,7 @@ const PublishPanel = ({
               {revokeLabel}
             </button>
           </div>
+          {embedCopyFallback ? <div className={styles.publicUrl}>{embedCopyFallback}</div> : null}
         </div>
       ) : null}
     </section>
