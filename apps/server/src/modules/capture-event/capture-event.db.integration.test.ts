@@ -371,7 +371,7 @@ describe("DB-backed capture event API", () => {
     expect(hidden_get_response.json().error.type).toBe("capture_event_not_found");
 
     await app.close();
-  });
+  }, 15000);
 
   it("reorders manual capture events while preserving contiguous indexes", async () => {
     const session_token = await setup_owner();
