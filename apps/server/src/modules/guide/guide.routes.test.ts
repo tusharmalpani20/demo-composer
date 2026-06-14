@@ -1,6 +1,7 @@
 import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
 import fastify from "fastify";
+import { Readable } from "node:stream";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { describe, expect, it, vi } from "vitest";
 import { UnauthenticatedSessionError } from "../authentication/session.service";
@@ -172,6 +173,12 @@ const build_test_app = async (
       export_guide_markdown: async () => ({
         filename: "department-guide.md",
         markdown: "# Department guide\n",
+      }),
+      export_guide_html_zip: async () => ({
+        filename: "department-guide-html-export.zip",
+        mime_type: "application/zip",
+        stream: Readable.from(Buffer.from("zip-bytes")),
+        size_bytes: 9,
       }),
       update_guide: async () => ({ ...guide_detail.guide, version: 2 }),
       update_guide_step: async () => ({ ...guide_step, version: 2 }),
@@ -359,6 +366,46 @@ describe("guide routes", () => {
       guide_id: "guide_1",
     }]);
     expect(JSON.stringify(response.json())).not.toContain("attacker");
+    await app.close();
+  });
+
+  it("exports guide HTML ZIP through the service", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      guide_service: {
+        export_guide_html_zip: async (input) => {
+          seen_inputs.push(input);
+          return {
+            filename: "department-guide-html-export.zip",
+            mime_type: "application/zip",
+            stream: Readable.from(Buffer.from("zip-bytes")),
+            size_bytes: 9,
+          };
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects/project_1/guides/guide_1/export/html.zip?organization_id=attacker",
+      cookies: { demo_composer_session: "session-token" },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["content-type"]).toBe("application/zip");
+    expect(response.headers["content-length"]).toBe("9");
+    expect(response.headers["content-disposition"]).toBe(
+      "attachment; filename=\"department-guide-html-export.zip\""
+    );
+    expect(response.body).toBe("zip-bytes");
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      guide_id: "guide_1",
+    }]);
     await app.close();
   });
 

@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import {
   build_guide_service,
@@ -7,6 +8,7 @@ import {
   InvalidGuideStepInputError,
   GuideNotEditableError,
   GuideBlockNotFoundError,
+  GuideExportFileNotFoundError,
   InvalidGuideBlockContentError,
   InvalidGuideBlockOrderError,
   InvalidGuideBlockScreenshotError,
@@ -21,6 +23,16 @@ import {
 const auth = {
   organization_id: "organization_1",
   actor_org_user_id: "org_user_1",
+};
+
+const read_stream = async (stream: NodeJS.ReadableStream) => {
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  return Buffer.concat(chunks);
 };
 
 const source_events: GuideSourceEvent[] = [
@@ -413,6 +425,9 @@ const build_repository = (): GuideRepository & {
     async delete_guide_block(input) {
       delete_block_inputs.push(input);
       return input.guide_block_id === "block_1";
+    },
+    async find_guide_export_asset_files() {
+      return [];
     },
   };
 };
@@ -1497,6 +1512,268 @@ describe("guide service", () => {
         "",
       ].join("\n"),
     });
+  });
+
+  it("exports guide drafts as HTML ZIP files with visible screenshots", async () => {
+    const repository = build_repository();
+    const file_reads: Array<{ storage_key: string }> = [];
+    const export_file_inputs: unknown[] = [];
+    const blocks: GuideBlock[] = [{
+      id: "block_step_1",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: "capture_session_1",
+      source_capture_event_id: "event_1",
+      source_capture_asset_id: "asset_1",
+      selected_capture_asset_id: null,
+      screenshot_hidden: false,
+      display_capture_asset_id: "asset_1",
+      block_type: "step",
+      content: {
+        annotations: [{
+          id: "ann_1",
+          type: "highlight",
+          x: 0.2,
+          y: 0.15,
+          width: 0.25,
+          height: 0.1,
+        }],
+      },
+      block_index: 1,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T00:00:00.000Z",
+      updated_at: "2026-06-05T00:00:00.000Z",
+      step: {
+        id: "step_1",
+        organization_id: "organization_1",
+        project_id: "project_1",
+        guide_id: "guide_1",
+        guide_block_id: "block_step_1",
+        source_capture_session_id: "capture_session_1",
+        source_capture_event_id: "event_1",
+        source_capture_asset_id: "asset_1",
+        title: "Navigate to Departments",
+        body: "Open the list.",
+        created_by_id: "org_user_1",
+        updated_by_id: "org_user_1",
+        version: 1,
+        created_at: "2026-06-05T00:00:00.000Z",
+        updated_at: "2026-06-05T00:00:00.000Z",
+      },
+    }, {
+      id: "block_hidden_2",
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      source_capture_session_id: "capture_session_1",
+      source_capture_event_id: "event_2",
+      source_capture_asset_id: "asset_hidden",
+      selected_capture_asset_id: null,
+      screenshot_hidden: true,
+      display_capture_asset_id: null,
+      block_type: "step",
+      content: null,
+      block_index: 2,
+      created_by_id: "org_user_1",
+      updated_by_id: "org_user_1",
+      version: 1,
+      created_at: "2026-06-05T00:00:00.000Z",
+      updated_at: "2026-06-05T00:00:00.000Z",
+      step: {
+        id: "step_hidden",
+        organization_id: "organization_1",
+        project_id: "project_1",
+        guide_id: "guide_1",
+        guide_block_id: "block_hidden_2",
+        source_capture_session_id: "capture_session_1",
+        source_capture_event_id: "event_2",
+        source_capture_asset_id: "asset_hidden",
+        title: "Hidden screenshot",
+        body: null,
+        created_by_id: "org_user_1",
+        updated_by_id: "org_user_1",
+        version: 1,
+        created_at: "2026-06-05T00:00:00.000Z",
+        updated_at: "2026-06-05T00:00:00.000Z",
+      },
+    }];
+    repository.find_guide_detail = async () => ({
+      guide: {
+        ...guide_detail.guide,
+        title: "Department Guide!",
+        description: "Set up departments.",
+      },
+      guide_blocks: blocks,
+      source_capture_assets: [{
+        id: "asset_1",
+        capture_session_id: "capture_session_1",
+        asset_type: "screenshot",
+        width: 1440,
+        height: 900,
+        device_pixel_ratio: 1,
+        page_url: "https://example.test/departments",
+        page_title: "Department List",
+        captured_at: "2026-06-05T00:00:00.000Z",
+        file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_1/file",
+        file: {
+          id: "file_1",
+          original_name: "departments.png",
+          mime_type: "image/png",
+          size_bytes: 123456,
+        },
+      }, {
+        id: "asset_hidden",
+        capture_session_id: "capture_session_1",
+        asset_type: "screenshot",
+        width: 1440,
+        height: 900,
+        device_pixel_ratio: 1,
+        page_url: null,
+        page_title: "Hidden",
+        captured_at: "2026-06-05T00:00:00.000Z",
+        file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_hidden/file",
+        file: {
+          id: "file_hidden",
+          original_name: "hidden.png",
+          mime_type: "image/png",
+          size_bytes: 123456,
+        },
+      }],
+    });
+    repository.find_guide_export_asset_files = async (input) => {
+      export_file_inputs.push(input);
+      return [{
+        capture_asset_id: "asset_1",
+        storage_provider: "local",
+        storage_key: "private/storage/departments.png",
+        mime_type: "image/png",
+        original_name: "departments.png",
+        size_bytes: 11,
+      }];
+    };
+    const service = build_guide_service(repository, {
+      file_storage: {
+        get: async (input) => {
+          file_reads.push(input);
+          return {
+            stream: Readable.from(Buffer.from("image-bytes")),
+            size_bytes: 11,
+          };
+        },
+      },
+    });
+
+    const result = await service.export_guide_html_zip({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+    });
+    const JSZip = (await import("jszip")).default;
+    const archive = await JSZip.loadAsync(await read_stream(result.stream));
+    const html = await archive.file("index.html")?.async("string");
+
+    expect(result.filename).toBe("department-guide-html-export.zip");
+    expect(result.mime_type).toBe("application/zip");
+    expect(export_file_inputs).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      capture_asset_ids: ["asset_1"],
+    }]);
+    expect(file_reads).toEqual([{ storage_key: "private/storage/departments.png" }]);
+    await expect(archive.file("assets/1-asset_1.png")?.async("string"))
+      .resolves.toBe("image-bytes");
+    expect(html).toContain("Department Guide!");
+    expect(html).toContain("assets/1-asset_1.png");
+    expect(html).toContain("left: 20%; top: 15%; width: 25%; height: 10%;");
+    expect(html).not.toContain("private/storage");
+    expect(html).not.toContain("asset_hidden");
+  });
+
+  it("maps missing HTML export screenshot bytes to a guide export file error", async () => {
+    const repository = build_repository();
+    repository.find_guide_detail = async () => ({
+      ...guide_detail,
+      guide_blocks: [{
+        id: "block_step_1",
+        organization_id: "organization_1",
+        project_id: "project_1",
+        guide_id: "guide_1",
+        source_capture_session_id: "capture_session_1",
+        source_capture_event_id: "event_1",
+        source_capture_asset_id: "asset_1",
+        selected_capture_asset_id: null,
+        screenshot_hidden: false,
+        display_capture_asset_id: "asset_1",
+        block_type: "step",
+        content: null,
+        block_index: 1,
+        created_by_id: "org_user_1",
+        updated_by_id: "org_user_1",
+        version: 1,
+        created_at: "2026-06-05T00:00:00.000Z",
+        updated_at: "2026-06-05T00:00:00.000Z",
+        step: {
+          id: "step_1",
+          organization_id: "organization_1",
+          project_id: "project_1",
+          guide_id: "guide_1",
+          guide_block_id: "block_step_1",
+          source_capture_session_id: "capture_session_1",
+          source_capture_event_id: "event_1",
+          source_capture_asset_id: "asset_1",
+          title: "Navigate to Departments",
+          body: null,
+          created_by_id: "org_user_1",
+          updated_by_id: "org_user_1",
+          version: 1,
+          created_at: "2026-06-05T00:00:00.000Z",
+          updated_at: "2026-06-05T00:00:00.000Z",
+        },
+      }],
+      source_capture_assets: [{
+        id: "asset_1",
+        capture_session_id: "capture_session_1",
+        asset_type: "screenshot",
+        width: 1440,
+        height: 900,
+        device_pixel_ratio: 1,
+        page_url: null,
+        page_title: "Department List",
+        captured_at: "2026-06-05T00:00:00.000Z",
+        file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_1/file",
+        file: {
+          id: "file_1",
+          original_name: "departments.png",
+          mime_type: "image/png",
+          size_bytes: 123456,
+        },
+      }],
+    });
+    repository.find_guide_export_asset_files = async () => [{
+      capture_asset_id: "asset_1",
+      storage_provider: "local",
+      storage_key: "private/storage/missing.png",
+      mime_type: "image/png",
+      original_name: "missing.png",
+      size_bytes: 11,
+    }];
+    const service = build_guide_service(repository, {
+      file_storage: {
+        get: async () => {
+          throw new Error("missing bytes");
+        },
+      },
+    });
+
+    await expect(service.export_guide_html_zip({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+    })).rejects.toBeInstanceOf(GuideExportFileNotFoundError);
   });
 
   it("rejects invalid guide screenshot annotations", async () => {

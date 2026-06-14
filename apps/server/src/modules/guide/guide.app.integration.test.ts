@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Readable } from "node:stream";
 import { build } from "../../app";
 import { UnauthenticatedSessionError } from "../authentication/session.service";
 import type { GuideDetail } from "./guide.service";
@@ -45,6 +46,12 @@ describe("guide app integration", () => {
         export_guide_markdown: async () => ({
           filename: "department-guide.md",
           markdown: "# Department guide\n",
+        }),
+        export_guide_html_zip: async () => ({
+          filename: "department-guide-html-export.zip",
+          mime_type: "application/zip",
+          stream: Readable.from(Buffer.from("zip-bytes")),
+          size_bytes: 9,
         }),
         update_guide: async () => ({ ...guide_detail.guide, version: 2 }),
         update_guide_step: async () => {

@@ -328,6 +328,7 @@ export const build = (opts: BuildOptions = {}) => {
           build_guide_repository(pool),
           {
               public_base_url: process.env.API_URL,
+              file_storage: default_capture_file_storage,
           }
       ),
       capture_asset_service: default_capture_asset_service,

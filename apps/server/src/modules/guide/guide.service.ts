@@ -1,4 +1,6 @@
 import { ulid } from "ulid";
+import { render_guide_html_export } from "./guide-html-export";
+import { build_guide_zip_export } from "./guide-zip-export";
 
 export type GuideAuthContext = {
   organization_id: string;
@@ -107,6 +109,22 @@ export type GuideDetail = {
 export type GuideMarkdownExport = {
   filename: string;
   markdown: string;
+};
+
+export type GuideHtmlZipExport = {
+  filename: string;
+  mime_type: "application/zip";
+  stream: NodeJS.ReadableStream;
+  size_bytes: number;
+};
+
+export type GuideExportAssetFile = {
+  capture_asset_id: string;
+  storage_provider: "local" | "external";
+  storage_key: string;
+  mime_type: string;
+  original_name: string | null;
+  size_bytes: number;
 };
 
 export type GuideSourceEvent = {
@@ -341,6 +359,19 @@ export type GuideRepository = {
     guide_block_id: string;
     actor_org_user_id: string;
   }) => Promise<boolean>;
+  find_guide_export_asset_files: (input: {
+    organization_id: string;
+    project_id: string;
+    guide_id: string;
+    capture_asset_ids: string[];
+  }) => Promise<GuideExportAssetFile[]>;
+};
+
+export type GuideFileStorage = {
+  get: (input: { storage_key: string }) => Promise<{
+    stream: NodeJS.ReadableStream;
+    size_bytes: number;
+  }>;
 };
 
 export class ProjectNotFoundError extends Error {
@@ -412,6 +443,18 @@ export class InvalidGuideBlockContentError extends Error {
 export class InvalidGuideBlockScreenshotError extends Error {
   constructor() {
     super("Guide block screenshot is invalid");
+  }
+}
+
+export class GuideExportFileNotFoundError extends Error {
+  constructor() {
+    super("Guide export file was not found");
+  }
+}
+
+export class UnsupportedGuideExportStorageProviderError extends Error {
+  constructor() {
+    super("Guide export storage provider is not supported");
   }
 }
 
@@ -755,6 +798,16 @@ const markdown_filename = (guide: Guide) => {
   return `${slug || `guide-${guide.id}`}.md`;
 };
 
+const html_zip_filename = (guide: Guide) => {
+  const slug = guide.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+
+  return `${slug || `guide-${guide.id}`}-html-export.zip`;
+};
+
 const step_number_for_block = (blocks: GuideBlock[], target: GuideBlock) => (
   blocks
     .filter((block) => block.block_type === "step" && block.block_index <= target.block_index)
@@ -952,6 +1005,7 @@ export const build_guide_service = (
   repository: GuideRepository,
   options: {
     public_base_url?: string;
+    file_storage?: GuideFileStorage;
   } = {}
 ) => {
   const public_base_url = compact_optional_string(options.public_base_url) ?? default_public_base_url;
@@ -1094,6 +1148,75 @@ export const build_guide_service = (
     return {
       filename: markdown_filename(guide_detail.guide),
       markdown: render_guide_markdown(guide_detail, public_base_url),
+    };
+  };
+
+  const export_guide_html_zip = async (input: {
+    auth: GuideAuthContext;
+    project_id: string;
+    guide_id: string;
+  }): Promise<GuideHtmlZipExport> => {
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      guide_id: input.guide_id,
+    };
+    await ensure_project_exists({
+      organization_id: scope.organization_id,
+      project_id: scope.project_id,
+    });
+
+    const guide_detail = await repository.find_guide_detail(scope);
+
+    if (!guide_detail) {
+      throw new GuideNotFoundError();
+    }
+
+    if (!options.file_storage) {
+      throw new GuideExportFileNotFoundError();
+    }
+
+    const rendered = render_guide_html_export(guide_detail);
+    const capture_asset_ids = rendered.image_references.map((reference) => reference.capture_asset_id);
+    const export_asset_files = capture_asset_ids.length > 0
+      ? await repository.find_guide_export_asset_files({
+        ...scope,
+        capture_asset_ids,
+      })
+      : [];
+    const export_files_by_asset_id = new Map(
+      export_asset_files.map((file) => [file.capture_asset_id, file])
+    );
+    const images = await Promise.all(rendered.image_references.map(async (reference) => {
+      const file = export_files_by_asset_id.get(reference.capture_asset_id);
+
+      if (!file) {
+        throw new GuideExportFileNotFoundError();
+      }
+
+      if (file.storage_provider !== "local") {
+        throw new UnsupportedGuideExportStorageProviderError();
+      }
+
+      const stored_file = await options.file_storage!.get({
+        storage_key: file.storage_key,
+      }).catch(() => {
+        throw new GuideExportFileNotFoundError();
+      });
+
+      return {
+        path: reference.asset_path,
+        stream: stored_file.stream,
+      };
+    }));
+    const zip_export = await build_guide_zip_export({
+      html: rendered.html,
+      images,
+    });
+
+    return {
+      filename: html_zip_filename(guide_detail.guide),
+      ...zip_export,
     };
   };
 
@@ -1465,6 +1588,7 @@ export const build_guide_service = (
     list_guides,
     get_guide_detail,
     export_guide_markdown,
+    export_guide_html_zip,
     update_guide,
     update_guide_step,
     reorder_guide_blocks,

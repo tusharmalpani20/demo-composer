@@ -1,4 +1,7 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { mkdtemp, rm } from "node:fs/promises";
+import path from "node:path";
+import { tmpdir } from "node:os";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { build } from "../../app";
 import { pool } from "../../config/database.config";
 
@@ -156,11 +159,36 @@ const multipart_payload = (parts: Array<{
 };
 
 describe("DB-backed guide API", () => {
+  let storage_root: string;
+  let previous_storage_root: string | undefined;
+  let previous_max_upload_bytes: string | undefined;
+
+  beforeAll(async () => {
+    storage_root = await mkdtemp(path.join(tmpdir(), "demo-composer-guide-test-"));
+    previous_storage_root = process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT;
+    previous_max_upload_bytes = process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES;
+    process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT = storage_root;
+    process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES = "1048576";
+  });
+
   beforeEach(async () => {
     await reset_foundation_tables();
   });
 
   afterAll(async () => {
+    if (previous_storage_root === undefined) {
+      delete process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT;
+    } else {
+      process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT = previous_storage_root;
+    }
+
+    if (previous_max_upload_bytes === undefined) {
+      delete process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES;
+    } else {
+      process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES = previous_max_upload_bytes;
+    }
+
+    await rm(storage_root, { recursive: true, force: true });
     await pool.end();
   });
 
@@ -967,4 +995,90 @@ describe("DB-backed guide API", () => {
 
     await app.close();
   });
+
+  it("exports a guide draft as HTML ZIP with local screenshot assets", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const capture_session_id = await create_capture_session(session_token, project_id);
+    const source_asset_id = await create_capture_asset(session_token, project_id, capture_session_id);
+
+    await create_capture_event(session_token, project_id, capture_session_id, {
+      event_type: "capture",
+      event_index: 1,
+      capture_asset_id: source_asset_id,
+      page_title: "Department List",
+    });
+
+    const app = build({ logger: false });
+    const create_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/from-capture-session/${capture_session_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        title: "HTML Export Guide",
+      },
+    });
+
+    expect(create_response.statusCode).toBe(201);
+    const guide_id = create_response.json().guide.id as string;
+    const guide_block_id = create_response.json().guide_blocks[0].id as string;
+    const uploaded_bytes = Buffer.from("html export png bytes");
+    const upload_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/${guide_block_id}/screenshot-upload`,
+      cookies: { demo_composer_session: session_token },
+      ...multipart_payload([
+        {
+          name: "file",
+          filename: "html-export.png",
+          content_type: "image/png",
+          value: uploaded_bytes,
+        },
+        { name: "page_title", value: "Exported Department List" },
+      ]),
+    });
+
+    expect(upload_response.statusCode).toBe(201);
+    const uploaded_asset_id = upload_response.json().capture_asset.id as string;
+    const annotations_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/blocks/${guide_block_id}/annotations`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        annotations: [{
+          type: "highlight",
+          x: 0.2,
+          y: 0.15,
+          width: 0.25,
+          height: 0.1,
+        }],
+      },
+    });
+
+    expect(annotations_response.statusCode).toBe(200);
+
+    const export_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/export/html.zip`,
+      cookies: { demo_composer_session: session_token },
+    });
+
+    expect(export_response.statusCode).toBe(200);
+    expect(export_response.headers["content-type"]).toBe("application/zip");
+    expect(export_response.headers["content-disposition"]).toBe(
+      "attachment; filename=\"html-export-guide-html-export.zip\""
+    );
+    const JSZip = (await import("jszip")).default;
+    const archive = await JSZip.loadAsync(export_response.rawPayload);
+    const html = await archive.file("index.html")?.async("string");
+
+    expect(html).toContain("HTML Export Guide");
+    expect(html).toContain(`assets/1-${uploaded_asset_id}.png`);
+    expect(html).toContain("left: 20%; top: 15%; width: 25%; height: 10%;");
+    expect(html).not.toContain("storage_key");
+    expect(html).not.toContain("organizations/");
+    await expect(archive.file(`assets/1-${uploaded_asset_id}.png`)?.async("nodebuffer"))
+      .resolves.toEqual(uploaded_bytes);
+    await app.close();
+  }, 30_000);
 });

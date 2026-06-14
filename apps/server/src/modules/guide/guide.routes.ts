@@ -21,6 +21,7 @@ import {
   CaptureEventNotFoundError,
   CaptureSessionNotFoundError,
   GuideBlockNotFoundError,
+  GuideExportFileNotFoundError,
   GuideNotFoundError,
   GuideNotEditableError,
   GuideStepNotFoundError,
@@ -30,12 +31,14 @@ import {
   InvalidGuideInputError,
   InvalidGuideStepInputError,
   ProjectNotFoundError,
+  UnsupportedGuideExportStorageProviderError,
   type CreateGuideBlockInput,
   type CreateGuideFromCaptureInput,
   type Guide,
   type GuideAuthContext,
   type GuideBlock,
   type GuideDetail,
+  type GuideHtmlZipExport,
   type GuideMarkdownExport,
   type GuideStep,
   type PrepareGuideBlockScreenshotUploadResult,
@@ -71,6 +74,11 @@ export type GuideRouteDependencies = {
       project_id: string;
       guide_id: string;
     }) => Promise<GuideMarkdownExport>;
+    export_guide_html_zip: (input: {
+      auth: GuideAuthContext;
+      project_id: string;
+      guide_id: string;
+    }) => Promise<GuideHtmlZipExport>;
     update_guide: (input: {
       auth: GuideAuthContext;
       project_id: string;
@@ -416,6 +424,10 @@ const with_file_url = (asset: CaptureAsset): CaptureAssetWithFileUrl => ({
   file_url: `/api/v1/projects/${asset.project_id}/capture-sessions/${asset.capture_session_id}/assets/${asset.id}/file`,
 });
 
+const content_disposition_attachment = (filename: string) => (
+  `attachment; filename="${filename.replace(/["\\\r\n]/g, "-")}"`
+);
+
 export const build_guide_routes = (
   dependencies: GuideRouteDependencies
 ): FastifyPluginAsync => {
@@ -477,6 +489,19 @@ export const build_guide_routes = (
 
       if (error instanceof InvalidGuideBlockScreenshotError) {
         return reply.status(400).send(error_response("invalid_guide_block_screenshot", "Guide block screenshot is invalid"));
+      }
+
+      if (error instanceof GuideExportFileNotFoundError) {
+        return reply.status(404).send(error_response("guide_export_file_not_found", "Guide export file was not found"));
+      }
+
+      if (error instanceof UnsupportedGuideExportStorageProviderError) {
+        return reply.status(501).send(
+          error_response(
+            "unsupported_guide_export_storage_provider",
+            "Guide export storage provider is not supported"
+          )
+        );
       }
 
       if (error instanceof InvalidCaptureAssetUploadError) {
@@ -587,6 +612,31 @@ export const build_guide_routes = (
         });
 
         return reply.status(200).send(markdown_export);
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.get<{
+      Params: {
+        project_id: string;
+        guide_id: string;
+      };
+    }>("/:project_id/guides/:guide_id/export/html.zip", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const html_export = await dependencies.guide_service.export_guide_html_zip({
+          auth,
+          project_id: request.params.project_id,
+          guide_id: request.params.guide_id,
+        });
+
+        return reply
+          .status(200)
+          .header("content-type", html_export.mime_type)
+          .header("content-length", String(html_export.size_bytes))
+          .header("content-disposition", content_disposition_attachment(html_export.filename))
+          .send(html_export.stream);
       } catch (error) {
         return handle_domain_error(error, reply);
       }

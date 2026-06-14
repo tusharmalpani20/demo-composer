@@ -3,6 +3,7 @@ import type {
   Guide,
   GuideBlock,
   GuideDetail,
+  GuideExportAssetFile,
   GuideRepository,
   GuideSourceCaptureAsset,
   GuideSourceEvent,
@@ -107,6 +108,15 @@ type GuideSourceCaptureAssetRow = {
   file_id: string;
   original_name: string | null;
   mime_type: string;
+  size_bytes: number;
+};
+
+type GuideExportAssetFileRow = {
+  capture_asset_id: string;
+  storage_provider: "local" | "external";
+  storage_key: string;
+  mime_type: string;
+  original_name: string | null;
   size_bytes: number;
 };
 
@@ -739,6 +749,71 @@ export const build_guide_repository = (db: TransactionCapable): GuideRepository 
       guide_blocks,
       source_capture_assets,
     };
+  },
+
+  async find_guide_export_asset_files(input) {
+    if (input.capture_asset_ids.length === 0) {
+      return [];
+    }
+
+    const result = await db.query<GuideExportAssetFileRow>(`
+      SELECT DISTINCT ON (capture_asset.id)
+        capture_asset.id AS capture_asset_id,
+        app_file.storage_provider,
+        app_file.storage_key,
+        app_file.mime_type,
+        app_file.original_name,
+        app_file.size_bytes
+      FROM guide_schema.guide guide
+      INNER JOIN guide_schema.guide_block guide_block
+        ON guide_block.guide_id = guide.id
+        AND guide_block.project_id = guide.project_id
+        AND guide_block.organization_id = guide.organization_id
+        AND guide_block.is_deleted = FALSE
+      LEFT JOIN guide_schema.guide_step guide_step
+        ON guide_step.guide_block_id = guide_block.id
+        AND guide_step.project_id = guide_block.project_id
+        AND guide_step.organization_id = guide_block.organization_id
+        AND guide_step.is_deleted = FALSE
+      INNER JOIN capture_schema.capture_asset capture_asset
+        ON capture_asset.id = ANY($4::varchar[])
+        AND capture_asset.id IN (
+          guide_block.selected_capture_asset_id,
+          guide_block.source_capture_asset_id,
+          guide_step.source_capture_asset_id
+        )
+        AND capture_asset.project_id = guide.project_id
+        AND capture_asset.organization_id = guide.organization_id
+        AND capture_asset.is_deleted = FALSE
+      INNER JOIN file_schema.file app_file
+        ON app_file.id = capture_asset.file_id
+        AND app_file.organization_id = guide.organization_id
+        AND app_file.is_deleted = FALSE
+      WHERE guide.id = $1
+      AND guide.project_id = $2
+      AND guide.organization_id = $3
+      AND guide.is_deleted = FALSE
+      ORDER BY capture_asset.id
+    `, [
+      input.guide_id,
+      input.project_id,
+      input.organization_id,
+      input.capture_asset_ids,
+    ]);
+    const files_by_asset_id = new Map(
+      result.rows.map((row): [string, GuideExportAssetFile] => [row.capture_asset_id, {
+        capture_asset_id: row.capture_asset_id,
+        storage_provider: row.storage_provider,
+        storage_key: row.storage_key,
+        mime_type: row.mime_type,
+        original_name: row.original_name,
+        size_bytes: Number(row.size_bytes),
+      }])
+    );
+
+    return input.capture_asset_ids
+      .map((id) => files_by_asset_id.get(id))
+      .filter((file): file is GuideExportAssetFile => Boolean(file));
   },
 
   async update_guide(input) {
