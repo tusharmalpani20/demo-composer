@@ -3,6 +3,7 @@ import {
   ApiClientError,
   createGuideBlock,
   deleteGuideBlock,
+  exportGuideHtmlZip,
   exportGuideMarkdown,
   getGuideDetail,
   getGuidePublishStatus,
@@ -89,8 +90,10 @@ export type GuideEditorPageProps = {
     input: UpdateGuidePublishPasswordInput
   ) => Promise<GuidePublishStatusResponse>;
   copyText?: (text: string) => Promise<void>;
-  downloadTextFile?: (filename: string, contents: string, mimeType: string) => Promise<void>;
   exportMarkdown?: typeof exportGuideMarkdown;
+  exportHtmlZip?: typeof exportGuideHtmlZip;
+  downloadTextFile?: (filename: string, contents: string, mimeType: string) => Promise<void>;
+  downloadBlobFile?: (filename: string, blob: Blob) => Promise<void>;
   saveGuide?: typeof updateGuide;
   saveStep?: typeof updateGuideStep;
   createBlock?: typeof createGuideBlock;
@@ -154,6 +157,21 @@ const defaultDownloadTextFile = async (
   mimeType: string
 ) => {
   const url = URL.createObjectURL(new Blob([contents], { type: mimeType }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
+const defaultDownloadBlobFile = async (
+  filename: string,
+  blob: Blob
+) => {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
@@ -324,8 +342,10 @@ export const GuideEditorPage = ({
   updatePublishAccess = updateGuidePublishAccess,
   updatePublishPassword = updateGuidePublishPassword,
   copyText = defaultCopyText,
-  downloadTextFile = defaultDownloadTextFile,
   exportMarkdown = exportGuideMarkdown,
+  exportHtmlZip = exportGuideHtmlZip,
+  downloadTextFile = defaultDownloadTextFile,
+  downloadBlobFile = defaultDownloadBlobFile,
   saveGuide = updateGuide,
   saveStep = updateGuideStep,
   createBlock = createGuideBlock,
@@ -573,6 +593,21 @@ export const GuideEditorPage = ({
       setNotice("Markdown downloaded.");
     } catch {
       setNotice("Could not export Markdown.");
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const downloadHtmlZip = async () => {
+    setBusyAction("export-html");
+    setNotice(null);
+
+    try {
+      const response = await exportHtmlZip(projectId, guideId);
+      await downloadBlobFile(response.filename, response.blob);
+      setNotice("HTML export downloaded.");
+    } catch {
+      setNotice("Could not export HTML.");
     } finally {
       setBusyAction(null);
     }
@@ -972,6 +1007,7 @@ export const GuideEditorPage = ({
       onCopyEmbedCode={(publicUrl) => copyCurrentEmbed(publicUrl, state.detail.guide.title)}
       onCopyMarkdown={copyMarkdown}
       onDownloadMarkdown={downloadMarkdown}
+      onDownloadHtmlZip={downloadHtmlZip}
       onRetryPublishStatus={reloadPublishStatus}
       performLogout={performLogout}
       navigate={navigate}
@@ -1036,6 +1072,7 @@ const GuideEditorView = ({
   onCopyEmbedCode,
   onCopyMarkdown,
   onDownloadMarkdown,
+  onDownloadHtmlZip,
   onRetryPublishStatus,
   performLogout,
   navigate,
@@ -1077,6 +1114,7 @@ const GuideEditorView = ({
   onCopyEmbedCode: (publicUrl: string) => void;
   onCopyMarkdown: () => void;
   onDownloadMarkdown: () => void;
+  onDownloadHtmlZip: () => void;
   onRetryPublishStatus: () => void;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
@@ -1114,7 +1152,7 @@ const GuideEditorView = ({
             <button
               className={styles.secondaryButton}
               type="button"
-              disabled={busyAction === "export-copy" || busyAction === "export-download"}
+              disabled={busyAction === "export-copy" || busyAction === "export-download" || busyAction === "export-html"}
               onClick={onCopyMarkdown}
             >
               {busyAction === "export-copy" ? "Copying Markdown..." : "Copy Markdown"}
@@ -1122,10 +1160,18 @@ const GuideEditorView = ({
             <button
               className={styles.secondaryButton}
               type="button"
-              disabled={busyAction === "export-copy" || busyAction === "export-download"}
+              disabled={busyAction === "export-copy" || busyAction === "export-download" || busyAction === "export-html"}
               onClick={onDownloadMarkdown}
             >
               {busyAction === "export-download" ? "Downloading Markdown..." : "Download Markdown"}
+            </button>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              disabled={busyAction === "export-copy" || busyAction === "export-download" || busyAction === "export-html"}
+              onClick={onDownloadHtmlZip}
+            >
+              {busyAction === "export-html" ? "Exporting HTML..." : "Export HTML"}
             </button>
             <a className={styles.previewLink} href={guidePreviewUrl(projectId, guideId)}>Preview guide</a>
             <span className={styles.badge}>{detail.guide.status}</span>

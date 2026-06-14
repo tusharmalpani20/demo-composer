@@ -15,6 +15,11 @@ type GuideMarkdownExport = {
   markdown: string;
 };
 
+type GuideHtmlZipExport = {
+  filename: string;
+  blob: Blob;
+};
+
 const guideDetail: GuideDetail = {
   guide: {
     id: "guide_1",
@@ -214,7 +219,9 @@ const renderPage = (overrides: {
   saveBlockAnnotations?: GuideEditorPageProps["saveBlockAnnotations"];
   uploadBlockScreenshot?: GuideEditorPageProps["uploadBlockScreenshot"];
   exportMarkdown?: GuideEditorPageProps["exportMarkdown"];
+  exportHtmlZip?: GuideEditorPageProps["exportHtmlZip"];
   downloadTextFile?: GuideEditorPageProps["downloadTextFile"];
+  downloadBlobFile?: GuideEditorPageProps["downloadBlobFile"];
   reorderBlocks?: GuideEditorPageProps["reorderBlocks"];
   removeBlock?: GuideEditorPageProps["removeBlock"];
   loadPublishStatus?: GuideEditorPageProps["loadPublishStatus"];
@@ -415,7 +422,12 @@ const renderPage = (overrides: {
     filename: "department-guide.md",
     markdown: "# Department guide\n",
   }));
+  const exportHtmlZip = overrides.exportHtmlZip ?? vi.fn(async (): Promise<GuideHtmlZipExport> => ({
+    filename: "department-guide-html-export.zip",
+    blob: new Blob(["zip-bytes"], { type: "application/zip" }),
+  }));
   const downloadTextFile = overrides.downloadTextFile ?? vi.fn(async () => undefined);
+  const downloadBlobFile = overrides.downloadBlobFile ?? vi.fn(async () => undefined);
   const publishCurrentGuide = overrides.publishCurrentGuide ?? vi.fn(async () => publishedStatus());
   const revokePublishLink = overrides.revokePublishLink ?? vi.fn(async () => ({
     publish_link: {
@@ -456,7 +468,9 @@ const renderPage = (overrides: {
       saveBlockAnnotations={saveBlockAnnotations}
       uploadBlockScreenshot={uploadBlockScreenshot}
       exportMarkdown={exportMarkdown}
+      exportHtmlZip={exportHtmlZip}
       downloadTextFile={downloadTextFile}
+      downloadBlobFile={downloadBlobFile}
       reorderBlocks={reorderBlocks}
       removeBlock={removeBlock}
       publishCurrentGuide={publishCurrentGuide}
@@ -479,7 +493,9 @@ const renderPage = (overrides: {
     saveBlockAnnotations,
     uploadBlockScreenshot,
     exportMarkdown,
+    exportHtmlZip,
     downloadTextFile,
+    downloadBlobFile,
     reorderBlocks,
     removeBlock,
     publishCurrentGuide,
@@ -554,6 +570,25 @@ describe("GuideEditorPage", () => {
     });
     expect(exportMarkdown).toHaveBeenCalledTimes(2);
     expect(screen.getByText("Markdown downloaded.")).toBeInTheDocument();
+  });
+
+  it("downloads guide HTML ZIP from the editor", async () => {
+    const blob = new Blob(["zip-bytes"], { type: "application/zip" });
+    const exportHtmlZip = vi.fn(async () => ({
+      filename: "department-guide-html-export.zip",
+      blob,
+    }));
+    const downloadBlobFile = vi.fn(async () => undefined);
+    renderPage({ exportHtmlZip, downloadBlobFile });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Export HTML" }));
+
+    await waitFor(() => {
+      expect(exportHtmlZip).toHaveBeenCalledWith("project_1", "guide_1");
+    });
+    expect(downloadBlobFile).toHaveBeenCalledWith("department-guide-html-export.zip", blob);
+    expect(screen.getByText("HTML export downloaded.")).toBeInTheDocument();
   });
 
   it("shows editor markdown export failures without marking the draft stale", async () => {

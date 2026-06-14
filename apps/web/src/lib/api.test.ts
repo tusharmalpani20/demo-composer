@@ -7,6 +7,7 @@ import {
   createGuideBlock,
   createGuideFromCaptureSession,
   deleteGuideBlock,
+  exportGuideHtmlZip,
   exportGuideMarkdown,
   getCurrentAuth,
   getCaptureSessionDetail,
@@ -865,6 +866,31 @@ describe("api client", () => {
         credentials: "include",
         headers: {
           accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("exports guide HTML ZIP with session cookies and content-disposition filename", async () => {
+    const fetch = vi.fn(async () => new Response("zip-bytes", {
+      status: 200,
+      headers: {
+        "content-type": "application/zip",
+        "content-disposition": "attachment; filename=\"department-guide-html-export.zip\"",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    const response = await exportGuideHtmlZip("project 1", "guide/1");
+
+    await expect(response.blob.text()).resolves.toBe("zip-bytes");
+    expect(response.filename).toBe("department-guide-html-export.zip");
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project%201/guides/guide%2F1/export/html.zip",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/zip",
         },
       }
     );

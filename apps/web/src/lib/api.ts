@@ -161,6 +161,44 @@ const requestJson = async <Result>(
   return await response.json() as Result;
 };
 
+const filenameFromContentDisposition = (contentDisposition: string | null) => {
+  const filenameMatch = contentDisposition?.match(/filename="([^"]+)"/i)
+    ?? contentDisposition?.match(/filename=([^;]+)/i);
+  const filename = filenameMatch?.[1]?.trim();
+
+  return filename || null;
+};
+
+const requestBlob = async (
+  path: string,
+  fallbackFilename: string
+): Promise<{ filename: string; blob: Blob }> => {
+  const response = await fetch(
+    joinUrl(apiBaseUrl(), path),
+    {
+      credentials: "include",
+      headers: {
+        accept: "application/zip",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const body = await parseErrorBody(response);
+    throw new ApiClientError({
+      kind: errorKind(response.status, body.error?.type),
+      status: response.status,
+      type: body.error?.type ?? null,
+      message: body.error?.message ?? "Request failed",
+    });
+  }
+
+  return {
+    filename: filenameFromContentDisposition(response.headers.get("content-disposition")) ?? fallbackFilename,
+    blob: await response.blob(),
+  };
+};
+
 export const resolveApiAssetUrl = (fileUrl: string, baseUrl = apiBaseUrl()) => (
   joinUrl(baseUrl, fileUrl)
 );
@@ -361,6 +399,16 @@ export const exportGuideMarkdown = async (
 ): Promise<GuideMarkdownExport> => (
   requestJson<GuideMarkdownExport>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/export/markdown`
+  )
+);
+
+export const exportGuideHtmlZip = async (
+  projectId: string,
+  guideId: string
+): Promise<{ filename: string; blob: Blob }> => (
+  requestBlob(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/export/html.zip`,
+    "guide-html-export.zip"
   )
 );
 
