@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `048` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering and editing from the portal, public guide access controls, and project health hardening.
+- Plans `001` through `049` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering and editing from the portal, public guide access controls, project health hardening, and project settings/archive controls.
 - Development setup, backend route inventory, and production readiness docs now exist:
   - `docs/development-setup.md`
   - `docs/backend-route-inventory.md`
@@ -106,6 +106,7 @@ The agreed implementation style is:
   - `/` as project list home
   - `/projects`
   - `/projects/:project_id`
+  - `/projects/:project_id/settings`
   - `/projects/:project_id/capture-sessions`
   - `/projects/:project_id/capture-sessions/:capture_session_id`
   - `/projects/:project_id/guides`
@@ -116,7 +117,7 @@ The agreed implementation style is:
   - login
   - logout
   - project creation
-  - project list/detail
+  - project list/detail/update
   - capture session creation
   - capture session screenshot upload
   - capture session event creation
@@ -139,7 +140,8 @@ The agreed implementation style is:
 - Shared portal topbar supports sign out.
 - Login defaults to `/projects`.
 - Project list/home page shows accessible projects, lets users create new projects, and opens project workspaces.
-- Project workspace links to capture sessions and guides.
+- Project workspace links to capture sessions, guides, and project settings.
+- Project settings page lets users update project name/description/slug and archive or unarchive the project through the existing project update API.
 - Capture session list page shows project capture sessions and lets users create manual portal capture sessions.
 - Capture session detail page shows source capture detail, lets users upload one or more screenshots into manual capture sessions with linked capture events, shows per-file bulk upload status and partial-success failures, lets users move manual capture events up/down, edit safe manual event text fields before guide generation, and supports creating a guide from that capture.
 - Guide list page shows project guides with per-guide publish status, isolated status-load failures, direct public-link open actions for active accessible published guides, and restricted/expired publish-link status labels.
@@ -170,7 +172,6 @@ The agreed implementation style is:
 
 ### Portal Creation Flows
 
-- No project settings/edit/archive UI.
 - No organization/user/member invitation UI.
 
 ### Guide Product Depth
