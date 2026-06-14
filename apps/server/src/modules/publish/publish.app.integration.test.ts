@@ -15,6 +15,7 @@ const publish_result: GuidePublishResult = {
     status: "active",
     published_at: "2026-06-10T00:00:00.000Z",
     revoked_at: null,
+    password_protected: false,
     public_url: "/p/abc123",
   },
   published_artifact: {
@@ -48,6 +49,7 @@ describe("publish app integration", () => {
         get_guide_publish_status: async () => publish_result,
         revoke_guide_publish_link: async () => ({ publish_link: { ...publish_result.publish_link, status: "revoked" } }),
         update_guide_publish_access: async () => publish_result,
+        update_guide_publish_password: async () => publish_result,
         resolve_public_publish_link: async () => ({
           publish_link: {
             slug: "abc123",
@@ -55,11 +57,16 @@ describe("publish app integration", () => {
             visibility: "public",
             expires_at: null,
             status: "active",
+            password_protected: false,
           },
           published_artifact: {
             ...publish_result.published_artifact,
             snapshot: { artifact_type: "guide", blocks: [] },
           },
+        }),
+        create_public_publish_viewer_session: async () => ({
+          token: "viewer-token",
+          expires_at: "2026-06-10T12:00:00.000Z",
         }),
         get_public_published_asset_file: async () => ({
           stream: Readable.from(Buffer.from("file")),

@@ -9,10 +9,13 @@ import {
   GuideNotFoundError,
   GuideNotPublishableError,
   InvalidPublishAccessSettingsError,
+  InvalidPublishPasswordSettingsError,
+  InvalidPublicViewerPasswordError,
   ProjectNotFoundError,
   PublishedAssetNotFoundError,
   PublishLinkExpiredError,
   PublishLinkNotFoundError,
+  PublishLinkPasswordRequiredError,
   PublishLinkNotPublicError,
   UnsupportedPublishedAssetStorageProviderError,
   type GuidePublishResult,
@@ -23,6 +26,10 @@ import {
   type PublishVisibility,
   type RevokedGuidePublishResult,
 } from "./publish.service";
+import {
+  public_viewer_cookie_name,
+  set_public_viewer_cookie,
+} from "./public-viewer-cookie";
 
 export type PublishRouteDependencies = {
   auth_service: {
@@ -51,12 +58,24 @@ export type PublishRouteDependencies = {
       visibility: PublishVisibility;
       expires_at: string | null;
     }) => Promise<GuidePublishStatus>;
+    update_guide_publish_password: (input: {
+      auth: PublishAuthContext;
+      project_id: string;
+      guide_id: string;
+      password: string | null;
+    }) => Promise<GuidePublishStatus>;
     resolve_public_publish_link: (input: {
       slug: string;
+      viewer_token?: string;
     }) => Promise<PublicPublishResult>;
+    create_public_publish_viewer_session: (input: {
+      slug: string;
+      password: string;
+    }) => Promise<{ token: string; expires_at: string }>;
     get_public_published_asset_file: (input: {
       slug: string;
       capture_asset_id: string;
+      viewer_token?: string;
     }) => Promise<PublishedAssetFileRead>;
   };
 };
@@ -108,6 +127,43 @@ const parse_publish_access_body = (body: unknown): { visibility: PublishVisibili
   };
 };
 
+const parse_publish_password_body = (body: unknown): { password: string | null } => {
+  if (!body || typeof body !== "object") {
+    throw new InvalidPublishPasswordSettingsError();
+  }
+
+  const candidate = body as { password?: unknown };
+
+  if (candidate.password === null) {
+    return { password: null };
+  }
+
+  if (typeof candidate.password !== "string") {
+    throw new InvalidPublishPasswordSettingsError();
+  }
+
+  return { password: candidate.password };
+};
+
+const parse_public_viewer_password_body = (body: unknown): { password: string } => {
+  if (!body || typeof body !== "object") {
+    throw new InvalidPublicViewerPasswordError();
+  }
+
+  const candidate = body as { password?: unknown };
+
+  if (typeof candidate.password !== "string") {
+    throw new InvalidPublicViewerPasswordError();
+  }
+
+  return { password: candidate.password };
+};
+
+const public_publish_response = (result: PublicPublishResult): PublicPublishResult => ({
+  publish_link: result.publish_link,
+  published_artifact: result.published_artifact,
+});
+
 export const build_publish_routes = (
   dependencies: PublishRouteDependencies
 ): FastifyPluginAsync => {
@@ -147,6 +203,12 @@ export const build_publish_routes = (
         );
       }
 
+      if (error instanceof InvalidPublishPasswordSettingsError) {
+        return reply.status(400).send(
+          error_response("invalid_publish_password_settings", "Invalid publish password settings")
+        );
+      }
+
       if (error instanceof PublishLinkNotFoundError) {
         return reply.status(404).send(error_response("publish_link_not_found", "Publish link was not found"));
       }
@@ -157,6 +219,18 @@ export const build_publish_routes = (
 
       if (error instanceof PublishLinkExpiredError) {
         return reply.status(410).send(error_response("publish_link_expired", "Publish link has expired"));
+      }
+
+      if (error instanceof PublishLinkPasswordRequiredError) {
+        return reply.status(401).send(
+          error_response("publish_link_password_required", "Publish link password is required")
+        );
+      }
+
+      if (error instanceof InvalidPublicViewerPasswordError) {
+        return reply.status(400).send(
+          error_response("invalid_public_viewer_password", "Invalid public viewer password")
+        );
       }
 
       if (error instanceof PublishedAssetNotFoundError) {
@@ -262,6 +336,31 @@ export const build_publish_routes = (
       }
     });
 
+    fastify.patch<{
+      Params: {
+        project_id: string;
+        guide_id: string;
+      };
+      Body: {
+        password: string | null;
+      };
+    }>("/projects/:project_id/guides/:guide_id/publish/password", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const password_body = parse_publish_password_body(request.body);
+        const result = await dependencies.publish_service.update_guide_publish_password({
+          auth,
+          project_id: request.params.project_id,
+          guide_id: request.params.guide_id,
+          password: password_body.password,
+        });
+
+        return reply.status(200).send(result);
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
     fastify.get<{
       Params: {
         slug: string;
@@ -270,9 +369,35 @@ export const build_publish_routes = (
       try {
         const result = await dependencies.publish_service.resolve_public_publish_link({
           slug: request.params.slug,
+          viewer_token: request.cookies[public_viewer_cookie_name],
         });
 
-        return reply.status(200).send(result);
+        return reply.status(200).send(public_publish_response(result));
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.post<{
+      Params: {
+        slug: string;
+      };
+      Body: {
+        password: string;
+      };
+    }>("/public/publish-links/:slug/viewer-sessions", async (request, reply) => {
+      try {
+        const password_body = parse_public_viewer_password_body(request.body);
+        const session = await dependencies.publish_service.create_public_publish_viewer_session({
+          slug: request.params.slug,
+          password: password_body.password,
+        });
+
+        if (session.token) {
+          set_public_viewer_cookie(reply, session.token, session.expires_at);
+        }
+
+        return reply.status(204).send();
       } catch (error) {
         return handle_domain_error(error, reply);
       }
@@ -288,6 +413,7 @@ export const build_publish_routes = (
         const file = await dependencies.publish_service.get_public_published_asset_file({
           slug: request.params.slug,
           capture_asset_id: request.params.capture_asset_id,
+          viewer_token: request.cookies[public_viewer_cookie_name],
         });
 
         return reply

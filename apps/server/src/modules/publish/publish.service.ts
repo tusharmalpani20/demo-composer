@@ -1,9 +1,13 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type {
   GuideDetail,
   GuideScreenshotAnnotation,
   GuideSourceCaptureAsset,
 } from "../guide/guide.service";
+import {
+  hash_public_link_password,
+  verify_public_link_password,
+} from "./public-link-password";
 
 export type PublishAuthContext = {
   organization_id: string;
@@ -25,6 +29,7 @@ export type PublishLink = {
   published_at: string;
   revoked_at: string | null;
   expires_at: string | null;
+  password_protected: boolean;
   public_url: string;
 };
 
@@ -55,11 +60,24 @@ export type PublicPublishedArtifact = PublishedArtifact & {
   snapshot: unknown;
 };
 
-export type PublicPublishLink = Pick<PublishLink, "slug" | "artifact_type" | "visibility" | "status" | "expires_at">;
+export type PublicPublishLink = Pick<
+  PublishLink,
+  "slug" | "artifact_type" | "visibility" | "status" | "expires_at" | "password_protected"
+>;
 
 export type PublicPublishResult = {
   publish_link: PublicPublishLink;
   published_artifact: PublicPublishedArtifact;
+  publish_link_id?: string;
+  password?: {
+    hash: string;
+    salt: string;
+  } | null;
+};
+
+export type PublicViewerSession = {
+  token: string;
+  expires_at: string;
 };
 
 export type PublishedAssetFileRead = {
@@ -190,6 +208,33 @@ export type PublishRepository = {
     visibility: PublishVisibility;
     expires_at: string | null;
   }) => Promise<GuidePublishStatus | null>;
+  update_publish_link_password: (input: {
+    organization_id: string;
+    project_id: string;
+    guide_id: string;
+    password_hash: string | null;
+    password_salt: string | null;
+  }) => Promise<GuidePublishStatus | null>;
+  create_public_viewer_session: (input: {
+    publish_link_id: string;
+    token_hash: string;
+    token: string;
+    expires_at: string;
+  }) => Promise<PublicViewerSession>;
+  find_public_viewer_session_by_token_hash: (input: {
+    token_hash: string;
+    publish_link_slug: string;
+  }) => Promise<{
+    publish_link_id: string;
+    expires_at: string;
+    revoked_at: string | null;
+  } | null>;
+  touch_public_viewer_session: (input: {
+    token_hash: string;
+  }) => Promise<void>;
+  revoke_public_viewer_sessions_for_publish_link: (input: {
+    publish_link_id: string;
+  }) => Promise<void>;
   find_active_publish_link_by_slug: (input: {
     slug: string;
   }) => Promise<PublicPublishResult | null>;
@@ -236,6 +281,12 @@ export class InvalidPublishAccessSettingsError extends Error {
   }
 }
 
+export class InvalidPublishPasswordSettingsError extends Error {
+  constructor() {
+    super("Invalid publish password settings");
+  }
+}
+
 export class PublishLinkNotFoundError extends Error {
   constructor() {
     super("Publish link was not found");
@@ -254,6 +305,18 @@ export class PublishLinkExpiredError extends Error {
   }
 }
 
+export class PublishLinkPasswordRequiredError extends Error {
+  constructor() {
+    super("Publish link password is required");
+  }
+}
+
+export class InvalidPublicViewerPasswordError extends Error {
+  constructor() {
+    super("Invalid public viewer password");
+  }
+}
+
 export class PublishedAssetNotFoundError extends Error {
   constructor() {
     super("Published asset was not found");
@@ -267,6 +330,10 @@ export class UnsupportedPublishedAssetStorageProviderError extends Error {
 }
 
 const default_generate_slug = () => randomBytes(9).toString("base64url");
+const default_generate_viewer_token = () => randomBytes(32).toString("base64url");
+const hash_viewer_token = (token: string) => (
+  createHash("sha256").update(token).digest("hex")
+);
 
 const assets_by_id = (assets: GuideSourceCaptureAsset[]) => new Map(
   assets.map((asset) => [asset.id, asset])
@@ -280,6 +347,11 @@ const source_asset_for_block = (
 
   return source_capture_asset_id ? assets.get(source_capture_asset_id) ?? null : null;
 };
+
+const public_publish_response = (result: PublicPublishResult): PublicPublishResult => ({
+  publish_link: result.publish_link,
+  published_artifact: result.published_artifact,
+});
 
 const build_snapshot = (input: {
   guide_detail: GuideDetail;
@@ -342,11 +414,13 @@ export const build_publish_service = (
   repository: PublishRepository,
   options: {
     generate_slug?: () => string;
+    generate_viewer_token?: () => string;
     now?: () => Date;
     file_storage?: PublishFileStorage;
   } = {}
 ) => {
   const generate_slug = options.generate_slug ?? default_generate_slug;
+  const generate_viewer_token = options.generate_viewer_token ?? default_generate_viewer_token;
   const now = options.now ?? (() => new Date());
 
   const ensure_project_exists = async (input: {
@@ -494,6 +568,10 @@ export const build_publish_service = (
       throw new PublishLinkNotFoundError();
     }
 
+    await repository.revoke_public_viewer_sessions_for_publish_link({
+      publish_link_id: publish_link.id,
+    });
+
     return { publish_link };
   };
 
@@ -533,6 +611,57 @@ export const build_publish_service = (
     return result;
   };
 
+  const validate_publish_password = (password: string | null) => {
+    if (password === null) {
+      return;
+    }
+
+    if (
+      typeof password !== "string"
+      || password.trim().length < 8
+      || password.length > 128
+    ) {
+      throw new InvalidPublishPasswordSettingsError();
+    }
+  };
+
+  const update_guide_publish_password = async (input: {
+    auth: PublishAuthContext;
+    project_id: string;
+    guide_id: string;
+    password: string | null;
+  }) => {
+    validate_publish_password(input.password);
+
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    };
+
+    await ensure_project_exists(scope);
+
+    const password_hash = input.password === null
+      ? null
+      : await hash_public_link_password(input.password);
+
+    const result = await repository.update_publish_link_password({
+      ...scope,
+      guide_id: input.guide_id,
+      password_hash: password_hash?.hash ?? null,
+      password_salt: password_hash?.salt ?? null,
+    });
+
+    if (!result?.publish_link) {
+      throw new PublishLinkNotFoundError();
+    }
+
+    await repository.revoke_public_viewer_sessions_for_publish_link({
+      publish_link_id: result.publish_link.id,
+    });
+
+    return result;
+  };
+
   const assert_public_access = (publish_link: PublicPublishLink) => {
     if (publish_link.visibility !== "public") {
       throw new PublishLinkNotPublicError();
@@ -543,8 +672,38 @@ export const build_publish_service = (
     }
   };
 
+  const assert_viewer_access = async (input: {
+    result: PublicPublishResult;
+    viewer_token?: string;
+  }) => {
+    if (!input.result.publish_link.password_protected) {
+      return;
+    }
+
+    if (!input.viewer_token) {
+      throw new PublishLinkPasswordRequiredError();
+    }
+
+    const token_hash = hash_viewer_token(input.viewer_token);
+    const session = await repository.find_public_viewer_session_by_token_hash({
+      token_hash,
+      publish_link_slug: input.result.publish_link.slug,
+    });
+
+    if (
+      !session
+      || session.revoked_at
+      || new Date(session.expires_at).getTime() <= now().getTime()
+    ) {
+      throw new PublishLinkPasswordRequiredError();
+    }
+
+    await repository.touch_public_viewer_session({ token_hash });
+  };
+
   const resolve_public_publish_link = async (input: {
     slug: string;
+    viewer_token?: string;
   }) => {
     const result = await repository.find_active_publish_link_by_slug(input);
 
@@ -553,13 +712,59 @@ export const build_publish_service = (
     }
 
     assert_public_access(result.publish_link);
+    await assert_viewer_access({ result, viewer_token: input.viewer_token });
 
-    return result;
+    return public_publish_response(result);
+  };
+
+  const create_public_publish_viewer_session = async (input: {
+    slug: string;
+    password: string;
+  }): Promise<PublicViewerSession> => {
+    const result = await repository.find_active_publish_link_by_slug({ slug: input.slug });
+
+    if (!result) {
+      throw new PublishLinkNotFoundError();
+    }
+
+    assert_public_access(result.publish_link);
+
+    if (!result.publish_link.password_protected) {
+      return {
+        token: "",
+        expires_at: now().toISOString(),
+      };
+    }
+
+    if (!result.password || !result.publish_link_id) {
+      throw new PublishLinkPasswordRequiredError();
+    }
+
+    const valid_password = await verify_public_link_password(
+      input.password,
+      result.password.hash,
+      result.password.salt
+    );
+
+    if (!valid_password) {
+      throw new InvalidPublicViewerPasswordError();
+    }
+
+    const token = generate_viewer_token();
+    const expires_at = new Date(now().getTime() + (12 * 60 * 60 * 1000)).toISOString();
+
+    return await repository.create_public_viewer_session({
+      publish_link_id: result.publish_link_id,
+      token_hash: hash_viewer_token(token),
+      token,
+      expires_at,
+    });
   };
 
   const get_public_published_asset_file = async (input: {
     slug: string;
     capture_asset_id: string;
+    viewer_token?: string;
   }): Promise<PublishedAssetFileRead> => {
     if (!options.file_storage) {
       throw new PublishedAssetNotFoundError();
@@ -572,6 +777,7 @@ export const build_publish_service = (
     }
 
     assert_public_access(public_result.publish_link);
+    await assert_viewer_access({ result: public_result, viewer_token: input.viewer_token });
 
     const asset_file = await repository.find_public_asset_file(input);
 
@@ -599,7 +805,9 @@ export const build_publish_service = (
     get_guide_publish_status,
     revoke_guide_publish_link,
     update_guide_publish_access,
+    update_guide_publish_password,
     resolve_public_publish_link,
+    create_public_publish_viewer_session,
     get_public_published_asset_file,
   };
 };

@@ -52,6 +52,7 @@ const publish_result: GuidePublishResult = {
     published_at: "2026-06-10T00:00:00.000Z",
     revoked_at: null,
     expires_at: null,
+    password_protected: false,
     public_url: "/p/abc123",
   },
   published_artifact: {
@@ -71,6 +72,7 @@ const public_result = {
     visibility: "public" as const,
     status: "active" as const,
     expires_at: null,
+    password_protected: false,
   },
   published_artifact: {
     ...publish_result.published_artifact,
@@ -117,7 +119,18 @@ const build_test_app = async (
         },
       }),
       update_guide_publish_access: async () => publish_result,
+      update_guide_publish_password: async () => ({
+        ...publish_result,
+        publish_link: {
+          ...publish_result.publish_link,
+          password_protected: true,
+        },
+      }),
       resolve_public_publish_link: async () => public_result,
+      create_public_publish_viewer_session: async () => ({
+        token: "viewer-token",
+        expires_at: "2026-06-10T12:00:00.000Z",
+      }),
       get_public_published_asset_file: async () => ({
         stream: Readable.from(Buffer.from("file-bytes")),
         mime_type: "image/png",
@@ -224,7 +237,14 @@ describe("publish routes", () => {
       publish_service: {
         resolve_public_publish_link: async (input) => {
           seen_inputs.push(input);
-          return public_result;
+          return {
+            ...public_result,
+            publish_link_id: "publish_link_1",
+            password: {
+              hash: "stored-password-hash",
+              salt: "stored-password-salt",
+            },
+          };
         },
         get_public_published_asset_file: async (input) => {
           seen_inputs.push(input);
@@ -253,11 +273,127 @@ describe("publish routes", () => {
     expect(asset_response.headers["content-length"]).toBe("10");
     expect(asset_response.body).toBe("file-bytes");
     expect(seen_inputs).toEqual([
-      { slug: "abc123" },
-      { slug: "abc123", capture_asset_id: "asset_1" },
+      { slug: "abc123", viewer_token: undefined },
+      { slug: "abc123", capture_asset_id: "asset_1", viewer_token: undefined },
     ]);
     expect(JSON.stringify(resolve_response.json())).not.toContain("organization_id");
     expect(JSON.stringify(resolve_response.json())).not.toContain("storage_key");
+    await app.close();
+  });
+
+  it("updates guide publish password settings with authenticated scope", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      publish_service: {
+        update_guide_publish_password: async (input) => {
+          seen_inputs.push(input);
+          return {
+            ...publish_result,
+            publish_link: {
+              ...publish_result.publish_link,
+              password_protected: input.password !== null,
+            },
+          };
+        },
+      },
+    });
+
+    const set_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/publish/password",
+      cookies: { demo_composer_session: "session-token" },
+      payload: { password: "shared password" },
+    });
+    const clear_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/guides/guide_1/publish/password",
+      cookies: { demo_composer_session: "session-token" },
+      payload: { password: null },
+    });
+
+    expect(set_response.statusCode).toBe(200);
+    expect(set_response.json().publish_link.password_protected).toBe(true);
+    expect(clear_response.statusCode).toBe(200);
+    expect(clear_response.json().publish_link.password_protected).toBe(false);
+    expect(seen_inputs).toEqual([
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        guide_id: "guide_1",
+        password: "shared password",
+      },
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        guide_id: "guide_1",
+        password: null,
+      },
+    ]);
+    expect(JSON.stringify(set_response.json())).not.toContain("shared password");
+    await app.close();
+  });
+
+  it("creates public viewer sessions and forwards viewer cookies to public routes", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      publish_service: {
+        create_public_publish_viewer_session: async (input) => {
+          seen_inputs.push(input);
+          return {
+            token: "viewer-token",
+            expires_at: "2026-06-10T12:00:00.000Z",
+          };
+        },
+        resolve_public_publish_link: async (input) => {
+          seen_inputs.push(input);
+          return public_result;
+        },
+        get_public_published_asset_file: async (input) => {
+          seen_inputs.push(input);
+          return {
+            stream: Readable.from(Buffer.from("file-bytes")),
+            mime_type: "image/png",
+            size_bytes: 10,
+          };
+        },
+      },
+    });
+
+    const session_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/public/publish-links/abc123/viewer-sessions",
+      payload: { password: "shared password" },
+    });
+    const resolve_response = await app.inject({
+      method: "GET",
+      url: "/api/v1/public/publish-links/abc123",
+      cookies: { demo_composer_public_viewer: "viewer-token" },
+    });
+    const asset_response = await app.inject({
+      method: "GET",
+      url: "/api/v1/public/publish-links/abc123/assets/asset_1/file",
+      cookies: { demo_composer_public_viewer: "viewer-token" },
+    });
+
+    expect(session_response.statusCode).toBe(204);
+    expect(session_response.cookies.find((cookie) => cookie.name === "demo_composer_public_viewer")?.value)
+      .toBe("viewer-token");
+    expect(resolve_response.statusCode).toBe(200);
+    expect(resolve_response.json()).not.toHaveProperty("publish_link_id");
+    expect(resolve_response.json()).not.toHaveProperty("password");
+    expect(JSON.stringify(resolve_response.json())).not.toContain("stored-password");
+    expect(asset_response.statusCode).toBe(200);
+    expect(seen_inputs).toEqual([
+      { slug: "abc123", password: "shared password" },
+      { slug: "abc123", viewer_token: "viewer-token" },
+      { slug: "abc123", capture_asset_id: "asset_1", viewer_token: "viewer-token" },
+    ]);
     await app.close();
   });
 

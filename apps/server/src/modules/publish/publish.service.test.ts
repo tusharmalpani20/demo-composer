@@ -8,6 +8,7 @@ import {
   GuideNotPublishableError,
   ProjectNotFoundError,
   PublishLinkNotFoundError,
+  PublishLinkPasswordRequiredError,
   PublishedAssetNotFoundError,
   type PublishRepository,
 } from "./publish.service";
@@ -247,6 +248,7 @@ const create_repository = (overrides: Partial<PublishRepository> = {}): PublishR
       published_at: "2026-06-10T00:00:00.000Z",
       revoked_at: null,
       expires_at: null,
+      password_protected: false,
       public_url: `/p/${input.slug}`,
     })),
     update_publish_link_target: vi.fn(async (input) => ({
@@ -260,11 +262,20 @@ const create_repository = (overrides: Partial<PublishRepository> = {}): PublishR
       published_at: "2026-06-10T00:00:00.000Z",
       revoked_at: null,
       expires_at: null,
+      password_protected: false,
       public_url: "/p/existing-slug",
     })),
     find_guide_publish_status: vi.fn(async () => null),
     revoke_active_publish_link: vi.fn(async () => null),
     update_publish_link_access: vi.fn(async () => null),
+    update_publish_link_password: vi.fn(async () => null),
+    create_public_viewer_session: vi.fn(async () => ({
+      token: "viewer-token",
+      expires_at: "2026-06-10T12:00:00.000Z",
+    })),
+    find_public_viewer_session_by_token_hash: vi.fn(async () => null),
+    touch_public_viewer_session: vi.fn(async () => undefined),
+    revoke_public_viewer_sessions_for_publish_link: vi.fn(async () => undefined),
     find_active_publish_link_by_slug: vi.fn(async () => null),
     find_public_asset_file: vi.fn(async () => null),
     ...overrides,
@@ -405,6 +416,7 @@ describe("publish service", () => {
         published_at: "2026-06-10T00:00:00.000Z",
         revoked_at: null,
         expires_at: null,
+        password_protected: false,
         public_url: "/p/existing-slug",
       })),
       next_published_artifact_version: vi.fn(async () => 2),
@@ -551,6 +563,7 @@ describe("publish service", () => {
           published_at: "2026-06-10T00:00:00.000Z",
           revoked_at: null,
           expires_at: null,
+          password_protected: false,
           public_url: "/p/abc123",
         },
         published_artifact: {
@@ -573,6 +586,7 @@ describe("publish service", () => {
         published_at: "2026-06-10T00:00:00.000Z",
         revoked_at: "2026-06-10T01:00:00.000Z",
         expires_at: null,
+        password_protected: false,
         public_url: "/p/abc123",
       })),
       find_active_publish_link_by_slug: vi.fn(async () => ({
@@ -582,6 +596,7 @@ describe("publish service", () => {
           visibility: "public" as const,
           status: "active" as const,
           expires_at: null,
+          password_protected: false,
         },
         published_artifact: {
           id: "published_artifact_1",
@@ -663,6 +678,58 @@ describe("publish service", () => {
     });
   });
 
+  it("updates active guide publish link password protection and revokes viewer sessions", async () => {
+    const repository = create_repository({
+      update_publish_link_password: vi.fn(async () => ({
+        publish_link: {
+          id: "publish_link_1",
+          artifact_type: "guide" as const,
+          artifact_id: "guide_1",
+          published_artifact_id: "published_artifact_1",
+          slug: "abc123",
+          visibility: "public" as const,
+          status: "active" as const,
+          published_at: "2026-06-10T00:00:00.000Z",
+          revoked_at: null,
+          expires_at: null,
+          password_protected: true,
+          public_url: "/p/abc123",
+        },
+        published_artifact: {
+          id: "published_artifact_1",
+          artifact_type: "guide" as const,
+          artifact_id: "guide_1",
+          version_number: 1,
+          title: "Department guide",
+          published_at: "2026-06-10T00:00:00.000Z",
+        },
+      })),
+    });
+    const service = build_publish_service(repository);
+
+    await expect(service.update_guide_publish_password({
+      auth,
+      project_id: "project_1",
+      guide_id: "guide_1",
+      password: "shared password",
+    })).resolves.toMatchObject({
+      publish_link: {
+        slug: "abc123",
+        password_protected: true,
+      },
+    });
+    expect(repository.update_publish_link_password).toHaveBeenCalledWith(expect.objectContaining({
+      organization_id: "organization_1",
+      project_id: "project_1",
+      guide_id: "guide_1",
+      password_hash: expect.any(String),
+      password_salt: expect.any(String),
+    }));
+    expect(repository.revoke_public_viewer_sessions_for_publish_link).toHaveBeenCalledWith({
+      publish_link_id: "publish_link_1",
+    });
+  });
+
   it("rejects invalid guide publish access settings before persistence", async () => {
     const repository = create_repository();
     const service = build_publish_service(repository);
@@ -703,6 +770,7 @@ describe("publish service", () => {
           visibility: "restricted" as never,
           status: "active" as const,
           expires_at: null,
+          password_protected: false,
         },
         published_artifact: {
           id: "published_artifact_1",
@@ -723,6 +791,7 @@ describe("publish service", () => {
           visibility: "public" as const,
           status: "active" as const,
           expires_at: "2026-06-09T23:59:59.000Z" as never,
+          password_protected: false,
         },
         published_artifact: {
           id: "published_artifact_1",
@@ -744,6 +813,137 @@ describe("publish service", () => {
       .rejects.toThrow("Publish link has expired");
   });
 
+  it("requires a viewer session before resolving password protected public links", async () => {
+    const repository = create_repository({
+      find_active_publish_link_by_slug: vi.fn(async () => ({
+        publish_link: {
+          slug: "abc123",
+          artifact_type: "guide" as const,
+          visibility: "public" as const,
+          status: "active" as const,
+          expires_at: null,
+          password_protected: true,
+        },
+        published_artifact: {
+          id: "published_artifact_1",
+          artifact_type: "guide" as const,
+          artifact_id: "guide_1",
+          version_number: 1,
+          title: "Department guide",
+          published_at: "2026-06-10T00:00:00.000Z",
+          snapshot: { artifact_type: "guide", blocks: [] },
+        },
+      })),
+      find_public_viewer_session_by_token_hash: vi.fn(async () => null),
+    });
+    const service = build_publish_service(repository);
+
+    await expect(service.resolve_public_publish_link({ slug: "abc123" }))
+      .rejects.toBeInstanceOf(PublishLinkPasswordRequiredError);
+
+    await expect(service.resolve_public_publish_link({ slug: "abc123", viewer_token: "viewer-token" }))
+      .rejects.toBeInstanceOf(PublishLinkPasswordRequiredError);
+    expect(repository.find_public_viewer_session_by_token_hash).toHaveBeenCalledWith({
+      token_hash: expect.any(String),
+      publish_link_slug: "abc123",
+    });
+  });
+
+  it("does not expose public password verifier internals when resolving authorized public links", async () => {
+    const repository = create_repository({
+      find_active_publish_link_by_slug: vi.fn(async () => ({
+        publish_link: {
+          slug: "abc123",
+          artifact_type: "guide" as const,
+          visibility: "public" as const,
+          status: "active" as const,
+          expires_at: null,
+          password_protected: true,
+        },
+        published_artifact: {
+          id: "published_artifact_1",
+          artifact_type: "guide" as const,
+          artifact_id: "guide_1",
+          version_number: 1,
+          title: "Department guide",
+          published_at: "2026-06-10T00:00:00.000Z",
+          snapshot: { artifact_type: "guide", blocks: [] },
+        },
+        publish_link_id: "publish_link_1",
+        password: {
+          hash: "stored-password-hash",
+          salt: "stored-password-salt",
+        },
+      })),
+      find_public_viewer_session_by_token_hash: vi.fn(async () => ({
+        publish_link_id: "publish_link_1",
+        expires_at: "2026-06-10T12:00:00.000Z",
+        revoked_at: null,
+      })),
+    });
+    const service = build_publish_service(repository, {
+      now: () => new Date("2026-06-10T00:00:00.000Z"),
+    });
+
+    const result = await service.resolve_public_publish_link({
+      slug: "abc123",
+      viewer_token: "viewer-token",
+    });
+
+    expect(result).not.toHaveProperty("publish_link_id");
+    expect(result).not.toHaveProperty("password");
+    expect(JSON.stringify(result)).not.toContain("stored-password");
+  });
+
+  it("creates scoped public viewer sessions for correct passwords", async () => {
+    const repository = create_repository({
+      find_active_publish_link_by_slug: vi.fn(async () => ({
+        publish_link: {
+          slug: "abc123",
+          artifact_type: "guide" as const,
+          visibility: "public" as const,
+          status: "active" as const,
+          expires_at: null,
+          password_protected: true,
+        },
+        published_artifact: {
+          id: "published_artifact_1",
+          artifact_type: "guide" as const,
+          artifact_id: "guide_1",
+          version_number: 1,
+          title: "Department guide",
+          published_at: "2026-06-10T00:00:00.000Z",
+          snapshot: { artifact_type: "guide", blocks: [] },
+        },
+        password: await import("./public-link-password")
+          .then(async ({ hash_public_link_password }) => hash_public_link_password("shared password")),
+        publish_link_id: "publish_link_1",
+      })),
+      create_public_viewer_session: vi.fn(async (input) => ({
+        token: input.token,
+        expires_at: input.expires_at,
+      })),
+    });
+    const service = build_publish_service(repository, {
+      now: () => new Date("2026-06-10T00:00:00.000Z"),
+      generate_viewer_token: () => "viewer-token",
+    });
+
+    await expect(service.create_public_publish_viewer_session({
+      slug: "abc123",
+      password: "shared password",
+    })).resolves.toEqual({
+      token: "viewer-token",
+      expires_at: "2026-06-10T12:00:00.000Z",
+    });
+    expect(repository.create_public_viewer_session).toHaveBeenCalledWith({
+      publish_link_id: "publish_link_1",
+      token_hash: expect.any(String),
+      token: "viewer-token",
+      expires_at: "2026-06-10T12:00:00.000Z",
+    });
+  });
+
   it("checks public access before streaming published asset files", async () => {
     const repository = create_repository({
       find_active_publish_link_by_slug: vi.fn(async () => ({
@@ -753,6 +953,7 @@ describe("publish service", () => {
           visibility: "restricted" as never,
           status: "active" as const,
           expires_at: null,
+          password_protected: false,
         },
         published_artifact: {
           id: "published_artifact_1",
@@ -797,6 +998,7 @@ describe("publish service", () => {
           visibility: "public" as const,
           status: "active" as const,
           expires_at: null,
+          password_protected: false,
         },
         published_artifact: {
           id: "published_artifact_1",

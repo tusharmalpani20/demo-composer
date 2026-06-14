@@ -47,6 +47,10 @@ type PublishLinkRow = {
   status: "active" | "revoked";
   published_at: Date;
   revoked_at: Date | null;
+  password_hash: string | null;
+  password_salt: string | null;
+  password_set_at: Date | null;
+  password_updated_at: Date | null;
 };
 
 type PublicResolveRow = PublishLinkRow & {
@@ -74,6 +78,10 @@ type GuidePublishStatusRow = {
   link_status: "active" | "revoked";
   link_published_at: Date;
   link_revoked_at: Date | null;
+  link_password_hash: string | null;
+  link_password_salt: string | null;
+  link_password_set_at: Date | null;
+  link_password_updated_at: Date | null;
   artifact_id: string;
   artifact_artifact_type: "guide" | "interactive_demo";
   artifact_artifact_id: string;
@@ -95,6 +103,7 @@ const map_publish_link = (row: PublishLinkRow): PublishLink => ({
   slug: row.slug,
   visibility: row.visibility,
   expires_at: row.expires_at?.toISOString() ?? null,
+  password_protected: Boolean(row.password_hash),
   status: row.status,
   published_at: row.published_at.toISOString(),
   revoked_at: row.revoked_at?.toISOString() ?? null,
@@ -120,7 +129,11 @@ const publish_link_select = `
   expires_at,
   status,
   published_at,
-  revoked_at
+  revoked_at,
+  password_hash,
+  password_salt,
+  password_set_at,
+  password_updated_at
 `;
 
 const published_artifact_select = `
@@ -150,6 +163,10 @@ const map_guide_publish_status = (row: GuidePublishStatusRow): GuidePublishStatu
     status: row.link_status,
     published_at: row.link_published_at,
     revoked_at: row.link_revoked_at,
+    password_hash: row.link_password_hash,
+    password_salt: row.link_password_salt,
+    password_set_at: row.link_password_set_at,
+    password_updated_at: row.link_password_updated_at,
   }),
   published_artifact: map_published_artifact({
     id: row.artifact_id,
@@ -361,6 +378,10 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
           publish_link.status AS link_status,
           publish_link.published_at AS link_published_at,
           publish_link.revoked_at AS link_revoked_at,
+          publish_link.password_hash AS link_password_hash,
+          publish_link.password_salt AS link_password_salt,
+          publish_link.password_set_at AS link_password_set_at,
+          publish_link.password_updated_at AS link_password_updated_at,
           published_artifact.id AS artifact_id,
           published_artifact.artifact_type AS artifact_artifact_type,
           published_artifact.artifact_id AS artifact_artifact_id,
@@ -442,6 +463,10 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
           updated_link.status AS link_status,
           updated_link.published_at AS link_published_at,
           updated_link.revoked_at AS link_revoked_at,
+          updated_link.password_hash AS link_password_hash,
+          updated_link.password_salt AS link_password_salt,
+          updated_link.password_set_at AS link_password_set_at,
+          updated_link.password_updated_at AS link_password_updated_at,
           published_artifact.id AS artifact_id,
           published_artifact.artifact_type AS artifact_artifact_type,
           published_artifact.artifact_id AS artifact_artifact_id,
@@ -465,6 +490,131 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
       return row ? map_guide_publish_status(row) : null;
     },
 
+    async update_publish_link_password(input) {
+      const result = await db.query<GuidePublishStatusRow>(`
+        WITH updated_link AS (
+          UPDATE publish_schema.publish_link
+          SET
+            password_hash = $1::text,
+            password_salt = $2::text,
+            password_set_at = CASE WHEN $1::text IS NULL THEN NULL ELSE COALESCE(password_set_at, CURRENT_TIMESTAMP) END,
+            password_updated_at = CASE WHEN $1::text IS NULL THEN NULL ELSE CURRENT_TIMESTAMP END,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE organization_id = $3
+          AND project_id = $4
+          AND artifact_type = 'guide'
+          AND artifact_id = $5
+          AND status = 'active'
+          RETURNING *
+        )
+        SELECT
+          updated_link.id AS link_id,
+          updated_link.artifact_type AS link_artifact_type,
+          updated_link.artifact_id AS link_artifact_id,
+          updated_link.published_artifact_id AS link_published_artifact_id,
+          updated_link.slug AS link_slug,
+          updated_link.visibility AS link_visibility,
+          updated_link.expires_at AS link_expires_at,
+          updated_link.status AS link_status,
+          updated_link.published_at AS link_published_at,
+          updated_link.revoked_at AS link_revoked_at,
+          updated_link.password_hash AS link_password_hash,
+          updated_link.password_salt AS link_password_salt,
+          updated_link.password_set_at AS link_password_set_at,
+          updated_link.password_updated_at AS link_password_updated_at,
+          published_artifact.id AS artifact_id,
+          published_artifact.artifact_type AS artifact_artifact_type,
+          published_artifact.artifact_id AS artifact_artifact_id,
+          published_artifact.version_number AS artifact_version_number,
+          published_artifact.title AS artifact_title,
+          published_artifact.snapshot_json AS artifact_snapshot_json,
+          published_artifact.published_at AS artifact_published_at
+        FROM updated_link
+        INNER JOIN publish_schema.published_artifact published_artifact
+          ON published_artifact.id = updated_link.published_artifact_id
+        LIMIT 1
+      `, [
+        input.password_hash,
+        input.password_salt,
+        input.organization_id,
+        input.project_id,
+        input.guide_id,
+      ]);
+      const row = first_row(result);
+
+      return row ? map_guide_publish_status(row) : null;
+    },
+
+    async create_public_viewer_session(input) {
+      await db.query(`
+        INSERT INTO publish_schema.public_publish_viewer_session (
+          id,
+          publish_link_id,
+          token_hash,
+          expires_at
+        )
+        VALUES ($1, $2, $3, $4)
+      `, [
+        ulid(),
+        input.publish_link_id,
+        input.token_hash,
+        input.expires_at,
+      ]);
+
+      return {
+        token: input.token,
+        expires_at: input.expires_at,
+      };
+    },
+
+    async find_public_viewer_session_by_token_hash(input) {
+      const result = await db.query<{
+        publish_link_id: string;
+        expires_at: Date;
+        revoked_at: Date | null;
+      }>(`
+        SELECT
+          viewer_session.publish_link_id,
+          viewer_session.expires_at,
+          viewer_session.revoked_at
+        FROM publish_schema.public_publish_viewer_session viewer_session
+        INNER JOIN publish_schema.publish_link publish_link
+          ON publish_link.id = viewer_session.publish_link_id
+        WHERE viewer_session.token_hash = $1
+        AND publish_link.slug = $2
+        LIMIT 1
+      `, [
+        input.token_hash,
+        input.publish_link_slug,
+      ]);
+      const row = first_row(result);
+
+      return row
+        ? {
+          publish_link_id: row.publish_link_id,
+          expires_at: row.expires_at.toISOString(),
+          revoked_at: row.revoked_at?.toISOString() ?? null,
+        }
+        : null;
+    },
+
+    async touch_public_viewer_session(input) {
+      await db.query(`
+        UPDATE publish_schema.public_publish_viewer_session
+        SET last_used_at = CURRENT_TIMESTAMP
+        WHERE token_hash = $1
+      `, [input.token_hash]);
+    },
+
+    async revoke_public_viewer_sessions_for_publish_link(input) {
+      await db.query(`
+        UPDATE publish_schema.public_publish_viewer_session
+        SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
+        WHERE publish_link_id = $1
+        AND revoked_at IS NULL
+      `, [input.publish_link_id]);
+    },
+
     async find_active_publish_link_by_slug(input) {
       const result = await db.query<PublicResolveRow>(`
         SELECT
@@ -478,6 +628,10 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
           publish_link.status,
           publish_link.published_at,
           publish_link.revoked_at,
+          publish_link.password_hash,
+          publish_link.password_salt,
+          publish_link.password_set_at,
+          publish_link.password_updated_at,
           published_artifact.version_number AS published_artifact_version_number,
           published_artifact.title AS published_artifact_title,
           published_artifact.published_at AS published_artifact_published_at,
@@ -502,6 +656,7 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
           visibility: row.visibility,
           expires_at: row.expires_at?.toISOString() ?? null,
           status: row.status,
+          password_protected: Boolean(row.password_hash),
         },
         published_artifact: {
           id: row.published_artifact_id,
@@ -512,6 +667,13 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
           published_at: row.published_artifact_published_at.toISOString(),
           snapshot: row.published_artifact_snapshot_json,
         },
+        publish_link_id: row.id,
+        password: row.password_hash && row.password_salt
+          ? {
+            hash: row.password_hash,
+            salt: row.password_salt,
+          }
+          : null,
       };
     },
 

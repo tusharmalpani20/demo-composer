@@ -44,6 +44,7 @@ const reset_foundation_tables = async () => {
   await pool.query(`
     TRUNCATE TABLE
       auth_schema.auth_session,
+      publish_schema.public_publish_viewer_session,
       publish_schema.publish_link,
       publish_schema.published_artifact,
       guide_schema.guide_step,
@@ -336,6 +337,97 @@ describe("DB-backed guide publishing API", () => {
       url: `/api/v1/public/publish-links/${slug}`,
     });
     expect(reopened_public_response.statusCode).toBe(200);
+
+    const set_password_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/publish/password`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        password: "shared password",
+      },
+    });
+    expect(set_password_response.statusCode).toBe(200);
+    expect(set_password_response.json().publish_link.password_protected).toBe(true);
+    expect(JSON.stringify(set_password_response.json())).not.toContain("shared password");
+
+    const protected_public_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}`,
+    });
+    expect(protected_public_response.statusCode).toBe(401);
+    expect(protected_public_response.json().error.type).toBe("publish_link_password_required");
+
+    const wrong_password_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/public/publish-links/${slug}/viewer-sessions`,
+      payload: {
+        password: "wrong password",
+      },
+    });
+    expect(wrong_password_response.statusCode).toBe(400);
+    expect(wrong_password_response.json().error.type).toBe("invalid_public_viewer_password");
+
+    const viewer_session_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/public/publish-links/${slug}/viewer-sessions`,
+      payload: {
+        password: "shared password",
+      },
+    });
+    expect(viewer_session_response.statusCode).toBe(204);
+    const viewer_token = viewer_session_response.cookies
+      .find((cookie) => cookie.name === "demo_composer_public_viewer")?.value ?? "";
+    expect(viewer_token).not.toBe("");
+
+    const unlocked_public_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}`,
+      cookies: { demo_composer_public_viewer: viewer_token },
+    });
+    expect(unlocked_public_response.statusCode).toBe(200);
+    expect(unlocked_public_response.json().publish_link.password_protected).toBe(true);
+
+    const unlocked_asset_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}/assets/${capture_asset_id}/file`,
+      cookies: { demo_composer_public_viewer: viewer_token },
+    });
+    expect(unlocked_asset_response.statusCode).toBe(200);
+    expect(unlocked_asset_response.body).toBe(bytes.toString());
+
+    const rotate_password_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/publish/password`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        password: "new shared password",
+      },
+    });
+    expect(rotate_password_response.statusCode).toBe(200);
+
+    const stale_viewer_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}`,
+      cookies: { demo_composer_public_viewer: viewer_token },
+    });
+    expect(stale_viewer_response.statusCode).toBe(401);
+
+    const clear_password_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/publish/password`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        password: null,
+      },
+    });
+    expect(clear_password_response.statusCode).toBe(200);
+    expect(clear_password_response.json().publish_link.password_protected).toBe(false);
+
+    const cleared_public_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}`,
+    });
+    expect(cleared_public_response.statusCode).toBe(200);
 
     const update_response = await app.inject({
       method: "PATCH",

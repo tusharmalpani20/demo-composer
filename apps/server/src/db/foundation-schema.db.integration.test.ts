@@ -144,6 +144,7 @@ describe("foundation schema migrations on postgres", () => {
     await expect(table_exists("guide_schema", "guide_step")).resolves.toBe(true);
     await expect(table_exists("publish_schema", "published_artifact")).resolves.toBe(true);
     await expect(table_exists("publish_schema", "publish_link")).resolves.toBe(true);
+    await expect(table_exists("publish_schema", "public_publish_viewer_session")).resolves.toBe(true);
   });
 
   it("keeps user identity separate from organization membership", async () => {
@@ -345,6 +346,10 @@ describe("foundation schema migrations on postgres", () => {
       "slug",
       "visibility",
       "expires_at",
+      "password_hash",
+      "password_salt",
+      "password_set_at",
+      "password_updated_at",
       "status",
       "created_by_id",
       "revoked_by_id",
@@ -358,6 +363,7 @@ describe("foundation schema migrations on postgres", () => {
     await expect(index_exists("publish_schema", "uq_publish_link_active_source")).resolves.toBe(true);
     await expect(index_exists("publish_schema", "idx_publish_link_slug_active")).resolves.toBe(true);
     await expect(index_exists("publish_schema", "idx_publish_link_public_access")).resolves.toBe(true);
+    await expect(index_exists("publish_schema", "idx_public_publish_viewer_session_link_active")).resolves.toBe(true);
     await expect(table_comment("publish_schema", "published_artifact")).resolves.toMatch(/immutable/i);
     await expect(table_comment("publish_schema", "publish_link")).resolves.toMatch(/stable publish/i);
   });
@@ -544,6 +550,52 @@ describe("foundation schema migrations on postgres", () => {
     `)).rejects.toMatchObject({
       code: "23514",
       constraint: "chk_publish_link_visibility",
+    });
+
+    await expect(pool.query(`
+      UPDATE publish_schema.publish_link
+      SET password_hash = 'hash-only'
+      WHERE slug = 'constraint-slug'
+    `)).rejects.toMatchObject({
+      code: "23514",
+      constraint: "chk_publish_link_password_fields",
+    });
+
+    await pool.query(`
+      UPDATE publish_schema.publish_link
+      SET password_hash = 'hash',
+          password_salt = 'salt',
+          password_set_at = CURRENT_TIMESTAMP,
+          password_updated_at = CURRENT_TIMESTAMP
+      WHERE slug = 'constraint-slug'
+    `);
+
+    const viewer_session_id = ulid();
+    await pool.query(`
+      INSERT INTO publish_schema.public_publish_viewer_session (
+        id,
+        publish_link_id,
+        token_hash,
+        expires_at
+      )
+      SELECT $1, id, 'token-hash', CURRENT_TIMESTAMP + INTERVAL '12 hours'
+      FROM publish_schema.publish_link
+      WHERE slug = 'constraint-slug'
+    `, [viewer_session_id]);
+
+    await expect(pool.query(`
+      INSERT INTO publish_schema.public_publish_viewer_session (
+        id,
+        publish_link_id,
+        token_hash,
+        expires_at
+      )
+      SELECT $1, id, 'token-hash', CURRENT_TIMESTAMP + INTERVAL '12 hours'
+      FROM publish_schema.publish_link
+      WHERE slug = 'constraint-slug'
+    `, [ulid()])).rejects.toMatchObject({
+      code: "23505",
+      constraint: "uq_public_publish_viewer_session_token_hash",
     });
   });
 
