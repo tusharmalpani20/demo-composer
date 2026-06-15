@@ -31,7 +31,7 @@ Already built:
 - password-protected public guide links
 - `published_artifact.artifact_type` and `publish_link.artifact_type` support `interactive_demo`
 - interactive demo draft/schema foundation
-- planned hotspots
+- interactive demo hotspots
 
 Missing:
 
@@ -77,12 +77,16 @@ Recommended routes:
 
 ```http
 POST /api/v1/projects/:project_id/interactive-demos/:interactive_demo_id/publish
-GET /api/v1/projects/:project_id/interactive-demos/:interactive_demo_id/publish-status
-PATCH /api/v1/projects/:project_id/interactive-demos/:interactive_demo_id/publish-link
-DELETE /api/v1/projects/:project_id/interactive-demos/:interactive_demo_id/publish-link
-GET /api/v1/public/interactive-demos/:slug
-POST /api/v1/public/interactive-demos/:slug/password
+GET /api/v1/projects/:project_id/interactive-demos/:interactive_demo_id/publish
+PATCH /api/v1/projects/:project_id/interactive-demos/:interactive_demo_id/publish/access
+PATCH /api/v1/projects/:project_id/interactive-demos/:interactive_demo_id/publish/password
+DELETE /api/v1/projects/:project_id/interactive-demos/:interactive_demo_id/publish
+GET /api/v1/public/publish-links/:slug
+POST /api/v1/public/publish-links/:slug/viewer-sessions
+GET /api/v1/public/publish-links/:slug/assets/:asset_id/file
 ```
+
+Public interactive demo routes should reuse the existing generic public publish-link resolver rather than add a second public backend namespace. The web app owns the artifact-specific route shape (`/d/:slug`, `/d/:slug/embed`) and renders only when the resolved `artifact_type` is `interactive_demo`.
 
 Portal:
 
@@ -111,6 +115,7 @@ Viewer behavior:
 - show scene title/description
 - handle missing/revoked/restricted/expired/password-required states
 - compact embed mode
+- preserve existing guide public routes and guide publish behavior while extending the shared publish surface
 
 ## Snapshot Rules
 
@@ -121,6 +126,8 @@ Viewer behavior:
 - snapshot includes only non-deleted scenes and hotspots
 - snapshot should fail validation if it has no scenes
 - target scene IDs in hotspots should be rewritten or validated against snapshot scene IDs
+- snapshot scene and hotspot IDs may remain draft IDs in v1, but public viewer logic must only use the immutable snapshot payload and never query draft tables
+- asset URLs in the snapshot should use `/api/v1/public/publish-links/:slug/assets/:asset_id/file`, matching guide snapshots
 
 ## Tests
 
@@ -128,11 +135,13 @@ Backend tests:
 
 - snapshot generation includes scenes/hotspots/assets
 - snapshot generation rejects demos with no scenes
+- snapshot generation rejects demos whose scenes have no screenshot assets
 - publish/republish creates immutable snapshots
 - public resolver returns accessible snapshots
 - revoked/restricted/expired/password-protected links behave like guide links
 - public asset reads are denied when asset is not in snapshot
 - guide public asset authorization remains unchanged
+- authenticated publish status/access/password/revoke routes work for interactive demos
 
 Web tests:
 
@@ -147,6 +156,7 @@ Web tests:
 ## Acceptance Criteria
 
 - authenticated user can publish an interactive demo
+- authenticated user can republish, revoke, and configure public/restricted/password/expiry settings for an interactive demo link
 - public user can view a published demo
 - public user can click hotspots to move between scenes
 - demo snapshots are immutable
