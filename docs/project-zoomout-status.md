@@ -1,224 +1,127 @@
 # Project Zoom-Out Status
 
-Date: 2026-06-15
+Date: 2026-06-16
 
 ## Product Intent
 
-Demo Composer is being built as an open-source product for capturing real browser workflows and turning them into polished walkthrough artifacts.
+Demo Composer is an open-source product for capturing browser workflows and turning them into polished walkthrough artifacts.
 
-The product has two intended output families:
+The product has two output families:
 
-- Scribe-style guides/docs: vertical process documentation made from ordered steps, screenshots, instructions, tips, alerts, headers, captures, and other guide blocks.
-- Storylane-style interactive demos: screen-by-screen walkthroughs made from scenes, screenshots or HTML captures, hotspots, overlays, navigation, and publishable demo links.
+- Scribe-style guides/docs: vertical process documentation with ordered steps, screenshots, instructions, tips, alerts, headers, paragraphs, dividers, and screenshot annotations.
+- Storylane-style interactive demos: screen-by-screen walkthroughs with scenes, screenshots, hotspots, publishable links, and embeddable public viewers.
 
-The agreed product direction is:
+The current direction remains:
 
-- Start with internal documentation workflows.
-- Build screenshot-first capture before HTML replay.
-- Use Chrome extension capture first; desktop capture can come later.
-- Keep capture sessions as reusable source material.
-- Keep guide artifacts and interactive demo artifacts separate.
-- Defer AI from the day-one MVP.
-- Defer analytics-heavy sales features until the internal guide flow is solid.
+- internal documentation and enablement first
+- screenshot-first capture before HTML replay
+- Chrome extension capture before desktop capture
+- capture sessions as reusable source material
+- guides and interactive demos as separate authored outputs
+- AI deferred from the day-one product path
+- analytics and sales-heavy features deferred
 
-## Architecture Intent
+## Current Alpha Status
 
-The agreed implementation style is:
+Demo Composer can now complete the first usable alpha workflow:
 
-- Monorepo with separate `apps/server` and `apps/web`.
-- Fastify REST backend.
-- Cookie-backed portal authentication.
-- DB migrations as the source of truth.
-- TDD for feature slices.
-- Domain-oriented modules with routes, services, repositories, and focused tests.
-- Lightweight custom portal routing in `apps/web` for now; no React Router yet.
-- Web portal first, then Chrome extension.
+```text
+self-hosted first-run setup
+  -> project
+  -> capture session
+  -> screenshots and capture events
+  -> guide and interactive demo
+  -> publishable public/restricted links
+  -> teammate invite
+```
+
+The automated DB-backed smoke test for that workflow lives in `apps/server/src/smoke/v1-workflows.db.integration.test.ts` and runs with:
+
+```bash
+rtk pnpm --filter server test:smoke
+```
+
+Manual portal and Chrome extension dogfood smoke are documented but still pending in `docs/v1-dogfood-smoke-suite.md`.
 
 ## Built So Far
 
 ### Documentation And Decisions
 
-- Product concept captured in `docs/product-idea.md`.
-- System writing pattern captured in `docs/system-design-pattern.md`.
-- Grill sessions recorded in `docs/grill/`.
-- ADRs recorded for the major design decisions:
-  - single product context with domain packages
-  - capture sessions as source material
-  - immutable capture source records
-  - guide blocks with first-class steps
-  - interactive demos as scenes/hotspots/transitions
-  - publish links resolving to immutable snapshots
-  - rebuild foundation domains
-  - file domain owns storage metadata
-  - screenshot capture first, HTML replay deferred
-  - extension instance-first login
-  - privacy-preserving capture defaults
-  - AI deferred
-  - REST/Fastify/Zod API style
-  - user/organization/org-user identity model
-  - deployment-aware onboarding
-  - web first-run setup
-  - separate web and server apps
-- Plans `001` through `055` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering and editing from the portal, public guide access controls, project health hardening, project settings/archive controls, public guide embed foundation, public guide password access, rich HTML ZIP guide export foundation, web first-run setup UI, production auth/config safety, and legacy/AI dependency cleanup.
-- Development setup, backend route inventory, and production readiness docs now exist:
-  - `docs/development-setup.md`
-  - `docs/backend-route-inventory.md`
-  - `docs/production-readiness-checklist.md`
+- Product concept in `docs/product-idea.md`.
+- System writing pattern in `docs/system-design-pattern.md`.
+- Grill sessions in `docs/grill/`.
+- ADRs for major design decisions in `docs/adr/`.
+- Development, self-hosting, operations, production readiness, route inventory, roadmap, contributor guide, OSS summary, and smoke suite docs.
+- AGPL-3.0-only license, security policy, contribution guide, CI workflow, PR template, and GitHub issue templates.
 
-### Backend Foundation
+### Backend
 
-- Fastify app wired under `/api/v1`.
-- CORS, cookies, multipart upload, Swagger/Scalar setup, and shared error handling are present.
-- The active backend route path is the current `apps/server/src/modules/*` tree.
-- The old ORCA-style `apps/server/src/module/*`, `apps/server/src/root_router/*`, and passport wiring have been removed from the runtime and source tree.
-- Lint now passes without server warnings after legacy cleanup and Turbo env tracking updates.
-- Server no longer depends on unused AI/LangChain provider libraries or legacy shared `@repo/types`/`@repo/constants` product-domain packages.
-- Database migrations currently cover:
-  - users
-  - organizations
-  - org users
-  - auth sessions
-  - projects
-  - capture sessions
-  - file metadata
-  - capture assets
-  - capture events
-  - guides
-  - guide blocks
-  - guide steps
-  - interactive demos
-  - demo scenes
-  - published artifacts
-  - publish links
-- Public instance/setup modules exist for deployment-aware first-run setup.
-- Authentication module supports cookie-backed login, current session lookup, and logout.
-- Project module supports create, list, get, update, and soft delete/archive behavior.
-- Capture session module supports create, list, get, detail read model, update, complete/finalize, and delete/archive behavior.
-- Capture asset module supports metadata creation, multipart screenshot upload to local storage, guide-editor screenshot upload reuse, list, get metadata, read file bytes, and delete/archive behavior.
-- Capture event module supports create, list, get, safe manual event text editing, reorder for manual capture sessions, and delete/archive behavior, with raw input-value protection.
-- Guide module supports creating a guide from a capture session, listing guides, reading guide detail with safe effective screenshot asset display data, updating guide metadata, updating guide steps, inserting/editing basic guide blocks, changing/removing step screenshots, preparing direct guide-step screenshot uploads, reordering guide blocks, and deleting guide blocks.
-- Guide generation uses ordered capture events as source material and creates better deterministic steps for screenshot-backed `capture` events.
-- Interactive demo module supports backend draft demo metadata create/list/get/update/archive behavior and ordered screenshot-first demo scene create/list/update/reorder/archive behavior.
-- Publish module supports authenticated guide publish/republish, immutable guide snapshot creation using selected or hidden step screenshot state, stable active slugs, publish status reads, publish-link public/restricted access mode updates, optional publish-link expiry, revoke/unpublish, public publish-link resolution with access enforcement, and public asset file streaming constrained to assets referenced by the active accessible snapshot.
-- Server has unit, route, app integration, and DB integration coverage across the implemented modules.
-- Full DB integration verification passes against the configured `.env-cmdrc` testing database.
+- Fastify REST API under `/api/v1`.
+- PostgreSQL migrations as the source of truth.
+- Cookie-backed auth sessions.
+- Deployment-aware public instance status and first-run setup.
+- Organization users, members, invites, invite lookup, and invite acceptance.
+- Projects with create/list/get/update/archive behavior.
+- Capture sessions with create/list/get/detail/update/finalize/archive behavior.
+- Capture assets with metadata creation, local multipart screenshot upload, file streaming, and archive behavior.
+- Capture events with create/list/get/edit/reorder/archive behavior and raw input-value protection.
+- Guide creation from capture sessions, guide editing, guide blocks, guide steps, screenshot selection, direct step screenshot upload, annotations, Markdown export, HTML ZIP export, and guide detail read models.
+- Interactive demo creation from capture sessions, demo metadata, scenes, ordering, hotspots, and archive behavior.
+- Publishing for guides and interactive demos through immutable snapshots, stable slugs, public/restricted access, expiry, password protection, viewer sessions, embeds, and asset streaming constrained to referenced published assets.
+- Health and readiness endpoints.
+- Production config hardening around CORS, cookie secrets, body/upload limits, and sensitive route rate limits.
+- Unit, route, app integration, DB integration, and v1 smoke coverage.
 
 ### Web Portal
 
-- Portal routes currently implemented:
-  - `/login`
-  - `/setup`
-  - `/` as project list home
-  - `/projects`
-  - `/projects/:project_id`
-  - `/projects/:project_id/settings`
-  - `/projects/:project_id/capture-sessions`
-  - `/projects/:project_id/capture-sessions/:capture_session_id`
-  - `/projects/:project_id/guides`
-  - `/projects/:project_id/guides/:guide_id`
-  - `/projects/:project_id/guides/:guide_id/preview`
-  - `/p/:slug`
-  - `/p/:slug/embed`
-- API client helpers currently cover:
-  - public instance status
-  - first-run setup completion
-  - current auth
-  - login
-  - logout
-  - project creation
-  - project list/detail/update
-  - capture session creation
-  - capture session screenshot upload
-  - capture session event creation
-  - manual capture session event reordering
-  - manual capture session event editing
-  - capture session list/detail
-  - guide list/detail
-  - create guide from capture
-  - update guide
-  - update guide step
-  - reorder guide blocks
-  - delete guide block
-  - authenticated guide publish status
-  - authenticated guide publish/republish
-  - authenticated guide publish-link access updates
-  - authenticated guide publish-link revoke
-  - public publish-link resolution
-  - asset URL resolution
-  - authenticated guide Markdown export
-  - authenticated guide HTML ZIP export
-- Shared portal topbar supports sign out.
-- First-run setup page lets a fresh self-hosted instance create the owner user, organization, and authenticated portal session from the browser, then sends the owner to `/projects`.
-- Private portal entry routes check public instance status and route uninitialized self-hosted installs to `/setup`, while public guide reader/embed routes remain available without setup checks.
-- Login defaults to `/projects`.
-- Project list/home page shows accessible projects, lets users create new projects, and opens project workspaces.
-- Project workspace links to capture sessions, guides, and project settings.
-- Project settings page lets users update project name/description/slug and archive or unarchive the project through the existing project update API.
-- Capture session list page shows project capture sessions and lets users create manual portal capture sessions.
-- Capture session detail page shows source capture detail, lets users upload one or more screenshots into manual capture sessions with linked capture events, shows per-file bulk upload status and partial-success failures, lets users move manual capture events up/down, edit safe manual event text fields before guide generation, and supports creating a guide from that capture.
-- Guide list page shows project guides with per-guide publish status, isolated status-load failures, direct public-link open actions for active accessible published guides, and restricted/expired publish-link status labels.
-- Guide editor page supports editing guide title/description/status, updating step title/body, inserting step/header/paragraph/tip/alert/divider blocks, editing basic text content on header/paragraph/tip/alert blocks, attaching/changing/removing step screenshots from project screenshots, uploading a brand-new replacement screenshot directly from a step, adding/removing rectangle highlights on step screenshots, reordering blocks, deleting blocks, rendering effective screenshots inline, and opening editor screenshots in the focused screenshot viewer.
-- Guide editor page supports publishing, republishing, opening, copying, embed-code copying, access-mode updates, expiry updates, password protection set/update/clear controls, and revoking guide links from an authenticated portal publishing panel, including clearer busy states, copy fallback messaging, embed-code fallback display, viewer-session invalidation messaging after password updates, and stale-draft cues when a published guide has unpublished draft changes.
-- Guide editor page supports copying and downloading the current draft guide as deterministic Markdown, and downloading a portable HTML ZIP export with local screenshot assets.
-- Guide preview page renders a private Scribe-style read-only guide with ordered steps, supported header/paragraph/tip/alert/divider blocks, effective selected screenshots, screenshot highlight overlays, and a focused screenshot viewer with zoom and previous/next navigation.
-- Guide preview page supports copying and downloading the current draft guide as deterministic Markdown.
-- Public guide reader routes `/p/:slug` and `/p/:slug/embed` resolve active accessible published guide snapshots without portal authentication, render ordered published steps, supported header/paragraph/tip/alert/divider blocks, snapshotted selected screenshots, and snapshotted screenshot highlight overlays, handle missing/revoked/restricted/expired/password-required/malformed links, and reuse the focused screenshot viewer. The embed route uses a compact chrome-free reader layout for iframe placement, including a compact password gate for protected links.
-- Web has focused page, route, API, and app tests for the implemented screens.
-
-## Not Built Yet
+- First-run setup page.
+- Login and logout.
+- Project list/home, project workspaces, and project settings/archive controls.
+- Organization members and invite acceptance screens.
+- Capture session list and detail screens.
+- Manual screenshot upload, bulk upload status, event creation, event ordering, and safe event editing.
+- Guide list, guide editor, guide preview, screenshot viewer, screenshot selection, direct screenshot upload, rectangle annotations, block insertion/editing/reorder/delete, Markdown export, HTML ZIP export, publish controls, password controls, embed-copy controls, and public-link status labels.
+- Public guide reader and guide embed route.
+- Interactive demo list, interactive demo editor, scene management, hotspot management, publish controls, password controls, public demo viewer, and demo embed route.
+- Focused page, route, API, and app tests.
 
 ### Chrome Extension
 
-- `apps/extension` exists as a Vite/React Chrome extension popup.
-- Extension can configure a hosted or self-hosted instance URL.
-- Extension can sign in using the backend login route and store the returned extension bearer token locally.
-- Extension can verify current auth, list accessible projects, and persist the selected project.
-- Extension can create a backend capture session for the selected project with safe active-tab metadata.
-- Extension can restore active capture state when the popup is reopened.
-- Extension can capture the visible active tab as a PNG screenshot and upload it to the active capture session as a capture asset.
-- Extension can record a linked `capture` event after each successful screenshot upload.
-- Extension persists the local active capture event index so manual screenshots become ordered source material.
-- Extension can finish the active capture session, clear local active capture state, and open the portal capture session detail page.
-- Extension can open an active capture session in the portal without finishing or clearing local active capture state.
-- Extension can show screenshot upload loading, success, and error states without clearing the active capture state.
-- Extension can discard local active capture state if needed.
-- Extension is now explicitly positioned as manual screenshot capture: one visible-tab screenshot creates one ordered capture event/guide-step source.
-- Extension automatic click/DOM/input/navigation recording remains deferred and is planned in `docs/plan/058-extension-automatic-event-capture-roadmap.md`.
+- Vite/React extension popup.
+- Instance URL configuration for hosted or self-hosted API origin.
+- Login and local session persistence.
+- Current auth verification.
+- Project listing and selected project persistence.
+- Capture session creation with active-tab metadata.
+- Active capture restoration.
+- Visible-tab screenshot upload.
+- Automatic click capture MVP that records screenshot-backed click events.
+- Manual screenshot fallback.
+- Pause/resume and finish behavior.
+- Finish-to-portal flow that opens the completed capture session.
+- Focused popup/content/background tests.
 
-### Portal Creation Flows
+## Known Gaps
 
-- No organization/user/member invitation UI.
-
-### Guide Product Depth
-
-- Guide editor does not yet support capture/GIF blocks from the UI.
-- Advanced guide export formats such as PDF, DOCX, ZIP-with-images, rich HTML, Confluence, Notion, and GitHub publishing are not implemented.
-- Member-only reader sessions and advanced guide sharing policies are not implemented yet.
-
-### Interactive Demo Product
-
-- Interactive demo draft tables and backend APIs now exist for demo metadata and ordered scenes.
-- Portal interactive demo editor, public demo viewer, publishing, hotspots, and transitions are not implemented yet.
-
-### Publishing And Viewing
-
-- No public interactive demo viewer yet.
-
-### Analytics And Sales Layer
-
-- No analytics.
-- No lead capture.
-- No sales demo tracking.
-- No branding controls.
-
-### AI
-
-- AI remains intentionally deferred.
-- No BYO-key AI layer exists yet.
-- No agent workflow exists yet.
+- Manual portal dogfood smoke is pending.
+- Manual Chrome extension dogfood smoke is pending.
+- No real product screenshots are committed yet.
+- HTML capture/replay is deferred.
+- AI/BYO-key authoring is deferred.
+- Analytics, lead capture, sales tracking, and custom branding are deferred.
+- Chrome Web Store packaging is not done.
+- One-command production deployment packaging is deferred.
+- Local file storage is the only storage provider.
+- Automated retention cleanup is not built.
+- Rate limiting is in-memory and should be replaced before multi-instance production deployments.
+- Advanced editor/demo polish remains a V1 hardening area.
 
 ## Recommended Next Direction
 
-The current backend, portal, extension, and public web reader can now complete the first shareable capture-to-guide loop: create a manual portal capture session, upload one or more screenshot-backed `capture` events into it, correct the manual event order and safe event text fields before generation, or start an extension capture session, upload visible-tab screenshots, record ordered screenshot-backed `capture` events, finish the capture session, open the portal capture detail page, generate an editable draft guide with screenshot-backed capture steps, edit those steps while seeing their effective screenshots, attach/change/remove step screenshots from project screenshots, upload a brand-new replacement screenshot directly from the editor, add rectangle highlights to clarify important screenshot regions, review that draft in a private read-only guide preview, inspect screenshots in a focused viewer, copy or download the current draft as Markdown, download a portable HTML ZIP export with local screenshot files, publish or republish that guide from the portal as an immutable backend snapshot behind a stable link, set that link public or restricted, optionally set/clear an expiry, set/update/clear password protection, see guide-list publish/access status, copy/open the public URL when accessible, copy iframe embed code for active public non-expired links, revoke the active link, and open accessible public `/p/:slug` or embed `/p/:slug/embed` guides outside portal authentication after entering a password when required.
+The next phase should finish public alpha readiness:
 
-The next major milestone should continue guide delivery depth with richer export/share polish, analytics, and the interactive demo product.
+1. Complete `069` OSS launch polish.
+2. Run and record manual portal smoke.
+3. Run and record manual Chrome extension smoke.
+4. Add real alpha screenshots after dogfooding.
+5. Continue usability hardening for guide editing, interactive demo editing, and extension capture reliability.

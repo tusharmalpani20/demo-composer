@@ -136,7 +136,7 @@ Do not use production accounts, customer systems, private URLs, or private scree
 
 ### 2026-06-16 Initial Automated Smoke
 
-- Commit: pending
+- Commit: `1ff3d1e`
 - Environment: local test database through `.env-cmdrc` `testing`; temporary local file storage
 - Automated smoke: passed with `rtk pnpm --filter server test:smoke`
 - Manual portal smoke: pending

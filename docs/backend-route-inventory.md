@@ -1,10 +1,10 @@
 # Backend Route Inventory
 
-Date: 2026-06-13
+Date: 2026-06-16
 
 ## Purpose
 
-This document records the backend route surface after the project health hardening pass. It exists so future backend work lands in the current Demo Composer modules instead of the removed legacy ORCA-style module tree.
+This document records the current backend route surface so future work lands in the active Demo Composer modules instead of removed legacy ORCA-style paths.
 
 ## Current Runtime Path
 
@@ -14,32 +14,53 @@ The active Fastify app is built in:
 apps/server/src/app.ts
 ```
 
-The current product backend path is:
+The active backend modules live under:
 
 ```text
 apps/server/src/modules/*
 ```
 
-These modules are mounted under `/api/v1`:
+## Top-Level Operational Routes
 
-| Area | Prefix | Source |
-| --- | --- | --- |
-| public instance status | `/api/v1/public` | `modules/public-instance` |
-| first-run setup | `/api/v1/setup` | `modules/setup` |
-| authentication session | `/api/v1/authentication` | `modules/authentication` |
-| projects | `/api/v1/projects` | `modules/project` |
-| capture sessions | `/api/v1/projects` | `modules/capture-session` |
-| capture assets | `/api/v1/projects` | `modules/capture-asset` |
-| capture events | `/api/v1/projects` | `modules/capture-event` |
-| guides | `/api/v1/projects` | `modules/guide` |
-| interactive demos | `/api/v1/projects` | `modules/interactive-demo` |
-| guide publishing | `/api/v1/projects` and `/api/v1/public` | `modules/publish` |
+| Route          | Purpose                                      |
+| -------------- | -------------------------------------------- |
+| `GET /healthz` | Liveness check; does not touch PostgreSQL.   |
+| `GET /readyz`  | Readiness check; verifies PostgreSQL access. |
 
-The current authentication model is cookie-backed session auth from `modules/authentication`. Project, capture, guide, interactive demo, and publish routes receive auth context by reading the `demo_composer_session` cookie through the current authentication session service.
+## API Route Groups
+
+| Area                         | Prefix / routes                                                                                                                          | Source                     |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| public instance status       | `GET /api/v1/public/instance`                                                                                                            | `modules/public-instance`  |
+| first-run setup              | `POST /api/v1/setup/first-run`                                                                                                           | `modules/setup`            |
+| authentication               | `/api/v1/authentication/*`                                                                                                               | `modules/authentication`   |
+| organization members/invites | `/api/v1/organization/members`, `/api/v1/organization/invites*`, `/api/v1/public/invites*`                                               | `modules/organization`     |
+| projects                     | `/api/v1/projects*`                                                                                                                      | `modules/project`          |
+| capture sessions             | `/api/v1/projects/:project_id/capture-sessions*`                                                                                         | `modules/capture-session`  |
+| capture assets               | `/api/v1/projects/:project_id/capture-sessions/:capture_session_id/assets*`                                                              | `modules/capture-asset`    |
+| capture events               | `/api/v1/projects/:project_id/capture-sessions/:capture_session_id/events*`                                                              | `modules/capture-event`    |
+| guides                       | `/api/v1/projects/:project_id/guides*`                                                                                                   | `modules/guide`            |
+| interactive demos            | `/api/v1/projects/:project_id/interactive-demos*`, `/api/v1/projects/:project_id/capture-sessions/:capture_session_id/interactive-demos` | `modules/interactive-demo` |
+| guide publishing             | `/api/v1/projects/:project_id/guides/:guide_id/publish*`                                                                                 | `modules/publish`          |
+| interactive demo publishing  | `/api/v1/projects/:project_id/interactive-demos/:interactive_demo_id/publish*`                                                           | `modules/publish`          |
+| public published artifacts   | `/api/v1/public/publish-links/:slug*`                                                                                                    | `modules/publish`          |
+
+The current authentication model is cookie-backed session auth through the `demo_composer_session` cookie. Project, capture, guide, interactive demo, organization, and authenticated publish routes derive organization scope from the current session.
+
+## Rate-Limited Route Groups
+
+The app applies in-memory rate limiting to sensitive routes:
+
+- `POST /api/v1/authentication/login`
+- `POST /api/v1/setup/first-run`
+- `POST /api/v1/public/publish-links/:slug/viewer-sessions`
+- `POST /api/v1/public/invites/:token/accept`
+
+This is sufficient for single-process alpha deployments. Multi-instance production deployments should replace this with shared rate-limit state.
 
 ## Removed Legacy Runtime Wiring
 
-The hardening pass removed active registration for the older route tree:
+The old ORCA-style runtime paths are removed from active source and should not be reintroduced:
 
 ```text
 apps/server/src/root_router/*
@@ -47,18 +68,7 @@ apps/server/src/module/*
 apps/server/src/config/passport.config.ts
 ```
 
-That tree previously exposed ORCA-shaped endpoints under `/api/v1`, including:
-
-| Removed surface | Notes |
-| --- | --- |
-| `/api/v1/authentication/signin/password` | Replaced by `/api/v1/authentication/login`. |
-| `/api/v1/authentication/signup/email` | Not part of the accepted MVP; first-run setup and deployment-aware signup remain separate decisions. |
-| `/api/v1/authentication/signup/email/verify-otp` | OTP signup remains out of scope. |
-| `/api/v1/user/asset/profile-picture/:user_id` | Not part of the current Demo Composer product path. |
-| `/api/v1/organization/role/*` | Replaced by future organization/member domain planning, not active MVP behavior. |
-| `/api/v1/contact/*` | Not part of the Demo Composer capture-to-guide loop. |
-
-The hardening pass added an app integration regression proving the old authentication route is no longer mounted.
+Removed surfaces included old authentication signup/signin routes, OTP routes, user asset routes, organization role routes, and contact routes. They are not part of the current Demo Composer product path.
 
 ## Current Backend Boundary
 
@@ -71,11 +81,4 @@ apps/server/src/modules/<domain>/<domain>.repository.ts
 apps/server/src/modules/<domain>/<domain>.*.test.ts
 ```
 
-Avoid adding new code under:
-
-```text
-apps/server/src/module/*
-apps/server/src/root_router/*
-```
-
-Those paths were removed because they were legacy runtime wiring, created lint noise, and duplicated newer domain modules.
+Do not add new code under removed legacy module or router paths.
