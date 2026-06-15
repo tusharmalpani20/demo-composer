@@ -55,6 +55,21 @@ describe("startup config", () => {
     );
   });
 
+  it("rejects production startup config without a strong cookie secret", () => {
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      NODE_ENV: "production",
+      DEV_TYPE: "production",
+      COOKIE_SECRET: "",
+      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "COOKIE_SECRET must be defined in production"
+    );
+  });
+
   it("accepts complete production startup config", () => {
     process.env = {
       ...original_env,
