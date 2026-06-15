@@ -451,6 +451,23 @@ describe("extension popup App", () => {
     expect(screen.getByRole("button", { name: "Change instance" })).not.toBeDisabled();
   });
 
+  it("positions the active flow as manual screenshot capture", async () => {
+    renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: null,
+        activeCaptureProjectId: null,
+        activeCaptureEventIndex: null,
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Ready to capture" })).toBeInTheDocument();
+    expect(screen.getByText("Manual screenshot capture")).toBeInTheDocument();
+    expect(screen.getByText("Capture one screenshot for each step you want in the guide.")).toBeInTheDocument();
+  });
+
   it("restores active capture state and prevents another start", async () => {
     renderApp({
       settings: {
@@ -467,6 +484,53 @@ describe("extension popup App", () => {
     expect(screen.getByText("Internal onboarding demos")).toBeInTheDocument();
     expect(screen.getByText(/capture_session_1/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Start capture" })).not.toBeInTheDocument();
+  });
+
+  it("opens active captures in the portal without finishing or clearing local state", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 2,
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open in portal" }));
+
+    await waitFor(() => expect(dependencies.openPortalUrl).toHaveBeenCalledWith(
+      "https://demo.example.com/projects/project_1/capture-sessions/capture_session_1"
+    ));
+    expect(dependencies.completeCaptureSession).not.toHaveBeenCalled();
+    expect(dependencies.clearActiveCapture).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+  });
+
+  it("keeps active capture state when opening active capture in portal fails", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 2,
+      },
+      openPortalUrl: async () => {
+        throw new Error("No browser navigation available");
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open in portal" }));
+
+    expect(await screen.findByText("Could not open capture in portal.")).toBeInTheDocument();
+    expect(dependencies.completeCaptureSession).not.toHaveBeenCalled();
+    expect(dependencies.clearActiveCapture).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Capture active" })).toBeInTheDocument();
   });
 
   it("keeps unresolved active capture state when the active project is missing", async () => {

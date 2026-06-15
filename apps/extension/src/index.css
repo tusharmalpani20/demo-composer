@@ -151,6 +151,19 @@ button:disabled {
   line-height: 1.35;
 }
 
+.captureMode {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.captureHelp {
+  color: #4d5968;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .captureSession {
   color: #637083;
   font-size: 12px;
