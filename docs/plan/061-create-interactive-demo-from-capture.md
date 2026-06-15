@@ -32,8 +32,9 @@ Missing:
 
 - create demo from capture API
 - conversion service from capture events to demo scenes
-- portal action to create a demo from a capture session
-- project-level demo list entry point
+- web API client and route parsing support for the created demo destination
+- portal action to create a demo from a capture session, once the portal has a valid interactive demo route
+- project-level demo list/editor entry point
 
 ## Scope
 
@@ -63,24 +64,23 @@ POST /api/v1/projects/:project_id/capture-sessions/:capture_session_id/interacti
   - description nullable
 - return created demo and scenes or a route path to the editor
 
-Portal:
+Web/portal foundation:
 
-- add "Create interactive demo" action on capture session detail
-- disable action when no screenshot-backed capture events exist
-- if plan 062 has already landed, navigate to the new interactive demo editor route
-- if plan 062 has not landed, include the route parser/API client helpers needed for the redirect before exposing the button
+- add web API client helper for the create-from-capture endpoint
+- add route parser support for `/projects/:project_id/interactive-demos/:interactive_demo_id`
+- do not expose the capture-session detail button until the portal can render a real interactive demo destination
+- plan 062 should add the project-level demo list/editor route and then wire the visible capture-detail action
 
 ## Sequencing Note
 
-This plan can be implemented before plan 062 only if it includes a minimal route-safe destination. The preferred implementation order is:
+This plan is implemented before plan 062 as a backend/API-client foundation slice. It must not ship a portal button that redirects to a route the portal cannot render. The implementation order is:
 
 ```text
 061 backend conversion endpoint
+  -> 061 web API client + route parser support
   -> 062 demo list/editor route
-  -> 061 portal button enabled
+  -> 062 capture-detail action enabled
 ```
-
-Do not ship a portal button that redirects to a route the portal cannot parse.
 
 ## Recommended API Response
 
@@ -103,6 +103,7 @@ Do not ship a portal button that redirects to a route the portal cannot parse.
 - demo scene source references must point to rows in the same organization/project/capture session
 - generated scene background assets must be screenshot capture assets
 - conversion should be transactional: either the demo and all generated scenes are created, or none are
+- repeated conversion creates a new independent demo and scenes
 
 ## Tests
 
@@ -130,17 +131,16 @@ DB integration tests:
 
 Web tests:
 
-- capture session detail shows create demo action
-- action handles loading/success/failure states
-- action navigates to the resulting demo route
-- action is hidden or disabled until the portal has a valid demo destination route
+- API client posts to the create-from-capture endpoint and encodes IDs
+- route parser recognizes interactive demo detail routes
+- capture session detail does not expose the create demo action until plan 062 adds a renderable destination route
 
 ## Acceptance Criteria
 
 - a completed or manual capture session can become an interactive demo draft
 - demo scenes are ordered and screenshot-backed
 - no capture source rows are mutated
-- user can reach the created demo from the portal
+- API returns a route-safe `redirect_path` for the future editor/detail destination
 - conversion is covered by service, route, DB, and portal tests
 - no partially-created demo remains after conversion failure
 
@@ -150,6 +150,9 @@ Web tests:
 - transitions
 - public demo viewer
 - interactive demo publishing
+- visible portal create-demo button
+- interactive demo list/editor UI
+- selected capture event filtering
 - HTML replay
 - branching flows
 - analytics
