@@ -6,6 +6,7 @@ import {
   createCaptureSessionEvent,
   createGuideBlock,
   createGuideFromCaptureSession,
+  completeFirstRunSetup,
   deleteGuideBlock,
   exportGuideHtmlZip,
   exportGuideMarkdown,
@@ -14,6 +15,7 @@ import {
   getGuideDetail,
   getGuidePublishStatus,
   getProject,
+  getPublicInstanceStatus,
   getPublicPublishLink,
   createPublicPublishViewerSession,
   login,
@@ -209,6 +211,71 @@ describe("api client", () => {
         headers: {
           accept: "application/json",
         },
+      }
+    );
+  });
+
+  it("fetches public instance status", async () => {
+    const response = {
+      deployment_mode: "self_hosted",
+      onboarding_mode: "first_run_setup",
+      setup_required: true,
+      signup_enabled: false,
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(getPublicInstanceStatus()).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/public/instance",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("completes first-run setup with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(auth_response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    const input = {
+      owner: {
+        email: " owner@example.com ",
+        password: "safe local password",
+        first_name: "Owner",
+        last_name: "User",
+      },
+      organization: {
+        name: "Acme",
+      },
+    };
+
+    await expect(completeFirstRunSetup(input)).resolves.toEqual(auth_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/setup/first-run",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(input),
       }
     );
   });

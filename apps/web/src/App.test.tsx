@@ -59,6 +59,67 @@ describe("App", () => {
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
   });
 
+  it("routes login to setup when first-run setup is required", async () => {
+    window.history.pushState({}, "", "/login");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      deployment_mode: "self_hosted",
+      onboarding_mode: "first_run_setup",
+      setup_required: true,
+      signup_enabled: false,
+    }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    render(<App />);
+
+    expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Set up Demo Composer" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/setup");
+  });
+
+  it("renders setup routes", async () => {
+    window.history.pushState({}, "", "/setup");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      deployment_mode: "self_hosted",
+      onboarding_mode: "first_run_setup",
+      setup_required: true,
+      signup_enabled: false,
+    }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Set up Demo Composer" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Owner email")).toBeInTheDocument();
+  });
+
+  it("routes private portal pages to setup when first-run setup is required", async () => {
+    window.history.pushState({}, "", "/projects");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      deployment_mode: "self_hosted",
+      onboarding_mode: "first_run_setup",
+      setup_required: true,
+      signup_enabled: false,
+    }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    })));
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Set up Demo Composer" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/setup");
+  });
+
   it("renders project workspace routes", async () => {
     window.history.pushState({}, "", "/projects/project_1");
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
@@ -301,7 +362,7 @@ describe("App", () => {
 
   it("renders public guide reader routes without portal navigation", async () => {
     window.history.pushState({}, "", "/p/abc123");
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+    const fetch = vi.fn(async () => new Response(JSON.stringify({
       publish_link: {
         slug: "abc123",
         artifact_type: "guide",
@@ -335,7 +396,8 @@ describe("App", () => {
       headers: {
         "content-type": "application/json",
       },
-    })));
+    }));
+    vi.stubGlobal("fetch", fetch);
 
     render(<App />);
 
@@ -343,6 +405,16 @@ describe("App", () => {
     expect(screen.getByText("This published guide does not have any blocks yet.")).toBeInTheDocument();
     expect(screen.queryByText("Demo Composer portal")).not.toBeInTheDocument();
     expect(screen.queryByText("Sign out")).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/public/publish-links/abc123",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
   });
 
   it("renders public guide embed routes without portal navigation", async () => {

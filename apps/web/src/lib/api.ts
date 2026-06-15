@@ -48,6 +48,13 @@ export type ProjectGuideListResponse = {
   guides: Guide[];
 };
 
+export type PublicInstanceStatus = {
+  deployment_mode: "self_hosted" | "hosted";
+  onboarding_mode: "first_run_setup" | "signup";
+  setup_required: boolean;
+  signup_enabled: boolean;
+};
+
 export type ProjectDetailResponse = {
   project: Project;
 };
@@ -205,6 +212,30 @@ export const resolveApiAssetUrl = (fileUrl: string, baseUrl = apiBaseUrl()) => (
 
 export const getCurrentAuth = async (): Promise<AuthResponse> => (
   requestJson<AuthResponse>("/api/v1/authentication/me")
+);
+
+export const getPublicInstanceStatus = async (): Promise<PublicInstanceStatus> => (
+  requestJson<PublicInstanceStatus>("/api/v1/public/instance")
+);
+
+export const completeFirstRunSetup = async (data: {
+  owner: {
+    email: string;
+    password: string;
+    first_name?: string | null;
+    last_name?: string | null;
+  };
+  organization: {
+    name: string;
+  };
+}): Promise<AuthResponse> => (
+  requestJson<AuthResponse>("/api/v1/setup/first-run", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
 );
 
 export const login = async (data: {

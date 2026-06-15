@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { CaptureSessionDetailPage } from "./features/capture-session/CaptureSessionDetailPage";
 import { ProjectCaptureSessionListPage } from "./features/capture-session/ProjectCaptureSessionListPage";
 import { LoginPage } from "./features/auth/LoginPage";
@@ -8,18 +9,87 @@ import { ProjectGuideListPage } from "./features/guide/ProjectGuideListPage";
 import { ProjectListPage } from "./features/project/ProjectListPage";
 import { ProjectSettingsPage } from "./features/project/ProjectSettingsPage";
 import { ProjectWorkspacePage } from "./features/project/ProjectWorkspacePage";
-import { parsePortalRoute } from "./lib/routes";
+import { FirstRunSetupPage } from "./features/setup/FirstRunSetupPage";
+import { getPublicInstanceStatus } from "./lib/api";
+import { parsePortalRoute, type PortalRoute } from "./lib/routes";
 import styles from "./App.module.css";
 
+type SetupGateState = "checking" | "ready" | "setup_required" | "error";
+
+const setupGuardedRouteTypes = new Set<PortalRoute["type"]>([
+  "project_list",
+  "project_workspace",
+  "project_settings",
+  "capture_session_detail",
+  "project_capture_session_list",
+  "guide_detail",
+  "guide_preview",
+  "project_guide_list",
+]);
+
+const shouldCheckSetup = (route: PortalRoute) => setupGuardedRouteTypes.has(route.type);
+const shouldCheckSetupInBackground = (route: PortalRoute) => (
+  route.type === "login" || shouldCheckSetup(route)
+);
+
 export default function App() {
-  const route = parsePortalRoute(window.location.pathname);
   const currentPath = `${window.location.pathname}${window.location.search}`;
+  const route = parsePortalRoute(window.location.pathname);
+  const setupCheckRequired = shouldCheckSetup(route);
+  const backgroundSetupCheckRequired = shouldCheckSetupInBackground(route);
+  const [setupGateState, setSetupGateState] = useState<SetupGateState>(
+    setupCheckRequired ? "checking" : "ready"
+  );
+
+  useEffect(() => {
+    if (!backgroundSetupCheckRequired) {
+      setSetupGateState("ready");
+      return;
+    }
+
+    let active = true;
+    setSetupGateState(route.type === "login" ? "ready" : "checking");
+
+    getPublicInstanceStatus()
+      .then((status) => {
+        if (!active) return;
+
+        if (status.setup_required) {
+          window.history.replaceState({}, "", "/setup");
+          setSetupGateState("setup_required");
+          return;
+        }
+
+        setSetupGateState("ready");
+      })
+      .catch(() => {
+        if (active) {
+          setSetupGateState(route.type === "login" ? "ready" : "error");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [backgroundSetupCheckRequired, currentPath, route.type]);
+
+  if (setupGateState === "setup_required") {
+    return (
+      <FirstRunSetupPage />
+    );
+  }
 
   if (route.type === "login") {
     return (
       <LoginPage
         nextPath={new URLSearchParams(window.location.search).get("next") ?? "/projects"}
       />
+    );
+  }
+
+  if (route.type === "setup") {
+    return (
+      <FirstRunSetupPage />
     );
   }
 
@@ -32,6 +102,37 @@ export default function App() {
   if (route.type === "public_guide_embed") {
     return (
       <PublicGuideReaderPage slug={route.slug} mode="embed" />
+    );
+  }
+
+  if (setupGateState === "checking") {
+    return (
+      <div className={styles.page}>
+        <header className={styles.topbar}>
+          <div className={styles.brand}>Demo Composer</div>
+        </header>
+        <main className={styles.main}>
+          <section className={styles.emptyState}>
+            <h1 className={styles.title}>Loading portal...</h1>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  if (setupGateState === "error") {
+    return (
+      <div className={styles.page}>
+        <header className={styles.topbar}>
+          <div className={styles.brand}>Demo Composer</div>
+        </header>
+        <main className={styles.main}>
+          <section className={styles.emptyState}>
+            <h1 className={styles.title}>Setup status unavailable</h1>
+            <p>Could not load instance setup status.</p>
+          </section>
+        </main>
+      </div>
     );
   }
 

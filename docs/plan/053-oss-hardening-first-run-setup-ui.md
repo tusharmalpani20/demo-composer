@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Implemented.
 
 ## Goal
 
@@ -377,3 +377,28 @@ Suggested commits during implementation:
 - no default project is created
 - existing login/project/public guide routes still pass tests
 - web tests, type checks, and lint pass
+
+## Implementation Notes
+
+Implemented on 2026-06-15.
+
+Added:
+
+- `GET /api/v1/public/instance` web API helper
+- `POST /api/v1/setup/first-run` web API helper
+- `/setup` route parsing
+- `FirstRunSetupPage` with loading, ready, complete, unavailable, success, and error states
+- setup-required app guard for private portal routes
+- background setup-required check for `/login`
+- explicit exclusion for public guide reader and embed routes
+- focused route, API, page, and app tests
+
+Verification:
+
+```bash
+rtk pnpm --filter web exec vitest run src/lib/api.test.ts src/lib/routes.test.ts src/features/setup/FirstRunSetupPage.test.tsx src/App.test.tsx
+rtk pnpm --filter web test
+rtk pnpm check-types
+rtk pnpm lint
+rtk pnpm --filter web build
+```

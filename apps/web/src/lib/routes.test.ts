@@ -7,6 +7,11 @@ describe("parsePortalRoute", () => {
     expect(parsePortalRoute("/login/")).toEqual({ type: "login" });
   });
 
+  it("parses setup routes", () => {
+    expect(parsePortalRoute("/setup")).toEqual({ type: "setup" });
+    expect(parsePortalRoute("/setup/")).toEqual({ type: "setup" });
+  });
+
   it("parses project list routes", () => {
     expect(parsePortalRoute("/")).toEqual({ type: "project_list" });
     expect(parsePortalRoute("/projects")).toEqual({ type: "project_list" });

@@ -1,6 +1,6 @@
 # Project Zoom-Out Status
 
-Date: 2026-06-14
+Date: 2026-06-15
 
 ## Product Intent
 
@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `052` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering and editing from the portal, public guide access controls, project health hardening, project settings/archive controls, public guide embed foundation, public guide password access, and rich HTML ZIP guide export foundation.
+- Plans `001` through `053` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering and editing from the portal, public guide access controls, project health hardening, project settings/archive controls, public guide embed foundation, public guide password access, rich HTML ZIP guide export foundation, and web first-run setup UI.
 - Development setup, backend route inventory, and production readiness docs now exist:
   - `docs/development-setup.md`
   - `docs/backend-route-inventory.md`
@@ -103,6 +103,7 @@ The agreed implementation style is:
 
 - Portal routes currently implemented:
   - `/login`
+  - `/setup`
   - `/` as project list home
   - `/projects`
   - `/projects/:project_id`
@@ -115,6 +116,8 @@ The agreed implementation style is:
   - `/p/:slug`
   - `/p/:slug/embed`
 - API client helpers currently cover:
+  - public instance status
+  - first-run setup completion
   - current auth
   - login
   - logout
@@ -141,6 +144,8 @@ The agreed implementation style is:
   - authenticated guide Markdown export
   - authenticated guide HTML ZIP export
 - Shared portal topbar supports sign out.
+- First-run setup page lets a fresh self-hosted instance create the owner user, organization, and authenticated portal session from the browser, then sends the owner to `/projects`.
+- Private portal entry routes check public instance status and route uninitialized self-hosted installs to `/setup`, while public guide reader/embed routes remain available without setup checks.
 - Login defaults to `/projects`.
 - Project list/home page shows accessible projects, lets users create new projects, and opens project workspaces.
 - Project workspace links to capture sessions, guides, and project settings.

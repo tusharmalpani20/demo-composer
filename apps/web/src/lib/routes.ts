@@ -3,6 +3,9 @@ export type PortalRoute =
     type: "login";
   }
   | {
+    type: "setup";
+  }
+  | {
     type: "project_list";
   }
   | {
@@ -56,6 +59,13 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
     && segments[0] === "login"
   ) {
     return { type: "login" };
+  }
+
+  if (
+    segments.length === 1
+    && segments[0] === "setup"
+  ) {
+    return { type: "setup" };
   }
 
   if (
