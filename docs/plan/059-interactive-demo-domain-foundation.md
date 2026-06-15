@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Implemented.
 
 Plan number note: this plan was renamed from `058-interactive-demo-domain-foundation.md` to `059-interactive-demo-domain-foundation.md` because `058-extension-automatic-event-capture-roadmap.md` already exists.
 
@@ -370,3 +370,33 @@ Scene foundation remains in this plan because scenes are the minimum useful inte
 - tests cover service, routes, app mounting, and DB behavior
 - no hotspot/transition API is required in this phase
 - no portal UI is required for this first foundation unless explicitly added during implementation
+
+## Implementation Notes
+
+Implemented:
+
+- `interactive_demo_schema.interactive_demo`
+- `interactive_demo_schema.demo_scene`
+- `apps/server/src/modules/interactive-demo`
+- authenticated demo create/list/get/update/archive APIs
+- authenticated scene create/list/update/reorder/archive APIs
+- screenshot-background validation against capture assets in the same organization/project
+- route inventory and project zoom-out updates
+
+Intentionally deferred:
+
+- create demo from capture session
+- hotspots
+- transitions
+- demo publishing
+- portal editor/viewer
+- public demo reader
+
+Verification run:
+
+```bash
+rtk pnpm --filter server test
+rtk pnpm --filter server test:db
+rtk pnpm check-types
+rtk pnpm lint
+```

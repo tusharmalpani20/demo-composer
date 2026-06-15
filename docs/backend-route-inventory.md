@@ -32,9 +32,10 @@ These modules are mounted under `/api/v1`:
 | capture assets | `/api/v1/projects` | `modules/capture-asset` |
 | capture events | `/api/v1/projects` | `modules/capture-event` |
 | guides | `/api/v1/projects` | `modules/guide` |
+| interactive demos | `/api/v1/projects` | `modules/interactive-demo` |
 | guide publishing | `/api/v1/projects` and `/api/v1/public` | `modules/publish` |
 
-The current authentication model is cookie-backed session auth from `modules/authentication`. Project, capture, guide, and publish routes receive auth context by reading the `demo_composer_session` cookie through the current authentication session service.
+The current authentication model is cookie-backed session auth from `modules/authentication`. Project, capture, guide, interactive demo, and publish routes receive auth context by reading the `demo_composer_session` cookie through the current authentication session service.
 
 ## Removed Legacy Runtime Wiring
 

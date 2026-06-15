@@ -86,6 +86,8 @@ The agreed implementation style is:
   - guides
   - guide blocks
   - guide steps
+  - interactive demos
+  - demo scenes
   - published artifacts
   - publish links
 - Public instance/setup modules exist for deployment-aware first-run setup.
@@ -96,6 +98,7 @@ The agreed implementation style is:
 - Capture event module supports create, list, get, safe manual event text editing, reorder for manual capture sessions, and delete/archive behavior, with raw input-value protection.
 - Guide module supports creating a guide from a capture session, listing guides, reading guide detail with safe effective screenshot asset display data, updating guide metadata, updating guide steps, inserting/editing basic guide blocks, changing/removing step screenshots, preparing direct guide-step screenshot uploads, reordering guide blocks, and deleting guide blocks.
 - Guide generation uses ordered capture events as source material and creates better deterministic steps for screenshot-backed `capture` events.
+- Interactive demo module supports backend draft demo metadata create/list/get/update/archive behavior and ordered screenshot-first demo scene create/list/update/reorder/archive behavior.
 - Publish module supports authenticated guide publish/republish, immutable guide snapshot creation using selected or hidden step screenshot state, stable active slugs, publish status reads, publish-link public/restricted access mode updates, optional publish-link expiry, revoke/unpublish, public publish-link resolution with access enforcement, and public asset file streaming constrained to assets referenced by the active accessible snapshot.
 - Server has unit, route, app integration, and DB integration coverage across the implemented modules.
 - Full DB integration verification passes against the configured `.env-cmdrc` testing database.
@@ -194,7 +197,8 @@ The agreed implementation style is:
 
 ### Interactive Demo Product
 
-- Interactive demo tables, APIs, portal editor, viewer, publish links, scenes, hotspots, and transitions are not implemented yet.
+- Interactive demo draft tables and backend APIs now exist for demo metadata and ordered scenes.
+- Portal interactive demo editor, public demo viewer, publishing, hotspots, and transitions are not implemented yet.
 
 ### Publishing And Viewing
 
