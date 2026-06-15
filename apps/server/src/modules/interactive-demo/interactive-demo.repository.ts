@@ -1,5 +1,7 @@
 import { ulid } from "ulid";
 import {
+  type DemoHotspot,
+  type DemoHotspotType,
   type DemoScene,
   type InteractiveDemo,
   type InteractiveDemoRepository,
@@ -8,6 +10,7 @@ import {
   type InteractiveDemoSourceEventType,
   type InteractiveDemoStatus,
   type NormalizedUpdateDemoSceneInput,
+  type NormalizedUpdateDemoHotspotInput,
   type NormalizedUpdateInteractiveDemoInput,
 } from "./interactive-demo.service";
 
@@ -54,6 +57,28 @@ type DemoSceneRow = {
   title: string | null;
   description: string | null;
   background_capture_asset_id: string | null;
+  created_by_id: string;
+  updated_by_id: string;
+  version: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type DemoHotspotRow = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  interactive_demo_id: string;
+  demo_scene_id: string;
+  hotspot_type: DemoHotspotType;
+  label: string | null;
+  content: string | null;
+  x: string;
+  y: string;
+  width: string;
+  height: string;
+  target_scene_id: string | null;
+  hotspot_index: number;
   created_by_id: string;
   updated_by_id: string;
   version: number;
@@ -114,6 +139,28 @@ const map_demo_scene = (row: DemoSceneRow): DemoScene => ({
   updated_at: row.updated_at.toISOString(),
 });
 
+const map_demo_hotspot = (row: DemoHotspotRow): DemoHotspot => ({
+  id: row.id,
+  organization_id: row.organization_id,
+  project_id: row.project_id,
+  interactive_demo_id: row.interactive_demo_id,
+  demo_scene_id: row.demo_scene_id,
+  hotspot_type: row.hotspot_type,
+  label: row.label,
+  content: row.content,
+  x: Number(row.x),
+  y: Number(row.y),
+  width: Number(row.width),
+  height: Number(row.height),
+  target_scene_id: row.target_scene_id,
+  hotspot_index: row.hotspot_index,
+  created_by_id: row.created_by_id,
+  updated_by_id: row.updated_by_id,
+  version: row.version,
+  created_at: row.created_at.toISOString(),
+  updated_at: row.updated_at.toISOString(),
+});
+
 const map_source_event = (row: InteractiveDemoSourceEventRow): InteractiveDemoSourceEvent => ({
   id: row.id,
   event_type: row.event_type,
@@ -167,6 +214,28 @@ const demo_scene_select = `
   updated_at
 `;
 
+const demo_hotspot_select = `
+  id,
+  organization_id,
+  project_id,
+  interactive_demo_id,
+  demo_scene_id,
+  hotspot_type,
+  label,
+  content,
+  x::text AS x,
+  y::text AS y,
+  width::text AS width,
+  height::text AS height,
+  target_scene_id,
+  hotspot_index,
+  created_by_id,
+  updated_by_id,
+  version,
+  created_at,
+  updated_at
+`;
+
 const update_demo_assignments = (data: NormalizedUpdateInteractiveDemoInput) => {
   const assignments: string[] = [];
   const values: unknown[] = [];
@@ -207,6 +276,27 @@ const update_scene_assignments = (data: NormalizedUpdateDemoSceneInput) => {
   if (data.background_capture_asset_id !== undefined) {
     add_assignment("background_capture_asset_id", data.background_capture_asset_id);
   }
+
+  return { assignments, values };
+};
+
+const update_hotspot_assignments = (data: NormalizedUpdateDemoHotspotInput) => {
+  const assignments: string[] = [];
+  const values: unknown[] = [];
+
+  const add_assignment = (column: string, value: unknown) => {
+    values.push(value);
+    assignments.push(`${column} = $${values.length}`);
+  };
+
+  if (data.hotspot_type !== undefined) add_assignment("hotspot_type", data.hotspot_type);
+  if (data.label !== undefined) add_assignment("label", data.label);
+  if (data.content !== undefined) add_assignment("content", data.content);
+  if (data.x !== undefined) add_assignment("x", data.x);
+  if (data.y !== undefined) add_assignment("y", data.y);
+  if (data.width !== undefined) add_assignment("width", data.width);
+  if (data.height !== undefined) add_assignment("height", data.height);
+  if (data.target_scene_id !== undefined) add_assignment("target_scene_id", data.target_scene_id);
 
   return { assignments, values };
 };
@@ -739,6 +829,270 @@ export const build_interactive_demo_repository = (db: TransactionCapable): Inter
       input.organization_id,
       input.project_id,
       input.interactive_demo_id,
+    ]);
+
+    return result.rows.length > 0;
+  },
+
+  async find_scene(input) {
+    const result = await db.query<DemoSceneRow>(`
+      SELECT ${demo_scene_select}
+      FROM interactive_demo_schema.demo_scene
+      WHERE id = $1
+      AND organization_id = $2
+      AND project_id = $3
+      AND interactive_demo_id = $4
+      AND is_deleted = FALSE
+      LIMIT 1
+    `, [
+      input.demo_scene_id,
+      input.organization_id,
+      input.project_id,
+      input.interactive_demo_id,
+    ]);
+    const row = first_row(result);
+
+    return row ? map_demo_scene(row) : null;
+  },
+
+  async create_hotspot(input) {
+    const index_result = await db.query<{ next_index: number }>(`
+      SELECT COALESCE(MAX(hotspot_index), 0) + 1 AS next_index
+      FROM interactive_demo_schema.demo_hotspot
+      WHERE organization_id = $1
+      AND project_id = $2
+      AND interactive_demo_id = $3
+      AND demo_scene_id = $4
+      AND is_deleted = FALSE
+    `, [
+      input.organization_id,
+      input.project_id,
+      input.interactive_demo_id,
+      input.demo_scene_id,
+    ]);
+    const next_index = Number(index_result.rows[0]?.next_index ?? 1);
+    const result = await db.query<DemoHotspotRow>(`
+      INSERT INTO interactive_demo_schema.demo_hotspot (
+        id,
+        organization_id,
+        project_id,
+        interactive_demo_id,
+        demo_scene_id,
+        hotspot_type,
+        label,
+        content,
+        x,
+        y,
+        width,
+        height,
+        target_scene_id,
+        hotspot_index,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15)
+      RETURNING ${demo_hotspot_select}
+    `, [
+      ulid(),
+      input.organization_id,
+      input.project_id,
+      input.interactive_demo_id,
+      input.demo_scene_id,
+      input.data.hotspot_type,
+      input.data.label,
+      input.data.content,
+      input.data.x,
+      input.data.y,
+      input.data.width,
+      input.data.height,
+      input.data.target_scene_id,
+      next_index,
+      input.actor_org_user_id,
+    ]);
+    const row = first_row(result);
+
+    if (!row) {
+      throw new Error("Failed to create demo hotspot");
+    }
+
+    return map_demo_hotspot(row);
+  },
+
+  async list_hotspots(input) {
+    const result = await db.query<DemoHotspotRow>(`
+      SELECT ${demo_hotspot_select}
+      FROM interactive_demo_schema.demo_hotspot
+      WHERE organization_id = $1
+      AND project_id = $2
+      AND interactive_demo_id = $3
+      AND demo_scene_id = $4
+      AND is_deleted = FALSE
+      ORDER BY hotspot_index ASC, id ASC
+    `, [
+      input.organization_id,
+      input.project_id,
+      input.interactive_demo_id,
+      input.demo_scene_id,
+    ]);
+
+    return result.rows.map(map_demo_hotspot);
+  },
+
+  async update_hotspot(input) {
+    const update = update_hotspot_assignments(input.data);
+    const values = [
+      ...update.values,
+      input.actor_org_user_id,
+      input.demo_hotspot_id,
+      input.organization_id,
+      input.project_id,
+      input.interactive_demo_id,
+      input.demo_scene_id,
+    ];
+    const actor_index = update.values.length + 1;
+    const hotspot_index = update.values.length + 2;
+    const organization_index = update.values.length + 3;
+    const project_index = update.values.length + 4;
+    const demo_index = update.values.length + 5;
+    const scene_index = update.values.length + 6;
+    const result = await db.query<DemoHotspotRow>(`
+      UPDATE interactive_demo_schema.demo_hotspot
+      SET ${[
+        ...update.assignments,
+        `updated_by_id = $${actor_index}`,
+        "updated_at = CURRENT_TIMESTAMP",
+        "version = version + 1",
+      ].join(", ")}
+      WHERE id = $${hotspot_index}
+      AND organization_id = $${organization_index}
+      AND project_id = $${project_index}
+      AND interactive_demo_id = $${demo_index}
+      AND demo_scene_id = $${scene_index}
+      AND is_deleted = FALSE
+      RETURNING ${demo_hotspot_select}
+    `, values);
+    const row = first_row(result);
+
+    return row ? map_demo_hotspot(row) : null;
+  },
+
+  async reorder_hotspots(input) {
+    const rows: DemoHotspot[] = [];
+
+    await db.query("BEGIN");
+    try {
+      const hotspot_count = await db.query<{
+        active_hotspot_count: string;
+        matching_hotspot_count: string;
+      }>(`
+        SELECT
+          COUNT(*)::text AS active_hotspot_count,
+          COUNT(*) FILTER (WHERE id = ANY($5::varchar[]))::text AS matching_hotspot_count
+        FROM interactive_demo_schema.demo_hotspot
+        WHERE organization_id = $1
+        AND project_id = $2
+        AND interactive_demo_id = $3
+        AND demo_scene_id = $4
+        AND is_deleted = FALSE
+      `, [
+        input.organization_id,
+        input.project_id,
+        input.interactive_demo_id,
+        input.demo_scene_id,
+        input.hotspot_ids,
+      ]);
+      const active_hotspot_count = Number(hotspot_count.rows[0]?.active_hotspot_count ?? 0);
+      const matching_hotspot_count = Number(hotspot_count.rows[0]?.matching_hotspot_count ?? 0);
+
+      if (
+        active_hotspot_count !== input.hotspot_ids.length ||
+        matching_hotspot_count !== input.hotspot_ids.length
+      ) {
+        await db.query("ROLLBACK");
+        return [];
+      }
+
+      await db.query(`
+        UPDATE interactive_demo_schema.demo_hotspot
+        SET hotspot_index = hotspot_index + 1000000
+        WHERE organization_id = $1
+        AND project_id = $2
+        AND interactive_demo_id = $3
+        AND demo_scene_id = $4
+        AND is_deleted = FALSE
+      `, [
+        input.organization_id,
+        input.project_id,
+        input.interactive_demo_id,
+        input.demo_scene_id,
+      ]);
+
+      for (const [index, hotspot_id] of input.hotspot_ids.entries()) {
+        const result = await db.query<DemoHotspotRow>(`
+          UPDATE interactive_demo_schema.demo_hotspot
+          SET
+            hotspot_index = $1,
+            updated_by_id = $2,
+            updated_at = CURRENT_TIMESTAMP,
+            version = version + 1
+          WHERE id = $3
+          AND organization_id = $4
+          AND project_id = $5
+          AND interactive_demo_id = $6
+          AND demo_scene_id = $7
+          AND is_deleted = FALSE
+          RETURNING ${demo_hotspot_select}
+        `, [
+          index + 1,
+          input.actor_org_user_id,
+          hotspot_id,
+          input.organization_id,
+          input.project_id,
+          input.interactive_demo_id,
+          input.demo_scene_id,
+        ]);
+        const row = first_row(result);
+
+        if (!row) {
+          await db.query("ROLLBACK");
+          return [];
+        }
+
+        rows.push(map_demo_hotspot(row));
+      }
+
+      await db.query("COMMIT");
+      return rows;
+    } catch (error) {
+      await db.query("ROLLBACK");
+      throw error;
+    }
+  },
+
+  async delete_hotspot(input) {
+    const result = await db.query<DemoHotspotRow>(`
+      UPDATE interactive_demo_schema.demo_hotspot
+      SET
+        is_deleted = TRUE,
+        deleted_at = CURRENT_TIMESTAMP,
+        deleted_by_id = $1,
+        updated_by_id = $1,
+        updated_at = CURRENT_TIMESTAMP,
+        version = version + 1
+      WHERE id = $2
+      AND organization_id = $3
+      AND project_id = $4
+      AND interactive_demo_id = $5
+      AND demo_scene_id = $6
+      AND is_deleted = FALSE
+      RETURNING ${demo_hotspot_select}
+    `, [
+      input.actor_org_user_id,
+      input.demo_hotspot_id,
+      input.organization_id,
+      input.project_id,
+      input.interactive_demo_id,
+      input.demo_scene_id,
     ]);
 
     return result.rows.length > 0;

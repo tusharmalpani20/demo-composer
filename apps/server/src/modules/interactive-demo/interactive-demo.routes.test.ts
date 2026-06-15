@@ -5,12 +5,17 @@ import { describe, expect, it } from "vitest";
 import { UnauthenticatedSessionError } from "../authentication/session.service";
 import {
   CaptureSessionNotFoundError,
+  DemoHotspotNotFoundError,
   DemoSceneNotFoundError,
+  EmptyDemoHotspotUpdateError,
   EmptyInteractiveDemoUpdateError,
   InteractiveDemoNotFoundError,
+  InvalidDemoHotspotCoordinatesError,
+  InvalidDemoHotspotTargetError,
   InvalidDemoSceneReferenceError,
   NoUsableCaptureEventsError,
   ProjectNotFoundError,
+  type DemoHotspot,
   type DemoScene,
   type InteractiveDemo,
 } from "./interactive-demo.service";
@@ -71,6 +76,28 @@ const scene: DemoScene = {
   updated_at: "2026-06-05T00:00:00.000Z",
 };
 
+const hotspot: DemoHotspot = {
+  id: "demo_hotspot_1",
+  organization_id: "organization_1",
+  project_id: "project_1",
+  interactive_demo_id: "interactive_demo_1",
+  demo_scene_id: "demo_scene_1",
+  hotspot_type: "click",
+  label: "Continue",
+  content: null,
+  x: 0.1,
+  y: 0.2,
+  width: 0.3,
+  height: 0.12,
+  target_scene_id: "demo_scene_2",
+  hotspot_index: 1,
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-06-05T00:00:00.000Z",
+  updated_at: "2026-06-05T00:00:00.000Z",
+};
+
 const build_test_app = async (
   overrides: {
     auth_service?: Partial<Parameters<typeof build_interactive_demo_routes>[0]["auth_service"]>;
@@ -102,6 +129,11 @@ const build_test_app = async (
       update_demo_scene: async () => ({ ...scene, title: "Updated Scene", version: 2 }),
       reorder_demo_scenes: async () => [scene],
       delete_demo_scene: async () => undefined,
+      create_demo_hotspot: async () => hotspot,
+      list_demo_hotspots: async () => [hotspot],
+      update_demo_hotspot: async () => ({ ...hotspot, label: "Updated hotspot", version: 2 }),
+      reorder_demo_hotspots: async () => [hotspot],
+      delete_demo_hotspot: async () => undefined,
       ...overrides.interactive_demo_service,
     },
   }), { prefix: "/api/v1/projects" });
@@ -330,6 +362,86 @@ describe("interactive demo routes", () => {
     await app.close();
   });
 
+  it("creates lists updates reorders and deletes demo hotspots", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      interactive_demo_service: {
+        create_demo_hotspot: async (input) => {
+          seen_inputs.push(input);
+          return hotspot;
+        },
+      },
+    });
+
+    const base_url = "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1/hotspots";
+    const create_response = await app.inject({
+      method: "POST",
+      url: base_url,
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        hotspot_type: "click",
+        label: "Continue",
+        content: "Go to the next screen",
+        x: 0.1,
+        y: 0.2,
+        width: 0.3,
+        height: 0.12,
+        target_scene_id: "demo_scene_2",
+        organization_id: "attacker_org",
+      },
+    });
+    const list_response = await app.inject({
+      method: "GET",
+      url: base_url,
+      cookies: { demo_composer_session: "session-token" },
+    });
+    const update_response = await app.inject({
+      method: "PATCH",
+      url: `${base_url}/demo_hotspot_1`,
+      cookies: { demo_composer_session: "session-token" },
+      payload: { label: "Updated hotspot" },
+    });
+    const reorder_response = await app.inject({
+      method: "PUT",
+      url: `${base_url}/order`,
+      cookies: { demo_composer_session: "session-token" },
+      payload: { hotspot_ids: ["demo_hotspot_1"] },
+    });
+    const delete_response = await app.inject({
+      method: "DELETE",
+      url: `${base_url}/demo_hotspot_1`,
+      cookies: { demo_composer_session: "session-token" },
+    });
+
+    expect(create_response.statusCode).toBe(201);
+    expect(create_response.json()).toEqual({ demo_hotspot: hotspot });
+    expect(list_response.json()).toEqual({ demo_hotspots: [hotspot] });
+    expect(update_response.json().demo_hotspot).toMatchObject({ label: "Updated hotspot", version: 2 });
+    expect(reorder_response.json()).toEqual({ demo_hotspots: [hotspot] });
+    expect(delete_response.statusCode).toBe(204);
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      data: {
+        hotspot_type: "click",
+        label: "Continue",
+        content: "Go to the next screen",
+        x: 0.1,
+        y: 0.2,
+        width: 0.3,
+        height: 0.12,
+        target_scene_id: "demo_scene_2",
+      },
+    }]);
+
+    await app.close();
+  });
+
   it("maps domain errors to stable responses", async () => {
     const app = await build_test_app({
       interactive_demo_service: {
@@ -347,6 +459,15 @@ describe("interactive demo routes", () => {
         },
         delete_demo_scene: async () => {
           throw new DemoSceneNotFoundError();
+        },
+        update_demo_hotspot: async () => {
+          throw new EmptyDemoHotspotUpdateError();
+        },
+        create_demo_hotspot: async () => {
+          throw new InvalidDemoHotspotCoordinatesError();
+        },
+        delete_demo_hotspot: async () => {
+          throw new DemoHotspotNotFoundError();
         },
         create_interactive_demo_from_capture: async () => {
           throw new CaptureSessionNotFoundError();
@@ -388,6 +509,23 @@ describe("interactive demo routes", () => {
       cookies: { demo_composer_session: "session-token" },
       payload: { title: "Demo" },
     });
+    const invalid_hotspot = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1/hotspots",
+      cookies: { demo_composer_session: "session-token" },
+      payload: { hotspot_type: "click", x: 2, y: 0.1, width: 0.2, height: 0.1 },
+    });
+    const empty_hotspot_update = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1/hotspots/demo_hotspot_1",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {},
+    });
+    const missing_hotspot = await app.inject({
+      method: "DELETE",
+      url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1/hotspots/demo_hotspot_1",
+      cookies: { demo_composer_session: "session-token" },
+    });
 
     expect(missing_project.statusCode).toBe(404);
     expect(missing_project.json().error.type).toBe("project_not_found");
@@ -401,6 +539,41 @@ describe("interactive demo routes", () => {
     expect(missing_scene.json().error.type).toBe("demo_scene_not_found");
     expect(missing_capture_session.statusCode).toBe(404);
     expect(missing_capture_session.json().error.type).toBe("capture_session_not_found");
+    expect(invalid_hotspot.statusCode).toBe(400);
+    expect(invalid_hotspot.json().error.type).toBe("invalid_demo_hotspot_coordinates");
+    expect(empty_hotspot_update.statusCode).toBe(400);
+    expect(empty_hotspot_update.json().error.type).toBe("empty_demo_hotspot_update");
+    expect(missing_hotspot.statusCode).toBe(404);
+    expect(missing_hotspot.json().error.type).toBe("demo_hotspot_not_found");
+
+    await app.close();
+  });
+
+  it("maps invalid hotspot targets to a stable response", async () => {
+    const app = await build_test_app({
+      interactive_demo_service: {
+        create_demo_hotspot: async () => {
+          throw new InvalidDemoHotspotTargetError();
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1/hotspots",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        hotspot_type: "click",
+        x: 0.1,
+        y: 0.1,
+        width: 0.2,
+        height: 0.1,
+        target_scene_id: "other_demo_scene",
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.type).toBe("invalid_demo_hotspot_target");
 
     await app.close();
   });

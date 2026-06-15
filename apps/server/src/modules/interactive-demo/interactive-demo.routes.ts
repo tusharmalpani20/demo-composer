@@ -7,21 +7,30 @@ import {
 import { session_token_from_request } from "../authentication/request-session-token";
 import {
   CaptureSessionNotFoundError,
+  DemoHotspotNotFoundError,
   DemoSceneNotFoundError,
+  EmptyDemoHotspotOrderError,
+  EmptyDemoHotspotUpdateError,
   EmptyDemoSceneOrderError,
   EmptyDemoSceneUpdateError,
   EmptyInteractiveDemoUpdateError,
+  InvalidDemoHotspotCoordinatesError,
+  InvalidDemoHotspotOrderError,
+  InvalidDemoHotspotTargetError,
   InteractiveDemoNotFoundError,
   InvalidDemoSceneOrderError,
   InvalidDemoSceneReferenceError,
   NoUsableCaptureEventsError,
   ProjectNotFoundError,
+  type CreateDemoHotspotInput,
   type CreateDemoSceneInput,
+  type DemoHotspot,
   type CreateInteractiveDemoInput,
   type CreateInteractiveDemoFromCaptureInput,
   type DemoScene,
   type InteractiveDemo,
   type InteractiveDemoAuthContext,
+  type UpdateDemoHotspotInput,
   type UpdateDemoSceneInput,
   type UpdateInteractiveDemoInput,
 } from "./interactive-demo.service";
@@ -96,6 +105,41 @@ export type InteractiveDemoRouteDependencies = {
       interactive_demo_id: string;
       demo_scene_id: string;
     }) => Promise<void>;
+    create_demo_hotspot: (input: {
+      auth: InteractiveDemoAuthContext;
+      project_id: string;
+      interactive_demo_id: string;
+      demo_scene_id: string;
+      data: CreateDemoHotspotInput;
+    }) => Promise<DemoHotspot>;
+    list_demo_hotspots: (input: {
+      auth: InteractiveDemoAuthContext;
+      project_id: string;
+      interactive_demo_id: string;
+      demo_scene_id: string;
+    }) => Promise<DemoHotspot[]>;
+    update_demo_hotspot: (input: {
+      auth: InteractiveDemoAuthContext;
+      project_id: string;
+      interactive_demo_id: string;
+      demo_scene_id: string;
+      demo_hotspot_id: string;
+      data: UpdateDemoHotspotInput;
+    }) => Promise<DemoHotspot>;
+    reorder_demo_hotspots: (input: {
+      auth: InteractiveDemoAuthContext;
+      project_id: string;
+      interactive_demo_id: string;
+      demo_scene_id: string;
+      hotspot_ids: string[];
+    }) => Promise<DemoHotspot[]>;
+    delete_demo_hotspot: (input: {
+      auth: InteractiveDemoAuthContext;
+      project_id: string;
+      interactive_demo_id: string;
+      demo_scene_id: string;
+      demo_hotspot_id: string;
+    }) => Promise<void>;
   };
 };
 
@@ -129,6 +173,32 @@ const update_scene_body_schema = z.object({
 
 const reorder_scenes_body_schema = z.object({
   scene_ids: z.array(z.string().trim().min(1)).min(1),
+}).passthrough();
+
+const create_hotspot_body_schema = z.object({
+  hotspot_type: z.enum(["click", "info", "next"]),
+  label: z.string().nullable().optional(),
+  content: z.string().nullable().optional(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  target_scene_id: z.string().trim().min(1).nullable().optional(),
+}).passthrough();
+
+const update_hotspot_body_schema = z.object({
+  hotspot_type: z.enum(["click", "info", "next"]).optional(),
+  label: z.string().nullable().optional(),
+  content: z.string().nullable().optional(),
+  x: z.number().optional(),
+  y: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  target_scene_id: z.string().trim().min(1).nullable().optional(),
+}).passthrough();
+
+const reorder_hotspots_body_schema = z.object({
+  hotspot_ids: z.array(z.string().trim().min(1)).min(1),
 }).passthrough();
 
 const unauthorized_response = () => ({
@@ -195,6 +265,28 @@ const pick_update_scene_data = (body: UpdateDemoSceneInput): UpdateDemoSceneInpu
   background_capture_asset_id: body.background_capture_asset_id,
 });
 
+const pick_create_hotspot_data = (body: CreateDemoHotspotInput): CreateDemoHotspotInput => ({
+  hotspot_type: body.hotspot_type,
+  label: body.label,
+  content: body.content,
+  x: body.x,
+  y: body.y,
+  width: body.width,
+  height: body.height,
+  target_scene_id: body.target_scene_id,
+});
+
+const pick_update_hotspot_data = (body: UpdateDemoHotspotInput): UpdateDemoHotspotInput => ({
+  hotspot_type: body.hotspot_type,
+  label: body.label,
+  content: body.content,
+  x: body.x,
+  y: body.y,
+  width: body.width,
+  height: body.height,
+  target_scene_id: body.target_scene_id,
+});
+
 export const build_interactive_demo_routes = (
   dependencies: InteractiveDemoRouteDependencies
 ): FastifyPluginAsync => {
@@ -230,6 +322,10 @@ export const build_interactive_demo_routes = (
         return reply.status(404).send(error_response("demo_scene_not_found", "Demo scene was not found"));
       }
 
+      if (error instanceof DemoHotspotNotFoundError) {
+        return reply.status(404).send(error_response("demo_hotspot_not_found", "Demo hotspot was not found"));
+      }
+
       if (error instanceof EmptyInteractiveDemoUpdateError) {
         return reply.status(400).send(error_response("empty_interactive_demo_update", "At least one interactive demo field must be provided"));
       }
@@ -248,6 +344,26 @@ export const build_interactive_demo_routes = (
 
       if (error instanceof InvalidDemoSceneReferenceError) {
         return reply.status(400).send(error_response("invalid_demo_scene_reference", "Demo scene references are invalid"));
+      }
+
+      if (error instanceof EmptyDemoHotspotUpdateError) {
+        return reply.status(400).send(error_response("empty_demo_hotspot_update", "At least one demo hotspot field must be provided"));
+      }
+
+      if (error instanceof EmptyDemoHotspotOrderError) {
+        return reply.status(400).send(error_response("empty_demo_hotspot_order", "At least one demo hotspot id must be provided"));
+      }
+
+      if (error instanceof InvalidDemoHotspotOrderError) {
+        return reply.status(400).send(error_response("invalid_demo_hotspot_order", "Demo hotspot order is invalid"));
+      }
+
+      if (error instanceof InvalidDemoHotspotCoordinatesError) {
+        return reply.status(400).send(error_response("invalid_demo_hotspot_coordinates", "Demo hotspot coordinates are invalid"));
+      }
+
+      if (error instanceof InvalidDemoHotspotTargetError) {
+        return reply.status(400).send(error_response("invalid_demo_hotspot_target", "Demo hotspot target is invalid"));
       }
 
       throw error;
@@ -446,6 +562,105 @@ export const build_interactive_demo_routes = (
           project_id: request.params.project_id,
           interactive_demo_id: request.params.interactive_demo_id,
           demo_scene_id: request.params.scene_id,
+        });
+        return reply.status(204).send();
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.post<{
+      Params: { project_id: string; interactive_demo_id: string; scene_id: string };
+      Body: CreateDemoHotspotInput;
+    }>("/:project_id/interactive-demos/:interactive_demo_id/scenes/:scene_id/hotspots", {
+      schema: { body: create_hotspot_body_schema },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(session_token_from_request(request));
+        const demo_hotspot = await dependencies.interactive_demo_service.create_demo_hotspot({
+          auth,
+          project_id: request.params.project_id,
+          interactive_demo_id: request.params.interactive_demo_id,
+          demo_scene_id: request.params.scene_id,
+          data: pick_create_hotspot_data(request.body),
+        });
+        return reply.status(201).send({ demo_hotspot });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.get<{
+      Params: { project_id: string; interactive_demo_id: string; scene_id: string };
+    }>("/:project_id/interactive-demos/:interactive_demo_id/scenes/:scene_id/hotspots", async (request, reply) => {
+      try {
+        const auth = await require_auth(session_token_from_request(request));
+        const demo_hotspots = await dependencies.interactive_demo_service.list_demo_hotspots({
+          auth,
+          project_id: request.params.project_id,
+          interactive_demo_id: request.params.interactive_demo_id,
+          demo_scene_id: request.params.scene_id,
+        });
+        return reply.status(200).send({ demo_hotspots });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.patch<{
+      Params: { project_id: string; interactive_demo_id: string; scene_id: string; hotspot_id: string };
+      Body: UpdateDemoHotspotInput;
+    }>("/:project_id/interactive-demos/:interactive_demo_id/scenes/:scene_id/hotspots/:hotspot_id", {
+      schema: { body: update_hotspot_body_schema },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(session_token_from_request(request));
+        const demo_hotspot = await dependencies.interactive_demo_service.update_demo_hotspot({
+          auth,
+          project_id: request.params.project_id,
+          interactive_demo_id: request.params.interactive_demo_id,
+          demo_scene_id: request.params.scene_id,
+          demo_hotspot_id: request.params.hotspot_id,
+          data: pick_update_hotspot_data(request.body),
+        });
+        return reply.status(200).send({ demo_hotspot });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.put<{
+      Params: { project_id: string; interactive_demo_id: string; scene_id: string };
+      Body: { hotspot_ids: string[] };
+    }>("/:project_id/interactive-demos/:interactive_demo_id/scenes/:scene_id/hotspots/order", {
+      schema: { body: reorder_hotspots_body_schema },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(session_token_from_request(request));
+        const demo_hotspots = await dependencies.interactive_demo_service.reorder_demo_hotspots({
+          auth,
+          project_id: request.params.project_id,
+          interactive_demo_id: request.params.interactive_demo_id,
+          demo_scene_id: request.params.scene_id,
+          hotspot_ids: request.body.hotspot_ids,
+        });
+        return reply.status(200).send({ demo_hotspots });
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.delete<{
+      Params: { project_id: string; interactive_demo_id: string; scene_id: string; hotspot_id: string };
+    }>("/:project_id/interactive-demos/:interactive_demo_id/scenes/:scene_id/hotspots/:hotspot_id", async (request, reply) => {
+      try {
+        const auth = await require_auth(session_token_from_request(request));
+        await dependencies.interactive_demo_service.delete_demo_hotspot({
+          auth,
+          project_id: request.params.project_id,
+          interactive_demo_id: request.params.interactive_demo_id,
+          demo_scene_id: request.params.scene_id,
+          demo_hotspot_id: request.params.hotspot_id,
         });
         return reply.status(204).send();
       } catch (error) {

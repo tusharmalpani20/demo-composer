@@ -358,11 +358,35 @@ describe("foundation schema migrations on postgres", () => {
       await expect(column_exists("interactive_demo_schema", "demo_scene", column_name)).resolves.toBe(true);
     }
 
+    for (const column_name of [
+      "organization_id",
+      "project_id",
+      "interactive_demo_id",
+      "demo_scene_id",
+      "hotspot_type",
+      "label",
+      "content",
+      "x",
+      "y",
+      "width",
+      "height",
+      "target_scene_id",
+      "hotspot_index",
+      "created_by_id",
+      "updated_by_id",
+      "deleted_by_id",
+    ]) {
+      await expect(column_exists("interactive_demo_schema", "demo_hotspot", column_name)).resolves.toBe(true);
+    }
+
     await expect(index_exists("interactive_demo_schema", "idx_interactive_demo_project_active_created")).resolves.toBe(true);
     await expect(index_exists("interactive_demo_schema", "idx_demo_scene_demo_active_order")).resolves.toBe(true);
     await expect(index_exists("interactive_demo_schema", "uq_demo_scene_demo_index_active")).resolves.toBe(true);
+    await expect(index_exists("interactive_demo_schema", "idx_demo_hotspot_scene_active_order")).resolves.toBe(true);
+    await expect(index_exists("interactive_demo_schema", "uq_demo_hotspot_scene_index_active")).resolves.toBe(true);
     await expect(table_comment("interactive_demo_schema", "interactive_demo")).resolves.toMatch(/interactive demo artifact/i);
     await expect(table_comment("interactive_demo_schema", "demo_scene")).resolves.toMatch(/ordered scene/i);
+    await expect(table_comment("interactive_demo_schema", "demo_hotspot")).resolves.toMatch(/hotspot/i);
   });
 
   it("creates publish snapshot and link schema separately from editable artifacts", async () => {

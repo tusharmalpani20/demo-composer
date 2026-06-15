@@ -77,6 +77,17 @@ describe("interactive demo app routes", () => {
         delete_demo_scene: async () => {
           throw new Error("not used");
         },
+        create_demo_hotspot: async () => {
+          throw new Error("not used");
+        },
+        list_demo_hotspots: async () => [],
+        update_demo_hotspot: async () => {
+          throw new Error("not used");
+        },
+        reorder_demo_hotspots: async () => [],
+        delete_demo_hotspot: async () => {
+          throw new Error("not used");
+        },
       },
     });
 

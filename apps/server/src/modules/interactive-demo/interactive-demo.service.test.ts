@@ -4,12 +4,19 @@ import {
   CaptureSessionNotFoundError,
   EmptyDemoSceneOrderError,
   EmptyInteractiveDemoUpdateError,
+  EmptyDemoHotspotOrderError,
+  EmptyDemoHotspotUpdateError,
   InteractiveDemoNotFoundError,
+  InvalidDemoHotspotCoordinatesError,
+  InvalidDemoHotspotOrderError,
+  InvalidDemoHotspotTargetError,
   InvalidDemoSceneOrderError,
   InvalidDemoSceneReferenceError,
+  DemoHotspotNotFoundError,
   NoUsableCaptureEventsError,
   ProjectNotFoundError,
   type DemoScene,
+  type DemoHotspot,
   type InteractiveDemo,
   type InteractiveDemoRepository,
 } from "./interactive-demo.service";
@@ -46,6 +53,28 @@ const scene = (overrides: Partial<DemoScene> = {}): DemoScene => ({
   title: overrides.title ?? "Welcome",
   description: overrides.description ?? null,
   background_capture_asset_id: overrides.background_capture_asset_id ?? "capture_asset_1",
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: overrides.version ?? 1,
+  created_at: "2026-06-05T00:00:00.000Z",
+  updated_at: "2026-06-05T00:00:00.000Z",
+});
+
+const hotspot = (overrides: Partial<DemoHotspot> = {}): DemoHotspot => ({
+  id: overrides.id ?? "demo_hotspot_1",
+  organization_id: "organization_1",
+  project_id: "project_1",
+  interactive_demo_id: "interactive_demo_1",
+  demo_scene_id: overrides.demo_scene_id ?? "demo_scene_1",
+  hotspot_type: overrides.hotspot_type ?? "click",
+  label: overrides.label ?? "Continue",
+  content: overrides.content ?? null,
+  x: overrides.x ?? 0.1,
+  y: overrides.y ?? 0.2,
+  width: overrides.width ?? 0.3,
+  height: overrides.height ?? 0.12,
+  target_scene_id: Object.hasOwn(overrides, "target_scene_id") ? overrides.target_scene_id ?? null : "demo_scene_2",
+  hotspot_index: overrides.hotspot_index ?? 1,
   created_by_id: "org_user_1",
   updated_by_id: "org_user_1",
   version: overrides.version ?? 1,
@@ -103,7 +132,13 @@ const build_repository = (overrides: Partial<InteractiveDemoRepository> = {}) =>
     | "list_scenes"
     | "update_scene"
     | "reorder_scenes"
-    | "delete_scene",
+    | "delete_scene"
+    | "find_scene"
+    | "create_hotspot"
+    | "list_hotspots"
+    | "update_hotspot"
+    | "reorder_hotspots"
+    | "delete_hotspot",
     unknown[]
   > = {
     project_exists: [],
@@ -122,6 +157,12 @@ const build_repository = (overrides: Partial<InteractiveDemoRepository> = {}) =>
     update_scene: [],
     reorder_scenes: [],
     delete_scene: [],
+    find_scene: [],
+    create_hotspot: [],
+    list_hotspots: [],
+    update_hotspot: [],
+    reorder_hotspots: [],
+    delete_hotspot: [],
   };
 
   const repository: InteractiveDemoRepository = {
@@ -219,6 +260,38 @@ const build_repository = (overrides: Partial<InteractiveDemoRepository> = {}) =>
     async delete_scene(input) {
       calls.delete_scene.push(input);
       return input.demo_scene_id !== "missing_scene";
+    },
+    async find_scene(input) {
+      calls.find_scene.push(input);
+      return input.demo_scene_id === "missing_scene" ? null : scene({ id: input.demo_scene_id });
+    },
+    async create_hotspot(input) {
+      calls.create_hotspot.push(input);
+      return hotspot({
+        demo_scene_id: input.demo_scene_id,
+        ...input.data,
+      });
+    },
+    async list_hotspots(input) {
+      calls.list_hotspots.push(input);
+      return [
+        hotspot({ id: "demo_hotspot_1", hotspot_index: 1 }),
+        hotspot({ id: "demo_hotspot_2", hotspot_index: 2 }),
+      ];
+    },
+    async update_hotspot(input) {
+      calls.update_hotspot.push(input);
+      return input.demo_hotspot_id === "missing_hotspot"
+        ? null
+        : hotspot({ id: input.demo_hotspot_id, ...input.data, version: 2 });
+    },
+    async reorder_hotspots(input) {
+      calls.reorder_hotspots.push(input);
+      return input.hotspot_ids.map((id, index) => hotspot({ id, hotspot_index: index + 1 }));
+    },
+    async delete_hotspot(input) {
+      calls.delete_hotspot.push(input);
+      return input.demo_hotspot_id !== "missing_hotspot";
     },
     ...overrides,
   };
@@ -459,5 +532,166 @@ describe("interactive demo service", () => {
       actor_org_user_id: "org_user_1",
       scene_ids: ["demo_scene_2", "demo_scene_1"],
     }]);
+  });
+
+  it("creates lists updates reorders and deletes scene hotspots", async () => {
+    const { repository, calls } = build_repository();
+    const service = build_interactive_demo_service(repository);
+
+    await expect(service.create_demo_hotspot({
+      auth,
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      data: {
+        hotspot_type: " click ",
+        label: " Continue ",
+        content: "",
+        x: 0.1,
+        y: 0.2,
+        width: 0.3,
+        height: 0.12,
+        target_scene_id: "demo_scene_2",
+      },
+    })).resolves.toMatchObject({
+      hotspot_type: "click",
+      label: "Continue",
+      content: null,
+      target_scene_id: "demo_scene_2",
+    });
+    await expect(service.list_demo_hotspots({
+      auth,
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+    })).resolves.toHaveLength(2);
+    await expect(service.update_demo_hotspot({
+      auth,
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      demo_hotspot_id: "demo_hotspot_1",
+      data: {
+        label: "Next screen",
+        target_scene_id: null,
+      },
+    })).resolves.toMatchObject({
+      id: "demo_hotspot_1",
+      label: "Next screen",
+      target_scene_id: null,
+      version: 2,
+    });
+    await expect(service.reorder_demo_hotspots({
+      auth,
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      hotspot_ids: ["demo_hotspot_2", "demo_hotspot_1"],
+    })).resolves.toEqual([
+      expect.objectContaining({ id: "demo_hotspot_2", hotspot_index: 1 }),
+      expect.objectContaining({ id: "demo_hotspot_1", hotspot_index: 2 }),
+    ]);
+    await expect(service.delete_demo_hotspot({
+      auth,
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      demo_hotspot_id: "missing_hotspot",
+    })).rejects.toBeInstanceOf(DemoHotspotNotFoundError);
+
+    expect(calls.create_hotspot).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      actor_org_user_id: "org_user_1",
+      data: {
+        hotspot_type: "click",
+        label: "Continue",
+        content: null,
+        x: 0.1,
+        y: 0.2,
+        width: 0.3,
+        height: 0.12,
+        target_scene_id: "demo_scene_2",
+      },
+    }]);
+    expect(calls.reorder_hotspots).toEqual([{
+      organization_id: "organization_1",
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      actor_org_user_id: "org_user_1",
+      hotspot_ids: ["demo_hotspot_2", "demo_hotspot_1"],
+    }]);
+  });
+
+  it("validates hotspot coordinates targets updates and order", async () => {
+    const { repository } = build_repository({
+      async find_scene(input) {
+        return input.demo_scene_id === "scene_from_other_demo" ? null : scene({ id: input.demo_scene_id });
+      },
+      async reorder_hotspots() {
+        return [];
+      },
+    });
+    const service = build_interactive_demo_service(repository);
+
+    await expect(service.create_demo_hotspot({
+      auth,
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      data: {
+        hotspot_type: "info",
+        x: -0.1,
+        y: 0.2,
+        width: 0.3,
+        height: 0.1,
+      },
+    })).rejects.toBeInstanceOf(InvalidDemoHotspotCoordinatesError);
+    await expect(service.create_demo_hotspot({
+      auth,
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      data: {
+        hotspot_type: "click",
+        x: 0.1,
+        y: 0.2,
+        width: 0.3,
+        height: 0.1,
+        target_scene_id: "scene_from_other_demo",
+      },
+    })).rejects.toBeInstanceOf(InvalidDemoHotspotTargetError);
+    await expect(service.update_demo_hotspot({
+      auth,
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      demo_hotspot_id: "demo_hotspot_1",
+      data: {},
+    })).rejects.toBeInstanceOf(EmptyDemoHotspotUpdateError);
+    await expect(service.reorder_demo_hotspots({
+      auth,
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      hotspot_ids: [],
+    })).rejects.toBeInstanceOf(EmptyDemoHotspotOrderError);
+    await expect(service.reorder_demo_hotspots({
+      auth,
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      hotspot_ids: ["demo_hotspot_1", "demo_hotspot_1"],
+    })).rejects.toBeInstanceOf(InvalidDemoHotspotOrderError);
+    await expect(service.reorder_demo_hotspots({
+      auth,
+      project_id: "project_1",
+      interactive_demo_id: "interactive_demo_1",
+      demo_scene_id: "demo_scene_1",
+      hotspot_ids: ["missing_hotspot"],
+    })).rejects.toBeInstanceOf(InvalidDemoHotspotOrderError);
   });
 });

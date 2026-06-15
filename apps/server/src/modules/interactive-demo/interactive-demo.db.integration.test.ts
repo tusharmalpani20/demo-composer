@@ -7,6 +7,7 @@ const reset_foundation_tables = async () => {
   await pool.query(`
     TRUNCATE TABLE
       auth_schema.auth_session,
+      interactive_demo_schema.demo_hotspot,
       interactive_demo_schema.demo_scene,
       interactive_demo_schema.interactive_demo,
       capture_schema.capture_asset,
@@ -318,6 +319,68 @@ describe("DB-backed interactive demo API", () => {
     const first_scene_id = first_scene_response.json().demo_scene.id as string;
     const second_scene_id = second_scene_response.json().demo_scene.id as string;
 
+    const create_hotspot_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        hotspot_type: "click",
+        label: "Continue",
+        content: "Move forward",
+        x: 0.1,
+        y: 0.2,
+        width: 0.3,
+        height: 0.12,
+        target_scene_id: second_scene_id,
+      },
+    });
+    const invalid_hotspot_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        hotspot_type: "info",
+        x: 0.95,
+        y: 0.2,
+        width: 0.1,
+        height: 0.12,
+      },
+    });
+
+    expect(create_hotspot_response.statusCode).toBe(201);
+    expect(create_hotspot_response.json().demo_hotspot).toMatchObject({
+      hotspot_type: "click",
+      label: "Continue",
+      content: "Move forward",
+      x: 0.1,
+      y: 0.2,
+      width: 0.3,
+      height: 0.12,
+      target_scene_id: second_scene_id,
+      hotspot_index: 1,
+    });
+    expect(JSON.stringify(create_hotspot_response.json())).not.toContain("is_deleted");
+    expect(invalid_hotspot_response.statusCode).toBe(400);
+    expect(invalid_hotspot_response.json().error.type).toBe("invalid_demo_hotspot_coordinates");
+    const first_hotspot_id = create_hotspot_response.json().demo_hotspot.id as string;
+
+    const second_hotspot_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        hotspot_type: "info",
+        label: "Read this",
+        content: "This is a helpful note",
+        x: 0.5,
+        y: 0.3,
+        width: 0.2,
+        height: 0.1,
+      },
+    });
+    expect(second_hotspot_response.statusCode).toBe(201);
+    const second_hotspot_id = second_hotspot_response.json().demo_hotspot.id as string;
+
     const partial_reorder_response = await app.inject({
       method: "PUT",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/order`,
@@ -354,6 +417,28 @@ describe("DB-backed interactive demo API", () => {
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes`,
       cookies: { demo_composer_session: session_token },
     });
+    const update_hotspot_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots/${first_hotspot_id}`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        label: "Updated hotspot",
+        target_scene_id: null,
+      },
+    });
+    const reorder_hotspot_response = await app.inject({
+      method: "PUT",
+      url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots/order`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        hotspot_ids: [second_hotspot_id, first_hotspot_id],
+      },
+    });
+    const hotspots_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots`,
+      cookies: { demo_composer_session: session_token },
+    });
 
     expect(partial_reorder_response.statusCode).toBe(400);
     expect(partial_reorder_response.json().error.type).toBe("invalid_demo_scene_order");
@@ -377,7 +462,31 @@ describe("DB-backed interactive demo API", () => {
       second_scene_id,
       first_scene_id,
     ]);
+    expect(update_hotspot_response.statusCode).toBe(200);
+    expect(update_hotspot_response.json().demo_hotspot).toMatchObject({
+      id: first_hotspot_id,
+      label: "Updated hotspot",
+      target_scene_id: null,
+      version: 2,
+    });
+    expect(reorder_hotspot_response.statusCode).toBe(200);
+    expect(reorder_hotspot_response.json().demo_hotspots.map((hotspot: { id: string; hotspot_index: number }) => ({
+      id: hotspot.id,
+      hotspot_index: hotspot.hotspot_index,
+    }))).toEqual([
+      { id: second_hotspot_id, hotspot_index: 1 },
+      { id: first_hotspot_id, hotspot_index: 2 },
+    ]);
+    expect(hotspots_response.json().demo_hotspots.map((hotspot: { id: string }) => hotspot.id)).toEqual([
+      second_hotspot_id,
+      first_hotspot_id,
+    ]);
 
+    const delete_hotspot_response = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots/${first_hotspot_id}`,
+      cookies: { demo_composer_session: session_token },
+    });
     const delete_scene_response = await app.inject({
       method: "DELETE",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}`,
@@ -394,6 +503,7 @@ describe("DB-backed interactive demo API", () => {
       cookies: { demo_composer_session: session_token },
     });
 
+    expect(delete_hotspot_response.statusCode).toBe(204);
     expect(delete_scene_response.statusCode).toBe(204);
     expect(delete_demo_response.statusCode).toBe(204);
     expect(get_deleted_response.statusCode).toBe(404);
