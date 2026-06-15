@@ -20,7 +20,7 @@ This is the point where the demo product starts to become Storylane-like instead
 
 ## Current Baseline
 
-Already built or planned:
+Already built:
 
 - interactive demo and scene backend foundation
 - create demo from capture
@@ -32,7 +32,7 @@ Missing:
 - hotspot APIs
 - hotspot editor UI
 - normalized positioning rules
-- transition behavior
+- draft transition metadata for later public viewer behavior
 
 ## Scope
 
@@ -84,13 +84,13 @@ DELETE /api/v1/projects/:project_id/interactive-demos/:interactive_demo_id/scene
 Portal editor:
 
 - display hotspot overlays on scene screenshot
-- add hotspot by drawing/selecting a rectangle
+- add hotspot with a default rectangle and numeric normalized controls
 - edit hotspot label/content/type
 - choose target scene for click/next hotspots
-- move/resize hotspot with simple controls if drag handles are too large for first slice
+- move/resize hotspot with simple numeric controls; drag handles remain out of scope for this first slice
 - delete hotspot
 - keep coordinates normalized relative to displayed screenshot
-- expose a scene-level hotspot read model that plan 064 can snapshot without querying multiple draft tables directly from public routes
+- expose scene-level hotspot lists that plan 064 can snapshot without querying multiple draft tables directly from public routes
 
 ## Domain Rules
 
@@ -98,7 +98,7 @@ Portal editor:
 - hotspot coordinates are normalized numbers from `0` to `1`
 - hotspot target scene must belong to the same interactive demo
 - `info` hotspots can have content without a target scene
-- `click` or `next` hotspots should have a target scene unless the public viewer defaults to next ordered scene
+- `click` and `next` hotspots may have a target scene; if omitted, later viewer work can default to the next ordered scene
 - deleting a scene should soft-delete or invalidate its hotspots through query scoping
 - hotspots are draft data until plan 064 snapshots them into published demos
 - hotspot order is stable per scene
@@ -132,7 +132,7 @@ Web tests:
 - edits label/content/type/target
 - deletes hotspot
 - rejects invalid local coordinates before submit when possible
-- maintains hotspot overlay position when screenshot display size changes
+- uses normalized percentage styles so overlay position is independent of displayed screenshot size
 
 ## Acceptance Criteria
 
