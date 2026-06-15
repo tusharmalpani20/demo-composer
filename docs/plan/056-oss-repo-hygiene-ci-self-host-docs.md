@@ -54,6 +54,7 @@ docs/production-readiness-checklist.md
 docs/project-zoomout-status.md
 docs/backend-route-inventory.md
 apps/server/.env-cmdrc.example
+apps/extension/README.md
 ```
 
 Do not duplicate all docs into README. README should be the entry point and link deeper docs.
@@ -70,7 +71,7 @@ Included:
 - improve README OSS positioning
 - update development setup with one clean local path
 - add self-host quickstart doc
-- add Docker Compose if we decide it is low-risk
+- add Docker Compose as a low-risk local PostgreSQL helper only
 - document extension loading from build output
 - document required env variables and safe defaults
 - update production readiness checklist with first-run setup and CORS/cookie checks from plan 054
@@ -97,7 +98,7 @@ Decision needed before implementation:
 - `Apache-2.0` if we want broad commercial adoption and fewer restrictions
 - `MIT` if we want maximum permissiveness
 
-If no explicit decision is made during implementation, ask before adding `LICENSE`.
+No explicit license decision has been recorded yet. Ask before adding `LICENSE`; implement the rest of this plan without guessing the license if the decision is not available.
 
 ## CI Design
 
@@ -138,7 +139,7 @@ DB tests are valuable but need PostgreSQL service setup. Two options:
 1. Add DB integration tests to CI immediately with a Postgres service.
 2. Keep DB tests documented/manual in this phase and add CI DB tests in a later hardening plan.
 
-Recommendation: add Postgres service now if `.env-cmdrc` testing can be generated safely in CI without secrets.
+Recommendation: add Postgres service now because `.env-cmdrc` testing can be generated safely in CI without secrets.
 
 If DB tests are added in CI, the workflow should create a CI-only `.env-cmdrc` or set equivalent env values with:
 
@@ -196,14 +197,14 @@ If Docker Compose is included:
 docker-compose.yml
 ```
 
-Keep it simple:
+Keep it simple and development/self-host friendly:
 
 - Postgres service
-- optional server/web commands if reliable
 - named volume for Postgres
 - local volume for storage
+- documented commands for server/web/extension outside Compose
 
-Do not over-engineer production Docker in this phase.
+Do not over-engineer production Docker in this phase. Do not add server/web Dockerfiles unless they are exercised by CI or the self-host docs.
 
 ## README Update
 
@@ -267,6 +268,15 @@ If CI DB tests are added, verify workflow commands locally as much as possible:
 rtk pnpm --filter server test:db
 ```
 
+Also validate the GitHub Actions workflow syntax by inspection and keep commands aligned with package scripts:
+
+```text
+server: test, test:db:create, test:migrate, test:db
+web: test
+extension: test
+root: check-types, build, lint
+```
+
 ## Risks
 
 - Adding Docker Compose can create maintenance load if it is not exercised.
@@ -287,7 +297,8 @@ Suggested commits:
 
 - repo has license, contribution, and security docs
 - README describes the actual alpha product
-- CI runs non-DB tests, type checks, build, and lint
+- CI runs non-DB tests, DB tests, type checks, build, and lint
 - self-host docs explain first-run setup and extension setup
 - production checklist reflects hardened config
 - working tree has no generated build/storage artifacts
+- if the license decision is still pending, `CONTRIBUTING.md`, `SECURITY.md`, README, CI, and self-host docs are still complete and `LICENSE` remains explicitly blocked rather than guessed
