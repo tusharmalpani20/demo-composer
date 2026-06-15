@@ -157,6 +157,48 @@ describe("app configuration", () => {
     await app.close();
   });
 
+  it("does not share rate limit buckets across app instances", async () => {
+    process.env.DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS = "1";
+    process.env.DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS = "60000";
+
+    const auth_service = {
+      get_current_auth_context: async () => {
+        throw new UnauthenticatedSessionError();
+      },
+      login: async () => {
+        throw new InvalidCredentialsError();
+      },
+      logout: async () => undefined,
+    };
+    const first_app = build({
+      logger: false,
+      authentication_session_service: auth_service,
+    });
+    const second_app = build({
+      logger: false,
+      authentication_session_service: auth_service,
+    });
+    const request_login = (app: ReturnType<typeof build>) => app.inject({
+      method: "POST",
+      url: "/api/v1/authentication/login",
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": "203.0.113.40",
+      },
+      payload: {
+        email: "owner@example.com",
+        password: "wrong password",
+      },
+    });
+
+    expect((await request_login(first_app)).statusCode).toBe(401);
+    expect((await request_login(first_app)).statusCode).toBe(429);
+    expect((await request_login(second_app)).statusCode).toBe(401);
+
+    await first_app.close();
+    await second_app.close();
+  });
+
   it("rate limits setup, public password unlock, and invite acceptance routes", async () => {
     process.env.DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS = "1";
     process.env.DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS = "60000";

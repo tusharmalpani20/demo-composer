@@ -131,8 +131,6 @@ type RateLimitBucket = {
   reset_at: number;
 };
 
-const rate_limit_buckets = new Map<string, RateLimitBucket>();
-
 const client_ip_from_request = (request: { headers: Record<string, unknown>; ip: string }) => {
   const forwarded_for = request.headers["x-forwarded-for"];
 
@@ -175,6 +173,7 @@ export const build = (opts: BuildOptions = {}) => {
   });
   const max_screenshot_upload_bytes = get_max_screenshot_upload_bytes();
   const rate_limit_config = get_rate_limit_config();
+  const rate_limit_buckets = new Map<string, RateLimitBucket>();
 
   app.addHook("onRequest", async (request, reply) => {
       const route = matched_rate_limited_route(request.method, request.url);
