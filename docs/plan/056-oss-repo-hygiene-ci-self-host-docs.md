@@ -98,7 +98,7 @@ Decision needed before implementation:
 - `Apache-2.0` if we want broad commercial adoption and fewer restrictions
 - `MIT` if we want maximum permissiveness
 
-No explicit license decision has been recorded yet. Ask before adding `LICENSE`; implement the rest of this plan without guessing the license if the decision is not available.
+License decision recorded after the initial OSS hygiene pass: use `AGPL-3.0-only` for the repository.
 
 ## CI Design
 
@@ -302,7 +302,7 @@ Suggested commits:
 - self-host docs explain first-run setup and extension setup
 - production checklist reflects hardened config
 - working tree has no generated build/storage artifacts
-- if the license decision is still pending, `CONTRIBUTING.md`, `SECURITY.md`, README, CI, and self-host docs are still complete and `LICENSE` remains explicitly blocked rather than guessed
+- repository license is explicitly recorded once the owner chooses it
 
 ## Implementation Notes
 
@@ -322,7 +322,7 @@ Implemented:
 
 Not implemented:
 
-- `LICENSE`; blocked until the project owner chooses the license.
+- `LICENSE`; added after the project owner chose `AGPL-3.0-only`.
 
 Verification run:
 

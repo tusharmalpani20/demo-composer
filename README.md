@@ -116,4 +116,5 @@ SECURITY.md
 
 ## License
 
-License selection is pending. Do not assume a license until the project owner chooses one.
+Demo Composer is licensed under the GNU Affero General Public License v3.0 only.
+See [LICENSE](LICENSE).
