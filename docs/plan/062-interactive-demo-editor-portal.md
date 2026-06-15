@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Completed.
 
 ## Goal
 
@@ -136,15 +136,23 @@ Page tests:
 
 ## Acceptance Criteria
 
-- user can open a project interactive demo list
-- user can open an interactive demo editor
-- user can create an interactive demo from a capture session and land in the editor
-- user can see ordered screenshot scenes
-- user can edit demo metadata
-- user can edit scene text
-- user can reorder and delete scenes
-- user can navigate between project workspace, capture source, demo list, and editor
-- empty and missing-screenshot states are clear and do not break layout
+- [x] user can open a project interactive demo list
+- [x] user can open an interactive demo editor
+- [x] user can create an interactive demo from a capture session and land in the editor
+- [x] user can see ordered screenshot scenes
+- [x] user can edit demo metadata
+- [x] user can edit scene text
+- [x] user can reorder and delete scenes
+- [x] user can navigate between project workspace, capture source, demo list, and editor
+- [x] empty and missing-screenshot states are clear and do not break layout
+
+## Implementation Notes
+
+- Added project interactive demo list and interactive demo editor portal routes.
+- Added web API helpers for interactive demo list/get/update/archive and scene list/update/reorder/delete.
+- Added project workspace navigation and capture-session create-demo action.
+- Added App route wiring for demo list and editor routes.
+- Added web tests for API helpers, route parsing, App routing, workspace links, capture conversion, list page, and editor page.
 
 ## Out Of Scope
 
