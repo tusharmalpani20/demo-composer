@@ -23,15 +23,15 @@ This phase should make demos inspectable and editable, but not yet interactive f
 
 ## Current Baseline
 
-Already built:
+Baseline before this plan:
 
 - backend interactive demo metadata APIs
 - backend demo scene APIs
 - create demo from capture via `POST /api/v1/projects/:project_id/capture-sessions/:capture_session_id/interactive-demos`
 - web API helper and route parsing for interactive demo detail routes from plan 061
-- project workspace currently links to capture sessions, guides, and settings
+- project workspace linked to capture sessions, guides, and settings
 
-Missing:
+Implemented by this plan:
 
 - web route parsing and rendering for project interactive demo list routes
 - API client helpers for list/get/update/archive demo and scene edit endpoints
