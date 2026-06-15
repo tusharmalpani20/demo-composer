@@ -6,7 +6,7 @@ Date: 2026-06-13
 
 Required:
 
-- Node.js `>=18`
+- Node.js `>=22` recommended; the repo currently supports `>=18`
 - pnpm `9.x`
 - PostgreSQL for server DB-backed development and integration tests
 
@@ -15,6 +15,8 @@ Install dependencies from the repository root:
 ```bash
 pnpm install
 ```
+
+For the open-source/self-host quickstart path, see [self-hosting.md](self-hosting.md).
 
 ## Environment Files
 
@@ -68,6 +70,12 @@ VITE_DEMO_COMPOSER_API_URL
 
 ## Database
 
+You can use an existing PostgreSQL server or start the local helper container:
+
+```bash
+rtk docker compose up -d postgres
+```
+
 Development database:
 
 ```bash
@@ -119,7 +127,7 @@ rtk pnpm --filter extension dev
 rtk pnpm --filter extension build
 ```
 
-For self-hosted extension use, configure the extension with the server URL for the instance it should talk to.
+For self-hosted extension use, build the extension, load `apps/extension/dist` as an unpacked Chrome extension, and configure the extension with the server URL for the instance it should talk to.
 
 ## Storage
 

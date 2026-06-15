@@ -4,6 +4,8 @@ Date: 2026-06-13
 
 Use this before deploying a self-hosted Demo Composer instance.
 
+Start with [self-hosting.md](self-hosting.md), then use this checklist before exposing the instance beyond local development.
+
 ## Environment
 
 - [ ] Set `NODE_ENV=production`.
@@ -50,6 +52,7 @@ rtk pnpm build
 - [ ] If the Chrome extension is used, confirm its `chrome-extension://...` origin is configured in `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS`.
 - [ ] Confirm cookies are secure on HTTPS.
 - [ ] Confirm first-run setup is disabled after owner creation.
+- [ ] If running in hosted/signup mode, confirm `/api/v1/setup/first-run` is blocked.
 - [ ] Confirm local storage path is not publicly served except through API routes.
 - [ ] Confirm published guide asset reads only work for assets referenced by accessible published snapshots.
 

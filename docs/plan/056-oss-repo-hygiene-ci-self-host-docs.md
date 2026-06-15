@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Implemented.
 
 ## Goal
 
@@ -303,3 +303,35 @@ Suggested commits:
 - production checklist reflects hardened config
 - working tree has no generated build/storage artifacts
 - if the license decision is still pending, `CONTRIBUTING.md`, `SECURITY.md`, README, CI, and self-host docs are still complete and `LICENSE` remains explicitly blocked rather than guessed
+
+## Implementation Notes
+
+Implemented:
+
+- `CONTRIBUTING.md`
+- `SECURITY.md`
+- `.github/pull_request_template.md`
+- `.github/workflows/ci.yml`
+- `docker-compose.yml`
+- `docs/self-hosting.md`
+- README OSS alpha positioning
+- `.env-cmdrc` example updates for deployment, onboarding, storage, and upload-size config
+- development and production readiness doc updates
+- generated local data ignores for `temp/`, `storage/`, and `storage-test/`
+
+Not implemented:
+
+- `LICENSE`; blocked until the project owner chooses the license.
+
+Verification run:
+
+```bash
+rtk pnpm --filter server test
+rtk pnpm --filter web test
+rtk pnpm --filter extension test
+rtk pnpm --filter server test:db
+rtk pnpm check-types
+rtk pnpm build
+rtk pnpm lint
+rtk git diff --check
+```
