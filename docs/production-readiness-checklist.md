@@ -20,6 +20,9 @@ Start with [self-hosting.md](self-hosting.md), then use this checklist before ex
 - [ ] Set `DEMO_COMPOSER_ONBOARDING_MODE` to `first_run_setup` or `signup`.
 - [ ] Set `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` to a durable storage path.
 - [ ] Set `DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES`.
+- [ ] Set `DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES`.
+- [ ] Set `DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS`.
+- [ ] Set `DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS`.
 - [ ] Set `API_URL` to the externally reachable API origin.
 - [ ] Set `VITE_DEMO_COMPOSER_API_URL` for the portal build.
 
@@ -33,6 +36,7 @@ rtk pnpm --filter server run migrate:up
 ```
 
 - [ ] Confirm backups exist before allowing real usage.
+- [ ] Test restore on a separate database before relying on backups.
 
 ## Build
 
@@ -51,10 +55,17 @@ rtk pnpm build
 - [ ] Confirm CORS allows the deployed portal origin and rejects unconfigured browser origins.
 - [ ] If the Chrome extension is used, confirm its `chrome-extension://...` origin is configured in `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS`.
 - [ ] Confirm cookies are secure on HTTPS.
+- [ ] Confirm `/healthz` returns `200` without a database dependency.
+- [ ] Confirm `/readyz` returns `200` only when the database is reachable.
+- [ ] Confirm reverse proxy body size limits are at least as strict as `DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES` and `DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES`.
+- [ ] Confirm login, first-run setup, public password unlock, and invite acceptance return `429` after repeated failed submissions.
 - [ ] Confirm first-run setup is disabled after owner creation.
 - [ ] If running in hosted/signup mode, confirm `/api/v1/setup/first-run` is blocked.
 - [ ] Confirm local storage path is not publicly served except through API routes.
 - [ ] Confirm published guide asset reads only work for assets referenced by accessible published snapshots.
+- [ ] Confirm `COOKIE_SECRET` rotation is understood: existing web sessions become invalid.
+- [ ] Confirm extension bearer token/session rotation is handled by logging users out and asking them to sign in again.
+- [ ] Run dependency review, for example `rtk pnpm audit`, and record accepted risks.
 
 ## Smoke Test
 
