@@ -39,10 +39,34 @@ export type DemoScene = {
   updated_at: string;
 };
 
+export type InteractiveDemoSourceEventType = "navigation" | "click" | "input" | "capture" | "note";
+
+export type InteractiveDemoSourceEvent = {
+  id: string;
+  event_type: InteractiveDemoSourceEventType;
+  event_index: number;
+  capture_asset_id: string | null;
+  page_title: string | null;
+  target_label: string | null;
+  target_text: string | null;
+  note: string | null;
+};
+
+export type InteractiveDemoSourceCaptureSession = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
 export type CreateInteractiveDemoInput = {
   title: string;
   description?: string | null;
   source_capture_session_id?: string | null;
+};
+
+export type CreateInteractiveDemoFromCaptureInput = {
+  title?: string;
+  description?: string | null;
 };
 
 export type UpdateInteractiveDemoInput = Partial<{
@@ -85,6 +109,19 @@ export type NormalizedCreateDemoSceneInput = {
   source_capture_session_id: string | null;
   source_capture_event_id: string | null;
   source_capture_asset_id: string | null;
+};
+
+export type NormalizedCreateInteractiveDemoFromCaptureInput = {
+  title: string;
+  description: string | null;
+  scenes: Array<{
+    scene_index: number;
+    source_capture_event_id: string;
+    source_capture_asset_id: string;
+    background_capture_asset_id: string;
+    title: string;
+    description: string | null;
+  }>;
 };
 
 export type NormalizedUpdateDemoSceneInput = Partial<{
@@ -131,6 +168,32 @@ export type InteractiveDemoRepository = {
     project_id: string;
     capture_asset_id: string;
   }) => Promise<boolean>;
+  find_capture_session_for_demo: (input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+  }) => Promise<InteractiveDemoSourceCaptureSession | null>;
+  list_capture_events_for_demo: (input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+  }) => Promise<InteractiveDemoSourceEvent[]>;
+  list_screenshot_capture_asset_ids: (input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+    capture_asset_ids: string[];
+  }) => Promise<string[]>;
+  create_demo_from_capture: (input: {
+    organization_id: string;
+    project_id: string;
+    capture_session_id: string;
+    actor_org_user_id: string;
+    data: NormalizedCreateInteractiveDemoFromCaptureInput;
+  }) => Promise<{
+    interactive_demo: InteractiveDemo;
+    demo_scenes: DemoScene[];
+  }>;
   create_scene: (input: {
     organization_id: string;
     project_id: string;
@@ -176,6 +239,18 @@ export class ProjectNotFoundError extends Error {
 export class InteractiveDemoNotFoundError extends Error {
   constructor() {
     super("Interactive demo was not found");
+  }
+}
+
+export class CaptureSessionNotFoundError extends Error {
+  constructor() {
+    super("Capture session was not found");
+  }
+}
+
+export class NoUsableCaptureEventsError extends Error {
+  constructor() {
+    super("Capture session has no screenshot-backed events");
   }
 }
 
@@ -234,6 +309,13 @@ const normalize_create_demo = (
   title: input.title.trim(),
   description: compact_optional_string(input.description) ?? null,
   source_capture_session_id: compact_optional_string(input.source_capture_session_id) ?? null,
+});
+
+const normalize_create_demo_from_capture = (
+  capture_session: InteractiveDemoSourceCaptureSession
+): Omit<NormalizedCreateInteractiveDemoFromCaptureInput, "scenes"> => ({
+  title: capture_session.name.trim(),
+  description: compact_optional_string(capture_session.description) ?? null,
 });
 
 const normalize_update_demo = (
@@ -330,7 +412,98 @@ const assert_unique_scene_ids = (scene_ids: string[]) => {
   }
 };
 
+const scene_title_from_event = (event: InteractiveDemoSourceEvent) => {
+  const target_text = compact_optional_string(event.target_text);
+  if (event.event_type === "click" && target_text) {
+    return `Click ${target_text}`;
+  }
+
+  const target_label = compact_optional_string(event.target_label);
+  if (event.event_type === "click" && target_label) {
+    return `Click ${target_label}`;
+  }
+
+  const page_title = compact_optional_string(event.page_title);
+  if (page_title) {
+    return page_title;
+  }
+
+  const note = compact_optional_string(event.note);
+  if (note) {
+    return note;
+  }
+
+  return `Step ${event.event_index}`;
+};
+
+const demo_redirect_path = (project_id: string, interactive_demo_id: string) => (
+  `/projects/${encodeURIComponent(project_id)}/interactive-demos/${encodeURIComponent(interactive_demo_id)}`
+);
+
 export const build_interactive_demo_service = (repository: InteractiveDemoRepository) => {
+  const create_interactive_demo_from_capture = async (input: {
+    auth: InteractiveDemoAuthContext;
+    project_id: string;
+    capture_session_id: string;
+    data: CreateInteractiveDemoFromCaptureInput;
+  }) => {
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+      capture_session_id: input.capture_session_id,
+    };
+
+    await ensure_project(repository, {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    });
+
+    const capture_session = await repository.find_capture_session_for_demo(scope);
+    if (!capture_session) {
+      throw new CaptureSessionNotFoundError();
+    }
+    const normalized = normalize_create_demo_from_capture(capture_session);
+
+    const source_events = await repository.list_capture_events_for_demo(scope);
+    const capture_asset_ids = [
+      ...new Set(source_events.map((event) => event.capture_asset_id).filter((id): id is string => Boolean(id))),
+    ];
+    const screenshot_capture_asset_ids = new Set(
+      await repository.list_screenshot_capture_asset_ids({
+        ...scope,
+        capture_asset_ids,
+      })
+    );
+    const scenes = source_events
+      .filter((event) => event.capture_asset_id && screenshot_capture_asset_ids.has(event.capture_asset_id))
+      .map((event, index) => ({
+        scene_index: index + 1,
+        source_capture_event_id: event.id,
+        source_capture_asset_id: event.capture_asset_id as string,
+        background_capture_asset_id: event.capture_asset_id as string,
+        title: scene_title_from_event(event),
+        description: null,
+      }));
+
+    if (scenes.length === 0) {
+      throw new NoUsableCaptureEventsError();
+    }
+
+    const result = await repository.create_demo_from_capture({
+      ...scope,
+      actor_org_user_id: input.auth.actor_org_user_id,
+      data: {
+        ...normalized,
+        scenes,
+      },
+    });
+
+    return {
+      ...result,
+      redirect_path: demo_redirect_path(input.project_id, result.interactive_demo.id),
+    };
+  };
+
   const create_interactive_demo = async (input: {
     auth: InteractiveDemoAuthContext;
     project_id: string;
@@ -543,6 +716,7 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
   };
 
   return {
+    create_interactive_demo_from_capture,
     create_interactive_demo,
     list_interactive_demos,
     get_interactive_demo,

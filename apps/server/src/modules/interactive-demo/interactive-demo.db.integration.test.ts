@@ -129,6 +129,122 @@ const insert_screenshot_asset = async (input: {
   return capture_asset_id;
 };
 
+const insert_capture_source_material = async (input: {
+  organization_id: string;
+  org_user_id: string;
+  project_id: string;
+}) => {
+  const capture_session_id = ulid();
+  const first_file_id = ulid();
+  const second_file_id = ulid();
+  const first_asset_id = ulid();
+  const second_asset_id = ulid();
+  const note_event_id = ulid();
+  const click_event_id = ulid();
+  const capture_event_id = ulid();
+
+  await pool.query(`
+    INSERT INTO capture_schema.capture_session (
+      id,
+      organization_id,
+      project_id,
+      name,
+      description,
+      status,
+      source_type,
+      created_by_id,
+      updated_by_id
+    )
+    VALUES ($1, $2, $3, 'Department setup', 'Create departments in ERP', 'completed', 'extension', $4, $4)
+  `, [capture_session_id, input.organization_id, input.project_id, input.org_user_id]);
+  await pool.query(`
+    INSERT INTO file_schema.file (
+      id,
+      organization_id,
+      storage_provider,
+      storage_key,
+      mime_type,
+      size_bytes,
+      created_by_id,
+      updated_by_id
+    )
+    VALUES
+      ($1, $3, 'local', $4, 'image/png', 100, $2, $2),
+      ($5, $3, 'local', $6, 'image/png', 100, $2, $2)
+  `, [
+    first_file_id,
+    input.org_user_id,
+    input.organization_id,
+    `interactive-demo/${first_file_id}.png`,
+    second_file_id,
+    `interactive-demo/${second_file_id}.png`,
+  ]);
+  await pool.query(`
+    INSERT INTO capture_schema.capture_asset (
+      id,
+      organization_id,
+      project_id,
+      capture_session_id,
+      file_id,
+      asset_type,
+      page_title,
+      created_by_id,
+      updated_by_id
+    )
+    VALUES
+      ($1, $2, $3, $4, $5, 'screenshot', 'Department List', $7, $7),
+      ($6, $2, $3, $4, $8, 'screenshot', 'New Department', $7, $7)
+  `, [
+    first_asset_id,
+    input.organization_id,
+    input.project_id,
+    capture_session_id,
+    first_file_id,
+    second_asset_id,
+    input.org_user_id,
+    second_file_id,
+  ]);
+  await pool.query(`
+    INSERT INTO capture_schema.capture_event (
+      id,
+      organization_id,
+      project_id,
+      capture_session_id,
+      capture_asset_id,
+      event_type,
+      event_index,
+      page_title,
+      target_text,
+      note,
+      input_value_redacted,
+      created_by_id,
+      updated_by_id
+    )
+    VALUES
+      ($1, $4, $5, $6, NULL, 'note', 1, NULL, NULL, 'Skipped note', TRUE, $7, $7),
+      ($2, $4, $5, $6, $8, 'click', 2, 'Department List', 'Add Department', NULL, TRUE, $7, $7),
+      ($3, $4, $5, $6, $9, 'capture', 3, 'New Department', NULL, NULL, TRUE, $7, $7)
+  `, [
+    note_event_id,
+    click_event_id,
+    capture_event_id,
+    input.organization_id,
+    input.project_id,
+    capture_session_id,
+    input.org_user_id,
+    first_asset_id,
+    second_asset_id,
+  ]);
+
+  return {
+    capture_session_id,
+    first_asset_id,
+    second_asset_id,
+    click_event_id,
+    capture_event_id,
+  };
+};
+
 describe("DB-backed interactive demo API", () => {
   beforeEach(async () => {
     await reset_foundation_tables();
@@ -281,6 +397,70 @@ describe("DB-backed interactive demo API", () => {
     expect(delete_scene_response.statusCode).toBe(204);
     expect(delete_demo_response.statusCode).toBe(204);
     expect(get_deleted_response.statusCode).toBe(404);
+
+    await app.close();
+  });
+
+  it("creates interactive demos from screenshot-backed capture events", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const owner_context = await get_owner_context();
+    const source = await insert_capture_source_material({
+      organization_id: owner_context?.organization_id ?? "",
+      org_user_id: owner_context?.org_user_id ?? "",
+      project_id,
+    });
+    const app = build({ logger: false });
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${source.capture_session_id}/interactive-demos`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        title: "Request title should be ignored",
+        description: "",
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json().interactive_demo).toMatchObject({
+      project_id,
+      source_capture_session_id: source.capture_session_id,
+      title: "Department setup",
+      description: "Create departments in ERP",
+      status: "draft",
+    });
+    expect(response.json().redirect_path).toBe(
+      `/projects/${project_id}/interactive-demos/${response.json().interactive_demo.id}`
+    );
+    expect(response.json().demo_scenes.map((scene: {
+      scene_index: number;
+      source_capture_event_id: string | null;
+      source_capture_asset_id: string | null;
+      background_capture_asset_id: string | null;
+      title: string | null;
+    }) => ({
+      scene_index: scene.scene_index,
+      source_capture_event_id: scene.source_capture_event_id,
+      source_capture_asset_id: scene.source_capture_asset_id,
+      background_capture_asset_id: scene.background_capture_asset_id,
+      title: scene.title,
+    }))).toEqual([
+      {
+        scene_index: 1,
+        source_capture_event_id: source.click_event_id,
+        source_capture_asset_id: source.first_asset_id,
+        background_capture_asset_id: source.first_asset_id,
+        title: "Click Add Department",
+      },
+      {
+        scene_index: 2,
+        source_capture_event_id: source.capture_event_id,
+        source_capture_asset_id: source.second_asset_id,
+        background_capture_asset_id: source.second_asset_id,
+        title: "New Department",
+      },
+    ]);
 
     await app.close();
   });

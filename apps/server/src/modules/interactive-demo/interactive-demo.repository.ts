@@ -3,6 +3,9 @@ import {
   type DemoScene,
   type InteractiveDemo,
   type InteractiveDemoRepository,
+  type InteractiveDemoSourceCaptureSession,
+  type InteractiveDemoSourceEvent,
+  type InteractiveDemoSourceEventType,
   type InteractiveDemoStatus,
   type NormalizedUpdateDemoSceneInput,
   type NormalizedUpdateInteractiveDemoInput,
@@ -14,6 +17,14 @@ type QueryResult<Row> = {
 
 type Queryable = {
   query: <Row = Record<string, unknown>>(sql: string, values?: unknown[]) => Promise<QueryResult<Row>>;
+};
+
+type TransactionClient = Queryable & {
+  release: () => void;
+};
+
+type TransactionCapable = Queryable & {
+  connect?: () => Promise<TransactionClient>;
 };
 
 type InteractiveDemoRow = {
@@ -50,6 +61,23 @@ type DemoSceneRow = {
   updated_at: Date;
 };
 
+type InteractiveDemoSourceEventRow = {
+  id: string;
+  event_type: InteractiveDemoSourceEventType;
+  event_index: number;
+  capture_asset_id: string | null;
+  page_title: string | null;
+  target_label: string | null;
+  target_text: string | null;
+  note: string | null;
+};
+
+type InteractiveDemoSourceCaptureSessionRow = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
 const first_row = <Row>(result: QueryResult<Row>) => result.rows[0] ?? null;
 
 const map_interactive_demo = (row: InteractiveDemoRow): InteractiveDemo => ({
@@ -84,6 +112,25 @@ const map_demo_scene = (row: DemoSceneRow): DemoScene => ({
   version: row.version,
   created_at: row.created_at.toISOString(),
   updated_at: row.updated_at.toISOString(),
+});
+
+const map_source_event = (row: InteractiveDemoSourceEventRow): InteractiveDemoSourceEvent => ({
+  id: row.id,
+  event_type: row.event_type,
+  event_index: row.event_index,
+  capture_asset_id: row.capture_asset_id,
+  page_title: row.page_title,
+  target_label: row.target_label,
+  target_text: row.target_text,
+  note: row.note,
+});
+
+const map_source_capture_session = (
+  row: InteractiveDemoSourceCaptureSessionRow
+): InteractiveDemoSourceCaptureSession => ({
+  id: row.id,
+  name: row.name,
+  description: row.description,
 });
 
 const interactive_demo_select = `
@@ -164,7 +211,37 @@ const update_scene_assignments = (data: NormalizedUpdateDemoSceneInput) => {
   return { assignments, values };
 };
 
-export const build_interactive_demo_repository = (db: Queryable): InteractiveDemoRepository => ({
+const with_transaction = async <Result>(
+  db: TransactionCapable,
+  operation: (client: Queryable) => Promise<Result>
+) => {
+  if (!db.connect) {
+    await db.query("BEGIN");
+    try {
+      const result = await operation(db);
+      await db.query("COMMIT");
+      return result;
+    } catch (error) {
+      await db.query("ROLLBACK");
+      throw error;
+    }
+  }
+
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await operation(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export const build_interactive_demo_repository = (db: TransactionCapable): InteractiveDemoRepository => ({
   async project_exists(input) {
     const result = await db.query<{ exists: boolean }>(`
       SELECT EXISTS (
@@ -310,6 +387,147 @@ export const build_interactive_demo_repository = (db: Queryable): InteractiveDem
     `, [input.capture_asset_id, input.organization_id, input.project_id]);
 
     return Boolean(result.rows[0]?.exists);
+  },
+
+  async find_capture_session_for_demo(input) {
+    const result = await db.query<InteractiveDemoSourceCaptureSessionRow>(`
+      SELECT id, name, description
+      FROM capture_schema.capture_session
+      WHERE id = $1
+      AND organization_id = $2
+      AND project_id = $3
+      AND is_deleted = FALSE
+      LIMIT 1
+    `, [input.capture_session_id, input.organization_id, input.project_id]);
+    const row = first_row(result);
+
+    return row ? map_source_capture_session(row) : null;
+  },
+
+  async list_capture_events_for_demo(input) {
+    const result = await db.query<InteractiveDemoSourceEventRow>(`
+      SELECT
+        id,
+        event_type,
+        event_index,
+        capture_asset_id,
+        page_title,
+        target_label,
+        target_text,
+        note
+      FROM capture_schema.capture_event
+      WHERE organization_id = $1
+      AND project_id = $2
+      AND capture_session_id = $3
+      AND is_deleted = FALSE
+      ORDER BY event_index ASC, created_at ASC, id ASC
+    `, [input.organization_id, input.project_id, input.capture_session_id]);
+
+    return result.rows.map(map_source_event);
+  },
+
+  async list_screenshot_capture_asset_ids(input) {
+    if (input.capture_asset_ids.length === 0) {
+      return [];
+    }
+
+    const result = await db.query<{ id: string }>(`
+      SELECT id
+      FROM capture_schema.capture_asset
+      WHERE id = ANY($1::varchar[])
+      AND organization_id = $2
+      AND project_id = $3
+      AND capture_session_id = $4
+      AND asset_type = 'screenshot'
+      AND is_deleted = FALSE
+    `, [
+      input.capture_asset_ids,
+      input.organization_id,
+      input.project_id,
+      input.capture_session_id,
+    ]);
+
+    return result.rows.map((row) => row.id);
+  },
+
+  async create_demo_from_capture(input) {
+    return with_transaction(db, async (client) => {
+      const demo_result = await client.query<InteractiveDemoRow>(`
+        INSERT INTO interactive_demo_schema.interactive_demo (
+          id,
+          organization_id,
+          project_id,
+          source_capture_session_id,
+          title,
+          description,
+          created_by_id,
+          updated_by_id
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
+        RETURNING ${interactive_demo_select}
+      `, [
+        ulid(),
+        input.organization_id,
+        input.project_id,
+        input.capture_session_id,
+        input.data.title,
+        input.data.description,
+        input.actor_org_user_id,
+      ]);
+      const demo_row = first_row(demo_result);
+
+      if (!demo_row) {
+        throw new Error("Failed to create interactive demo");
+      }
+
+      const scene_rows: DemoSceneRow[] = [];
+      for (const scene of input.data.scenes) {
+        const scene_result = await client.query<DemoSceneRow>(`
+          INSERT INTO interactive_demo_schema.demo_scene (
+            id,
+            organization_id,
+            project_id,
+            interactive_demo_id,
+            source_capture_session_id,
+            source_capture_event_id,
+            source_capture_asset_id,
+            scene_index,
+            title,
+            description,
+            background_capture_asset_id,
+            created_by_id,
+            updated_by_id
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $12)
+          RETURNING ${demo_scene_select}
+        `, [
+          ulid(),
+          input.organization_id,
+          input.project_id,
+          demo_row.id,
+          input.capture_session_id,
+          scene.source_capture_event_id,
+          scene.source_capture_asset_id,
+          scene.scene_index,
+          scene.title,
+          scene.description,
+          scene.background_capture_asset_id,
+          input.actor_org_user_id,
+        ]);
+        const scene_row = first_row(scene_result);
+
+        if (!scene_row) {
+          throw new Error("Failed to create demo scene");
+        }
+
+        scene_rows.push(scene_row);
+      }
+
+      return {
+        interactive_demo: map_interactive_demo(demo_row),
+        demo_scenes: scene_rows.map(map_demo_scene),
+      };
+    });
   },
 
   async create_scene(input) {

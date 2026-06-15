@@ -50,6 +50,11 @@ describe("interactive demo app routes", () => {
         },
       },
       interactive_demo_service: {
+        create_interactive_demo_from_capture: async () => ({
+          interactive_demo,
+          demo_scenes: [],
+          redirect_path: "/projects/project_1/interactive-demos/interactive_demo_1",
+        }),
         create_interactive_demo: async () => interactive_demo,
         list_interactive_demos: async () => [],
         get_interactive_demo: async () => {

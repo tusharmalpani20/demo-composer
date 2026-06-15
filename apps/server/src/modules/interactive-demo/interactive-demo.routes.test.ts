@@ -4,10 +4,12 @@ import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod
 import { describe, expect, it } from "vitest";
 import { UnauthenticatedSessionError } from "../authentication/session.service";
 import {
+  CaptureSessionNotFoundError,
   DemoSceneNotFoundError,
   EmptyInteractiveDemoUpdateError,
   InteractiveDemoNotFoundError,
   InvalidDemoSceneReferenceError,
+  NoUsableCaptureEventsError,
   ProjectNotFoundError,
   type DemoScene,
   type InteractiveDemo,
@@ -85,6 +87,11 @@ const build_test_app = async (
       ...overrides.auth_service,
     },
     interactive_demo_service: {
+      create_interactive_demo_from_capture: async () => ({
+        interactive_demo: demo,
+        demo_scenes: [scene],
+        redirect_path: "/projects/project_1/interactive-demos/interactive_demo_1",
+      }),
       create_interactive_demo: async () => demo,
       list_interactive_demos: async () => [demo],
       get_interactive_demo: async () => demo,
@@ -191,6 +198,70 @@ describe("interactive demo routes", () => {
     await app.close();
   });
 
+  it("creates an interactive demo from a capture session", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      interactive_demo_service: {
+        create_interactive_demo_from_capture: async (input) => {
+          seen_inputs.push(input);
+          return {
+            interactive_demo: {
+              ...demo,
+              source_capture_session_id: "capture_session_1",
+            },
+            demo_scenes: [{
+              ...scene,
+              source_capture_session_id: "capture_session_1",
+              source_capture_event_id: "event_1",
+              source_capture_asset_id: "asset_1",
+              background_capture_asset_id: "asset_1",
+            }],
+            redirect_path: "/projects/project_1/interactive-demos/interactive_demo_1",
+          };
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/interactive-demos",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        title: "Attacker supplied title",
+        description: "Attacker supplied description",
+        source_capture_session_id: "attacker_capture_session",
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toEqual({
+      interactive_demo: expect.objectContaining({
+        source_capture_session_id: "capture_session_1",
+      }),
+      demo_scenes: [
+        expect.objectContaining({
+          source_capture_event_id: "event_1",
+          background_capture_asset_id: "asset_1",
+        }),
+      ],
+      redirect_path: "/projects/project_1/interactive-demos/interactive_demo_1",
+    });
+    expect(seen_inputs).toEqual([{
+      auth: {
+        organization_id: "organization_1",
+        actor_org_user_id: "org_user_1",
+      },
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      data: {
+        title: "Attacker supplied title",
+        description: "Attacker supplied description",
+      },
+    }]);
+
+    await app.close();
+  });
+
   it("creates lists updates reorders and deletes demo scenes", async () => {
     const seen_inputs: unknown[] = [];
     const app = await build_test_app({
@@ -277,6 +348,9 @@ describe("interactive demo routes", () => {
         delete_demo_scene: async () => {
           throw new DemoSceneNotFoundError();
         },
+        create_interactive_demo_from_capture: async () => {
+          throw new CaptureSessionNotFoundError();
+        },
       },
     });
 
@@ -308,6 +382,12 @@ describe("interactive demo routes", () => {
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1",
       cookies: { demo_composer_session: "session-token" },
     });
+    const missing_capture_session = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/missing_capture_session/interactive-demos",
+      cookies: { demo_composer_session: "session-token" },
+      payload: { title: "Demo" },
+    });
 
     expect(missing_project.statusCode).toBe(404);
     expect(missing_project.json().error.type).toBe("project_not_found");
@@ -319,6 +399,35 @@ describe("interactive demo routes", () => {
     expect(invalid_scene.json().error.type).toBe("invalid_demo_scene_reference");
     expect(missing_scene.statusCode).toBe(404);
     expect(missing_scene.json().error.type).toBe("demo_scene_not_found");
+    expect(missing_capture_session.statusCode).toBe(404);
+    expect(missing_capture_session.json().error.type).toBe("capture_session_not_found");
+
+    await app.close();
+  });
+
+  it("maps no usable capture events to a stable response", async () => {
+    const app = await build_test_app({
+      interactive_demo_service: {
+        create_interactive_demo_from_capture: async () => {
+          throw new NoUsableCaptureEventsError();
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/interactive-demos",
+      cookies: { demo_composer_session: "session-token" },
+      payload: { title: "Demo" },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      error: {
+        type: "no_usable_capture_events",
+        message: "Capture session has no screenshot-backed events",
+      },
+    });
 
     await app.close();
   });

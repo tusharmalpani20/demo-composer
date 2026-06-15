@@ -6,6 +6,7 @@ import {
 } from "../authentication/session.service";
 import { session_token_from_request } from "../authentication/request-session-token";
 import {
+  CaptureSessionNotFoundError,
   DemoSceneNotFoundError,
   EmptyDemoSceneOrderError,
   EmptyDemoSceneUpdateError,
@@ -13,9 +14,11 @@ import {
   InteractiveDemoNotFoundError,
   InvalidDemoSceneOrderError,
   InvalidDemoSceneReferenceError,
+  NoUsableCaptureEventsError,
   ProjectNotFoundError,
   type CreateDemoSceneInput,
   type CreateInteractiveDemoInput,
+  type CreateInteractiveDemoFromCaptureInput,
   type DemoScene,
   type InteractiveDemo,
   type InteractiveDemoAuthContext,
@@ -28,6 +31,16 @@ export type InteractiveDemoRouteDependencies = {
     get_current_auth_context: (session_token?: string) => Promise<AuthContext>;
   };
   interactive_demo_service: {
+    create_interactive_demo_from_capture: (input: {
+      auth: InteractiveDemoAuthContext;
+      project_id: string;
+      capture_session_id: string;
+      data: CreateInteractiveDemoFromCaptureInput;
+    }) => Promise<{
+      interactive_demo: InteractiveDemo;
+      demo_scenes: DemoScene[];
+      redirect_path: string;
+    }>;
     create_interactive_demo: (input: {
       auth: InteractiveDemoAuthContext;
       project_id: string;
@@ -91,6 +104,11 @@ const create_demo_body_schema = z.object({
   description: z.string().nullable().optional(),
 }).passthrough();
 
+const create_demo_from_capture_body_schema = z.object({
+  title: z.string().trim().min(1).optional(),
+  description: z.string().nullable().optional(),
+}).passthrough();
+
 const update_demo_body_schema = z.object({
   title: z.string().trim().min(1).optional(),
   description: z.string().nullable().optional(),
@@ -144,6 +162,21 @@ const pick_create_demo_data = (body: CreateInteractiveDemoInput): CreateInteract
   return data;
 };
 
+const pick_create_demo_from_capture_data = (
+  body: CreateInteractiveDemoFromCaptureInput
+): CreateInteractiveDemoFromCaptureInput => {
+  const data: CreateInteractiveDemoFromCaptureInput = {};
+
+  if (body.title !== undefined) {
+    data.title = body.title;
+  }
+  if (body.description !== undefined) {
+    data.description = body.description;
+  }
+
+  return data;
+};
+
 const pick_update_demo_data = (body: UpdateInteractiveDemoInput): UpdateInteractiveDemoInput => ({
   title: body.title,
   description: body.description,
@@ -185,6 +218,14 @@ export const build_interactive_demo_routes = (
         return reply.status(404).send(error_response("interactive_demo_not_found", "Interactive demo was not found"));
       }
 
+      if (error instanceof CaptureSessionNotFoundError) {
+        return reply.status(404).send(error_response("capture_session_not_found", "Capture session was not found"));
+      }
+
+      if (error instanceof NoUsableCaptureEventsError) {
+        return reply.status(400).send(error_response("no_usable_capture_events", "Capture session has no screenshot-backed events"));
+      }
+
       if (error instanceof DemoSceneNotFoundError) {
         return reply.status(404).send(error_response("demo_scene_not_found", "Demo scene was not found"));
       }
@@ -211,6 +252,26 @@ export const build_interactive_demo_routes = (
 
       throw error;
     };
+
+    fastify.post<{
+      Params: { project_id: string; capture_session_id: string };
+      Body: CreateInteractiveDemoFromCaptureInput;
+    }>("/:project_id/capture-sessions/:capture_session_id/interactive-demos", {
+      schema: { body: create_demo_from_capture_body_schema },
+    }, async (request, reply) => {
+      try {
+        const auth = await require_auth(session_token_from_request(request));
+        const result = await dependencies.interactive_demo_service.create_interactive_demo_from_capture({
+          auth,
+          project_id: request.params.project_id,
+          capture_session_id: request.params.capture_session_id,
+          data: pick_create_demo_from_capture_data(request.body),
+        });
+        return reply.status(201).send(result);
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
 
     fastify.post<{
       Params: { project_id: string };
