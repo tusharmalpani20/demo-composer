@@ -32,6 +32,30 @@ export type DemoScene = {
   updated_at: string;
 };
 
+export type DemoHotspotType = "click" | "info" | "next";
+
+export type DemoHotspot = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  interactive_demo_id: string;
+  demo_scene_id: string;
+  hotspot_type: DemoHotspotType;
+  label: string | null;
+  content: string | null;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  target_scene_id: string | null;
+  hotspot_index: number;
+  created_by_id: string;
+  updated_by_id: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type CreateInteractiveDemoFromCaptureResponse = {
   interactive_demo: InteractiveDemo;
   demo_scenes: DemoScene[];
@@ -47,4 +71,26 @@ export type UpdateInteractiveDemoInput = {
 export type UpdateDemoSceneInput = {
   title?: string | null;
   description?: string | null;
+};
+
+export type CreateDemoHotspotInput = {
+  hotspot_type: DemoHotspotType;
+  label?: string | null;
+  content?: string | null;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  target_scene_id?: string | null;
+};
+
+export type UpdateDemoHotspotInput = {
+  hotspot_type?: DemoHotspotType;
+  label?: string | null;
+  content?: string | null;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  target_scene_id?: string | null;
 };

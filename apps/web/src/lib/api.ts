@@ -34,9 +34,12 @@ import type {
   UploadGuideBlockScreenshotResponse,
 } from "../features/guide/types";
 import type {
+  CreateDemoHotspotInput,
   DemoScene,
+  DemoHotspot,
   InteractiveDemo,
   CreateInteractiveDemoFromCaptureResponse,
+  UpdateDemoHotspotInput,
   UpdateDemoSceneInput,
   UpdateInteractiveDemoInput,
 } from "../features/interactive-demo/types";
@@ -100,6 +103,22 @@ export type InteractiveDemoSceneUpdateResponse = {
 
 export type InteractiveDemoSceneReorderResponse = {
   demo_scenes: DemoScene[];
+};
+
+export type InteractiveDemoHotspotListResponse = {
+  demo_hotspots: DemoHotspot[];
+};
+
+export type InteractiveDemoHotspotCreateResponse = {
+  demo_hotspot: DemoHotspot;
+};
+
+export type InteractiveDemoHotspotUpdateResponse = {
+  demo_hotspot: DemoHotspot;
+};
+
+export type InteractiveDemoHotspotReorderResponse = {
+  demo_hotspots: DemoHotspot[];
 };
 
 export type CaptureSessionCreateResponse = {
@@ -716,6 +735,95 @@ export const deleteInteractiveDemoScene = async (
 ): Promise<void> => (
   requestJson<void>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/scenes/${encodeURIComponent(sceneId)}`,
+    {
+      method: "DELETE",
+    }
+  )
+);
+
+const demoHotspotsPath = (
+  projectId: string,
+  interactiveDemoId: string,
+  sceneId: string
+) => (
+  `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/scenes/${encodeURIComponent(sceneId)}/hotspots`
+);
+
+export const createInteractiveDemoHotspot = async (
+  projectId: string,
+  interactiveDemoId: string,
+  sceneId: string,
+  data: CreateDemoHotspotInput
+): Promise<InteractiveDemoHotspotCreateResponse> => (
+  requestJson<InteractiveDemoHotspotCreateResponse>(
+    demoHotspotsPath(projectId, interactiveDemoId, sceneId),
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
+export const listInteractiveDemoHotspots = async (
+  projectId: string,
+  interactiveDemoId: string,
+  sceneId: string
+): Promise<InteractiveDemoHotspotListResponse> => (
+  requestJson<InteractiveDemoHotspotListResponse>(
+    demoHotspotsPath(projectId, interactiveDemoId, sceneId)
+  )
+);
+
+export const updateInteractiveDemoHotspot = async (
+  projectId: string,
+  interactiveDemoId: string,
+  sceneId: string,
+  hotspotId: string,
+  data: UpdateDemoHotspotInput
+): Promise<InteractiveDemoHotspotUpdateResponse> => (
+  requestJson<InteractiveDemoHotspotUpdateResponse>(
+    `${demoHotspotsPath(projectId, interactiveDemoId, sceneId)}/${encodeURIComponent(hotspotId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
+export const reorderInteractiveDemoHotspots = async (
+  projectId: string,
+  interactiveDemoId: string,
+  sceneId: string,
+  hotspotIds: string[]
+): Promise<InteractiveDemoHotspotReorderResponse> => (
+  requestJson<InteractiveDemoHotspotReorderResponse>(
+    `${demoHotspotsPath(projectId, interactiveDemoId, sceneId)}/order`,
+    {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        hotspot_ids: hotspotIds,
+      }),
+    }
+  )
+);
+
+export const deleteInteractiveDemoHotspot = async (
+  projectId: string,
+  interactiveDemoId: string,
+  sceneId: string,
+  hotspotId: string
+): Promise<void> => (
+  requestJson<void>(
+    `${demoHotspotsPath(projectId, interactiveDemoId, sceneId)}/${encodeURIComponent(hotspotId)}`,
     {
       method: "DELETE",
     }

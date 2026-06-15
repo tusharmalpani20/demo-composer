@@ -7,8 +7,10 @@ import {
   createGuideBlock,
   createGuideFromCaptureSession,
   createInteractiveDemoFromCaptureSession,
+  createInteractiveDemoHotspot,
   completeFirstRunSetup,
   deleteGuideBlock,
+  deleteInteractiveDemoHotspot,
   exportGuideHtmlZip,
   exportGuideMarkdown,
   getCurrentAuth,
@@ -27,9 +29,11 @@ import {
   listProjectGuides,
   listProjectInteractiveDemos,
   listInteractiveDemoScenes,
+  listInteractiveDemoHotspots,
   logout,
   publishGuide,
   reorderCaptureSessionEvents,
+  reorderInteractiveDemoHotspots,
   reorderInteractiveDemoScenes,
   reorderGuideBlocks,
   resolveApiAssetUrl,
@@ -44,6 +48,7 @@ import {
   updateGuideBlockScreenshot,
   updateCaptureSessionEvent,
   updateInteractiveDemo,
+  updateInteractiveDemoHotspot,
   updateInteractiveDemoScene,
   updateProject,
   uploadCaptureSessionAsset,
@@ -150,6 +155,34 @@ const demo_scene_response = {
 
 const demo_scene_list_response = {
   demo_scenes: interactive_demo_from_capture_response.demo_scenes,
+};
+
+const demo_hotspot_response = {
+  demo_hotspot: {
+    id: "demo_hotspot_1",
+    organization_id: "organization_1",
+    project_id: "project_1",
+    interactive_demo_id: "interactive_demo_1",
+    demo_scene_id: "demo_scene_1",
+    hotspot_type: "click",
+    label: "Continue",
+    content: null,
+    x: 0.1,
+    y: 0.2,
+    width: 0.3,
+    height: 0.12,
+    target_scene_id: "demo_scene_2",
+    hotspot_index: 1,
+    created_by_id: "org_user_1",
+    updated_by_id: "org_user_1",
+    version: 1,
+    created_at: "2026-06-05T10:00:00.000Z",
+    updated_at: "2026-06-05T10:00:00.000Z",
+  },
+};
+
+const demo_hotspot_list_response = {
+  demo_hotspots: [demo_hotspot_response.demo_hotspot],
 };
 
 const public_publish_response = {
@@ -1494,6 +1527,118 @@ describe("api client", () => {
     expect(fetch).toHaveBeenNthCalledWith(
       8,
       "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201/scenes/scene%20%2F%201",
+      {
+        method: "DELETE",
+        credentials: "include",
+        headers: { accept: "application/json" },
+      }
+    );
+  });
+
+  it("manages interactive demo hotspots with session cookies", async () => {
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify(demo_hotspot_response), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(demo_hotspot_list_response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(demo_hotspot_response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(demo_hotspot_list_response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(createInteractiveDemoHotspot("project / 1", "demo / 1", "scene / 1", {
+      hotspot_type: "click",
+      label: "Continue",
+      content: null,
+      x: 0.1,
+      y: 0.2,
+      width: 0.3,
+      height: 0.12,
+      target_scene_id: "scene / 2",
+    })).resolves.toEqual(demo_hotspot_response);
+    await expect(listInteractiveDemoHotspots("project / 1", "demo / 1", "scene / 1")).resolves.toEqual(demo_hotspot_list_response);
+    await expect(updateInteractiveDemoHotspot("project / 1", "demo / 1", "scene / 1", "hotspot / 1", {
+      label: "Updated",
+      target_scene_id: null,
+    })).resolves.toEqual(demo_hotspot_response);
+    await expect(reorderInteractiveDemoHotspots("project / 1", "demo / 1", "scene / 1", ["hotspot / 2", "hotspot / 1"])).resolves.toEqual(demo_hotspot_list_response);
+    await expect(deleteInteractiveDemoHotspot("project / 1", "demo / 1", "scene / 1", "hotspot / 1")).resolves.toBeUndefined();
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201/scenes/scene%20%2F%201/hotspots",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          hotspot_type: "click",
+          label: "Continue",
+          content: null,
+          x: 0.1,
+          y: 0.2,
+          width: 0.3,
+          height: 0.12,
+          target_scene_id: "scene / 2",
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201/scenes/scene%20%2F%201/hotspots",
+      {
+        credentials: "include",
+        headers: { accept: "application/json" },
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      3,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201/scenes/scene%20%2F%201/hotspots/hotspot%20%2F%201",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          label: "Updated",
+          target_scene_id: null,
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      4,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201/scenes/scene%20%2F%201/hotspots/order",
+      {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          hotspot_ids: ["hotspot / 2", "hotspot / 1"],
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      5,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201/scenes/scene%20%2F%201/hotspots/hotspot%20%2F%201",
       {
         method: "DELETE",
         credentials: "include",

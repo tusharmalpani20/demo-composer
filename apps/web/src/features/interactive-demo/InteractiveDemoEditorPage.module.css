@@ -186,6 +186,7 @@
 }
 
 .screenshotFrame {
+  position: relative;
   overflow: hidden;
   margin-bottom: 14px;
   border: 1px solid #d9e0e7;
@@ -201,6 +202,22 @@
   background: #f8fafc;
 }
 
+.hotspotOverlay {
+  position: absolute;
+  z-index: 1;
+  padding: 0;
+  border: 2px solid #f97316;
+  border-radius: 6px;
+  background: rgb(249 115 22 / 18%);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 82%);
+  cursor: pointer;
+}
+
+.hotspotOverlay:focus-visible {
+  outline: 3px solid #1f4f82;
+  outline-offset: 2px;
+}
+
 .placeholder {
   display: grid;
   min-height: 180px;
@@ -210,6 +227,7 @@
 }
 
 .empty,
+.emptyInline,
 .state,
 .message {
   padding: 18px;
@@ -217,6 +235,54 @@
   border-radius: 8px;
   background: #ffffff;
   color: #637083;
+}
+
+.emptyInline {
+  padding: 12px;
+  font-size: 13px;
+}
+
+.hotspotSection {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e3e8ef;
+}
+
+.hotspotHeader,
+.hotspotEditorHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hotspotTitle {
+  margin: 0;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.hotspotList {
+  display: grid;
+  gap: 12px;
+}
+
+.hotspotEditor {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.coordinateGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(84px, 1fr));
+  gap: 10px;
 }
 
 .state {
