@@ -4,6 +4,8 @@ Date: 2026-06-15
 
 Status: Planned.
 
+Plan number note: this plan was renamed from `058-interactive-demo-domain-foundation.md` to `059-interactive-demo-domain-foundation.md` because `058-extension-automatic-event-capture-roadmap.md` already exists.
+
 ## Goal
 
 Start the Storylane-style product path by adding the backend domain foundation for interactive demos, separate from guides.
@@ -357,7 +359,7 @@ Suggested commits:
 3. `Add interactive demo scene foundation`
 4. `Document interactive demo foundation status`
 
-Depending on size, scene foundation can be split into a later plan.
+Scene foundation remains in this plan because scenes are the minimum useful interactive-demo domain object. Hotspots, transitions, publishing, and portal UI remain deferred.
 
 ## Acceptance Criteria
 
