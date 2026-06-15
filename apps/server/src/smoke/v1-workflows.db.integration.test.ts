@@ -1,0 +1,469 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
+import { build } from "../app";
+import { pool } from "../config/database.config";
+
+const multipart_payload = (
+  parts: Array<{
+    name: string;
+    value: string | Buffer;
+    filename?: string;
+    content_type?: string;
+  }>,
+) => {
+  const boundary = "----demo-composer-v1-smoke-boundary";
+  const chunks: Buffer[] = [];
+
+  for (const part of parts) {
+    chunks.push(Buffer.from(`--${boundary}\r\n`));
+    chunks.push(
+      Buffer.from(
+        `Content-Disposition: form-data; name="${part.name}"${
+          part.filename ? `; filename="${part.filename}"` : ""
+        }\r\n`,
+      ),
+    );
+    if (part.content_type) {
+      chunks.push(Buffer.from(`Content-Type: ${part.content_type}\r\n`));
+    }
+    chunks.push(Buffer.from("\r\n"));
+    chunks.push(
+      Buffer.isBuffer(part.value) ? part.value : Buffer.from(part.value),
+    );
+    chunks.push(Buffer.from("\r\n"));
+  }
+
+  chunks.push(Buffer.from(`--${boundary}--\r\n`));
+
+  return {
+    headers: {
+      "content-type": `multipart/form-data; boundary=${boundary}`,
+    },
+    payload: Buffer.concat(chunks),
+  };
+};
+
+const reset_v1_smoke_tables = async () => {
+  await pool.query(`
+    TRUNCATE TABLE
+      organization_schema.org_invite,
+      auth_schema.auth_session,
+      publish_schema.public_publish_viewer_session,
+      publish_schema.publish_link,
+      publish_schema.published_artifact,
+      interactive_demo_schema.demo_hotspot,
+      interactive_demo_schema.demo_scene,
+      interactive_demo_schema.interactive_demo,
+      guide_schema.guide_step,
+      guide_schema.guide_block,
+      guide_schema.guide,
+      capture_schema.capture_event,
+      capture_schema.capture_asset,
+      file_schema.file,
+      capture_schema.capture_session,
+      project_schema.project,
+      organization_schema.org_user,
+      organization_schema.organization,
+      user_schema.user
+    RESTART IDENTITY CASCADE
+  `);
+};
+
+describe("v1 dogfood smoke workflow", () => {
+  let storage_root: string;
+  let previous_storage_root: string | undefined;
+  let previous_max_upload_bytes: string | undefined;
+
+  beforeEach(async () => {
+    storage_root = await mkdtemp(
+      path.join(tmpdir(), "demo-composer-v1-smoke-"),
+    );
+    previous_storage_root = process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT;
+    previous_max_upload_bytes =
+      process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES;
+    process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT = storage_root;
+    process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES = "1048576";
+    await reset_v1_smoke_tables();
+  });
+
+  afterEach(async () => {
+    if (previous_storage_root === undefined) {
+      delete process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT;
+    } else {
+      process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT = previous_storage_root;
+    }
+
+    if (previous_max_upload_bytes === undefined) {
+      delete process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES;
+    } else {
+      process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES =
+        previous_max_upload_bytes;
+    }
+
+    await rm(storage_root, { recursive: true, force: true });
+  });
+
+  afterAll(async () => {
+    await pool.end();
+  });
+
+  it("creates publishable guide and demo artifacts from one capture and accepts a teammate invite", async () => {
+    const app = build({ logger: false });
+
+    const health_response = await app.inject({
+      method: "GET",
+      url: "/healthz",
+    });
+    const readiness_response = await app.inject({
+      method: "GET",
+      url: "/readyz",
+    });
+
+    expect(health_response.statusCode).toBe(200);
+    expect(health_response.json()).toMatchObject({
+      status: "ok",
+      service: "demo-composer-api",
+    });
+    expect(readiness_response.statusCode).toBe(200);
+    expect(readiness_response.json()).toMatchObject({
+      status: "ready",
+      checks: {
+        database: "ok",
+      },
+    });
+
+    const setup_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/setup/first-run",
+      payload: {
+        owner: {
+          email: "owner@example.com",
+          password: "safe local password",
+          first_name: "Owner",
+          last_name: "User",
+        },
+        organization: {
+          name: "V1 Smoke Org",
+        },
+      },
+    });
+
+    expect(setup_response.statusCode).toBe(201);
+    const owner_session =
+      setup_response.cookies.find(
+        (cookie) => cookie.name === "demo_composer_session",
+      )?.value ?? "";
+    expect(owner_session).not.toBe("");
+
+    const project_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects",
+      cookies: { demo_composer_session: owner_session },
+      payload: {
+        name: "V1 Dogfood Project",
+        description: "Smoke source project",
+        slug: "v1-dogfood-project",
+      },
+    });
+
+    expect(project_response.statusCode).toBe(201);
+    const project_id = project_response.json().project.id as string;
+
+    const capture_session_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions`,
+      cookies: { demo_composer_session: owner_session },
+      payload: {
+        name: "Create department workflow",
+        description: "Dogfood capture for guides and interactive demos",
+        source_type: "manual",
+        start_url: "https://example.test/departments",
+        browser_name: "Chrome",
+        browser_version: "126",
+        operating_system: "Linux",
+        viewport_width: 1440,
+        viewport_height: 900,
+        device_pixel_ratio: 1,
+      },
+    });
+
+    expect(capture_session_response.statusCode).toBe(201);
+    const capture_session_id = capture_session_response.json().capture_session
+      .id as string;
+
+    const bytes = Buffer.from("fake png bytes for v1 dogfood smoke");
+    const upload_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/upload`,
+      cookies: { demo_composer_session: owner_session },
+      ...multipart_payload([
+        {
+          name: "file",
+          filename: "department-list.png",
+          content_type: "image/png",
+          value: bytes,
+        },
+        { name: "width", value: "1440" },
+        { name: "height", value: "900" },
+        { name: "device_pixel_ratio", value: "1" },
+        { name: "page_url", value: "https://example.test/departments" },
+        { name: "page_title", value: "Department List" },
+      ]),
+    });
+
+    expect(upload_response.statusCode).toBe(201);
+    const capture_asset_id = upload_response.json().capture_asset.id as string;
+
+    const capture_event_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
+      cookies: { demo_composer_session: owner_session },
+      payload: {
+        event_type: "click",
+        event_index: 1,
+        capture_asset_id,
+        occurred_at: "2026-06-16T10:00:00.000Z",
+        page_url: "https://example.test/departments",
+        page_title: "Department List",
+        target_label: "Add Department",
+        target_text: "Add Department",
+        client_x: 1210,
+        client_y: 78,
+        viewport_width: 1440,
+        viewport_height: 900,
+        device_pixel_ratio: 1,
+        metadata: {
+          capture_mode: "dogfood-smoke",
+        },
+      },
+    });
+
+    expect(capture_event_response.statusCode).toBe(201);
+    const capture_event_id = capture_event_response.json().capture_event
+      .id as string;
+
+    const complete_capture_response = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}`,
+      cookies: { demo_composer_session: owner_session },
+      payload: {
+        status: "completed",
+      },
+    });
+
+    expect(complete_capture_response.statusCode).toBe(200);
+    expect(complete_capture_response.json().capture_session).toMatchObject({
+      id: capture_session_id,
+      status: "completed",
+    });
+
+    const guide_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/from-capture-session/${capture_session_id}`,
+      cookies: { demo_composer_session: owner_session },
+      payload: {
+        title: "Department setup guide",
+        selected_capture_event_ids: [capture_event_id],
+      },
+    });
+
+    expect(guide_response.statusCode).toBe(201);
+    const guide_id = guide_response.json().guide.id as string;
+    expect(guide_response.json().guide_blocks).toHaveLength(1);
+    expect(guide_response.json().guide_blocks[0]).toMatchObject({
+      source_capture_event_id: capture_event_id,
+      source_capture_asset_id: capture_asset_id,
+      step: {
+        title: 'Click "Add Department"',
+      },
+    });
+
+    const guide_publish_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/guides/${guide_id}/publish`,
+      cookies: { demo_composer_session: owner_session },
+    });
+
+    expect(guide_publish_response.statusCode).toBe(201);
+    expect(guide_publish_response.json().publish_link).toMatchObject({
+      artifact_type: "guide",
+      artifact_id: guide_id,
+      status: "active",
+      visibility: "public",
+    });
+    const guide_slug = guide_publish_response.json().publish_link
+      .slug as string;
+
+    const public_guide_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${guide_slug}`,
+    });
+
+    expect(public_guide_response.statusCode).toBe(200);
+    expect(
+      public_guide_response.json().published_artifact.snapshot,
+    ).toMatchObject({
+      artifact_type: "guide",
+      guide: {
+        id: guide_id,
+        title: "Department setup guide",
+      },
+      blocks: [
+        {
+          source_asset: {
+            id: capture_asset_id,
+            file_url: `/api/v1/public/publish-links/${guide_slug}/assets/${capture_asset_id}/file`,
+          },
+        },
+      ],
+    });
+    expect(JSON.stringify(public_guide_response.json())).not.toContain(
+      "storage_key",
+    );
+
+    const demo_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/interactive-demos`,
+      cookies: { demo_composer_session: owner_session },
+      payload: {},
+    });
+
+    expect(demo_response.statusCode).toBe(201);
+    const interactive_demo_id = demo_response.json().interactive_demo
+      .id as string;
+    const scene_id = demo_response.json().demo_scenes[0].id as string;
+    expect(demo_response.json().interactive_demo).toMatchObject({
+      id: interactive_demo_id,
+      source_capture_session_id: capture_session_id,
+      title: "Create department workflow",
+    });
+    expect(demo_response.json().demo_scenes).toEqual([
+      expect.objectContaining({
+        id: scene_id,
+        source_capture_event_id: capture_event_id,
+        background_capture_asset_id: capture_asset_id,
+        title: "Click Add Department",
+      }),
+    ]);
+
+    const hotspot_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${scene_id}/hotspots`,
+      cookies: { demo_composer_session: owner_session },
+      payload: {
+        hotspot_type: "info",
+        label: "Add Department",
+        content: "Open the department creation form.",
+        x: 0.75,
+        y: 0.08,
+        width: 0.18,
+        height: 0.1,
+      },
+    });
+
+    expect(hotspot_response.statusCode).toBe(201);
+    expect(hotspot_response.json().demo_hotspot).toMatchObject({
+      demo_scene_id: scene_id,
+      hotspot_type: "info",
+      label: "Add Department",
+    });
+
+    const demo_publish_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/publish`,
+      cookies: { demo_composer_session: owner_session },
+    });
+
+    expect(demo_publish_response.statusCode).toBe(201);
+    expect(demo_publish_response.json().publish_link).toMatchObject({
+      artifact_type: "interactive_demo",
+      artifact_id: interactive_demo_id,
+      status: "active",
+      visibility: "public",
+    });
+    const demo_slug = demo_publish_response.json().publish_link.slug as string;
+
+    const public_demo_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${demo_slug}`,
+    });
+
+    expect(public_demo_response.statusCode).toBe(200);
+    expect(
+      public_demo_response.json().published_artifact.snapshot,
+    ).toMatchObject({
+      artifact_type: "interactive_demo",
+      interactive_demo: {
+        id: interactive_demo_id,
+        title: "Create department workflow",
+      },
+      scenes: [
+        {
+          id: scene_id,
+          background_asset: {
+            id: capture_asset_id,
+            file_url: `/api/v1/public/publish-links/${demo_slug}/assets/${capture_asset_id}/file`,
+          },
+          hotspots: [
+            {
+              hotspot_type: "info",
+              label: "Add Department",
+            },
+          ],
+        },
+      ],
+    });
+    expect(JSON.stringify(public_demo_response.json())).not.toContain(
+      "storage_key",
+    );
+
+    const invite_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/organization/invites",
+      cookies: { demo_composer_session: owner_session },
+      payload: {
+        email: "teammate@example.com",
+        role: "member",
+      },
+    });
+
+    expect(invite_response.statusCode).toBe(201);
+    const invite_token = invite_response.json().invite_token as string;
+    expect(invite_token).not.toBe("");
+
+    const accept_invite_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/public/invites/${invite_token}/accept`,
+      payload: {
+        password: "safe teammate password",
+        display_name: "Teammate User",
+      },
+    });
+
+    expect(accept_invite_response.statusCode).toBe(200);
+    const teammate_session =
+      accept_invite_response.cookies.find(
+        (cookie) => cookie.name === "demo_composer_session",
+      )?.value ?? "";
+    expect(teammate_session).not.toBe("");
+    expect(accept_invite_response.json().auth.org_user.role).toBe("member");
+
+    const teammate_projects_response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects",
+      cookies: { demo_composer_session: teammate_session },
+    });
+
+    expect(teammate_projects_response.statusCode).toBe(200);
+    expect(teammate_projects_response.json().projects).toEqual([
+      expect.objectContaining({
+        id: project_id,
+        name: "V1 Dogfood Project",
+      }),
+    ]);
+
+    await app.close();
+  }, 30_000);
+});
