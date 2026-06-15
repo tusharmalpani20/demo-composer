@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Implemented.
 
 ## Goal
 
@@ -285,3 +285,28 @@ Suggested commits:
 - OpenAPI no longer says ORCA
 - `.env-cmdrc.example` and docs list required config
 - server tests and DB tests pass
+
+## Implementation Notes
+
+Implemented on 2026-06-15.
+
+Added:
+
+- service-level first-run setup guard using deployment-aware onboarding config
+- stable `first_run_setup_unavailable` API error mapping
+- shared runtime mode helper for `NODE_ENV`/`DEV_TYPE`
+- production-safe cookie config with strong secret enforcement
+- env-driven CORS config with explicit production origins and Chrome extension origin support
+- startup config validator used by `index.ts`
+- Demo Composer OpenAPI metadata
+- updated `.env-cmdrc.example`, development setup docs, and production readiness checklist
+
+Verification:
+
+```bash
+rtk pnpm --filter server test
+rtk pnpm --filter server test:db
+rtk pnpm check-types
+rtk pnpm lint
+rtk git diff --check
+```

@@ -38,6 +38,7 @@ TZ
 SERVER_PORT
 COOKIE_SECRET
 COOKIE_DOMAIN
+DEMO_COMPOSER_CORS_ALLOWED_ORIGINS
 DB_HOST
 DB_PORT
 DB_USER
@@ -50,6 +51,14 @@ DEMO_COMPOSER_LOCAL_STORAGE_ROOT
 DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES
 API_URL
 ```
+
+`DEMO_COMPOSER_CORS_ALLOWED_ORIGINS` is required in production and accepts comma-separated browser origins, including Chrome extension origins when needed:
+
+```text
+https://portal.example.com,chrome-extension://<extension-id>
+```
+
+Development and test mode remain permissive for local browser/extension work, but keeping local origins in `.env-cmdrc` makes production parity easier.
 
 Common web variable:
 

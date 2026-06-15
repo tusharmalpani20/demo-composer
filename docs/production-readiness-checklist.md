@@ -10,8 +10,9 @@ Use this before deploying a self-hosted Demo Composer instance.
 - [ ] Set `DEV_TYPE=production`.
 - [ ] Set `TZ`.
 - [ ] Set `SERVER_PORT`.
-- [ ] Set `COOKIE_SECRET` to a strong secret.
+- [ ] Set `COOKIE_SECRET` to a strong secret with at least 20 characters.
 - [ ] Set `COOKIE_DOMAIN` for the deployed portal domain.
+- [ ] Set `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS` to comma-separated allowed browser origins.
 - [ ] Set PostgreSQL variables: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_MAX_POOL`.
 - [ ] Set `DEMO_COMPOSER_DEPLOYMENT_MODE` to `self_hosted` or `hosted`.
 - [ ] Set `DEMO_COMPOSER_ONBOARDING_MODE` to `first_run_setup` or `signup`.
@@ -45,7 +46,8 @@ rtk pnpm build
 
 ## Security And Access
 
-- [ ] Confirm CORS allows the deployed portal origin.
+- [ ] Confirm CORS allows the deployed portal origin and rejects unconfigured browser origins.
+- [ ] If the Chrome extension is used, confirm its `chrome-extension://...` origin is configured in `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS`.
 - [ ] Confirm cookies are secure on HTTPS.
 - [ ] Confirm first-run setup is disabled after owner creation.
 - [ ] Confirm local storage path is not publicly served except through API routes.
