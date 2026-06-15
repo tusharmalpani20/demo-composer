@@ -120,6 +120,19 @@ describe("App", () => {
     expect(window.location.pathname).toBe("/setup");
   });
 
+  it("shows a stable error on private routes when setup status cannot load", async () => {
+    window.history.pushState({}, "", "/projects");
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new Error("network unavailable");
+    }));
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Setup status unavailable" })).toBeInTheDocument();
+    expect(screen.getByText("Could not load instance setup status.")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/projects");
+  });
+
   it("renders project workspace routes", async () => {
     window.history.pushState({}, "", "/projects/project_1");
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
