@@ -34,7 +34,6 @@ Missing:
 - invite creation API
 - invite acceptance API
 - member list UI
-- role management UI
 - project-level permissions
 - hosted signup flow
 
@@ -42,7 +41,13 @@ Missing:
 
 Database:
 
-Create:
+Create migration:
+
+```text
+014_org_member_invites.sql
+```
+
+Create table:
 
 ```text
 organization_schema.org_invite
@@ -66,6 +71,15 @@ created_at
 updated_at
 ```
 
+Constraints and indexes:
+
+- `role` is constrained to `owner | member`
+- `status` is constrained to `pending | accepted | revoked | expired`
+- `token_hash` is unique and never returned by API responses
+- active duplicate invites for the same organization/email should be blocked with a validation error
+- email comparison should use normalized lowercase email
+- foreign keys should reference `organization_schema.organization`, `organization_schema.org_user`, and `user_schema.user`
+
 Backend APIs:
 
 Authenticated owner routes:
@@ -84,6 +98,15 @@ GET /api/v1/public/invites/:token
 POST /api/v1/public/invites/:token/accept
 ```
 
+Implementation details:
+
+- generate invite tokens with crypto-safe random bytes
+- store only a SHA-256 token hash, not the plaintext token
+- return the plaintext invite URL only from the create-invite response
+- use the existing password hashing helper used by setup/auth
+- use the existing auth session cookie helper after successful acceptance
+- all authenticated organization routes should derive organization/user from the current session cookie, not request body
+
 Portal:
 
 - organization settings or simple members page
@@ -92,6 +115,8 @@ Portal:
 - show pending invites
 - revoke pending invite
 - accept invite page
+- add route parsing for `/organization/members` and `/invites/:token`
+- add navigation entry only if it fits the existing portal shell; otherwise make the page directly routable for this slice
 
 Acceptance UX:
 
@@ -99,6 +124,7 @@ Acceptance UX:
 - if invite recipient does not have a user account, allow setting a password during invite acceptance
 - after acceptance, create a normal authenticated portal session and send the user to `/projects`
 - do not add general public signup in this slice
+- public lookup should tell the UI whether login is required for the invite email without exposing broader account enumeration
 
 ## Role Model
 
@@ -108,6 +134,8 @@ For v1:
 - `member`: can create/edit projects, captures, guides, demos, and publish artifacts
 
 Keep project-level role permissions out of scope unless a concrete need appears.
+
+Do not add owner/member enforcement to project/capture/guide/demo operations in this slice. Existing org-scoped access remains unchanged for members.
 
 ## Auth Rules
 
@@ -119,6 +147,8 @@ Keep project-level role permissions out of scope unless a concrete need appears.
 - do not email invites in this first slice unless mail config exists; return/copy invite link in UI
 - token must be shown only once at invite creation time
 - public invite lookup must not reveal whether unrelated emails already have accounts
+- revoked invites should keep their row for traceability and set `status = revoked`
+- expired invites may be marked `expired` lazily when looked up or accepted
 
 ## Tests
 
@@ -135,6 +165,7 @@ Backend tests:
 - accepting expired/revoked/accepted invite fails
 - duplicate active invite is handled predictably
 - invite lookup response does not expose token hash or account existence
+- app composition wires the organization invite routes with the real repository/service
 
 Web tests:
 
@@ -144,6 +175,7 @@ Web tests:
 - accept invite page handles valid/invalid/expired tokens
 - accept invite page supports new-user password setup
 - accept invite page handles existing-user login requirement
+- routes are parsed for members and invite acceptance pages
 
 ## Acceptance Criteria
 
@@ -153,6 +185,7 @@ Web tests:
 - new member can log in and access org projects
 - invite tokens are not stored in plaintext
 - inviting people does not require SMTP to be configured
+- owner/member roles are stored on `org_user`, but role editing is deferred
 
 ## Out Of Scope
 
