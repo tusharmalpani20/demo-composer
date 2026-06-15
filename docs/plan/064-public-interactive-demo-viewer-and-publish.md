@@ -42,6 +42,15 @@ Missing:
 - authenticated publish controls for demos
 - demo asset access through publish snapshot
 
+## Dependencies
+
+This plan depends on:
+
+- plan 062 for a portal demo editor surface
+- plan 063 for hotspot data if the first public viewer must be interactive
+
+If plan 063 has not landed, this plan should be reduced to a linear slideshow publish/viewer and explicitly defer hotspots. The preferred v1 path is to implement plan 063 first.
+
 ## Scope
 
 Backend:
@@ -53,6 +62,7 @@ Backend:
   - scene background screenshot assets
   - hotspots
   - target scene references
+- include a snapshot schema version for future migration
 - ensure published demo assets are only readable if referenced by accessible active snapshot
 - reuse publish link access controls:
   - public/restricted
@@ -61,6 +71,7 @@ Backend:
   - revoke
 - add authenticated demo publish status and publish/republish endpoints
 - add public demo resolve endpoint
+- add public asset authorization for interactive demo snapshots without weakening guide asset checks
 
 Recommended routes:
 
@@ -95,6 +106,7 @@ Viewer behavior:
 - render current scene screenshot
 - render hotspots
 - clicking hotspot moves to target scene
+- clicking an info hotspot opens inline content without changing scene
 - support next/back navigation for linear fallback
 - show scene title/description
 - handle missing/revoked/restricted/expired/password-required states
@@ -106,21 +118,27 @@ Viewer behavior:
 - draft edits do not change public output until republished
 - snapshot stores enough scene/hotspot/image reference data to render without querying mutable draft tables
 - public asset reads are constrained to snapshot-referenced files
+- snapshot includes only non-deleted scenes and hotspots
+- snapshot should fail validation if it has no scenes
+- target scene IDs in hotspots should be rewritten or validated against snapshot scene IDs
 
 ## Tests
 
 Backend tests:
 
 - snapshot generation includes scenes/hotspots/assets
+- snapshot generation rejects demos with no scenes
 - publish/republish creates immutable snapshots
 - public resolver returns accessible snapshots
 - revoked/restricted/expired/password-protected links behave like guide links
 - public asset reads are denied when asset is not in snapshot
+- guide public asset authorization remains unchanged
 
 Web tests:
 
 - demo viewer renders first scene and hotspots
 - hotspot click navigates to target scene
+- info hotspot content renders without navigation
 - next/back navigation works
 - password gate works
 - embed mode renders compact chrome-free layout
@@ -134,6 +152,7 @@ Web tests:
 - demo snapshots are immutable
 - password/expiry/revoke behavior matches guide publishing semantics
 - embed route exists
+- publishing does not expose draft-only or unrelated project assets
 
 ## Out Of Scope
 

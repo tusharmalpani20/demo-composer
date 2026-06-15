@@ -36,6 +36,7 @@ Missing:
 - member list UI
 - role management UI
 - project-level permissions
+- hosted signup flow
 
 ## Scope
 
@@ -92,6 +93,13 @@ Portal:
 - revoke pending invite
 - accept invite page
 
+Acceptance UX:
+
+- if invite recipient already has a user account, require login before accepting
+- if invite recipient does not have a user account, allow setting a password during invite acceptance
+- after acceptance, create a normal authenticated portal session and send the user to `/projects`
+- do not add general public signup in this slice
+
 ## Role Model
 
 For v1:
@@ -109,6 +117,8 @@ Keep project-level role permissions out of scope unless a concrete need appears.
 - accepting an invite creates or links a user and creates `org_user`
 - if a logged-in user accepts an invite for a different email, require careful validation or reject for v1
 - do not email invites in this first slice unless mail config exists; return/copy invite link in UI
+- token must be shown only once at invite creation time
+- public invite lookup must not reveal whether unrelated emails already have accounts
 
 ## Tests
 
@@ -120,8 +130,11 @@ Backend tests:
 - invite token is hashed at rest
 - public invite lookup returns safe invite metadata
 - accepting invite creates org_user
+- accepting invite for a new user creates user with password hash
+- accepting invite for an existing user requires the correct logged-in user
 - accepting expired/revoked/accepted invite fails
 - duplicate active invite is handled predictably
+- invite lookup response does not expose token hash or account existence
 
 Web tests:
 
@@ -129,6 +142,8 @@ Web tests:
 - owner can create invite and copy link
 - owner can revoke invite
 - accept invite page handles valid/invalid/expired tokens
+- accept invite page supports new-user password setup
+- accept invite page handles existing-user login requirement
 
 ## Acceptance Criteria
 
@@ -137,6 +152,7 @@ Web tests:
 - invited person can accept and become an org member
 - new member can log in and access org projects
 - invite tokens are not stored in plaintext
+- inviting people does not require SMTP to be configured
 
 ## Out Of Scope
 
@@ -146,3 +162,4 @@ Web tests:
 - billing seats
 - audit logs beyond basic timestamps
 - fine-grained permissions
+- open public signup

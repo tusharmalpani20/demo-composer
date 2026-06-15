@@ -47,7 +47,8 @@ Deferred in `docs/plan/058-extension-automatic-event-capture-roadmap.md`:
 Build the smallest reliable automatic capture path:
 
 - add a background/service-worker owned active capture controller
-- add a content script that only activates when capture is active
+- update the Manifest V3 extension shape with the minimum needed background service worker and content script registration
+- add a content script that only records when the active capture state says capture is running
 - listen for safe user click events
 - collect safe target metadata:
   - tag name
@@ -63,6 +64,21 @@ Build the smallest reliable automatic capture path:
 - preserve manual screenshot capture as a fallback button
 - add pause/resume capture state
 - clearly show active/paused/error state in the popup
+
+## Manifest And Permission Changes
+
+The extension currently has only popup-oriented permissions. Automatic click capture needs a deliberate MV3 expansion.
+
+Recommended first version:
+
+- add a background service worker for capture orchestration
+- add a content script for `http://*/*` and `https://*/*`
+- add host permissions only for web pages where capture can run
+- keep `activeTab`, `tabs`, and `storage`
+- do not add `scripting` unless runtime injection is chosen deliberately
+- do not request broad permissions for browser-restricted pages
+
+If broad host permissions feel too aggressive for the first public extension build, use an explicit "Enable automatic capture on this site" step and document the tradeoff. Do not silently capture pages outside the selected active capture session.
 
 ## Recommended Event Model
 
@@ -97,16 +113,16 @@ Do not create separate screenshot-only and click-only events for the same user a
 
 ## Backend Impact
 
-Likely no schema migration is required if existing capture event metadata fields can represent:
+No schema migration should be needed for the first implementation because the current capture event schema already allows:
 
-- click event type
+- `event_type = "click"`
 - element text/role/selector
-- bounding box JSON
+- client coordinates, viewport dimensions, and metadata JSON
 - screenshot asset reference
 - URL/title
 - redacted input flags
 
-Before implementation, confirm existing capture event schema and service allow `click` event creation from extension clients. If not, expand the capture event module with a small migration and DB tests.
+Before implementation, confirm the route/service accepts all needed click payload fields from extension clients and that guide generation gives click events useful titles. If a missing field is discovered, expand the capture event module with a small migration and DB tests.
 
 ## Frontend/Extension Impact
 
@@ -116,6 +132,7 @@ Extension pieces:
 - background/service-worker message handling
 - capture state storage helpers
 - content script click listener
+- tab lifecycle handling for navigation, refresh, and inaccessible pages
 - screenshot upload orchestration
 - event creation orchestration
 - popup controls for automatic mode, pause, resume, manual fallback, finish
@@ -136,10 +153,12 @@ Add or update extension tests for:
 - failed upload keeps capture active and reports an error
 - pause stops automatic event capture
 - manual screenshot capture still works
+- content script ignores non-primary/synthetic clicks where appropriate
+- capture gracefully skips `chrome://`, extension pages, local files, and other inaccessible pages
 
 Add or update server tests only if event schema/service needs changes.
 
-Add or update web tests if capture session detail or guide generation display changes.
+Add or update web/server tests for guide generation if click events need better generated titles than the existing screenshot-backed capture fallback.
 
 ## Acceptance Criteria
 
@@ -151,6 +170,7 @@ Add or update web tests if capture session detail or guide generation display ch
 - sensitive input values remain redacted
 - unsupported pages fail gracefully
 - finishing capture still opens the portal capture session detail page
+- automatic mode does not duplicate one click into multiple ordered events
 
 ## Out Of Scope
 
@@ -162,3 +182,4 @@ Add or update web tests if capture session detail or guide generation display ch
 - desktop app capture
 - advanced selector healing
 - analytics
+- Chrome Web Store submission

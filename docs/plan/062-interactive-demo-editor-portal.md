@@ -39,6 +39,20 @@ Missing:
 - scene screenshot rendering
 - scene reorder/delete UI
 
+## Dependency On Plan 061
+
+This plan can land before or after `061-create-interactive-demo-from-capture`.
+
+If it lands before plan 061:
+
+- create/list/edit manually-created demo drafts through existing interactive demo APIs
+- show an empty-state action that links users back to capture sessions
+- do not show a non-working "create from capture" button
+
+If it lands after plan 061:
+
+- wire the capture-session "Create interactive demo" action directly to this editor route
+
 ## Scope
 
 Routes:
@@ -50,10 +64,12 @@ Routes:
 
 API client helpers:
 
+- create interactive demo metadata manually when useful for testability and empty state flows
 - list interactive demos
 - get interactive demo
 - update interactive demo
 - archive interactive demo
+- create scene manually only if the backend route already supports it safely for UI use
 - list scenes
 - update scene
 - reorder scenes
@@ -76,9 +92,11 @@ Demo editor page:
 - edit demo title/description/status
 - render ordered scene list
 - render scene screenshot background using existing asset URL helpers
+- handle scenes without a background screenshot with a stable placeholder
 - edit scene title/description
 - reorder scenes up/down
 - delete scene
+- show empty state when a demo has no scenes
 - show source capture metadata when present
 - link back to source capture session when available
 
@@ -114,6 +132,7 @@ Page tests:
 - editor updates scene text
 - editor reorders scenes
 - editor deletes scenes
+- editor handles no-scene and no-screenshot states
 - auth failures route to login or show existing portal error pattern
 
 ## Acceptance Criteria
@@ -125,6 +144,7 @@ Page tests:
 - user can edit scene text
 - user can reorder and delete scenes
 - user can navigate between project workspace, capture source, demo list, and editor
+- empty and missing-screenshot states are clear and do not break layout
 
 ## Out Of Scope
 

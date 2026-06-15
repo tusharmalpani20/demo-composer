@@ -33,20 +33,24 @@ Still needed:
 - storage cleanup/retention guidance
 - stronger public/auth abuse protections
 - basic operational logging guidance
+- dependency/security audit guidance
 
 ## Scope
 
 Backend runtime:
 
 - add `/api/v1/health` or `/healthz` endpoint
+- separate liveness from readiness if the readiness check touches the database
 - add startup config validation for production-critical environment variables
 - add rate limits for:
   - login
   - first-run setup
   - public password verification
+  - invite acceptance if plan 065 has landed
   - public guide/demo resolution if needed
 - review multipart upload limits and enforce configured size consistently
 - ensure error responses do not leak internals
+- set and document request body limits for JSON routes
 
 Storage/operations:
 
@@ -55,6 +59,8 @@ Storage/operations:
 - document migration workflow for upgrades
 - document reverse proxy headers and HTTPS assumptions
 - document extension CORS origin setup
+- document how to rotate `COOKIE_SECRET` and expected session impact
+- document how to rotate extension/session tokens by logging out sessions
 
 Security:
 
@@ -62,6 +68,7 @@ Security:
 - confirm bearer extension token behavior is documented
 - confirm public asset access is snapshot-scoped
 - add basic brute-force protection tests where rate limiting is introduced
+- add `pnpm audit` or documented dependency review guidance, even if not mandatory in CI yet
 
 Testing/CI:
 
@@ -77,7 +84,8 @@ Testing/CI:
 3. Add rate limiting plugin/config and focused route tests.
 4. Update production readiness docs.
 5. Add backup/restore docs.
-6. Re-run full verification.
+6. Add dependency/security review docs or CI step if stable.
+7. Re-run full verification.
 
 ## Acceptance Criteria
 
@@ -87,6 +95,7 @@ Testing/CI:
 - docs explain backup and restore for DB plus local storage
 - production checklist covers the new hardening items
 - full test/type/lint/build suite passes
+- hardening does not require one-command self-host packaging
 
 ## Out Of Scope
 

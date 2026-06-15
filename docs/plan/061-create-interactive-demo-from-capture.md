@@ -67,8 +67,20 @@ Portal:
 
 - add "Create interactive demo" action on capture session detail
 - disable action when no screenshot-backed capture events exist
-- after creation, navigate to the new interactive demo editor route from plan 062
-- if plan 062 is not implemented yet, navigate to a temporary demo detail/read page or project demo list once available
+- if plan 062 has already landed, navigate to the new interactive demo editor route
+- if plan 062 has not landed, include the route parser/API client helpers needed for the redirect before exposing the button
+
+## Sequencing Note
+
+This plan can be implemented before plan 062 only if it includes a minimal route-safe destination. The preferred implementation order is:
+
+```text
+061 backend conversion endpoint
+  -> 062 demo list/editor route
+  -> 061 portal button enabled
+```
+
+Do not ship a portal button that redirects to a route the portal cannot parse.
 
 ## Recommended API Response
 
@@ -88,6 +100,9 @@ Portal:
 - events without screenshot assets are skipped in this first slice
 - creating multiple demos from one capture session is allowed
 - generated demo remains editable independently from the capture session
+- demo scene source references must point to rows in the same organization/project/capture session
+- generated scene background assets must be screenshot capture assets
+- conversion should be transactional: either the demo and all generated scenes are created, or none are
 
 ## Tests
 
@@ -98,6 +113,8 @@ Backend service tests:
 - rejects missing/deleted capture session
 - rejects capture session from another project/org
 - rejects capture session with no usable screenshot-backed events
+- rolls back demo creation if scene generation fails
+- validates source capture assets belong to the same capture session
 
 Backend route tests:
 
@@ -116,6 +133,7 @@ Web tests:
 - capture session detail shows create demo action
 - action handles loading/success/failure states
 - action navigates to the resulting demo route
+- action is hidden or disabled until the portal has a valid demo destination route
 
 ## Acceptance Criteria
 
@@ -124,6 +142,7 @@ Web tests:
 - no capture source rows are mutated
 - user can reach the created demo from the portal
 - conversion is covered by service, route, DB, and portal tests
+- no partially-created demo remains after conversion failure
 
 ## Out Of Scope
 

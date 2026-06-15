@@ -90,6 +90,7 @@ Portal editor:
 - move/resize hotspot with simple controls if drag handles are too large for first slice
 - delete hotspot
 - keep coordinates normalized relative to displayed screenshot
+- expose a scene-level hotspot read model that plan 064 can snapshot without querying multiple draft tables directly from public routes
 
 ## Domain Rules
 
@@ -99,6 +100,9 @@ Portal editor:
 - `info` hotspots can have content without a target scene
 - `click` or `next` hotspots should have a target scene unless the public viewer defaults to next ordered scene
 - deleting a scene should soft-delete or invalidate its hotspots through query scoping
+- hotspots are draft data until plan 064 snapshots them into published demos
+- hotspot order is stable per scene
+- overlapping hotspots are allowed for v1 unless testing shows bad UX
 
 ## Tests
 
@@ -114,6 +118,7 @@ Service/repository tests:
 - validate scene/demo/project ownership
 - validate target scene ownership
 - reject invalid empty order/duplicate order
+- returns hotspots in stable scene order for read models
 
 Route tests:
 
@@ -127,6 +132,7 @@ Web tests:
 - edits label/content/type/target
 - deletes hotspot
 - rejects invalid local coordinates before submit when possible
+- maintains hotspot overlay position when screenshot display size changes
 
 ## Acceptance Criteria
 
@@ -135,6 +141,7 @@ Web tests:
 - hotspots can point to another scene
 - hotspot data is org/project/demo scoped
 - normalized coordinates survive responsive rendering
+- the demo editor can fetch scenes with their hotspots for later preview/publish work
 
 ## Out Of Scope
 
@@ -144,3 +151,4 @@ Web tests:
 - branching map visualization
 - auto-generated hotspots
 - HTML element replay
+- keyboard-only hotspot drawing polish
