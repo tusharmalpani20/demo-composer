@@ -9,7 +9,7 @@ describe("web vite config", () => {
       server: {
         proxy: {
           "/api": {
-            target: "http://localhost:4021",
+            target: "http://localhost:3002",
           },
         },
       },
