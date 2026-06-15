@@ -177,6 +177,7 @@ Add or update web/server tests for guide generation if click events need better 
 - Added Manifest V3 background service worker and content script entries.
 - Added Vite extension build entries so the manifest points to generated JavaScript files under `assets/`.
 - Added safe click metadata extraction in `apps/extension/src/lib/content-click-capture.ts`.
+- Added a content-script storage gate so click metadata is only sent when automatic capture is active and unpaused.
 - Added background-owned automatic screenshot upload and linked `click` event creation in `apps/extension/src/lib/automatic-capture.ts`.
 - Added local active capture mode and pause state storage.
 - Updated the popup to start captures in automatic mode, show pause/resume controls, and keep manual screenshot capture as a fallback.

@@ -1,9 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildClickCaptureMessage,
+  type ClickCaptureState,
+  installClickCaptureListener,
   shouldCaptureClick,
   truncateSafeText,
 } from "./content-click-capture";
+
+const active_settings: ClickCaptureState = {
+  instanceUrl: "https://demo.example.com",
+  sessionToken: "extension-session-token",
+  activeCaptureSessionId: "capture_session_1",
+  activeCaptureProjectId: "project_1",
+  activeCaptureMode: "automatic",
+  activeCapturePaused: false,
+};
 
 describe("content click capture", () => {
   beforeEach(() => {
@@ -104,5 +115,54 @@ describe("content click capture", () => {
 
   it("truncates long visible text", () => {
     expect(truncateSafeText("a".repeat(200))).toHaveLength(120);
+  });
+
+  it("sends click messages only when automatic capture is active and unpaused", async () => {
+    const addEventListener = vi.spyOn(document, "addEventListener");
+    const clickListeners: Array<(event: MouseEvent) => void> = [];
+    addEventListener.mockImplementation((type, listener) => {
+      if (type === "click" && typeof listener === "function") {
+        clickListeners.push(listener as (event: MouseEvent) => void);
+      }
+    });
+    const button = document.createElement("button");
+    button.textContent = "Add Department";
+    document.body.appendChild(button);
+    const event = {
+      button: 0,
+      clientX: 240,
+      clientY: 80,
+      isTrusted: true,
+      target: button,
+    } as unknown as MouseEvent;
+    const sendMessage = vi.fn();
+    const getCaptureState = vi
+      .fn<() => Promise<ClickCaptureState>>()
+      .mockResolvedValueOnce({
+        ...active_settings,
+        activeCaptureMode: null,
+      })
+      .mockResolvedValueOnce({
+        ...active_settings,
+        activeCapturePaused: true,
+      })
+      .mockResolvedValueOnce(active_settings);
+
+    installClickCaptureListener(sendMessage, getCaptureState);
+    const listener = clickListeners[0];
+    expect(listener).toBeDefined();
+
+    listener?.(event);
+    await Promise.resolve();
+    listener?.(event);
+    await Promise.resolve();
+    listener?.(event);
+    await Promise.resolve();
+
+    expect(getCaptureState).toHaveBeenCalledTimes(3);
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      type: "demo_composer:page_click",
+    }));
   });
 });

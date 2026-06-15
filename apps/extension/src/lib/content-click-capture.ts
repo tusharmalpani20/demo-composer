@@ -23,12 +23,82 @@ export type PageClickCaptureMessage = {
   payload: PageClickCapturePayload;
 };
 
+export type ClickCaptureState = {
+  instanceUrl: string | null;
+  sessionToken: string | null;
+  activeCaptureSessionId: string | null;
+  activeCaptureProjectId: string | null;
+  activeCaptureMode: "manual" | "automatic" | null;
+  activeCapturePaused: boolean;
+};
+
 const sensitive_field_selector = [
   "input",
   "textarea",
   "select",
   "[contenteditable]",
 ].join(",");
+
+const state_keys = {
+  instanceUrl: "instanceUrl",
+  sessionToken: "sessionToken",
+  activeCaptureSessionId: "activeCaptureSessionId",
+  activeCaptureProjectId: "activeCaptureProjectId",
+  activeCaptureMode: "activeCaptureMode",
+  activeCapturePaused: "activeCapturePaused",
+} as const;
+
+type StorageArea = {
+  get: (keys?: string[]) => Promise<Record<string, unknown>>;
+};
+
+const stringOrNull = (value: unknown) => (
+  typeof value === "string" && value.trim() ? value : null
+);
+
+const activeCaptureModeOrNull = (value: unknown) => (
+  value === "manual" || value === "automatic" ? value : null
+);
+
+const booleanOrFalse = (value: unknown) => value === true;
+
+const chromeLocalStorage = (): StorageArea => (
+  (globalThis as {
+    chrome?: {
+      storage?: {
+        local?: StorageArea;
+      };
+    };
+  }).chrome?.storage?.local ?? {
+    get: async () => ({}),
+  }
+);
+
+const getClickCaptureState = async (
+  storage: StorageArea = chromeLocalStorage()
+): Promise<ClickCaptureState> => {
+  const stored = await storage.get(Object.values(state_keys));
+
+  return {
+    instanceUrl: stringOrNull(stored[state_keys.instanceUrl]),
+    sessionToken: stringOrNull(stored[state_keys.sessionToken]),
+    activeCaptureSessionId: stringOrNull(stored[state_keys.activeCaptureSessionId]),
+    activeCaptureProjectId: stringOrNull(stored[state_keys.activeCaptureProjectId]),
+    activeCaptureMode: activeCaptureModeOrNull(stored[state_keys.activeCaptureMode]),
+    activeCapturePaused: booleanOrFalse(stored[state_keys.activeCapturePaused]),
+  };
+};
+
+const isAutomaticClickCaptureActive = (settings: ClickCaptureState) => (
+  Boolean(
+    settings.instanceUrl
+    && settings.sessionToken
+    && settings.activeCaptureProjectId
+    && settings.activeCaptureSessionId
+    && settings.activeCaptureMode === "automatic"
+    && !settings.activeCapturePaused
+  )
+);
 
 const cssEscape = (value: string) => (
   typeof CSS !== "undefined" && typeof CSS.escape === "function"
@@ -157,13 +227,26 @@ export const installClickCaptureListener = (
         };
       };
     }).chrome?.runtime?.sendMessage?.(message);
-  }
+  },
+  getCaptureState: () => Promise<ClickCaptureState> = getClickCaptureState
 ) => {
   const handleClick = (event: MouseEvent) => {
-    const message = buildClickCaptureMessage(event);
-    if (message) {
-      sendMessage(message);
+    if (!shouldCaptureClick(event)) {
+      return;
     }
+
+    void getCaptureState()
+      .then((settings) => {
+        if (!isAutomaticClickCaptureActive(settings)) {
+          return;
+        }
+
+        const message = buildClickCaptureMessage(event);
+        if (message) {
+          sendMessage(message);
+        }
+      })
+      .catch(() => {});
   };
 
   document.addEventListener("click", handleClick, true);

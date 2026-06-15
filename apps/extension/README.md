@@ -125,7 +125,7 @@ The new session starts in automatic click capture mode. Automatic mode can be pa
 
 ## Automatic Click Capture
 
-The content script listens for trusted primary click events on `http://` and `https://` pages. It skips form fields, text areas, selects, and editable content. For supported clicks it sends safe metadata to the background service worker:
+The content script listens for trusted primary click events on `http://` and `https://` pages. It first checks local extension storage to confirm automatic capture is active and unpaused. It skips form fields, text areas, selects, and editable content. For supported active-capture clicks it sends safe metadata to the background service worker:
 
 - page URL/title
 - safe trimmed target text
@@ -137,7 +137,7 @@ The content script listens for trusted primary click events on `http://` and `ht
 - device pixel ratio
 - target bounding box
 
-The background service worker checks local active capture state before doing any work. If automatic capture is active and not paused, it captures the visible tab, uploads the screenshot asset, creates a linked `click` event, then advances the local event index. A simple in-flight guard prevents duplicate ordered events while a previous automatic click capture is still being processed.
+The background service worker checks local active capture state again before doing any upload work. If automatic capture is active and not paused, it captures the visible tab, uploads the screenshot asset, creates a linked `click` event, then advances the local event index. A simple in-flight guard prevents duplicate ordered events while a previous automatic click capture is still being processed.
 
 The extension never stores raw input values or page HTML. It sends `input_value_redacted: true` for automatic click events.
 
