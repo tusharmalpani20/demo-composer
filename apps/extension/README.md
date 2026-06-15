@@ -4,16 +4,18 @@ Chrome extension popup for connecting a browser to a hosted or self-hosted Demo 
 
 ## Product Positioning
 
-This extension is currently an alpha manual screenshot capture tool. It is not a Scribe-style automatic recorder yet.
+This extension is currently an alpha automatic click capture tool with manual screenshot capture as a fallback.
 
 The current workflow is:
 
 ```text
 start capture
-  -> click Capture screenshot once per step-worthy moment
+  -> click through the target browser workflow
+  -> extension records one screenshot-backed click event per supported click
+  -> optionally click Capture screenshot for pages where automatic capture is unavailable
   -> finish capture
   -> open the capture session in the portal
-  -> create/edit a guide from the ordered screenshots
+  -> create/edit a guide from the ordered screenshots and click metadata
 ```
 
 ## Current Scope
@@ -27,8 +29,12 @@ This app currently supports:
 - listing accessible projects
 - selecting the project that future captures should use
 - starting a capture session for the selected project
-- storing the active capture session id locally
+- storing active capture session id, capture mode, pause state, and local event index
 - restoring active capture state when the popup is reopened
+- automatically recording safe click metadata from http/https pages while automatic capture is active
+- uploading a visible-tab screenshot for each supported click
+- recording a linked `click` event after each successful automatic screenshot upload
+- pausing and resuming automatic click capture
 - capturing the visible active tab as a PNG screenshot
 - uploading that screenshot to the active capture session with safe tab metadata
 - recording a linked `capture` event after each successful screenshot upload
@@ -37,7 +43,7 @@ This app currently supports:
 - opening the active capture session in the portal without finishing it
 - discarding local active capture state if needed
 
-It does not capture DOM, clicks, inputs, navigation events, full-page stitched screenshots, or HTML snapshots yet.
+It does not capture raw DOM HTML, input values, navigation events, full-page stitched screenshots, or HTML snapshots yet.
 Discarding local active capture state does not cancel or complete the backend capture session. Use `Finish capture` to complete the backend capture session.
 
 ## Development
@@ -113,9 +119,29 @@ Authorization: Bearer <session_token>
 x-demo-composer-client: extension
 ```
 
-The extension sends `source_type: "extension"` and safe current-tab metadata when available. Current-tab metadata is limited to the active tab URL/title and only stores `http://` or `https://` URLs. The extension does not inject scripts or inspect page DOM for this slice.
+The extension sends `source_type: "extension"` and safe current-tab metadata when available. Current-tab metadata is limited to the active tab URL/title and only stores `http://` or `https://` URLs.
 
-## Screenshot Upload
+The new session starts in automatic click capture mode. Automatic mode can be paused and resumed from the popup. The manual `Capture screenshot` button remains available while automatic capture is active.
+
+## Automatic Click Capture
+
+The content script listens for trusted primary click events on `http://` and `https://` pages. It skips form fields, text areas, selects, and editable content. For supported clicks it sends safe metadata to the background service worker:
+
+- page URL/title
+- safe trimmed target text
+- explicit or inferred role
+- `data-testid`/`data-test-id` when present
+- best-effort selector
+- click coordinates
+- viewport dimensions
+- device pixel ratio
+- target bounding box
+
+The background service worker checks local active capture state before doing any work. If automatic capture is active and not paused, it captures the visible tab, uploads the screenshot asset, creates a linked `click` event, then advances the local event index. A simple in-flight guard prevents duplicate ordered events while a previous automatic click capture is still being processed.
+
+The extension never stores raw input values or page HTML. It sends `input_value_redacted: true` for automatic click events.
+
+## Manual Screenshot Upload
 
 When an active capture session exists, the popup can capture the visible active tab:
 
@@ -153,7 +179,7 @@ x-demo-composer-client: extension
 
 The event uses `event_type: "capture"`, links to the uploaded screenshot asset, and uses the next locally stored event index for the active capture session. The extension sends `input_value_redacted: true` and does not send raw input fields. Screenshot pixel dimensions remain on the asset record; the event does not pretend those pixels are CSS viewport dimensions.
 
-Each screenshot creates one ordered capture event. In the current MVP, treat one screenshot as the source for one guide step.
+Each manual screenshot creates one ordered capture event. In the current MVP, treat one automatic click or one manual screenshot as the source for one guide step.
 
 ## Open Active Capture
 
@@ -189,13 +215,6 @@ The extension currently requests:
 - `storage` for instance, session, selected project, and active capture state
 - `tabs` for active tab URL/title metadata and opening the portal capture detail page after finishing
 - `activeTab` for visible tab screenshot capture
+- `host_permissions` for `http://*/*` and `https://*/*` so the content script can observe supported page clicks
 
-It does not request broad host permissions, `scripting`, or content scripts yet.
-
-## Automatic Capture Roadmap
-
-Automatic click/DOM event capture is intentionally deferred. The follow-up plan is tracked in:
-
-```text
-docs/plan/058-extension-automatic-event-capture-roadmap.md
-```
+It does not request `scripting` and does not run on browser-restricted pages such as `chrome://` URLs.

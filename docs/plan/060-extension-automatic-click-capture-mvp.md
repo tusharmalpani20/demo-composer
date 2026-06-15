@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Implemented.
 
 ## Goal
 
@@ -162,15 +162,25 @@ Add or update web/server tests for guide generation if click events need better 
 
 ## Acceptance Criteria
 
-- user can start automatic capture from extension
-- popup does not need to remain open for click capture to continue
-- user clicks create ordered screenshot-backed capture events
-- manual screenshot button still works
-- pause/resume works
-- sensitive input values remain redacted
-- unsupported pages fail gracefully
-- finishing capture still opens the portal capture session detail page
-- automatic mode does not duplicate one click into multiple ordered events
+- [x] user can start automatic capture from extension
+- [x] popup does not need to remain open for click capture to continue
+- [x] user clicks create ordered screenshot-backed capture events
+- [x] manual screenshot button still works
+- [x] pause/resume works
+- [x] sensitive input values remain redacted
+- [x] unsupported pages fail gracefully through http/https-only content script matching and inactive-state no-ops
+- [x] finishing capture still opens the portal capture session detail page
+- [x] automatic mode does not duplicate one click into multiple ordered events
+
+## Implementation Notes
+
+- Added Manifest V3 background service worker and content script entries.
+- Added Vite extension build entries so the manifest points to generated JavaScript files under `assets/`.
+- Added safe click metadata extraction in `apps/extension/src/lib/content-click-capture.ts`.
+- Added background-owned automatic screenshot upload and linked `click` event creation in `apps/extension/src/lib/automatic-capture.ts`.
+- Added local active capture mode and pause state storage.
+- Updated the popup to start captures in automatic mode, show pause/resume controls, and keep manual screenshot capture as a fallback.
+- Updated extension docs to describe the automatic capture MVP and permissions.
 
 ## Out Of Scope
 
