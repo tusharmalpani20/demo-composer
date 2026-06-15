@@ -128,6 +128,7 @@ describe("foundation schema migrations on postgres", () => {
     await expect(schema_exists("capture_schema")).resolves.toBe(true);
     await expect(schema_exists("file_schema")).resolves.toBe(true);
     await expect(schema_exists("guide_schema")).resolves.toBe(true);
+    await expect(schema_exists("interactive_demo_schema")).resolves.toBe(true);
     await expect(schema_exists("publish_schema")).resolves.toBe(true);
 
     await expect(table_exists("user_schema", "user")).resolves.toBe(true);
@@ -142,6 +143,8 @@ describe("foundation schema migrations on postgres", () => {
     await expect(table_exists("guide_schema", "guide")).resolves.toBe(true);
     await expect(table_exists("guide_schema", "guide_block")).resolves.toBe(true);
     await expect(table_exists("guide_schema", "guide_step")).resolves.toBe(true);
+    await expect(table_exists("interactive_demo_schema", "interactive_demo")).resolves.toBe(true);
+    await expect(table_exists("interactive_demo_schema", "demo_scene")).resolves.toBe(true);
     await expect(table_exists("publish_schema", "published_artifact")).resolves.toBe(true);
     await expect(table_exists("publish_schema", "publish_link")).resolves.toBe(true);
     await expect(table_exists("publish_schema", "public_publish_viewer_session")).resolves.toBe(true);
@@ -320,6 +323,46 @@ describe("foundation schema migrations on postgres", () => {
     await expect(index_exists("guide_schema", "idx_guide_step_block_active")).resolves.toBe(true);
     await expect(index_exists("guide_schema", "uq_guide_step_block_active")).resolves.toBe(true);
     await expect(table_comment("guide_schema", "guide")).resolves.toMatch(/editable guide artifact/i);
+  });
+
+  it("creates interactive demo artifact schema separately from guides", async () => {
+    for (const column_name of [
+      "organization_id",
+      "project_id",
+      "source_capture_session_id",
+      "title",
+      "description",
+      "status",
+      "created_by_id",
+      "updated_by_id",
+      "deleted_by_id",
+    ]) {
+      await expect(column_exists("interactive_demo_schema", "interactive_demo", column_name)).resolves.toBe(true);
+    }
+
+    for (const column_name of [
+      "organization_id",
+      "project_id",
+      "interactive_demo_id",
+      "source_capture_session_id",
+      "source_capture_event_id",
+      "source_capture_asset_id",
+      "scene_index",
+      "title",
+      "description",
+      "background_capture_asset_id",
+      "created_by_id",
+      "updated_by_id",
+      "deleted_by_id",
+    ]) {
+      await expect(column_exists("interactive_demo_schema", "demo_scene", column_name)).resolves.toBe(true);
+    }
+
+    await expect(index_exists("interactive_demo_schema", "idx_interactive_demo_project_active_created")).resolves.toBe(true);
+    await expect(index_exists("interactive_demo_schema", "idx_demo_scene_demo_active_order")).resolves.toBe(true);
+    await expect(index_exists("interactive_demo_schema", "uq_demo_scene_demo_index_active")).resolves.toBe(true);
+    await expect(table_comment("interactive_demo_schema", "interactive_demo")).resolves.toMatch(/interactive demo artifact/i);
+    await expect(table_comment("interactive_demo_schema", "demo_scene")).resolves.toMatch(/ordered scene/i);
   });
 
   it("creates publish snapshot and link schema separately from editable artifacts", async () => {
