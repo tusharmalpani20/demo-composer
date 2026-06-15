@@ -1,6 +1,11 @@
 import { FastifyError, FastifyReply, FastifyRequest } from "fastify";
 import { hasZodFastifySchemaValidationErrors, isResponseSerializationError } from "fastify-type-provider-zod";
-import { response_message } from "@repo/types";
+
+const response_message = {
+    enum: {
+        error: "error",
+    },
+} as const;
 
 const default_error = {
     code: 500,

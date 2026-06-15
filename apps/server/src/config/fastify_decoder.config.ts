@@ -1,4 +1,3 @@
-import { Auth_Session_Type, Organization_Type } from '@repo/types'
 import { 
     FastifyInstance, 
     FastifyPluginCallback, 
@@ -6,11 +5,24 @@ import {
 } from 'fastify'
 import fp from 'fastify-plugin'
 
+type RequestAuthSession = {
+    id: string;
+    user_id: string;
+    organization_id: string;
+    org_user_id?: string;
+    expires_at?: string | Date;
+};
+
+type RequestOrganization = {
+    id: string;
+    name: string;
+};
+
 	declare module 'fastify' {
 	    interface FastifyRequest {
 	        session: unknown | null
-	        auth_session: Auth_Session_Type | null,
-	        organization: Organization_Type | null,
+	        auth_session: RequestAuthSession | null,
+	        organization: RequestOrganization | null,
 	    }
 }
 
