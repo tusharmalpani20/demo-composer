@@ -319,9 +319,6 @@ importers:
 
   packages/types:
     devDependencies:
-      '@repo/constants':
-        specifier: workspace:*
-        version: link:../constants
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
