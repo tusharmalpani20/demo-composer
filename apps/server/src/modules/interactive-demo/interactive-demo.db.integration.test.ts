@@ -462,6 +462,40 @@ describe("DB-backed interactive demo API", () => {
       },
     ]);
 
+    const second_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${source.capture_session_id}/interactive-demos`,
+      cookies: { demo_composer_session: session_token },
+      payload: {},
+    });
+    expect(second_response.statusCode).toBe(201);
+    expect(second_response.json().interactive_demo.id).not.toBe(response.json().interactive_demo.id);
+    expect(second_response.json().demo_scenes.map((scene: {
+      id: string;
+      interactive_demo_id: string;
+      source_capture_event_id: string | null;
+      background_capture_asset_id: string | null;
+    }) => ({
+      id: scene.id,
+      interactive_demo_id: scene.interactive_demo_id,
+      source_capture_event_id: scene.source_capture_event_id,
+      background_capture_asset_id: scene.background_capture_asset_id,
+    }))).toEqual([
+      {
+        id: expect.any(String),
+        interactive_demo_id: second_response.json().interactive_demo.id,
+        source_capture_event_id: source.click_event_id,
+        background_capture_asset_id: source.first_asset_id,
+      },
+      {
+        id: expect.any(String),
+        interactive_demo_id: second_response.json().interactive_demo.id,
+        source_capture_event_id: source.capture_event_id,
+        background_capture_asset_id: source.second_asset_id,
+      },
+    ]);
+    expect(second_response.json().demo_scenes[0].id).not.toBe(response.json().demo_scenes[0].id);
+
     await app.close();
   });
 
