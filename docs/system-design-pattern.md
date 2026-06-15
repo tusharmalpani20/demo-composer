@@ -225,35 +225,31 @@ Does not own:
 
 ### `packages/types`
 
-Owns shared Zod schemas and inferred TypeScript types.
+Currently a placeholder package after the OSS hardening cleanup.
 
-Use it for:
+Do not add product-domain contracts here by default.
 
-- API request schemas.
-- API response schemas.
-- DB-shaped row schemas.
-- query params.
-- detail/list DTOs.
-- shared validation primitives.
+Current rule:
 
-All clients should depend on these contracts where practical:
+- Keep API request/response schemas close to the owning backend or frontend feature until a real cross-app reuse case exists.
+- Keep DB-shaped row types inside the backend module that owns the table/query.
+- Extract a shared contract package only when the same contract is actively consumed by the server, web app, extension, or future desktop app.
+- Avoid recreating the old broad shared package surface with contact, OTP, signup, user-asset, or unrelated product-domain schemas.
 
-- server
-- web app
-- Chrome extension
-- future desktop app
+If this package becomes active again, it should expose only current Demo Composer contracts.
 
 ### `packages/constants`
 
-Owns:
+Currently a placeholder package after the OSS hardening cleanup.
 
-- enum docs
-- table-name constants
-- shared validation messages
-- shared defaults
-- supported artifact types
-- publish access modes
-- capture asset types
+Do not put backend table names, old validation messages, or broad product-domain enums here by default.
+
+Current rule:
+
+- Keep module-specific constants inside the owning app/module.
+- Extract shared constants only when multiple active apps/packages need the same value.
+- Prefer product-current names such as capture, guide, publish, and interactive demo.
+- Avoid legacy constants for OTP, contacts, profile pictures, user assets, and unrelated organization role surfaces.
 
 ### `packages/ui`
 
