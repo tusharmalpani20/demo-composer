@@ -958,6 +958,14 @@ describe("CaptureSessionDetailPage", () => {
     expect(redirectTo).toHaveBeenCalledWith("/projects/project_1/guides/guide_1");
   });
 
+  it("does not expose interactive demo creation until the demo destination route has a page", async () => {
+    renderPage();
+
+    await screen.findByRole("heading", { name: "Create department workflow" });
+
+    expect(screen.queryByRole("button", { name: /Create interactive demo/i })).not.toBeInTheDocument();
+  });
+
   it("trims guide titles and sends null when the capture session has no description", async () => {
     const createGuide = vi.fn(async () => guideDetail);
     renderPage({

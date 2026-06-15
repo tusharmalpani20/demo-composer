@@ -6,6 +6,7 @@ import {
   createCaptureSessionEvent,
   createGuideBlock,
   createGuideFromCaptureSession,
+  createInteractiveDemoFromCaptureSession,
   completeFirstRunSetup,
   deleteGuideBlock,
   exportGuideHtmlZip,
@@ -89,6 +90,42 @@ const guide_response = {
   },
   guide_blocks: [],
   source_capture_assets: [],
+};
+
+const interactive_demo_from_capture_response = {
+  interactive_demo: {
+    id: "interactive_demo_1",
+    organization_id: "organization_1",
+    project_id: "project_1",
+    source_capture_session_id: "capture_session_1",
+    title: "Department setup demo",
+    description: null,
+    status: "draft",
+    created_by_id: "org_user_1",
+    updated_by_id: "org_user_1",
+    version: 1,
+    created_at: "2026-06-05T10:00:00.000Z",
+    updated_at: "2026-06-05T10:00:00.000Z",
+  },
+  demo_scenes: [{
+    id: "demo_scene_1",
+    organization_id: "organization_1",
+    project_id: "project_1",
+    interactive_demo_id: "interactive_demo_1",
+    source_capture_session_id: "capture_session_1",
+    source_capture_event_id: "capture_event_1",
+    source_capture_asset_id: "capture_asset_1",
+    scene_index: 1,
+    title: "Click Add Department",
+    description: null,
+    background_capture_asset_id: "capture_asset_1",
+    created_by_id: "org_user_1",
+    updated_by_id: "org_user_1",
+    version: 1,
+    created_at: "2026-06-05T10:00:00.000Z",
+    updated_at: "2026-06-05T10:00:00.000Z",
+  }],
+  redirect_path: "/projects/project_1/interactive-demos/interactive_demo_1",
 };
 
 const public_publish_response = {
@@ -1273,6 +1310,31 @@ describe("api client", () => {
           title: "Create department workflow",
           description: null,
         }),
+      }
+    );
+  });
+
+  it("creates an interactive demo from a capture session with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(interactive_demo_from_capture_response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(createInteractiveDemoFromCaptureSession("project / 1", "capture / 1")).resolves.toEqual(interactive_demo_from_capture_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/projects/project%20%2F%201/capture-sessions/capture%20%2F%201/interactive-demos",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({}),
       }
     );
   });

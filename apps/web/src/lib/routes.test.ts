@@ -91,6 +91,19 @@ describe("parsePortalRoute", () => {
     });
   });
 
+  it("parses interactive demo detail routes", () => {
+    expect(parsePortalRoute("/projects/project_1/interactive-demos/interactive_demo_1")).toEqual({
+      type: "interactive_demo_detail",
+      projectId: "project_1",
+      interactiveDemoId: "interactive_demo_1",
+    });
+    expect(parsePortalRoute("/projects/project%201/interactive-demos/interactive%20%2F%201")).toEqual({
+      type: "interactive_demo_detail",
+      projectId: "project 1",
+      interactiveDemoId: "interactive / 1",
+    });
+  });
+
   it("parses public guide reader routes", () => {
     expect(parsePortalRoute("/p/abc123")).toEqual({
       type: "public_guide_reader",

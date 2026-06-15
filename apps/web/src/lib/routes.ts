@@ -40,6 +40,11 @@ export type PortalRoute =
     projectId: string;
   }
   | {
+    type: "interactive_demo_detail";
+    projectId: string;
+    interactiveDemoId: string;
+  }
+  | {
     type: "public_guide_reader";
     slug: string;
   }
@@ -216,6 +221,25 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
       type: "guide_detail",
       projectId: decodeURIComponent(projectId),
       guideId: decodeURIComponent(guideId),
+    };
+  }
+
+  if (
+    segments.length === 4
+    && segments[0] === "projects"
+    && segments[2] === "interactive-demos"
+  ) {
+    const projectId = segments[1];
+    const interactiveDemoId = segments[3];
+
+    if (!projectId || !interactiveDemoId) {
+      return { type: "unsupported" };
+    }
+
+    return {
+      type: "interactive_demo_detail",
+      projectId: decodeURIComponent(projectId),
+      interactiveDemoId: decodeURIComponent(interactiveDemoId),
     };
   }
 

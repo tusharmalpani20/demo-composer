@@ -33,6 +33,7 @@ import type {
   UploadGuideBlockScreenshotInput,
   UploadGuideBlockScreenshotResponse,
 } from "../features/guide/types";
+import type { CreateInteractiveDemoFromCaptureResponse } from "../features/interactive-demo/types";
 import type { CreateProjectInput, Project, ProjectStatus, UpdateProjectInput } from "../features/project/types";
 
 export type ApiClientErrorKind = "unauthenticated" | "not_found" | "validation" | "unknown";
@@ -560,6 +561,26 @@ export const createGuideFromCaptureSession = async (
 ): Promise<GuideDetail> => (
   requestJson<GuideDetail>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/from-capture-session/${encodeURIComponent(captureSessionId)}`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
+export const createInteractiveDemoFromCaptureSession = async (
+  projectId: string,
+  captureSessionId: string,
+  data: {
+    title?: string;
+    description?: string | null;
+  } = {}
+): Promise<CreateInteractiveDemoFromCaptureResponse> => (
+  requestJson<CreateInteractiveDemoFromCaptureResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}/interactive-demos`,
     {
       method: "POST",
       headers: {

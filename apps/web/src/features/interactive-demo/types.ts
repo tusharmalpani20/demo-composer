@@ -1,0 +1,39 @@
+export type InteractiveDemo = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  source_capture_session_id: string | null;
+  title: string;
+  description: string | null;
+  status: "draft" | "archived";
+  created_by_id: string;
+  updated_by_id: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DemoScene = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  interactive_demo_id: string;
+  source_capture_session_id: string | null;
+  source_capture_event_id: string | null;
+  source_capture_asset_id: string | null;
+  scene_index: number;
+  title: string | null;
+  description: string | null;
+  background_capture_asset_id: string | null;
+  created_by_id: string;
+  updated_by_id: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateInteractiveDemoFromCaptureResponse = {
+  interactive_demo: InteractiveDemo;
+  demo_scenes: DemoScene[];
+  redirect_path: string;
+};

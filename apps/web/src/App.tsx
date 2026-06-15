@@ -25,6 +25,7 @@ const setupGuardedRouteTypes = new Set<PortalRoute["type"]>([
   "guide_detail",
   "guide_preview",
   "project_guide_list",
+  "interactive_demo_detail",
 ]);
 
 const shouldCheckSetup = (route: PortalRoute) => setupGuardedRouteTypes.has(route.type);
