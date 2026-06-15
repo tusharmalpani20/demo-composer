@@ -511,6 +511,85 @@ describe("DB-backed interactive demo API", () => {
     await app.close();
   });
 
+  it("rejects hotspot target scenes from a different interactive demo at the schema boundary", async () => {
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const owner_context = await get_owner_context();
+    const app = build({ logger: false });
+    const first_demo_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/interactive-demos`,
+      cookies: { demo_composer_session: session_token },
+      payload: { title: "First demo" },
+    });
+    const second_demo_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/interactive-demos`,
+      cookies: { demo_composer_session: session_token },
+      payload: { title: "Second demo" },
+    });
+    expect(first_demo_response.statusCode).toBe(201);
+    expect(second_demo_response.statusCode).toBe(201);
+    const first_demo_id = first_demo_response.json().interactive_demo.id as string;
+    const second_demo_id = second_demo_response.json().interactive_demo.id as string;
+    const first_scene_id = ulid();
+    const second_scene_id = ulid();
+
+    await pool.query(`
+      INSERT INTO interactive_demo_schema.demo_scene (
+        id,
+        organization_id,
+        project_id,
+        interactive_demo_id,
+        scene_index,
+        title,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES
+        ($1, $3, $4, $5, 1, 'First scene', $7, $7),
+        ($2, $3, $4, $6, 1, 'Second scene', $7, $7)
+    `, [
+      first_scene_id,
+      second_scene_id,
+      owner_context?.organization_id,
+      project_id,
+      first_demo_id,
+      second_demo_id,
+      owner_context?.org_user_id,
+    ]);
+
+    await expect(pool.query(`
+      INSERT INTO interactive_demo_schema.demo_hotspot (
+        id,
+        organization_id,
+        project_id,
+        interactive_demo_id,
+        demo_scene_id,
+        hotspot_type,
+        x,
+        y,
+        width,
+        height,
+        target_scene_id,
+        hotspot_index,
+        created_by_id,
+        updated_by_id
+      )
+      VALUES ($1, $2, $3, $4, $5, 'click', 0.1, 0.1, 0.2, 0.2, $6, 1, $7, $7)
+    `, [
+      ulid(),
+      owner_context?.organization_id,
+      project_id,
+      first_demo_id,
+      first_scene_id,
+      second_scene_id,
+      owner_context?.org_user_id,
+    ])).rejects.toThrow();
+
+    await app.close();
+  });
+
   it("creates interactive demos from screenshot-backed capture events", async () => {
     const session_token = await setup_owner();
     const project_id = await create_project(session_token);
