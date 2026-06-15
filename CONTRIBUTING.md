@@ -1,6 +1,6 @@
 # Contributing
 
-Demo Composer is an alpha-stage open-source project for screenshot-first browser workflow capture and Scribe-style guide publishing.
+Demo Composer is an alpha-stage open-source project for screenshot-first browser workflow capture, Scribe-style guide publishing, and Storylane-style interactive demos.
 
 ## Workflow
 
@@ -8,6 +8,7 @@ Demo Composer is an alpha-stage open-source project for screenshot-first browser
 - Use focused commits that keep the repository buildable.
 - Keep docs updated when behavior, setup, security posture, or product scope changes.
 - Use ADRs in `docs/adr/` for durable architecture decisions.
+- Prefer changes that fit the existing domain-module style before adding new abstractions.
 
 ## Development
 
@@ -23,11 +24,17 @@ Use the setup guide for database, environment, and storage details:
 docs/development-setup.md
 ```
 
+More contributor context lives in:
+
+```text
+docs/contributor-guide.md
+```
+
 ## Testing
 
 Feature work should follow a TDD loop where practical: add a failing behavior test, implement the smallest change, then refactor while green.
 
-Before opening a pull request, run:
+Before opening a pull request, run the checks relevant to your change:
 
 ```bash
 rtk pnpm --filter server test
@@ -45,6 +52,12 @@ For backend persistence changes, also run:
 rtk pnpm --filter server test:db
 ```
 
+For cross-domain v1 workflow confidence, run:
+
+```bash
+rtk pnpm --filter server test:smoke
+```
+
 ## Pull Requests
 
 Include:
@@ -53,9 +66,25 @@ Include:
 - why it changed
 - tests/checks run
 - docs updated, if applicable
+- known limitations or follow-ups
 
 Avoid unrelated refactors in feature PRs.
 
 ## Scope Notes
 
-AI, analytics, sales tracking, and Storylane-style interactive demos are deferred from the current MVP. The current product path is capture sessions to editable guides to published guide links.
+Built at MVP/alpha level:
+
+- screenshot-first capture sessions
+- guide authoring, preview, publish, password access, embed, Markdown export, and HTML ZIP export
+- interactive demo generation, scene editing, hotspots, publish, password access, embed, and public viewer
+- Chrome extension capture with automatic click capture MVP and manual screenshot fallback
+- organization invite/member basics
+
+Deferred:
+
+- AI/BYO-key authoring
+- analytics, lead capture, sales tracking, and branding
+- HTML replay
+- Chrome Web Store packaging
+- one-command production deployment packaging
+- advanced editor/demo polish
