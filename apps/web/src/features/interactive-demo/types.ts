@@ -37,3 +37,14 @@ export type CreateInteractiveDemoFromCaptureResponse = {
   demo_scenes: DemoScene[];
   redirect_path: string;
 };
+
+export type UpdateInteractiveDemoInput = {
+  title?: string;
+  description?: string | null;
+  status?: InteractiveDemo["status"];
+};
+
+export type UpdateDemoSceneInput = {
+  title?: string | null;
+  description?: string | null;
+};

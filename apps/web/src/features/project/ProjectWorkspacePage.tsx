@@ -55,6 +55,10 @@ const guidesUrl = (projectId: string) => (
   `/projects/${encodeURIComponent(projectId)}/guides`
 );
 
+const interactiveDemosUrl = (projectId: string) => (
+  `/projects/${encodeURIComponent(projectId)}/interactive-demos`
+);
+
 const settingsUrl = (projectId: string) => (
   `/projects/${encodeURIComponent(projectId)}/settings`
 );
@@ -167,6 +171,12 @@ export const ProjectWorkspacePage = ({
             description="Open prepared docs and demos for this project."
             href={guidesUrl(projectId)}
             linkLabel="Open guides"
+          />
+          <WorkspaceAction
+            title="Interactive demos"
+            description="Open screenshot-first product walkthrough demos."
+            href={interactiveDemosUrl(projectId)}
+            linkLabel="Open interactive demos"
           />
         </div>
       </section>

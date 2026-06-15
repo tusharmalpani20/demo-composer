@@ -104,6 +104,17 @@ describe("parsePortalRoute", () => {
     });
   });
 
+  it("parses project interactive demo list routes", () => {
+    expect(parsePortalRoute("/projects/project_1/interactive-demos")).toEqual({
+      type: "project_interactive_demo_list",
+      projectId: "project_1",
+    });
+    expect(parsePortalRoute("/projects/project%201/interactive-demos/")).toEqual({
+      type: "project_interactive_demo_list",
+      projectId: "project 1",
+    });
+  });
+
   it("parses public guide reader routes", () => {
     expect(parsePortalRoute("/p/abc123")).toEqual({
       type: "public_guide_reader",

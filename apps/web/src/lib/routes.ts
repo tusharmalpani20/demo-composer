@@ -40,6 +40,10 @@ export type PortalRoute =
     projectId: string;
   }
   | {
+    type: "project_interactive_demo_list";
+    projectId: string;
+  }
+  | {
     type: "interactive_demo_detail";
     projectId: string;
     interactiveDemoId: string;
@@ -240,6 +244,23 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
       type: "interactive_demo_detail",
       projectId: decodeURIComponent(projectId),
       interactiveDemoId: decodeURIComponent(interactiveDemoId),
+    };
+  }
+
+  if (
+    segments.length === 3
+    && segments[0] === "projects"
+    && segments[2] === "interactive-demos"
+  ) {
+    const projectId = segments[1];
+
+    if (!projectId) {
+      return { type: "unsupported" };
+    }
+
+    return {
+      type: "project_interactive_demo_list",
+      projectId: decodeURIComponent(projectId),
     };
   }
 

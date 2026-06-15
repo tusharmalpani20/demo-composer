@@ -61,6 +61,10 @@ describe("ProjectWorkspacePage", () => {
       "href",
       "/projects/project_1/guides"
     );
+    expect(screen.getByRole("link", { name: "Open interactive demos" })).toHaveAttribute(
+      "href",
+      "/projects/project_1/interactive-demos"
+    );
     expect(screen.getByRole("link", { name: "Project settings" })).toHaveAttribute(
       "href",
       "/projects/project_1/settings"
@@ -83,6 +87,10 @@ describe("ProjectWorkspacePage", () => {
     expect(screen.getByRole("link", { name: "Open guides" })).toHaveAttribute(
       "href",
       "/projects/project%20%2F%201/guides"
+    );
+    expect(screen.getByRole("link", { name: "Open interactive demos" })).toHaveAttribute(
+      "href",
+      "/projects/project%20%2F%201/interactive-demos"
     );
     expect(screen.getByRole("link", { name: "Project settings" })).toHaveAttribute(
       "href",

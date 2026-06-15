@@ -15,6 +15,7 @@ import {
   getCaptureSessionDetail,
   getGuideDetail,
   getGuidePublishStatus,
+  getInteractiveDemo,
   getProject,
   getPublicInstanceStatus,
   getPublicPublishLink,
@@ -24,12 +25,17 @@ import {
   listProjects,
   listProjectCaptureSessions,
   listProjectGuides,
+  listProjectInteractiveDemos,
+  listInteractiveDemoScenes,
   logout,
   publishGuide,
   reorderCaptureSessionEvents,
+  reorderInteractiveDemoScenes,
   reorderGuideBlocks,
   resolveApiAssetUrl,
   revokeGuidePublishLink,
+  archiveInteractiveDemo,
+  deleteInteractiveDemoScene,
   updateGuidePublishAccess,
   updateGuidePublishPassword,
   updateGuide,
@@ -37,6 +43,8 @@ import {
   updateGuideBlockAnnotations,
   updateGuideBlockScreenshot,
   updateCaptureSessionEvent,
+  updateInteractiveDemo,
+  updateInteractiveDemoScene,
   updateProject,
   uploadCaptureSessionAsset,
   uploadGuideBlockScreenshot,
@@ -126,6 +134,22 @@ const interactive_demo_from_capture_response = {
     updated_at: "2026-06-05T10:00:00.000Z",
   }],
   redirect_path: "/projects/project_1/interactive-demos/interactive_demo_1",
+};
+
+const interactive_demo_response = {
+  interactive_demo: interactive_demo_from_capture_response.interactive_demo,
+};
+
+const interactive_demo_list_response = {
+  interactive_demos: [interactive_demo_from_capture_response.interactive_demo],
+};
+
+const demo_scene_response = {
+  demo_scene: interactive_demo_from_capture_response.demo_scenes[0],
+};
+
+const demo_scene_list_response = {
+  demo_scenes: interactive_demo_from_capture_response.demo_scenes,
 };
 
 const public_publish_response = {
@@ -1335,6 +1359,145 @@ describe("api client", () => {
           "content-type": "application/json",
         },
         body: JSON.stringify({}),
+      }
+    );
+  });
+
+  it("manages interactive demos and scenes with session cookies", async () => {
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify(interactive_demo_list_response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(interactive_demo_response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(interactive_demo_response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(demo_scene_list_response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(demo_scene_response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(demo_scene_list_response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(listProjectInteractiveDemos("project / 1")).resolves.toEqual(interactive_demo_list_response);
+    await expect(getInteractiveDemo("project / 1", "demo / 1")).resolves.toEqual(interactive_demo_response);
+    await expect(updateInteractiveDemo("project / 1", "demo / 1", {
+      title: "Updated demo",
+      description: null,
+      status: "draft",
+    })).resolves.toEqual(interactive_demo_response);
+    await expect(listInteractiveDemoScenes("project / 1", "demo / 1")).resolves.toEqual(demo_scene_list_response);
+    await expect(updateInteractiveDemoScene("project / 1", "demo / 1", "scene / 1", {
+      title: "Updated scene",
+      description: null,
+    })).resolves.toEqual(demo_scene_response);
+    await expect(reorderInteractiveDemoScenes("project / 1", "demo / 1", ["scene / 2", "scene / 1"])).resolves.toEqual(demo_scene_list_response);
+    await expect(archiveInteractiveDemo("project / 1", "demo / 1")).resolves.toBeUndefined();
+    await expect(deleteInteractiveDemoScene("project / 1", "demo / 1", "scene / 1")).resolves.toBeUndefined();
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      "/api/v1/projects/project%20%2F%201/interactive-demos",
+      {
+        credentials: "include",
+        headers: { accept: "application/json" },
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201",
+      {
+        credentials: "include",
+        headers: { accept: "application/json" },
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      3,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Updated demo",
+          description: null,
+          status: "draft",
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      4,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201/scenes",
+      {
+        credentials: "include",
+        headers: { accept: "application/json" },
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      5,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201/scenes/scene%20%2F%201",
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "Updated scene",
+          description: null,
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      6,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201/scenes/order",
+      {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          scene_ids: ["scene / 2", "scene / 1"],
+        }),
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      7,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201",
+      {
+        method: "DELETE",
+        credentials: "include",
+        headers: { accept: "application/json" },
+      }
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      8,
+      "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201/scenes/scene%20%2F%201",
+      {
+        method: "DELETE",
+        credentials: "include",
+        headers: { accept: "application/json" },
       }
     );
   });

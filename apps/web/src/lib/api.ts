@@ -33,7 +33,13 @@ import type {
   UploadGuideBlockScreenshotInput,
   UploadGuideBlockScreenshotResponse,
 } from "../features/guide/types";
-import type { CreateInteractiveDemoFromCaptureResponse } from "../features/interactive-demo/types";
+import type {
+  DemoScene,
+  InteractiveDemo,
+  CreateInteractiveDemoFromCaptureResponse,
+  UpdateDemoSceneInput,
+  UpdateInteractiveDemoInput,
+} from "../features/interactive-demo/types";
 import type { CreateProjectInput, Project, ProjectStatus, UpdateProjectInput } from "../features/project/types";
 
 export type ApiClientErrorKind = "unauthenticated" | "not_found" | "validation" | "unknown";
@@ -74,6 +80,26 @@ export type ProjectUpdateResponse = {
 
 export type ProjectCaptureSessionListResponse = {
   capture_sessions: CaptureSession[];
+};
+
+export type ProjectInteractiveDemoListResponse = {
+  interactive_demos: InteractiveDemo[];
+};
+
+export type InteractiveDemoDetailResponse = {
+  interactive_demo: InteractiveDemo;
+};
+
+export type InteractiveDemoSceneListResponse = {
+  demo_scenes: DemoScene[];
+};
+
+export type InteractiveDemoSceneUpdateResponse = {
+  demo_scene: DemoScene;
+};
+
+export type InteractiveDemoSceneReorderResponse = {
+  demo_scenes: DemoScene[];
 };
 
 export type CaptureSessionCreateResponse = {
@@ -587,6 +613,111 @@ export const createInteractiveDemoFromCaptureSession = async (
         "content-type": "application/json",
       },
       body: JSON.stringify(data),
+    }
+  )
+);
+
+export const listProjectInteractiveDemos = async (
+  projectId: string
+): Promise<ProjectInteractiveDemoListResponse> => (
+  requestJson<ProjectInteractiveDemoListResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos`
+  )
+);
+
+export const getInteractiveDemo = async (
+  projectId: string,
+  interactiveDemoId: string
+): Promise<InteractiveDemoDetailResponse> => (
+  requestJson<InteractiveDemoDetailResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}`
+  )
+);
+
+export const updateInteractiveDemo = async (
+  projectId: string,
+  interactiveDemoId: string,
+  data: UpdateInteractiveDemoInput
+): Promise<InteractiveDemoDetailResponse> => (
+  requestJson<InteractiveDemoDetailResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
+export const archiveInteractiveDemo = async (
+  projectId: string,
+  interactiveDemoId: string
+): Promise<void> => (
+  requestJson<void>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}`,
+    {
+      method: "DELETE",
+    }
+  )
+);
+
+export const listInteractiveDemoScenes = async (
+  projectId: string,
+  interactiveDemoId: string
+): Promise<InteractiveDemoSceneListResponse> => (
+  requestJson<InteractiveDemoSceneListResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/scenes`
+  )
+);
+
+export const updateInteractiveDemoScene = async (
+  projectId: string,
+  interactiveDemoId: string,
+  sceneId: string,
+  data: UpdateDemoSceneInput
+): Promise<InteractiveDemoSceneUpdateResponse> => (
+  requestJson<InteractiveDemoSceneUpdateResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/scenes/${encodeURIComponent(sceneId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  )
+);
+
+export const reorderInteractiveDemoScenes = async (
+  projectId: string,
+  interactiveDemoId: string,
+  sceneIds: string[]
+): Promise<InteractiveDemoSceneReorderResponse> => (
+  requestJson<InteractiveDemoSceneReorderResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/scenes/order`,
+    {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        scene_ids: sceneIds,
+      }),
+    }
+  )
+);
+
+export const deleteInteractiveDemoScene = async (
+  projectId: string,
+  interactiveDemoId: string,
+  sceneId: string
+): Promise<void> => (
+  requestJson<void>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/scenes/${encodeURIComponent(sceneId)}`,
+    {
+      method: "DELETE",
     }
   )
 );

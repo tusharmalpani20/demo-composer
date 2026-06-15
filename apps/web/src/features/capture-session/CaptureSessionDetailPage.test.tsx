@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import type { GuideDetail } from "../guide/types";
+import type { CreateInteractiveDemoFromCaptureResponse } from "../interactive-demo/types";
 import type {
   CaptureAsset,
   CaptureEvent,
@@ -153,6 +154,25 @@ const guideDetail: GuideDetail = {
   source_capture_assets: [],
 };
 
+const interactiveDemoFromCapture: CreateInteractiveDemoFromCaptureResponse = {
+  interactive_demo: {
+    id: "interactive_demo_1",
+    organization_id: "organization_1",
+    project_id: "project_1",
+    source_capture_session_id: "capture_session_1",
+    title: "Create department workflow",
+    description: "Source capture for the department setup guide",
+    status: "draft",
+    created_by_id: "org_user_1",
+    updated_by_id: "org_user_1",
+    version: 1,
+    created_at: "2026-06-05T10:00:00.000Z",
+    updated_at: "2026-06-05T10:00:00.000Z",
+  },
+  demo_scenes: [],
+  redirect_path: "/projects/project_1/interactive-demos/interactive_demo_1",
+};
+
 const uploadedAsset: CaptureAsset = {
   id: "asset_uploaded",
   organization_id: "organization_1",
@@ -252,6 +272,14 @@ const renderPage = (overrides: {
   loadDetail?: () => Promise<CaptureSessionDetail>;
   resolveAssetUrl?: (fileUrl: string) => string;
   createGuide?: () => Promise<GuideDetail>;
+  createInteractiveDemo?: (
+    projectId: string,
+    captureSessionId: string,
+    input: {
+      title?: string;
+      description?: string | null;
+    }
+  ) => Promise<CreateInteractiveDemoFromCaptureResponse>;
   uploadAsset?: (
     projectId: string,
     captureSessionId: string,
@@ -294,6 +322,7 @@ const renderPage = (overrides: {
   const loadDetail = overrides.loadDetail ?? vi.fn(async () => detail);
   const resolveAssetUrl = overrides.resolveAssetUrl ?? ((fileUrl: string) => `https://api.example.com${fileUrl}`);
   const createGuide = overrides.createGuide ?? vi.fn(async () => guideDetail);
+  const createInteractiveDemo = overrides.createInteractiveDemo ?? vi.fn(async () => interactiveDemoFromCapture);
   const uploadAsset = overrides.uploadAsset ?? vi.fn(async () => ({ capture_asset: uploadedAsset }));
   const createCaptureEvent = overrides.createCaptureEvent ?? vi.fn(async () => ({ capture_event: uploadedEvent }));
   const reorderEvents = overrides.reorderEvents ?? vi.fn(async () => ({ capture_events: manualDetail().capture_events }));
@@ -307,6 +336,7 @@ const renderPage = (overrides: {
       loadDetail={loadDetail}
       resolveAssetUrl={resolveAssetUrl}
       createGuide={createGuide}
+      createInteractiveDemo={createInteractiveDemo}
       uploadAsset={uploadAsset}
       createCaptureEvent={createCaptureEvent}
       reorderEvents={reorderEvents}
@@ -315,7 +345,7 @@ const renderPage = (overrides: {
     />
   );
 
-  return { loadDetail, createGuide, uploadAsset, createCaptureEvent, reorderEvents, updateEvent, redirectTo };
+  return { loadDetail, createGuide, createInteractiveDemo, uploadAsset, createCaptureEvent, reorderEvents, updateEvent, redirectTo };
 };
 
 describe("CaptureSessionDetailPage", () => {
@@ -958,12 +988,17 @@ describe("CaptureSessionDetailPage", () => {
     expect(redirectTo).toHaveBeenCalledWith("/projects/project_1/guides/guide_1");
   });
 
-  it("does not expose interactive demo creation until the demo destination route has a page", async () => {
-    renderPage();
+  it("creates an interactive demo from the loaded capture session and redirects to the editor", async () => {
+    const { createInteractiveDemo, redirectTo } = renderPage();
 
     await screen.findByRole("heading", { name: "Create department workflow" });
+    fireEvent.click(screen.getByRole("button", { name: "Create interactive demo" }));
 
-    expect(screen.queryByRole("button", { name: /Create interactive demo/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(createInteractiveDemo).toHaveBeenCalledWith("project_1", "capture_session_1", {
+      title: "Create department workflow",
+      description: "Source capture for the department setup guide",
+    }));
+    expect(redirectTo).toHaveBeenCalledWith("/projects/project_1/interactive-demos/interactive_demo_1");
   });
 
   it("trims guide titles and sends null when the capture session has no description", async () => {

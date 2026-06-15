@@ -3,6 +3,7 @@ import {
   ApiClientError,
   createCaptureSessionEvent,
   createGuideFromCaptureSession,
+  createInteractiveDemoFromCaptureSession,
   getCaptureSessionDetail,
   reorderCaptureSessionEvents,
   resolveApiAssetUrl,
@@ -11,6 +12,7 @@ import {
 } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
 import type { GuideDetail } from "../guide/types";
+import type { CreateInteractiveDemoFromCaptureResponse } from "../interactive-demo/types";
 import { PortalTopbar } from "../portal/PortalTopbar";
 import type {
   CaptureAsset,
@@ -60,6 +62,14 @@ type CaptureSessionDetailPageProps = {
       description?: string | null;
     }
   ) => Promise<GuideDetail>;
+  createInteractiveDemo?: (
+    projectId: string,
+    captureSessionId: string,
+    data: {
+      title?: string;
+      description?: string | null;
+    }
+  ) => Promise<CreateInteractiveDemoFromCaptureResponse>;
   uploadAsset?: (
     projectId: string,
     captureSessionId: string,
@@ -301,6 +311,7 @@ export const CaptureSessionDetailPage = ({
   loadDetail = getCaptureSessionDetail,
   resolveAssetUrl = resolveApiAssetUrl,
   createGuide = createGuideFromCaptureSession,
+  createInteractiveDemo = createInteractiveDemoFromCaptureSession,
   uploadAsset = uploadCaptureSessionAsset,
   createCaptureEvent: createCaptureEventAction = createCaptureSessionEvent,
   reorderEvents = reorderCaptureSessionEvents,
@@ -381,6 +392,7 @@ export const CaptureSessionDetailPage = ({
       captureSessionId={captureSessionId}
       resolveAssetUrl={resolveAssetUrl}
       createGuide={createGuide}
+      createInteractiveDemo={createInteractiveDemo}
       uploadAsset={uploadAsset}
       createCaptureEvent={createCaptureEventAction}
       reorderEvents={reorderEvents}
@@ -418,6 +430,7 @@ const CaptureSessionDetailView = ({
   captureSessionId,
   resolveAssetUrl,
   createGuide,
+  createInteractiveDemo,
   uploadAsset,
   createCaptureEvent,
   reorderEvents,
@@ -432,6 +445,7 @@ const CaptureSessionDetailView = ({
   captureSessionId: string;
   resolveAssetUrl: (fileUrl: string) => string;
   createGuide: NonNullable<CaptureSessionDetailPageProps["createGuide"]>;
+  createInteractiveDemo: NonNullable<CaptureSessionDetailPageProps["createInteractiveDemo"]>;
   uploadAsset: NonNullable<CaptureSessionDetailPageProps["uploadAsset"]>;
   createCaptureEvent: NonNullable<CaptureSessionDetailPageProps["createCaptureEvent"]>;
   reorderEvents: NonNullable<CaptureSessionDetailPageProps["reorderEvents"]>;
@@ -442,6 +456,7 @@ const CaptureSessionDetailView = ({
   navigate?: (path: string) => void;
 }) => {
   const [createState, setCreateState] = useState<"idle" | "creating" | "error">("idle");
+  const [createDemoState, setCreateDemoState] = useState<"idle" | "creating" | "error">("idle");
   const [uploadState, setUploadState] = useState<"idle" | "uploading">("idle");
   const [reorderState, setReorderState] = useState<"idle" | "reordering">("idle");
   const [eventEditState, setEventEditState] = useState<"idle" | "saving">("idle");
@@ -462,6 +477,7 @@ const CaptureSessionDetailView = ({
   const session = detail.capture_session;
   const guideTitle = session.name.trim();
   const canCreateGuide = guideTitle.length > 0 && createState !== "creating";
+  const canCreateInteractiveDemo = guideTitle.length > 0 && createDemoState !== "creating";
   const canUploadScreenshot = session.source_type === "manual";
   const isUploading = uploadState === "uploading";
   const uploadButtonText = isUploading
@@ -493,6 +509,24 @@ const CaptureSessionDetailView = ({
       redirectTo(`/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideDetail.guide.id)}`);
     } catch {
       setCreateState("error");
+    }
+  };
+
+  const handleCreateInteractiveDemo = async () => {
+    if (!canCreateInteractiveDemo) {
+      return;
+    }
+
+    setCreateDemoState("creating");
+
+    try {
+      const response = await createInteractiveDemo(projectId, captureSessionId, {
+        title: guideTitle,
+        description: session.description ?? null,
+      });
+      redirectTo(response.redirect_path);
+    } catch {
+      setCreateDemoState("error");
     }
   };
 
@@ -716,11 +750,22 @@ const CaptureSessionDetailView = ({
           >
             {createState === "creating" ? "Creating guide..." : "Create guide"}
           </button>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            disabled={!canCreateInteractiveDemo}
+            onClick={handleCreateInteractiveDemo}
+          >
+            {createDemoState === "creating" ? "Creating interactive demo..." : "Create interactive demo"}
+          </button>
           {guideTitle.length === 0 ? (
             <div className={styles.actionMessage}>Capture session needs a name before creating a guide.</div>
           ) : null}
           {createState === "error" ? (
             <div className={styles.actionMessage}>Could not create guide.</div>
+          ) : null}
+          {createDemoState === "error" ? (
+            <div className={styles.actionMessage}>Could not create interactive demo.</div>
           ) : null}
         </div>
 
