@@ -70,6 +70,12 @@ Then load `apps/extension/dist` in Chrome:
 3. Click Load unpacked.
 4. Select `apps/extension/dist`.
 
+For local self-host testing, configure the extension instance URL as:
+
+```text
+http://localhost:3002
+```
+
 ## Auth Transport
 
 The extension asks for an instance URL first. Login calls:

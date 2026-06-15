@@ -249,15 +249,16 @@ describe("extension popup App", () => {
     const dependencies = renderApp();
 
     expect(await screen.findByRole("heading", { name: "Connect instance" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Instance URL")).toHaveAttribute("placeholder", "http://localhost:3002");
 
     fireEvent.change(screen.getByLabelText("Instance URL"), {
       target: {
-        value: "http://localhost:4000/",
+        value: "http://localhost:3002/",
       },
     });
     fireEvent.click(screen.getByRole("button", { name: "Connect" }));
 
-    await waitFor(() => expect(dependencies.saveInstanceUrl).toHaveBeenCalledWith("http://localhost:4000"));
+    await waitFor(() => expect(dependencies.saveInstanceUrl).toHaveBeenCalledWith("http://localhost:3002"));
   });
 
   it("rejects invalid instance URLs", async () => {
@@ -266,7 +267,7 @@ describe("extension popup App", () => {
     expect(await screen.findByRole("heading", { name: "Connect instance" })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Instance URL"), {
       target: {
-        value: "localhost:4000",
+        value: "localhost:3002",
       },
     });
     fireEvent.click(screen.getByRole("button", { name: "Connect" }));

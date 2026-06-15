@@ -591,7 +591,7 @@ const ConnectInstance = ({
           <input
             type="url"
             value={instanceUrl}
-            placeholder="http://localhost:4000"
+            placeholder="http://localhost:3002"
             disabled={submitting}
             onChange={(event) => setInstanceUrl(event.target.value)}
           />
