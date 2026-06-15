@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Implemented.
 
 ## Goal
 
@@ -241,3 +241,26 @@ Suggested commits:
 - docs explain how to load/use the extension
 - docs state automatic click/DOM capture is not implemented yet
 - next extension event-capture work is described in `docs/plan/058-extension-automatic-event-capture-roadmap.md` without being implemented
+
+## Implementation Notes
+
+Implemented:
+
+- popup copy now clearly labels the flow as manual screenshot capture
+- popup explains that each desired guide step should be captured with one screenshot
+- active capture state has an `Open in portal` action
+- active portal open uses the safe capture-session URL builder and does not complete or clear local capture state
+- portal-open failures are shown without clearing active capture state
+- extension README documents current manual behavior, permissions, visible-tab limitation, active portal open, and automatic capture deferral
+- `docs/project-zoomout-status.md` reflects the extension's current manual scope
+- `docs/plan/058-extension-automatic-event-capture-roadmap.md` records the next automatic event-capture roadmap
+
+Verification run:
+
+```bash
+rtk pnpm --filter extension test
+rtk pnpm --filter extension build
+rtk pnpm check-types
+rtk pnpm lint
+rtk pnpm build
+```

@@ -2,6 +2,20 @@
 
 Chrome extension popup for connecting a browser to a hosted or self-hosted Demo Composer instance.
 
+## Product Positioning
+
+This extension is currently an alpha manual screenshot capture tool. It is not a Scribe-style automatic recorder yet.
+
+The current workflow is:
+
+```text
+start capture
+  -> click Capture screenshot once per step-worthy moment
+  -> finish capture
+  -> open the capture session in the portal
+  -> create/edit a guide from the ordered screenshots
+```
+
 ## Current Scope
 
 This app currently supports:
@@ -20,6 +34,7 @@ This app currently supports:
 - recording a linked `capture` event after each successful screenshot upload
 - persisting the local event index for the active capture session
 - finishing the active capture session and opening the portal capture detail page
+- opening the active capture session in the portal without finishing it
 - discarding local active capture state if needed
 
 It does not capture DOM, clicks, inputs, navigation events, full-page stitched screenshots, or HTML snapshots yet.
@@ -132,6 +147,18 @@ x-demo-composer-client: extension
 
 The event uses `event_type: "capture"`, links to the uploaded screenshot asset, and uses the next locally stored event index for the active capture session. The extension sends `input_value_redacted: true` and does not send raw input fields. Screenshot pixel dimensions remain on the asset record; the event does not pretend those pixels are CSS viewport dimensions.
 
+Each screenshot creates one ordered capture event. In the current MVP, treat one screenshot as the source for one guide step.
+
+## Open Active Capture
+
+Opening an active capture in the portal uses:
+
+```text
+{instance_url}/projects/:project_id/capture-sessions/:capture_session_id
+```
+
+This action does not complete the backend capture session and does not clear local active capture state. Use it when you want to inspect the capture session while continuing manual screenshot capture from the extension.
+
 ## Capture Finish
 
 Finishing an active capture session calls:
@@ -158,3 +185,11 @@ The extension currently requests:
 - `activeTab` for visible tab screenshot capture
 
 It does not request broad host permissions, `scripting`, or content scripts yet.
+
+## Automatic Capture Roadmap
+
+Automatic click/DOM event capture is intentionally deferred. The follow-up plan is tracked in:
+
+```text
+docs/plan/058-extension-automatic-event-capture-roadmap.md
+```

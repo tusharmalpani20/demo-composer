@@ -176,8 +176,11 @@ The agreed implementation style is:
 - Extension can record a linked `capture` event after each successful screenshot upload.
 - Extension persists the local active capture event index so manual screenshots become ordered source material.
 - Extension can finish the active capture session, clear local active capture state, and open the portal capture session detail page.
+- Extension can open an active capture session in the portal without finishing or clearing local active capture state.
 - Extension can show screenshot upload loading, success, and error states without clearing the active capture state.
 - Extension can discard local active capture state if needed.
+- Extension is now explicitly positioned as manual screenshot capture: one visible-tab screenshot creates one ordered capture event/guide-step source.
+- Extension automatic click/DOM/input/navigation recording remains deferred and is planned in `docs/plan/058-extension-automatic-event-capture-roadmap.md`.
 
 ### Portal Creation Flows
 
