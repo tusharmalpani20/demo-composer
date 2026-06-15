@@ -63,7 +63,7 @@ Do not duplicate all docs into README. README should be the entry point and link
 
 Included:
 
-- add `LICENSE`
+- add `LICENSE` only after the project owner chooses a license
 - add `CONTRIBUTING.md`
 - add `SECURITY.md`
 - add basic `.github/workflows/ci.yml`
@@ -295,7 +295,8 @@ Suggested commits:
 
 ## Acceptance Criteria
 
-- repo has license, contribution, and security docs
+- repo has a license after owner decision, or clearly states that license selection is blocked
+- repo has contribution and security docs
 - README describes the actual alpha product
 - CI runs non-DB tests, DB tests, type checks, build, and lint
 - self-host docs explain first-run setup and extension setup
