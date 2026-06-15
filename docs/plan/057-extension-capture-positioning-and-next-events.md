@@ -100,9 +100,8 @@ Current manifest permissions:
 
 Known gaps:
 
-- no README or docs for loading the extension
-- no explicit alpha/manual capture positioning
-- no UI copy explaining one screenshot equals one capture event/step source
+- README exists, but it needs clearer alpha/manual capture positioning and usage copy
+- popup UI has capture controls, but does not explain that one screenshot equals one capture event/step source
 - no active capture portal-open shortcut except after finish
 - no content script or background worker
 - no automatic click/DOM metadata capture
@@ -118,7 +117,7 @@ Included:
 - document current limitation: visible-tab screenshots only
 - add an `Open in portal` action for the active capture session using the existing safe portal URL builder
 - add tests for any UI copy/behavior changes
-- create a concrete follow-up plan outline for automatic event capture
+- create a concrete follow-up plan outline for automatic event capture in `docs/plan/058-extension-automatic-event-capture-roadmap.md`
 - update `docs/project-zoomout-status.md`
 
 Excluded:
@@ -165,6 +164,8 @@ should open:
 using the configured instance URL and safe URL builder.
 
 This should be implemented in this phase. If implementation reveals a blocker, document the blocker and leave the UX copy/docs changes in place.
+
+Opening the portal during an active capture must not call capture-session completion and must not clear local active capture state.
 
 ## Next Automatic Capture Roadmap
 
@@ -215,6 +216,7 @@ Test cases:
 - finish still clears local state and opens portal
 - any new "Open in portal" action uses safe URL builder
 - active capture portal-open action does not clear active capture state
+- active capture portal-open action reports a local error if browser navigation fails
 
 ## Risks
 
@@ -238,4 +240,4 @@ Suggested commits:
 - active capture sessions can be opened in the portal without finishing
 - docs explain how to load/use the extension
 - docs state automatic click/DOM capture is not implemented yet
-- next extension event-capture work is described without being implemented
+- next extension event-capture work is described in `docs/plan/058-extension-automatic-event-capture-roadmap.md` without being implemented
