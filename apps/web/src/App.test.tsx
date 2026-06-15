@@ -583,6 +583,6 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "Demo Composer portal" })).toBeInTheDocument();
-    expect(screen.getByText("Open the project list, a project workspace, capture session list, capture session, guide list, or guide link to continue.")).toBeInTheDocument();
+    expect(screen.getByText("Open the project list, a project workspace, capture session list, capture session, guide list, guide link, or interactive demo link to continue.")).toBeInTheDocument();
   });
 });
