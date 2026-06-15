@@ -57,6 +57,14 @@ export type PortalRoute =
     slug: string;
   }
   | {
+    type: "public_interactive_demo_reader";
+    slug: string;
+  }
+  | {
+    type: "public_interactive_demo_embed";
+    slug: string;
+  }
+  | {
     type: "unsupported";
   };
 
@@ -104,6 +112,22 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
   }
 
   if (
+    segments.length === 2
+    && segments[0] === "d"
+  ) {
+    const slug = segments[1];
+
+    if (!slug) {
+      return { type: "unsupported" };
+    }
+
+    return {
+      type: "public_interactive_demo_reader",
+      slug: decodeURIComponent(slug),
+    };
+  }
+
+  if (
     segments.length === 3
     && segments[0] === "p"
     && segments[2] === "embed"
@@ -116,6 +140,23 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
 
     return {
       type: "public_guide_embed",
+      slug: decodeURIComponent(slug),
+    };
+  }
+
+  if (
+    segments.length === 3
+    && segments[0] === "d"
+    && segments[2] === "embed"
+  ) {
+    const slug = segments[1];
+
+    if (!slug) {
+      return { type: "unsupported" };
+    }
+
+    return {
+      type: "public_interactive_demo_embed",
       slug: decodeURIComponent(slug),
     };
   }

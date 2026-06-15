@@ -8,6 +8,7 @@ import { PublicGuideReaderPage } from "./features/guide/PublicGuideReaderPage";
 import { ProjectGuideListPage } from "./features/guide/ProjectGuideListPage";
 import { InteractiveDemoEditorPage } from "./features/interactive-demo/InteractiveDemoEditorPage";
 import { ProjectInteractiveDemoListPage } from "./features/interactive-demo/ProjectInteractiveDemoListPage";
+import { PublicInteractiveDemoViewerPage } from "./features/interactive-demo/PublicInteractiveDemoViewerPage";
 import { ProjectListPage } from "./features/project/ProjectListPage";
 import { ProjectSettingsPage } from "./features/project/ProjectSettingsPage";
 import { ProjectWorkspacePage } from "./features/project/ProjectWorkspacePage";
@@ -106,6 +107,18 @@ export default function App() {
   if (route.type === "public_guide_embed") {
     return (
       <PublicGuideReaderPage slug={route.slug} mode="embed" />
+    );
+  }
+
+  if (route.type === "public_interactive_demo_reader") {
+    return (
+      <PublicInteractiveDemoViewerPage slug={route.slug} />
+    );
+  }
+
+  if (route.type === "public_interactive_demo_embed") {
+    return (
+      <PublicInteractiveDemoViewerPage slug={route.slug} mode="embed" />
     );
   }
 

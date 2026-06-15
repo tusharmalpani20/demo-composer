@@ -498,6 +498,15 @@ export const getGuidePublishStatus = async (
   )
 );
 
+export const getInteractiveDemoPublishStatus = async (
+  projectId: string,
+  interactiveDemoId: string
+): Promise<GuidePublishStatusResponse> => (
+  requestJson<GuidePublishStatusResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/publish`
+  )
+);
+
 export const publishGuide = async (
   projectId: string,
   guideId: string
@@ -510,12 +519,36 @@ export const publishGuide = async (
   )
 );
 
+export const publishInteractiveDemo = async (
+  projectId: string,
+  interactiveDemoId: string
+): Promise<GuidePublishResult> => (
+  requestJson<GuidePublishResult>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/publish`,
+    {
+      method: "POST",
+    }
+  )
+);
+
 export const revokeGuidePublishLink = async (
   projectId: string,
   guideId: string
 ): Promise<GuideRevokePublishResult> => (
   requestJson<GuideRevokePublishResult>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/publish`,
+    {
+      method: "DELETE",
+    }
+  )
+);
+
+export const revokeInteractiveDemoPublishLink = async (
+  projectId: string,
+  interactiveDemoId: string
+): Promise<GuideRevokePublishResult> => (
+  requestJson<GuideRevokePublishResult>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/publish`,
     {
       method: "DELETE",
     }
@@ -539,6 +572,23 @@ export const updateGuidePublishAccess = async (
   )
 );
 
+export const updateInteractiveDemoPublishAccess = async (
+  projectId: string,
+  interactiveDemoId: string,
+  input: UpdateGuidePublishAccessInput
+): Promise<GuidePublishStatusResponse> => (
+  requestJson<GuidePublishStatusResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/publish/access`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }
+  )
+);
+
 export const updateGuidePublishPassword = async (
   projectId: string,
   guideId: string,
@@ -546,6 +596,23 @@ export const updateGuidePublishPassword = async (
 ): Promise<GuidePublishStatusResponse> => (
   requestJson<GuidePublishStatusResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/publish/password`,
+    {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }
+  )
+);
+
+export const updateInteractiveDemoPublishPassword = async (
+  projectId: string,
+  interactiveDemoId: string,
+  input: UpdateGuidePublishPasswordInput
+): Promise<GuidePublishStatusResponse> => (
+  requestJson<GuidePublishStatusResponse>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/publish/password`,
     {
       method: "PATCH",
       headers: {

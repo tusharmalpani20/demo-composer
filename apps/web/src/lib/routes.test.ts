@@ -137,10 +137,28 @@ describe("parsePortalRoute", () => {
     });
   });
 
+  it("parses public interactive demo routes", () => {
+    expect(parsePortalRoute("/d/demo123")).toEqual({
+      type: "public_interactive_demo_reader",
+      slug: "demo123",
+    });
+    expect(parsePortalRoute("/d/demo%20123")).toEqual({
+      type: "public_interactive_demo_reader",
+      slug: "demo 123",
+    });
+    expect(parsePortalRoute("/d/demo123/embed")).toEqual({
+      type: "public_interactive_demo_embed",
+      slug: "demo123",
+    });
+  });
+
   it("rejects unsupported routes", () => {
     expect(parsePortalRoute("/unknown")).toEqual({ type: "unsupported" });
     expect(parsePortalRoute("/p")).toEqual({ type: "unsupported" });
     expect(parsePortalRoute("/p/abc123/extra")).toEqual({ type: "unsupported" });
     expect(parsePortalRoute("/p/abc123/embed/extra")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/d")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/d/demo123/extra")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/d/demo123/embed/extra")).toEqual({ type: "unsupported" });
   });
 });

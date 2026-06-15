@@ -18,6 +18,7 @@ import {
   getGuideDetail,
   getGuidePublishStatus,
   getInteractiveDemo,
+  getInteractiveDemoPublishStatus,
   getProject,
   getPublicInstanceStatus,
   getPublicPublishLink,
@@ -32,16 +33,20 @@ import {
   listInteractiveDemoHotspots,
   logout,
   publishGuide,
+  publishInteractiveDemo,
   reorderCaptureSessionEvents,
   reorderInteractiveDemoHotspots,
   reorderInteractiveDemoScenes,
   reorderGuideBlocks,
   resolveApiAssetUrl,
   revokeGuidePublishLink,
+  revokeInteractiveDemoPublishLink,
   archiveInteractiveDemo,
   deleteInteractiveDemoScene,
   updateGuidePublishAccess,
   updateGuidePublishPassword,
+  updateInteractiveDemoPublishAccess,
+  updateInteractiveDemoPublishPassword,
   updateGuide,
   updateGuideBlock,
   updateGuideBlockAnnotations,
@@ -1231,6 +1236,110 @@ describe("api client", () => {
         }),
       }
     );
+  });
+
+  it("manages interactive demo publish controls with session cookies", async () => {
+    const response = {
+      ...guide_publish_response,
+      publish_link: {
+        ...guide_publish_response.publish_link,
+        artifact_type: "interactive_demo",
+        artifact_id: "demo / 1",
+        public_url: "/d/demo123",
+      },
+      published_artifact: {
+        ...guide_publish_response.published_artifact,
+        artifact_type: "interactive_demo",
+        artifact_id: "demo / 1",
+        title: "Department demo",
+      },
+    };
+    const revoke_response = {
+      publish_link: {
+        id: "publish_link_1",
+        status: "revoked",
+        revoked_at: "2026-06-11T01:00:00.000Z",
+      },
+    };
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(response), {
+        status: 201,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ...response,
+        publish_link: { ...response.publish_link, visibility: "restricted", expires_at: null },
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        ...response,
+        publish_link: { ...response.publish_link, password_protected: true },
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(revoke_response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(getInteractiveDemoPublishStatus("project / 1", "demo / 1")).resolves.toEqual(response);
+    await expect(publishInteractiveDemo("project / 1", "demo / 1")).resolves.toEqual(response);
+    await expect(updateInteractiveDemoPublishAccess("project / 1", "demo / 1", {
+      visibility: "restricted",
+      expires_at: null,
+    })).resolves.toMatchObject({ publish_link: { visibility: "restricted" } });
+    await expect(updateInteractiveDemoPublishPassword("project / 1", "demo / 1", {
+      password: "shared password",
+    })).resolves.toMatchObject({ publish_link: { password_protected: true } });
+    await expect(revokeInteractiveDemoPublishLink("project / 1", "demo / 1")).resolves.toEqual(revoke_response);
+
+    const base = "/api/v1/projects/project%20%2F%201/interactive-demos/demo%20%2F%201/publish";
+    expect(fetch).toHaveBeenNthCalledWith(1, base, {
+      credentials: "include",
+      headers: { accept: "application/json" },
+    });
+    expect(fetch).toHaveBeenNthCalledWith(2, base, {
+      method: "POST",
+      credentials: "include",
+      headers: { accept: "application/json" },
+    });
+    expect(fetch).toHaveBeenNthCalledWith(3, `${base}/access`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        visibility: "restricted",
+        expires_at: null,
+      }),
+    });
+    expect(fetch).toHaveBeenNthCalledWith(4, `${base}/password`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        password: "shared password",
+      }),
+    });
+    expect(fetch).toHaveBeenNthCalledWith(5, base, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { accept: "application/json" },
+    });
   });
 
   it("creates public publish viewer sessions with credentials", async () => {
