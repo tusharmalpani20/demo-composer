@@ -68,7 +68,7 @@ describe("authentication session app routes", () => {
     await app.close();
   });
 
-  it("does not mount legacy ORCA authentication routes", async () => {
+  it("does not mount removed legacy authentication routes", async () => {
     const app = build({ logger: false });
 
     const response = await app.inject({

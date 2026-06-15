@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Implemented.
 
 ## Goal
 
@@ -231,3 +231,30 @@ Keep each commit buildable if possible.
 - active server imports from shared packages are either still valid/current or removed deliberately
 - no active API branding says ORCA
 - full tests/build/lint/type checks pass
+
+## Implementation Notes
+
+Implemented on 2026-06-15.
+
+Added/changed:
+
+- removed unused LangChain/OpenAI/Groq/Mistral/Google GenAI dependencies from `apps/server`
+- removed server dependencies on `@repo/types` and `@repo/constants`
+- replaced the remaining server shared-package imports with local server-owned types/constants
+- removed unused legacy event constants and old product-domain comments from active server source
+- collapsed `@repo/types` and `@repo/constants` to empty placeholder package indexes
+- deleted legacy contact, OTP/signup, user-asset/profile-picture, and organization-role shared schemas/constants
+- updated `pnpm-lock.yaml`
+
+Verification:
+
+```bash
+rtk pnpm --filter server test
+rtk pnpm --filter server test:db
+rtk pnpm check-types
+rtk pnpm build
+rtk pnpm lint
+rtk git diff --check
+rtk rg -n "@langchain|langchain|openai|groq|mistral|google-genai" apps packages --glob '!**/package.json' --glob '!**/dist/**'
+rtk rg -n "otp|whatsapp|contact|profile picture|user_asset" packages apps --glob '!**/dist/**'
+```

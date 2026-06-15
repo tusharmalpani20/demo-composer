@@ -59,7 +59,7 @@ The agreed implementation style is:
   - deployment-aware onboarding
   - web first-run setup
   - separate web and server apps
-- Plans `001` through `053` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering and editing from the portal, public guide access controls, project health hardening, project settings/archive controls, public guide embed foundation, public guide password access, rich HTML ZIP guide export foundation, and web first-run setup UI.
+- Plans `001` through `055` exist and have been implemented through manual capture session screenshot upload, bulk manual upload, manual capture event ordering and editing from the portal, public guide access controls, project health hardening, project settings/archive controls, public guide embed foundation, public guide password access, rich HTML ZIP guide export foundation, web first-run setup UI, production auth/config safety, and legacy/AI dependency cleanup.
 - Development setup, backend route inventory, and production readiness docs now exist:
   - `docs/development-setup.md`
   - `docs/backend-route-inventory.md`
@@ -72,6 +72,7 @@ The agreed implementation style is:
 - The active backend route path is the current `apps/server/src/modules/*` tree.
 - The old ORCA-style `apps/server/src/module/*`, `apps/server/src/root_router/*`, and passport wiring have been removed from the runtime and source tree.
 - Lint now passes without server warnings after legacy cleanup and Turbo env tracking updates.
+- Server no longer depends on unused AI/LangChain provider libraries or legacy shared `@repo/types`/`@repo/constants` product-domain packages.
 - Database migrations currently cover:
   - users
   - organizations
