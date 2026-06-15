@@ -394,6 +394,86 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Department guide" })).toBeInTheDocument();
   });
 
+  it("renders project interactive demo list routes", async () => {
+    window.history.pushState({}, "", "/projects/project_1/interactive-demos");
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+
+      if (url.endsWith("/api/v1/public/instance")) {
+        return jsonResponse(readyInstanceStatus);
+      }
+
+      if (url.endsWith("/api/v1/projects/project_1/interactive-demos")) {
+        return jsonResponse({
+          interactive_demos: [{
+            id: "interactive_demo_1",
+            organization_id: "organization_1",
+            project_id: "project_1",
+            source_capture_session_id: "capture_session_1",
+            title: "Department setup demo",
+            description: null,
+            status: "draft",
+            created_by_id: "org_user_1",
+            updated_by_id: "org_user_1",
+            version: 1,
+            created_at: "2026-06-05T10:00:00.000Z",
+            updated_at: "2026-06-05T10:00:00.000Z",
+          }],
+        });
+      }
+
+      return jsonResponse({ error: { message: `Unexpected URL: ${url}` } }, 404);
+    }));
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Interactive demos" })).toBeInTheDocument();
+    expect(screen.getByText("Department setup demo")).toBeInTheDocument();
+  });
+
+  it("renders interactive demo editor routes", async () => {
+    window.history.pushState({}, "", "/projects/project_1/interactive-demos/interactive_demo_1");
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+
+      if (url.endsWith("/api/v1/public/instance")) {
+        return jsonResponse(readyInstanceStatus);
+      }
+
+      if (url.endsWith("/api/v1/projects/project_1/interactive-demos/interactive_demo_1")) {
+        return jsonResponse({
+          interactive_demo: {
+            id: "interactive_demo_1",
+            organization_id: "organization_1",
+            project_id: "project_1",
+            source_capture_session_id: "capture_session_1",
+            title: "Department setup demo",
+            description: "Shows how to add a department.",
+            status: "draft",
+            created_by_id: "org_user_1",
+            updated_by_id: "org_user_1",
+            version: 1,
+            created_at: "2026-06-05T10:00:00.000Z",
+            updated_at: "2026-06-05T10:00:00.000Z",
+          },
+        });
+      }
+
+      if (url.endsWith("/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes")) {
+        return jsonResponse({
+          demo_scenes: [],
+        });
+      }
+
+      return jsonResponse({ error: { message: `Unexpected URL: ${url}` } }, 404);
+    }));
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Department setup demo" })).toBeInTheDocument();
+    expect(screen.getByText("No scenes yet.")).toBeInTheDocument();
+  });
+
   it("renders public guide reader routes without portal navigation", async () => {
     window.history.pushState({}, "", "/p/abc123");
     const fetch = vi.fn(async () => new Response(JSON.stringify({

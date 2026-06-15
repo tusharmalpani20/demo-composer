@@ -6,6 +6,8 @@ import { GuideEditorPage } from "./features/guide/GuideEditorPage";
 import { GuidePreviewPage } from "./features/guide/GuidePreviewPage";
 import { PublicGuideReaderPage } from "./features/guide/PublicGuideReaderPage";
 import { ProjectGuideListPage } from "./features/guide/ProjectGuideListPage";
+import { InteractiveDemoEditorPage } from "./features/interactive-demo/InteractiveDemoEditorPage";
+import { ProjectInteractiveDemoListPage } from "./features/interactive-demo/ProjectInteractiveDemoListPage";
 import { ProjectListPage } from "./features/project/ProjectListPage";
 import { ProjectSettingsPage } from "./features/project/ProjectSettingsPage";
 import { ProjectWorkspacePage } from "./features/project/ProjectWorkspacePage";
@@ -25,6 +27,7 @@ const setupGuardedRouteTypes = new Set<PortalRoute["type"]>([
   "guide_detail",
   "guide_preview",
   "project_guide_list",
+  "project_interactive_demo_list",
   "interactive_demo_detail",
 ]);
 
@@ -204,6 +207,25 @@ export default function App() {
     return (
       <ProjectGuideListPage
         projectId={route.projectId}
+        currentPath={currentPath}
+      />
+    );
+  }
+
+  if (route.type === "project_interactive_demo_list") {
+    return (
+      <ProjectInteractiveDemoListPage
+        projectId={route.projectId}
+        currentPath={currentPath}
+      />
+    );
+  }
+
+  if (route.type === "interactive_demo_detail") {
+    return (
+      <InteractiveDemoEditorPage
+        projectId={route.projectId}
+        interactiveDemoId={route.interactiveDemoId}
         currentPath={currentPath}
       />
     );
