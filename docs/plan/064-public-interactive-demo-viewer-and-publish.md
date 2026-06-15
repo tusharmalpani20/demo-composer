@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Completed.
 
 ## Goal
 
@@ -163,6 +163,27 @@ Web tests:
 - password/expiry/revoke behavior matches guide publishing semantics
 - embed route exists
 - publishing does not expose draft-only or unrelated project assets
+
+## Implementation Notes
+
+- Added interactive demo publishing through the existing publish module and generic public publish-link resolver.
+- Added immutable `interactive_demo` snapshots with ordered scenes, scene screenshot asset references, and ordered hotspots.
+- Public scene asset URLs use `/api/v1/public/publish-links/:slug/assets/:asset_id/file`.
+- Public asset streaming now authorizes assets referenced by guide blocks or interactive demo scene backgrounds.
+- Added authenticated publish/status/access/password/revoke routes for interactive demos.
+- Added portal API helpers, route parsing, public `/d/:slug` and `/d/:slug/embed` routes, and a public interactive demo viewer.
+- Added publish controls to the interactive demo editor for public URL, open public link, embed URL, iframe embed snippet, visibility, expiry, password, publish/republish, and revoke.
+
+## Verification
+
+- `pnpm --filter server test -- src/modules/publish/publish.service.test.ts src/modules/publish/publish.routes.test.ts src/modules/publish/publish.app.integration.test.ts`
+- `pnpm --filter server test:db -- src/modules/publish/publish.db.integration.test.ts`
+- `pnpm --filter server check-types`
+- `pnpm --filter server lint`
+- `pnpm --filter web test -- src/lib/routes.test.ts src/lib/api.test.ts src/features/interactive-demo/PublicInteractiveDemoViewerPage.test.tsx src/features/interactive-demo/InteractiveDemoEditorPage.test.tsx`
+- `pnpm --filter web check-types`
+- `pnpm --filter web lint`
+- `pnpm --filter web build`
 
 ## Out Of Scope
 
