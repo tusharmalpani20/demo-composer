@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Implemented.
 
 ## Goal
 
@@ -137,12 +137,21 @@ Web tests:
 
 ## Acceptance Criteria
 
-- a completed or manual capture session can become an interactive demo draft
-- demo scenes are ordered and screenshot-backed
-- no capture source rows are mutated
-- API returns a route-safe `redirect_path` for the future editor/detail destination
-- conversion is covered by service, route, DB, and portal tests
-- no partially-created demo remains after conversion failure
+- [x] a completed or manual capture session can become an interactive demo draft
+- [x] demo scenes are ordered and screenshot-backed
+- [x] no capture source rows are mutated
+- [x] API returns a route-safe `redirect_path` for the future editor/detail destination
+- [x] conversion is covered by service, route, DB, and portal tests
+- [x] no partially-created demo remains after conversion failure
+
+## Implementation Notes
+
+- Added `POST /api/v1/projects/:project_id/capture-sessions/:capture_session_id/interactive-demos`.
+- The conversion derives demo title/description from the source capture session.
+- The conversion skips capture events without active screenshot assets.
+- Demo + scene creation is repository-transactional.
+- Added web API client support and route parsing for future interactive demo detail routes.
+- The capture-session detail page intentionally does not expose the visible create-demo action until plan 062 adds a renderable destination page.
 
 ## Out Of Scope
 
