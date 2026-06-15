@@ -147,6 +147,7 @@ export type InteractiveDemoEditorPageProps = {
   currentPath?: string;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
+  copyText?: (text: string) => Promise<void>;
 };
 
 const loadStateFromError = (error: unknown): LoadState => {
@@ -291,6 +292,14 @@ const iframeEmbedCode = (embedUrl: string, title: string) => (
   `<iframe src="${escapeHtmlAttribute(embedUrl)}" title="${escapeHtmlAttribute(title)}" loading="lazy"></iframe>`
 );
 
+const defaultCopyText = async (text: string) => {
+  if (!navigator.clipboard?.writeText) {
+    throw new Error("Clipboard API is unavailable");
+  }
+
+  await navigator.clipboard.writeText(text);
+};
+
 export const InteractiveDemoEditorPage = ({
   projectId,
   interactiveDemoId,
@@ -314,6 +323,7 @@ export const InteractiveDemoEditorPage = ({
   currentPath = currentBrowserPath(),
   performLogout,
   navigate,
+  copyText = defaultCopyText,
 }: InteractiveDemoEditorPageProps) => {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
@@ -423,6 +433,7 @@ export const InteractiveDemoEditorPage = ({
       setLoadedState={(next) => setState({ status: "loaded", ...next })}
       performLogout={performLogout}
       navigate={navigate}
+      copyText={copyText}
     />
   );
 };
@@ -469,6 +480,7 @@ const InteractiveDemoEditorLoaded = ({
   setLoadedState,
   performLogout,
   navigate,
+  copyText,
 }: {
   projectId: string;
   interactiveDemoId: string;
@@ -497,6 +509,7 @@ const InteractiveDemoEditorLoaded = ({
   }) => void;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
+  copyText: NonNullable<InteractiveDemoEditorPageProps["copyText"]>;
 }) => {
   const orderedScenes = useMemo(() => sortedScenes(scenes), [scenes]);
   const [demoDraft, setDemoDraft] = useState<DemoDraft>(() => demoDraftFromDemo(demo));
@@ -741,6 +754,20 @@ const InteractiveDemoEditorLoaded = ({
     }
   };
 
+  const handleCopyText = async (text: string, successMessage: string) => {
+    setPendingAction("publish:copy");
+    setMessage(null);
+
+    try {
+      await copyText(text);
+      setMessage(successMessage);
+    } catch {
+      setMessage("Could not copy to clipboard.");
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
   const nextTargetSceneId = (sceneId: string) => (
     orderedScenes.find((candidate) => candidate.id !== sceneId)?.id ?? null
   );
@@ -855,6 +882,11 @@ const InteractiveDemoEditorLoaded = ({
     }
   };
 
+  const activePublishLink = publishStatus.publish_link;
+  const publicDemoUrl = activePublishLink ? absolutePortalUrl(activePublishLink.public_url) : "";
+  const embedDemoUrl = activePublishLink ? embedUrlFromPublicUrl(activePublishLink.public_url) : "";
+  const embedCode = activePublishLink ? iframeEmbedCode(embedDemoUrl, demo.title) : "";
+
   return (
     <PortalShell projectId={projectId} interactiveDemoId={interactiveDemoId} performLogout={performLogout} navigate={navigate}>
       <section className={styles.header}>
@@ -913,33 +945,49 @@ const InteractiveDemoEditorLoaded = ({
           <section className={styles.panel} aria-labelledby="demo-publishing-heading">
             <h2 className={styles.sectionTitle} id="demo-publishing-heading">Publishing</h2>
             <div className={styles.publishStack}>
-            {publishStatus.publish_link ? (
-              <>
-                <label className={styles.field}>
-                  Public demo URL
-                  <input readOnly value={absolutePortalUrl(publishStatus.publish_link.public_url)} />
-                </label>
-                <a
-                  className={styles.sourceLink}
-                  href={absolutePortalUrl(publishStatus.publish_link.public_url)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open public demo
-                </a>
-                <label className={styles.field}>
-                  Embed demo URL
-                  <input readOnly value={embedUrlFromPublicUrl(publishStatus.publish_link.public_url)} />
-                </label>
-                <label className={styles.field}>
-                  Embed iframe code
-                  <textarea
-                    readOnly
-                    value={iframeEmbedCode(embedUrlFromPublicUrl(publishStatus.publish_link.public_url), demo.title)}
-                  />
-                </label>
-                <label className={styles.field}>
-                  Publish visibility
+              {activePublishLink ? (
+                <>
+                  <label className={styles.field}>
+                    Public demo URL
+                    <input readOnly value={publicDemoUrl} />
+                  </label>
+                  <a
+                    className={styles.sourceLink}
+                    href={publicDemoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open public demo
+                  </a>
+                  <button
+                    className={styles.secondaryButton}
+                    type="button"
+                    disabled={pendingAction === "publish:copy"}
+                    onClick={() => void handleCopyText(publicDemoUrl, "Public demo URL copied.")}
+                  >
+                    Copy public demo URL
+                  </button>
+                  <label className={styles.field}>
+                    Embed demo URL
+                    <input readOnly value={embedDemoUrl} />
+                  </label>
+                  <label className={styles.field}>
+                    Embed iframe code
+                    <textarea
+                      readOnly
+                      value={embedCode}
+                    />
+                  </label>
+                  <button
+                    className={styles.secondaryButton}
+                    type="button"
+                    disabled={pendingAction === "publish:copy"}
+                    onClick={() => void handleCopyText(embedCode, "Embed iframe code copied.")}
+                  >
+                    Copy embed iframe code
+                  </button>
+                  <label className={styles.field}>
+                    Publish visibility
                     <select
                       value={publishDraft.visibility}
                       onChange={(event) => updatePublishDraft("visibility", event.target.value as PublishDraft["visibility"])}
@@ -961,7 +1009,7 @@ const InteractiveDemoEditorLoaded = ({
                     <input
                       type="password"
                       value={publishDraft.password}
-                      placeholder={publishStatus.publish_link.password_protected ? "Password is set" : "No password set"}
+                      placeholder={activePublishLink.password_protected ? "Password is set" : "No password set"}
                       onChange={(event) => updatePublishDraft("password", event.target.value)}
                     />
                   </label>

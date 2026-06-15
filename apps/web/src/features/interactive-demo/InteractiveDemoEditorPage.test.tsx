@@ -165,6 +165,7 @@ const renderPage = (overrides: {
   currentPath?: string;
   navigate?: (path: string) => void;
   performLogout?: () => Promise<void>;
+  copyText?: (text: string) => Promise<void>;
 } = {}) => {
   const loadDemo = overrides.loadDemo ?? vi.fn(async () => ({ interactive_demo: interactiveDemo }));
   const loadScenes = overrides.loadScenes ?? vi.fn(async () => ({ demo_scenes: [firstScene, secondScene] }));
@@ -215,6 +216,7 @@ const renderPage = (overrides: {
     },
   }));
   const resolveAssetUrl = overrides.resolveAssetUrl ?? ((fileUrl: string) => `https://api.example.com${fileUrl}`);
+  const copyText = overrides.copyText ?? vi.fn(async () => undefined);
 
   render(
     <InteractiveDemoEditorPage
@@ -240,6 +242,7 @@ const renderPage = (overrides: {
       currentPath={overrides.currentPath}
       navigate={overrides.navigate}
       performLogout={overrides.performLogout}
+      copyText={copyText}
     />
   );
 
@@ -260,6 +263,7 @@ const renderPage = (overrides: {
     updatePublishAccess,
     updatePublishPassword,
     revokePublishLink,
+    copyText,
   };
 };
 
@@ -298,6 +302,7 @@ describe("InteractiveDemoEditorPage", () => {
       updatePublishAccess,
       updatePublishPassword,
       revokePublishLink,
+      copyText,
     } = renderPage();
 
     await screen.findByRole("heading", { name: "Department setup demo" });
@@ -309,6 +314,14 @@ describe("InteractiveDemoEditorPage", () => {
       `${window.location.origin}/d/demo123`
     );
     expect(screen.getByDisplayValue(`<iframe src="${window.location.origin}/d/demo123/embed" title="Department setup demo" loading="lazy"></iframe>`)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy public demo URL" }));
+    await waitFor(() => expect(copyText).toHaveBeenCalledWith(`${window.location.origin}/d/demo123`));
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy embed iframe code" }));
+    await waitFor(() => expect(copyText).toHaveBeenCalledWith(
+      `<iframe src="${window.location.origin}/d/demo123/embed" title="Department setup demo" loading="lazy"></iframe>`
+    ));
 
     fireEvent.click(screen.getByRole("button", { name: "Publish demo" }));
     await waitFor(() => expect(publishDemo).toHaveBeenCalledWith("project_1", "interactive_demo_1"));

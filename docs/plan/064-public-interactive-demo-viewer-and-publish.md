@@ -172,7 +172,7 @@ Web tests:
 - Public asset streaming now authorizes assets referenced by guide blocks or interactive demo scene backgrounds.
 - Added authenticated publish/status/access/password/revoke routes for interactive demos.
 - Added portal API helpers, route parsing, public `/d/:slug` and `/d/:slug/embed` routes, and a public interactive demo viewer.
-- Added publish controls to the interactive demo editor for public URL, open public link, embed URL, iframe embed snippet, visibility, expiry, password, publish/republish, and revoke.
+- Added publish controls to the interactive demo editor for public URL, copy public URL, open public link, embed URL, iframe embed snippet, copy embed snippet, visibility, expiry, password, publish/republish, and revoke.
 
 ## Verification
 
