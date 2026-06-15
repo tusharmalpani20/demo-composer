@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Completed.
 
 ## Goal
 
@@ -106,6 +106,44 @@ Testing/CI:
 - production checklist covers the new hardening items
 - full test/type/lint/build suite passes
 - hardening does not require one-command self-host packaging
+
+## Implementation Notes
+
+Completed in this slice:
+
+- added `GET /healthz` liveness endpoint
+- added `GET /readyz` readiness endpoint with database ping and sanitized failure response
+- added `DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES` for JSON body size limits
+- centralized numeric hardening config validation for JSON body size, screenshot upload size, rate-limit max attempts, and rate-limit window
+- added local in-memory rate limiting for login, first-run setup, public password unlock, and invite acceptance
+- preserved Fastify parser 4xx statuses instead of converting body/parser failures into generic 500 responses
+- updated env example, self-hosting docs, production readiness checklist, and operations docs
+
+Deferred intentionally:
+
+- distributed rate limiting
+- Redis or external limiter stores
+- automated storage retention cleanup
+- mandatory dependency audit in CI
+
+## Verification
+
+Run on 2026-06-15:
+
+```bash
+pnpm --filter server test -- src/app.test.ts src/config/startup.config.test.ts
+pnpm --filter server test
+pnpm --filter server check-types
+pnpm --filter server lint
+pnpm --filter server build
+pnpm --filter server test:db
+pnpm --filter web test
+pnpm --filter web check-types
+pnpm --filter web lint
+pnpm --filter web build
+```
+
+Note: the first full `web test` run had a transient `App.test.tsx` timing failure. `App.test.tsx` passed in isolation immediately after, and the full `web test` suite passed on rerun without code changes.
 
 ## Out Of Scope
 
