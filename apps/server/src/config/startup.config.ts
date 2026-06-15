@@ -1,5 +1,10 @@
 import { get_cookie_config } from "./cookie.config";
 import { get_cors_config } from "./cors.config";
+import {
+    get_json_body_limit_bytes,
+    get_max_screenshot_upload_bytes,
+    get_rate_limit_config,
+} from "./production-hardening.config";
 
 const required_database_env = [
     "DB_HOST",
@@ -27,4 +32,7 @@ export const validate_server_startup_config = () => {
 
     get_cookie_config();
     get_cors_config();
+    get_json_body_limit_bytes();
+    get_max_screenshot_upload_bytes();
+    get_rate_limit_config();
 };

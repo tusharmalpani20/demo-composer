@@ -82,4 +82,36 @@ describe("startup config", () => {
 
     expect(() => validate_server_startup_config()).not.toThrow();
   });
+
+  it("rejects invalid numeric production hardening config", () => {
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES: "0",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES must be a positive integer"
+    );
+
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES: "not-a-number",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES must be a positive integer"
+    );
+
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS: "-1",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS must be a positive integer"
+    );
+  });
 });

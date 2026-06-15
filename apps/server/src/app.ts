@@ -9,6 +9,11 @@ import { error_handler } from './common/helper_function/error_handler.helper.js'
 import { get_cookie_config } from "./config/cookie.config.js";
 import { get_cors_config } from "./config/cors.config.js";
 import { initialize_event_emitter } from './config/event.config.js';
+import {
+  get_json_body_limit_bytes,
+  get_max_screenshot_upload_bytes,
+  get_rate_limit_config,
+} from "./config/production-hardening.config.js";
 import requestDec from './config/fastify_decoder.config.js';
 import { pool } from './config/database.config.js';
 import {
@@ -91,18 +96,59 @@ type BuildOptions = FastifyServerOptions & {
   guide_service?: GuideRouteDependencies["guide_service"];
   interactive_demo_service?: InteractiveDemoRouteDependencies["interactive_demo_service"];
   publish_service?: PublishRouteDependencies["publish_service"];
+  readiness_check?: () => Promise<void>;
 };
 
 const default_local_storage_root = () => (
     process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT || "./storage"
 );
 
-const default_max_screenshot_upload_bytes = () => {
-    const configured = Number(process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES);
+const production_hardened_routes = [
+  {
+    key: "authentication_login",
+    method: "POST",
+    pattern: /^\/api\/v1\/authentication\/login$/,
+  },
+  {
+    key: "first_run_setup",
+    method: "POST",
+    pattern: /^\/api\/v1\/setup\/first-run$/,
+  },
+  {
+    key: "public_viewer_session",
+    method: "POST",
+    pattern: /^\/api\/v1\/public\/publish-links\/[^/]+\/viewer-sessions$/,
+  },
+  {
+    key: "public_invite_accept",
+    method: "POST",
+    pattern: /^\/api\/v1\/public\/invites\/[^/]+\/accept$/,
+  },
+] as const;
 
-    return Number.isFinite(configured) && configured > 0
-        ? configured
-        : 10 * 1024 * 1024;
+type RateLimitBucket = {
+  count: number;
+  reset_at: number;
+};
+
+const rate_limit_buckets = new Map<string, RateLimitBucket>();
+
+const client_ip_from_request = (request: { headers: Record<string, unknown>; ip: string }) => {
+  const forwarded_for = request.headers["x-forwarded-for"];
+
+  if (typeof forwarded_for === "string" && forwarded_for.trim()) {
+    return forwarded_for.split(",")[0]?.trim() || request.ip;
+  }
+
+  return request.ip;
+};
+
+const matched_rate_limited_route = (method: string, url: string) => {
+  const pathname = url.split("?")[0] ?? url;
+
+  return production_hardened_routes.find((route) => (
+    route.method === method && route.pattern.test(pathname)
+  ));
 };
 
 export const build = (opts: BuildOptions = {}) => {
@@ -118,10 +164,78 @@ export const build = (opts: BuildOptions = {}) => {
       guide_service,
       interactive_demo_service,
       publish_service,
+      readiness_check = async () => {
+          await pool.query("SELECT 1");
+      },
       ...fastify_options
   } = opts;
-  const app = fastify(fastify_options);
-  const max_screenshot_upload_bytes = default_max_screenshot_upload_bytes();
+  const app = fastify({
+      bodyLimit: get_json_body_limit_bytes(),
+      ...fastify_options,
+  });
+  const max_screenshot_upload_bytes = get_max_screenshot_upload_bytes();
+  const rate_limit_config = get_rate_limit_config();
+
+  app.addHook("onRequest", async (request, reply) => {
+      const route = matched_rate_limited_route(request.method, request.url);
+
+      if (!route) {
+          return;
+      }
+
+      const now = Date.now();
+      const client_ip = client_ip_from_request(request);
+      const bucket_key = `${route.key}:${client_ip}`;
+      const existing_bucket = rate_limit_buckets.get(bucket_key);
+      const bucket = existing_bucket && existing_bucket.reset_at > now
+          ? existing_bucket
+          : {
+              count: 0,
+              reset_at: now + rate_limit_config.window_ms,
+          };
+
+      bucket.count += 1;
+      rate_limit_buckets.set(bucket_key, bucket);
+
+      if (bucket.count > rate_limit_config.max_attempts) {
+          const retry_after_seconds = Math.max(1, Math.ceil((bucket.reset_at - now) / 1000));
+          return reply
+              .status(429)
+              .header("retry-after", String(retry_after_seconds))
+              .send({
+                  error: {
+                      type: "rate_limited",
+                      message: "Too many requests. Try again later.",
+                  },
+              });
+      }
+  });
+
+  app.get("/healthz", async (_request, reply) => (
+      reply.status(200).send({
+          status: "ok",
+          service: "demo-composer-api",
+      })
+  ));
+
+  app.get("/readyz", async (_request, reply) => {
+      try {
+          await readiness_check();
+          return reply.status(200).send({
+              status: "ready",
+              checks: {
+                  database: "ok",
+              },
+          });
+      } catch {
+          return reply.status(503).send({
+              status: "not_ready",
+              checks: {
+                  database: "unavailable",
+              },
+          });
+      }
+  });
 
   // Register request decorators first
   app.register(requestDec);

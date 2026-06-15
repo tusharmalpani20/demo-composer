@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { build } from "./app";
+import { InvalidCredentialsError, UnauthenticatedSessionError } from "./modules/authentication/session.routes";
 
 describe("app configuration", () => {
   const original_env = { ...process.env };
@@ -55,6 +56,154 @@ describe("app configuration", () => {
       title: "Demo Composer",
       description: "Demo Composer API",
     });
+
+    await app.close();
+  });
+
+  it("exposes liveness and readiness endpoints without leaking database details", async () => {
+    const ready_app = build({
+      logger: false,
+      readiness_check: async () => undefined,
+    });
+    const unavailable_app = build({
+      logger: false,
+      readiness_check: async () => {
+        throw new Error("postgres://user:secret@db.internal/demo_composer");
+      },
+    });
+
+    const liveness_response = await ready_app.inject({
+      method: "GET",
+      url: "/healthz",
+    });
+    const readiness_response = await ready_app.inject({
+      method: "GET",
+      url: "/readyz",
+    });
+    const unavailable_response = await unavailable_app.inject({
+      method: "GET",
+      url: "/readyz",
+    });
+
+    expect(liveness_response.statusCode).toBe(200);
+    expect(liveness_response.json()).toEqual({
+      status: "ok",
+      service: "demo-composer-api",
+    });
+    expect(readiness_response.statusCode).toBe(200);
+    expect(readiness_response.json()).toEqual({
+      status: "ready",
+      checks: {
+        database: "ok",
+      },
+    });
+    expect(unavailable_response.statusCode).toBe(503);
+    expect(unavailable_response.body).not.toContain("postgres://");
+    expect(unavailable_response.json()).toEqual({
+      status: "not_ready",
+      checks: {
+        database: "unavailable",
+      },
+    });
+
+    await ready_app.close();
+    await unavailable_app.close();
+  });
+
+  it("rate limits repeated login attempts by route and client", async () => {
+    process.env.DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS = "2";
+    process.env.DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS = "60000";
+
+    const app = build({
+      logger: false,
+      authentication_session_service: {
+        get_current_auth_context: async () => {
+          throw new UnauthenticatedSessionError();
+        },
+        login: async () => {
+          throw new InvalidCredentialsError();
+        },
+        logout: async () => undefined,
+      },
+    });
+
+    const request_login = () => app.inject({
+      method: "POST",
+      url: "/api/v1/authentication/login",
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": "203.0.113.10",
+      },
+      payload: {
+        email: "owner@example.com",
+        password: "wrong password",
+      },
+    });
+
+    expect((await request_login()).statusCode).toBe(401);
+    expect((await request_login()).statusCode).toBe(401);
+
+    const limited_response = await request_login();
+
+    expect(limited_response.statusCode).toBe(429);
+    expect(limited_response.json()).toEqual({
+      error: {
+        type: "rate_limited",
+        message: "Too many requests. Try again later.",
+      },
+    });
+    expect(limited_response.headers["retry-after"]).toBe("60");
+
+    await app.close();
+  });
+
+  it("rate limits setup, public password unlock, and invite acceptance routes", async () => {
+    process.env.DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS = "1";
+    process.env.DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS = "60000";
+
+    const app = build({ logger: false });
+    const request = async (url: string, ip: string) => (
+      app.inject({
+        method: "POST",
+        url,
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": ip,
+        },
+        payload: "",
+      })
+    );
+
+    expect((await request("/api/v1/setup/first-run", "203.0.113.20")).statusCode).toBe(400);
+    expect((await request("/api/v1/setup/first-run", "203.0.113.20")).statusCode).toBe(429);
+
+    expect((await request("/api/v1/public/publish-links/demo123/viewer-sessions", "203.0.113.21")).statusCode).toBe(400);
+    expect((await request("/api/v1/public/publish-links/demo123/viewer-sessions", "203.0.113.21")).statusCode).toBe(429);
+
+    expect((await request("/api/v1/public/invites/plain-token/accept", "203.0.113.22")).statusCode).toBe(400);
+    expect((await request("/api/v1/public/invites/plain-token/accept", "203.0.113.22")).statusCode).toBe(429);
+
+    await app.close();
+  });
+
+  it("uses the configured JSON body limit", async () => {
+    process.env.DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES = "32";
+
+    const app = build({ logger: false });
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/authentication/login",
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": "203.0.113.30",
+      },
+      payload: {
+        email: "owner@example.com",
+        password: "this password body is deliberately too large for the configured limit",
+      },
+    });
+
+    expect(response.statusCode).toBe(413);
 
     await app.close();
   });

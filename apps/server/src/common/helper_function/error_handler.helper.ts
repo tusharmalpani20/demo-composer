@@ -13,17 +13,15 @@ const default_error = {
     type: "internal_server_error",
 };
 
+const safe_client_error_statuses = new Set([400, 413, 415]);
+
 export const error_handler = (
     error: FastifyError,
     request: FastifyRequest,
     reply: FastifyReply
 ) => {
-    console.log("error handler")
-    console.error(error);
-
     if (hasZodFastifySchemaValidationErrors(error)) {
         const field_errors = error.validation.map((validation_error) => {
-            console.log(validation_error)
             return {
                 field: validation_error.instancePath.replace("/", ""),
                 message: validation_error.message,
@@ -67,6 +65,30 @@ export const error_handler = (
             timestamp: new Date().toISOString(),
         })
     }
+
+    if (
+        error.statusCode
+        && safe_client_error_statuses.has(error.statusCode)
+    ) {
+        return reply.status(error.statusCode).send({
+            code: error.statusCode,
+            path: request.url,
+            message: response_message.enum.error,
+            timestamp: new Date().toISOString(),
+            result: [
+                {
+                    message: error.statusCode === 413 ? "Request body is too large" : "Invalid request body",
+                    type: error.code ?? "client_request_error",
+                    field: ""
+                },
+            ],
+        } as const);
+    }
+
+    request.log.error({
+        err: error,
+        path: request.url,
+    }, "Unhandled request error");
 
     return reply.status(default_error.code).send({
         code: default_error.code,
