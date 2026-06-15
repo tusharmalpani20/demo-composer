@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Completed.
 
 ## Goal
 
@@ -186,6 +186,41 @@ Web tests:
 - invite tokens are not stored in plaintext
 - inviting people does not require SMTP to be configured
 - owner/member roles are stored on `org_user`, but role editing is deferred
+
+## Implementation Notes
+
+Completed in this slice:
+
+- added `organization_schema.org_invite` with hashed invite tokens, role/status constraints, and pending duplicate protection
+- added owner-only organization member and invite APIs
+- added public invite lookup and invite acceptance APIs
+- invite acceptance creates a user when needed, links `org_user`, issues a web session cookie, and rejects mismatched existing users
+- added `/organization/members` portal page for listing members, creating one-time invite links, copying the invite link, and revoking pending invites
+- added `/invites/:token` public page for accepting invites as a new user or after signing in as an existing user
+- added route parsing and API client helpers for the organization invite workflow
+
+Deferred intentionally:
+
+- SMTP/email delivery
+- role editing UI
+- project-level ACL enforcement
+- hosted public signup
+- global portal navigation entry for organization settings
+
+## Verification
+
+Run on 2026-06-15:
+
+```bash
+pnpm --filter web test
+pnpm --filter web check-types
+pnpm --filter web lint
+pnpm --filter web build
+pnpm --filter server test
+pnpm --filter server check-types
+pnpm --filter server lint
+pnpm --filter server test:db
+```
 
 ## Out Of Scope
 
