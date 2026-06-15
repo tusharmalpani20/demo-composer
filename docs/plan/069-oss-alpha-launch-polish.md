@@ -2,7 +2,7 @@
 
 Date: 2026-06-16
 
-Status: Planned.
+Status: Implemented.
 
 ## Goal
 
@@ -274,6 +274,17 @@ Do not include private goals, credentials, or unsupported claims.
 - no false marketing claims are added.
 - no private URLs/secrets/tokens are introduced.
 - `rtk git diff --check` passes.
+
+## Implementation Notes
+
+- Rewrote `README.md` as an OSS alpha front door with product pitch, feature matrix, current capabilities, deferred scope, quick local path, extension instructions, verification commands, architecture summary, and links to key docs.
+- Updated `CONTRIBUTING.md` to reflect that interactive demos are now built at alpha level and to point contributors to the contributor guide and smoke command.
+- Added `docs/roadmap.md` with alpha-now, V1-hardening, later, and not-planned-for-v1 sections.
+- Added `docs/contributor-guide.md` with repo layout, planning flow, test commands, backend pattern, good first areas, and privacy notes.
+- Added `docs/oss-alpha-summary.md` for public repo/application/launch reuse.
+- Added GitHub issue templates for bug reports, feature requests, and documentation issues.
+- Refreshed `docs/project-zoomout-status.md` and `docs/backend-route-inventory.md` so README-linked status docs do not contradict current guide/demo/org/publish behavior.
+- Did not add screenshots because no fresh truthful product screenshots were produced in this slice.
 
 ## Suggested Commit Shape
 
