@@ -1,4 +1,5 @@
 import { Password } from "../../common/services/password.common.service";
+import { get_public_instance_config } from "../public-instance/public-instance.config";
 import {
   generate_session_token,
   hash_session_token,
@@ -68,6 +69,12 @@ export class FirstRunSetupAlreadyCompletedError extends Error {
   }
 }
 
+export class FirstRunSetupUnavailableError extends Error {
+  constructor() {
+    super("First-run setup is not available for this instance");
+  }
+}
+
 export class UnsafeOwnerPasswordError extends Error {
   constructor(message = "Owner password is too weak") {
     super(message);
@@ -114,6 +121,10 @@ export const build_first_run_setup_service = (repository: FirstRunSetupRepositor
       name: string;
     };
   }) => {
+    if (get_public_instance_config().onboarding_mode !== "first_run_setup") {
+      throw new FirstRunSetupUnavailableError();
+    }
+
     assert_safe_owner_password(input.owner.password);
 
     if (await repository.owner_exists()) {

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { build_first_run_setup_routes } from "./first-run-setup.routes";
 import {
   FirstRunSetupAlreadyCompletedError,
+  FirstRunSetupUnavailableError,
   UnsafeOwnerPasswordError,
 } from "./first-run-setup.service";
 
@@ -129,6 +130,37 @@ describe("first-run setup routes", () => {
     });
 
     expect(response.statusCode).toBe(409);
+  });
+
+  it("maps unavailable first-run setup to conflict", async () => {
+    const app = await build_test_app();
+    await app.register(build_first_run_setup_routes({
+      complete_first_run_setup: async () => {
+        throw new FirstRunSetupUnavailableError();
+      },
+    }), { prefix: "/api/v1/setup" });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/setup/first-run",
+      payload: {
+        owner: {
+          email: "owner@example.com",
+          password: "safe local password",
+        },
+        organization: {
+          name: "Acme",
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toEqual({
+      error: {
+        type: "first_run_setup_unavailable",
+        message: "First-run setup is not available for this instance",
+      },
+    });
   });
 
   it("maps unsafe owner passwords to bad request", async () => {

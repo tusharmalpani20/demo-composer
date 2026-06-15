@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   build_first_run_setup_service,
   type FirstRunSetupRepository,
@@ -61,6 +61,12 @@ const build_repository = (): FirstRunSetupRepository & {
 };
 
 describe("first-run setup service", () => {
+  const original_env = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...original_env };
+  });
+
   it("creates the first owner organization and web session", async () => {
     const repository = build_repository();
     const service = build_first_run_setup_service(repository);
@@ -104,6 +110,28 @@ describe("first-run setup service", () => {
     expect(result.auth.user.email).toBe("owner@example.com");
     expect(result.auth.organization.name).toBe("Acme");
     expect(result.auth.org_user.role).toBe("owner");
+  });
+
+  it("rejects first-run setup when onboarding mode is signup", async () => {
+    process.env.DEMO_COMPOSER_DEPLOYMENT_MODE = "hosted";
+    process.env.DEMO_COMPOSER_ONBOARDING_MODE = "signup";
+    const repository = build_repository();
+    const service = build_first_run_setup_service(repository);
+
+    await expect(service.complete_first_run_setup({
+      owner: {
+        email: "owner@example.com",
+        password: "safe local password",
+      },
+      organization: {
+        name: "Acme",
+      },
+    })).rejects.toThrow("First-run setup is not available for this instance");
+
+    expect(repository.users).toHaveLength(0);
+    expect(repository.organizations).toHaveLength(0);
+    expect(repository.org_users).toHaveLength(0);
+    expect(repository.sessions).toHaveLength(0);
   });
 
   it("rejects unsafe owner passwords before creating setup records", async () => {

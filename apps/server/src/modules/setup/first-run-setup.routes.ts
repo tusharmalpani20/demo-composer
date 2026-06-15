@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import {
   FirstRunSetupAlreadyCompletedError,
+  FirstRunSetupUnavailableError,
   UnsafeOwnerPasswordError,
 } from "./first-run-setup.service";
 import {
@@ -70,6 +71,15 @@ export const build_first_run_setup_routes = (
             error: {
               type: "first_run_setup_completed",
               message: "First-run setup has already been completed",
+            },
+          });
+        }
+
+        if (error instanceof FirstRunSetupUnavailableError) {
+          return reply.status(409).send({
+            error: {
+              type: "first_run_setup_unavailable",
+              message: "First-run setup is not available for this instance",
             },
           });
         }
