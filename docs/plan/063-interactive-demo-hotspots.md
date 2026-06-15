@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Completed.
 
 ## Goal
 
@@ -142,6 +142,14 @@ Web tests:
 - hotspot data is org/project/demo scoped
 - normalized coordinates survive responsive rendering
 - the demo editor can fetch scenes with their hotspots for later preview/publish work
+
+## Implementation Notes
+
+- Added `interactive_demo_schema.demo_hotspot` with normalized coordinate constraints and stable per-scene order.
+- Added authenticated hotspot create/list/update/reorder/delete APIs under interactive demo scenes.
+- Added repository and service validation for scene ownership, target-scene ownership, valid coordinates, and complete reorder payloads.
+- Added portal API helpers plus editor overlay rendering and numeric hotspot authoring controls.
+- Kept drag handles, public viewer playback, and publish snapshotting out of this slice as planned.
 
 ## Out Of Scope
 
