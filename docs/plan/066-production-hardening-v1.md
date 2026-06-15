@@ -28,7 +28,7 @@ Still needed:
 
 - rate limiting
 - health/readiness endpoint
-- config validation summary
+- config validation summary for request/upload/rate-limit settings
 - backup/restore documentation
 - storage cleanup/retention guidance
 - stronger public/auth abuse protections
@@ -39,18 +39,21 @@ Still needed:
 
 Backend runtime:
 
-- add `/api/v1/health` or `/healthz` endpoint
-- separate liveness from readiness if the readiness check touches the database
-- add startup config validation for production-critical environment variables
+- add `GET /healthz` for liveness with no database dependency
+- add `GET /readyz` for readiness with a database ping
+- readiness response should report stable high-level component status only, not credentials or internal DSNs
+- add startup config validation for production-critical request/upload/rate-limit environment variables
 - add rate limits for:
-  - login
-  - first-run setup
-  - public password verification
-  - invite acceptance if plan 065 has landed
-  - public guide/demo resolution if needed
+  - `POST /api/v1/authentication/login`
+  - `POST /api/v1/setup/first-run`
+  - `POST /api/v1/public/publish-links/:slug/viewer-sessions`
+  - `POST /api/v1/public/invites/:token/accept`
+  - public guide/demo resolution only if the implementation stays low-risk
 - review multipart upload limits and enforce configured size consistently
 - ensure error responses do not leak internals
-- set and document request body limits for JSON routes
+- set and document request body limits for JSON routes through `DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES`
+- keep upload limits controlled through `DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES`
+- add a small local in-memory limiter for this v1 slice; avoid external stores or Redis
 
 Storage/operations:
 
@@ -69,6 +72,7 @@ Security:
 - confirm public asset access is snapshot-scoped
 - add basic brute-force protection tests where rate limiting is introduced
 - add `pnpm audit` or documented dependency review guidance, even if not mandatory in CI yet
+- do not log submitted passwords, invite tokens, public viewer passwords, cookie values, or bearer tokens
 
 Testing/CI:
 
@@ -76,23 +80,29 @@ Testing/CI:
 - add tests for rate limits
 - keep DB integration in CI
 - avoid adding external service dependencies
+- keep rate-limit tests deterministic by injecting limiter options where needed
 
 ## Recommended Implementation Order
 
-1. Add health endpoint and tests.
-2. Add production config validation tests.
-3. Add rate limiting plugin/config and focused route tests.
-4. Update production readiness docs.
-5. Add backup/restore docs.
-6. Add dependency/security review docs or CI step if stable.
-7. Re-run full verification.
+1. Add health/readiness tests.
+2. Implement health/readiness routes.
+3. Add request limit and rate-limit config tests.
+4. Implement startup validation for the new numeric config.
+5. Add route-level rate-limit tests.
+6. Implement in-memory rate limiting for login, first-run setup, public password unlock, and invite acceptance.
+7. Update production readiness, self-hosting, backup/restore, and security review docs.
+8. Re-run full verification.
 
 ## Acceptance Criteria
 
 - production startup fails early for unsafe critical config
 - health endpoint exists for reverse proxies and uptime checks
+- readiness endpoint can fail when the database is unavailable without breaking liveness
 - auth/public password/setup endpoints have basic abuse protection
+- invite acceptance has basic abuse protection
+- JSON and screenshot upload limits are configurable and documented
 - docs explain backup and restore for DB plus local storage
+- docs explain storage permissions, retention cleanup expectations, reverse proxy headers, HTTPS, token/cookie rotation, and dependency review
 - production checklist covers the new hardening items
 - full test/type/lint/build suite passes
 - hardening does not require one-command self-host packaging
@@ -106,3 +116,5 @@ Testing/CI:
 - multi-region deployment
 - external observability stack
 - enterprise audit logging
+- distributed rate limiting
+- Redis or external limiter stores
