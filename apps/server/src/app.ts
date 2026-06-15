@@ -61,6 +61,12 @@ import {
 import { build_guide_repository } from './modules/guide/guide.repository.js';
 import { build_guide_service } from './modules/guide/guide.service.js';
 import {
+  build_interactive_demo_routes,
+  type InteractiveDemoRouteDependencies,
+} from './modules/interactive-demo/interactive-demo.routes.js';
+import { build_interactive_demo_repository } from './modules/interactive-demo/interactive-demo.repository.js';
+import { build_interactive_demo_service } from './modules/interactive-demo/interactive-demo.service.js';
+import {
   build_publish_routes,
   type PublishRouteDependencies,
 } from './modules/publish/publish.routes.js';
@@ -76,6 +82,7 @@ type BuildOptions = FastifyServerOptions & {
   capture_asset_service?: CaptureAssetRouteDependencies["capture_asset_service"];
   capture_event_service?: CaptureEventRouteDependencies["capture_event_service"];
   guide_service?: GuideRouteDependencies["guide_service"];
+  interactive_demo_service?: InteractiveDemoRouteDependencies["interactive_demo_service"];
   publish_service?: PublishRouteDependencies["publish_service"];
 };
 
@@ -101,6 +108,7 @@ export const build = (opts: BuildOptions = {}) => {
       capture_asset_service,
       capture_event_service,
       guide_service,
+      interactive_demo_service,
       publish_service,
       ...fastify_options
   } = opts;
@@ -300,6 +308,17 @@ export const build = (opts: BuildOptions = {}) => {
           }
       ),
       capture_asset_service: default_capture_asset_service,
+  }), {
+      prefix: "/api/v1/projects",
+  });
+
+  app.register(build_interactive_demo_routes({
+      auth_service: {
+          get_current_auth_context: default_authentication_session_service.get_current_auth_context,
+      },
+      interactive_demo_service: interactive_demo_service ?? build_interactive_demo_service(
+          build_interactive_demo_repository(pool)
+      ),
   }), {
       prefix: "/api/v1/projects",
   });
