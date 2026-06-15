@@ -68,6 +68,8 @@ Common web variable:
 VITE_DEMO_COMPOSER_API_URL
 ```
 
+The web dev server listens on `http://localhost:3000`. When `VITE_DEMO_COMPOSER_API_URL` is not set, it proxies `/api` requests to `http://localhost:3002`, matching the server example port.
+
 ## Database
 
 You can use an existing PostgreSQL server or start the local helper container:

@@ -318,6 +318,7 @@ Implemented:
 - `.env-cmdrc` example updates for deployment, onboarding, storage, and upload-size config
 - development and production readiness doc updates
 - generated local data ignores for `temp/`, `storage/`, and `storage-test/`
+- web dev proxy default aligned with the documented server port
 
 Not implemented:
 

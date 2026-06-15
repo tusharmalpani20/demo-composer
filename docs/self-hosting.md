@@ -21,6 +21,16 @@ docker compose up -d postgres
 pnpm install
 ```
 
+## Configure The Portal
+
+For local development, the web portal runs on `http://localhost:3000` and proxies same-origin `/api` requests to `http://localhost:3002`.
+
+If the portal is served from a different origin without that dev proxy, set:
+
+```text
+VITE_DEMO_COMPOSER_API_URL=https://api.example.com
+```
+
 ## Configure The Server
 
 Create `apps/server/.env-cmdrc` from `apps/server/.env-cmdrc.example`.
@@ -54,6 +64,7 @@ For a local self-hosted evaluation using the provided Compose database:
 ```
 
 For production, set `NODE_ENV=production`, `DEV_TYPE=production`, a strong `COOKIE_SECRET`, and explicit `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS`.
+For a production portal build, set `VITE_DEMO_COMPOSER_API_URL` when the API is not served from the same origin as the portal.
 
 ## Database
 
