@@ -4,14 +4,19 @@ import {
   createInteractiveDemoHotspot,
   deleteInteractiveDemoHotspot,
   deleteInteractiveDemoScene,
+  getInteractiveDemoPublishStatus,
   getInteractiveDemo,
   listInteractiveDemoHotspots,
   listInteractiveDemoScenes,
+  publishInteractiveDemo,
   reorderInteractiveDemoHotspots,
   reorderInteractiveDemoScenes,
   resolveApiAssetUrl,
+  revokeInteractiveDemoPublishLink,
   updateInteractiveDemoHotspot,
   updateInteractiveDemo,
+  updateInteractiveDemoPublishAccess,
+  updateInteractiveDemoPublishPassword,
   updateInteractiveDemoScene,
   type InteractiveDemoHotspotCreateResponse,
   type InteractiveDemoHotspotListResponse,
@@ -23,6 +28,7 @@ import {
   type InteractiveDemoSceneUpdateResponse,
 } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
+import type { GuidePublishStatusResponse, GuideRevokePublishResult } from "../guide/types";
 import { PortalTopbar } from "../portal/PortalTopbar";
 import type {
   CreateDemoHotspotInput,
@@ -38,7 +44,13 @@ import styles from "./InteractiveDemoEditorPage.module.css";
 
 type LoadState =
   | { status: "loading" }
-  | { status: "loaded"; demo: InteractiveDemo; scenes: DemoScene[]; hotspotsBySceneId: Record<string, DemoHotspot[]> }
+  | {
+    status: "loaded";
+    demo: InteractiveDemo;
+    scenes: DemoScene[];
+    hotspotsBySceneId: Record<string, DemoHotspot[]>;
+    publishStatus: GuidePublishStatusResponse;
+  }
   | { status: "unauthenticated" }
   | { status: "not_found" }
   | { status: "error" };
@@ -63,6 +75,12 @@ type HotspotDraft = {
   width: string;
   height: string;
   target_scene_id: string;
+};
+
+type PublishDraft = {
+  visibility: "public" | "restricted";
+  expires_at: string;
+  password: string;
 };
 
 export type InteractiveDemoEditorPageProps = {
@@ -112,6 +130,19 @@ export type InteractiveDemoEditorPageProps = {
     hotspotIds: string[]
   ) => Promise<InteractiveDemoHotspotReorderResponse>;
   deleteHotspot?: (projectId: string, interactiveDemoId: string, sceneId: string, hotspotId: string) => Promise<void>;
+  loadPublishStatus?: (projectId: string, interactiveDemoId: string) => Promise<GuidePublishStatusResponse>;
+  publishDemo?: (projectId: string, interactiveDemoId: string) => Promise<GuidePublishStatusResponse>;
+  updatePublishAccess?: (
+    projectId: string,
+    interactiveDemoId: string,
+    input: { visibility: "public" | "restricted"; expires_at: string | null }
+  ) => Promise<GuidePublishStatusResponse>;
+  updatePublishPassword?: (
+    projectId: string,
+    interactiveDemoId: string,
+    input: { password: string | null }
+  ) => Promise<GuidePublishStatusResponse>;
+  revokePublishLink?: (projectId: string, interactiveDemoId: string) => Promise<GuideRevokePublishResult>;
   resolveAssetUrl?: (fileUrl: string) => string;
   currentPath?: string;
   performLogout?: () => Promise<void>;
@@ -197,6 +228,69 @@ const sceneAssetFileUrl = (projectId: string, scene: DemoScene) => {
   return `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(scene.source_capture_session_id)}/assets/${encodeURIComponent(scene.background_capture_asset_id)}/file`;
 };
 
+const unpublishedStatus = (): GuidePublishStatusResponse => ({
+  publish_link: null,
+  published_artifact: null,
+});
+
+const publishDraftFromStatus = (publishStatus: GuidePublishStatusResponse): PublishDraft => ({
+  visibility: publishStatus.publish_link?.visibility ?? "public",
+  expires_at: formatExpiryInputValue(publishStatus.publish_link?.expires_at ?? null),
+  password: "",
+});
+
+const formatExpiryInputValue = (expiresAt: string | null) => {
+  if (!expiresAt) {
+    return "";
+  }
+
+  const date = new Date(expiresAt);
+  if (!Number.isFinite(date.getTime())) {
+    return "";
+  }
+
+  const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60_000));
+  return localDate.toISOString().slice(0, 16);
+};
+
+const expiryInputToIso = (value: string) => {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString();
+};
+
+const absolutePortalUrl = (pathOrUrl: string) => {
+  if (/^https?:\/\//i.test(pathOrUrl)) {
+    return pathOrUrl;
+  }
+
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  return `${origin}${pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`}`;
+};
+
+const embedUrlFromPublicUrl = (pathOrUrl: string) => (
+  `${absolutePortalUrl(pathOrUrl).replace(/\/$/, "")}/embed`
+);
+
+const escapeHtmlAttribute = (value: string) => (
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+);
+
+const iframeEmbedCode = (embedUrl: string, title: string) => (
+  `<iframe src="${escapeHtmlAttribute(embedUrl)}" title="${escapeHtmlAttribute(title)}" loading="lazy"></iframe>`
+);
+
 export const InteractiveDemoEditorPage = ({
   projectId,
   interactiveDemoId,
@@ -211,6 +305,11 @@ export const InteractiveDemoEditorPage = ({
   saveHotspot = updateInteractiveDemoHotspot,
   reorderHotspots = reorderInteractiveDemoHotspots,
   deleteHotspot = deleteInteractiveDemoHotspot,
+  loadPublishStatus = getInteractiveDemoPublishStatus,
+  publishDemo = publishInteractiveDemo,
+  updatePublishAccess = updateInteractiveDemoPublishAccess,
+  updatePublishPassword = updateInteractiveDemoPublishPassword,
+  revokePublishLink = revokeInteractiveDemoPublishLink,
   resolveAssetUrl = resolveApiAssetUrl,
   currentPath = currentBrowserPath(),
   performLogout,
@@ -226,8 +325,9 @@ export const InteractiveDemoEditorPage = ({
     Promise.all([
       loadDemo(projectId, interactiveDemoId),
       loadScenes(projectId, interactiveDemoId),
+      loadPublishStatus(projectId, interactiveDemoId).catch(() => unpublishedStatus()),
     ])
-      .then(async ([demoResponse, sceneResponse]) => {
+      .then(async ([demoResponse, sceneResponse, publishStatus]) => {
         const scenes = sortedScenes(sceneResponse.demo_scenes);
         const hotspotEntries = await Promise.all(scenes.map(async (scene) => {
           try {
@@ -244,6 +344,7 @@ export const InteractiveDemoEditorPage = ({
             demo: demoResponse.interactive_demo,
             scenes,
             hotspotsBySceneId: Object.fromEntries(hotspotEntries),
+            publishStatus,
           });
         }
       })
@@ -256,7 +357,7 @@ export const InteractiveDemoEditorPage = ({
     return () => {
       active = false;
     };
-  }, [projectId, interactiveDemoId, loadDemo, loadScenes, loadHotspots, reloadKey]);
+  }, [projectId, interactiveDemoId, loadDemo, loadScenes, loadHotspots, loadPublishStatus, reloadKey]);
 
   if (state.status === "loading") {
     return (
@@ -305,6 +406,7 @@ export const InteractiveDemoEditorPage = ({
       demo={state.demo}
       scenes={state.scenes}
       hotspotsBySceneId={state.hotspotsBySceneId}
+      publishStatus={state.publishStatus}
       saveDemo={saveDemo}
       saveScene={saveScene}
       reorderScenes={reorderScenes}
@@ -313,6 +415,10 @@ export const InteractiveDemoEditorPage = ({
       saveHotspot={saveHotspot}
       reorderHotspots={reorderHotspots}
       deleteHotspot={deleteHotspot}
+      publishDemo={publishDemo}
+      updatePublishAccess={updatePublishAccess}
+      updatePublishPassword={updatePublishPassword}
+      revokePublishLink={revokePublishLink}
       resolveAssetUrl={resolveAssetUrl}
       setLoadedState={(next) => setState({ status: "loaded", ...next })}
       performLogout={performLogout}
@@ -346,6 +452,7 @@ const InteractiveDemoEditorLoaded = ({
   demo,
   scenes,
   hotspotsBySceneId,
+  publishStatus,
   saveDemo,
   saveScene,
   reorderScenes,
@@ -354,6 +461,10 @@ const InteractiveDemoEditorLoaded = ({
   saveHotspot,
   reorderHotspots,
   deleteHotspot,
+  publishDemo,
+  updatePublishAccess,
+  updatePublishPassword,
+  revokePublishLink,
   resolveAssetUrl,
   setLoadedState,
   performLogout,
@@ -364,6 +475,7 @@ const InteractiveDemoEditorLoaded = ({
   demo: InteractiveDemo;
   scenes: DemoScene[];
   hotspotsBySceneId: Record<string, DemoHotspot[]>;
+  publishStatus: GuidePublishStatusResponse;
   saveDemo: NonNullable<InteractiveDemoEditorPageProps["saveDemo"]>;
   saveScene: NonNullable<InteractiveDemoEditorPageProps["saveScene"]>;
   reorderScenes: NonNullable<InteractiveDemoEditorPageProps["reorderScenes"]>;
@@ -372,8 +484,17 @@ const InteractiveDemoEditorLoaded = ({
   saveHotspot: NonNullable<InteractiveDemoEditorPageProps["saveHotspot"]>;
   reorderHotspots: NonNullable<InteractiveDemoEditorPageProps["reorderHotspots"]>;
   deleteHotspot: NonNullable<InteractiveDemoEditorPageProps["deleteHotspot"]>;
+  publishDemo: NonNullable<InteractiveDemoEditorPageProps["publishDemo"]>;
+  updatePublishAccess: NonNullable<InteractiveDemoEditorPageProps["updatePublishAccess"]>;
+  updatePublishPassword: NonNullable<InteractiveDemoEditorPageProps["updatePublishPassword"]>;
+  revokePublishLink: NonNullable<InteractiveDemoEditorPageProps["revokePublishLink"]>;
   resolveAssetUrl: (fileUrl: string) => string;
-  setLoadedState: (state: { demo: InteractiveDemo; scenes: DemoScene[]; hotspotsBySceneId: Record<string, DemoHotspot[]> }) => void;
+  setLoadedState: (state: {
+    demo: InteractiveDemo;
+    scenes: DemoScene[];
+    hotspotsBySceneId: Record<string, DemoHotspot[]>;
+    publishStatus: GuidePublishStatusResponse;
+  }) => void;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
 }) => {
@@ -381,18 +502,21 @@ const InteractiveDemoEditorLoaded = ({
   const [demoDraft, setDemoDraft] = useState<DemoDraft>(() => demoDraftFromDemo(demo));
   const [sceneDrafts, setSceneDrafts] = useState<Record<string, SceneDraft>>(() => sceneDraftsFromScenes(orderedScenes));
   const [hotspotDrafts, setHotspotDrafts] = useState<Record<string, HotspotDraft>>(() => hotspotDraftsFromHotspots(hotspotsBySceneId));
+  const [publishDraft, setPublishDraft] = useState<PublishDraft>(() => publishDraftFromStatus(publishStatus));
   const [message, setMessage] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   const updateLoadedState = (
     nextDemo: InteractiveDemo,
     nextScenes: DemoScene[],
-    nextHotspotsBySceneId: Record<string, DemoHotspot[]>
+    nextHotspotsBySceneId: Record<string, DemoHotspot[]>,
+    nextPublishStatus = publishStatus
   ) => {
     setLoadedState({
       demo: nextDemo,
       scenes: nextScenes,
       hotspotsBySceneId: nextHotspotsBySceneId,
+      publishStatus: nextPublishStatus,
     });
   };
 
@@ -411,6 +535,14 @@ const InteractiveDemoEditorLoaded = ({
         ...(drafts[sceneId] ?? { title: "", description: "" }),
         [field]: value,
       },
+    }));
+    setMessage(null);
+  };
+
+  const updatePublishDraft = (field: keyof PublishDraft, value: string) => {
+    setPublishDraft((draft) => ({
+      ...draft,
+      [field]: value,
     }));
     setMessage(null);
   };
@@ -534,6 +666,79 @@ const InteractiveDemoEditorLoaded = ({
     };
     updateLoadedState(demo, orderedScenes, nextHotspotsBySceneId);
     setHotspotDrafts(hotspotDraftsFromHotspots(nextHotspotsBySceneId));
+  };
+
+  const applyPublishStatus = (nextPublishStatus: GuidePublishStatusResponse) => {
+    updateLoadedState(demo, orderedScenes, hotspotsBySceneId, nextPublishStatus);
+    setPublishDraft(publishDraftFromStatus(nextPublishStatus));
+  };
+
+  const handlePublishDemo = async () => {
+    setPendingAction("publish");
+    setMessage(null);
+
+    try {
+      const response = await publishDemo(projectId, interactiveDemoId);
+      applyPublishStatus(response);
+      setMessage("Demo published.");
+    } catch {
+      setMessage("Could not publish demo.");
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  const handleSavePublishAccess = async () => {
+    setPendingAction("publish:access");
+    setMessage(null);
+
+    try {
+      const response = await updatePublishAccess(projectId, interactiveDemoId, {
+        visibility: publishDraft.visibility,
+        expires_at: expiryInputToIso(publishDraft.expires_at.trim()),
+      });
+      applyPublishStatus(response);
+      setMessage("Publish access saved.");
+    } catch {
+      setMessage("Could not save publish access.");
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  const handleSavePublishPassword = async () => {
+    setPendingAction("publish:password");
+    setMessage(null);
+
+    try {
+      const response = await updatePublishPassword(projectId, interactiveDemoId, {
+        password: publishDraft.password.trim() || null,
+      });
+      applyPublishStatus(response);
+      setMessage("Publish password saved.");
+    } catch {
+      setMessage("Could not save publish password.");
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  const handleRevokePublishLink = async () => {
+    setPendingAction("publish:revoke");
+    setMessage(null);
+
+    try {
+      await revokePublishLink(projectId, interactiveDemoId);
+      applyPublishStatus({
+        publish_link: null,
+        published_artifact: publishStatus.published_artifact,
+      });
+      setMessage("Demo link revoked.");
+    } catch {
+      setMessage("Could not revoke demo link.");
+    } finally {
+      setPendingAction(null);
+    }
   };
 
   const nextTargetSceneId = (sceneId: string) => (
@@ -672,37 +877,135 @@ const InteractiveDemoEditorLoaded = ({
       </section>
 
       <div className={styles.content}>
-        <section className={styles.panel} aria-labelledby="demo-metadata-heading">
-          <h2 className={styles.sectionTitle} id="demo-metadata-heading">Demo metadata</h2>
-          <label className={styles.field}>
-            Demo title
-            <input
-              value={demoDraft.title}
-              onChange={(event) => updateDemoDraft("title", event.target.value)}
-            />
-          </label>
-          <label className={styles.field}>
-            Demo description
-            <textarea
-              value={demoDraft.description}
-              onChange={(event) => updateDemoDraft("description", event.target.value)}
-            />
-          </label>
-          <label className={styles.field}>
-            Demo status
-            <select
-              value={demoDraft.status}
-              onChange={(event) => updateDemoDraft("status", event.target.value)}
-            >
-              <option value="draft">draft</option>
-              <option value="archived">archived</option>
-            </select>
-          </label>
-          <button className={styles.primaryButton} type="button" disabled={pendingAction === "demo"} onClick={handleSaveDemo}>
-            {pendingAction === "demo" ? "Saving demo..." : "Save demo"}
-          </button>
-          {message ? <div className={styles.message}>{message}</div> : null}
-        </section>
+        <div className={styles.sidePanelStack}>
+          <section className={styles.panel} aria-labelledby="demo-metadata-heading">
+            <h2 className={styles.sectionTitle} id="demo-metadata-heading">Demo metadata</h2>
+            <label className={styles.field}>
+              Demo title
+              <input
+                value={demoDraft.title}
+                onChange={(event) => updateDemoDraft("title", event.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              Demo description
+              <textarea
+                value={demoDraft.description}
+                onChange={(event) => updateDemoDraft("description", event.target.value)}
+              />
+            </label>
+            <label className={styles.field}>
+              Demo status
+              <select
+                value={demoDraft.status}
+                onChange={(event) => updateDemoDraft("status", event.target.value)}
+              >
+                <option value="draft">draft</option>
+                <option value="archived">archived</option>
+              </select>
+            </label>
+            <button className={styles.primaryButton} type="button" disabled={pendingAction === "demo"} onClick={handleSaveDemo}>
+              {pendingAction === "demo" ? "Saving demo..." : "Save demo"}
+            </button>
+            {message ? <div className={styles.message}>{message}</div> : null}
+          </section>
+
+          <section className={styles.panel} aria-labelledby="demo-publishing-heading">
+            <h2 className={styles.sectionTitle} id="demo-publishing-heading">Publishing</h2>
+            <div className={styles.publishStack}>
+            {publishStatus.publish_link ? (
+              <>
+                <label className={styles.field}>
+                  Public demo URL
+                  <input readOnly value={absolutePortalUrl(publishStatus.publish_link.public_url)} />
+                </label>
+                <a
+                  className={styles.sourceLink}
+                  href={absolutePortalUrl(publishStatus.publish_link.public_url)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open public demo
+                </a>
+                <label className={styles.field}>
+                  Embed demo URL
+                  <input readOnly value={embedUrlFromPublicUrl(publishStatus.publish_link.public_url)} />
+                </label>
+                <label className={styles.field}>
+                  Embed iframe code
+                  <textarea
+                    readOnly
+                    value={iframeEmbedCode(embedUrlFromPublicUrl(publishStatus.publish_link.public_url), demo.title)}
+                  />
+                </label>
+                <label className={styles.field}>
+                  Publish visibility
+                    <select
+                      value={publishDraft.visibility}
+                      onChange={(event) => updatePublishDraft("visibility", event.target.value as PublishDraft["visibility"])}
+                    >
+                      <option value="public">public</option>
+                      <option value="restricted">restricted</option>
+                    </select>
+                  </label>
+                  <label className={styles.field}>
+                    Publish expiry
+                    <input
+                      type="datetime-local"
+                      value={publishDraft.expires_at}
+                      onChange={(event) => updatePublishDraft("expires_at", event.target.value)}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    Publish password
+                    <input
+                      type="password"
+                      value={publishDraft.password}
+                      placeholder={publishStatus.publish_link.password_protected ? "Password is set" : "No password set"}
+                      onChange={(event) => updatePublishDraft("password", event.target.value)}
+                    />
+                  </label>
+                  <div className={styles.publishActions}>
+                    <button
+                      className={styles.secondaryButton}
+                      type="button"
+                      disabled={pendingAction === "publish:access"}
+                      onClick={() => void handleSavePublishAccess()}
+                    >
+                      Save publish access
+                    </button>
+                    <button
+                      className={styles.secondaryButton}
+                      type="button"
+                      disabled={pendingAction === "publish:password"}
+                      onClick={() => void handleSavePublishPassword()}
+                    >
+                      Save publish password
+                    </button>
+                    <button
+                      className={styles.dangerButton}
+                      type="button"
+                      disabled={pendingAction === "publish:revoke"}
+                      onClick={() => void handleRevokePublishLink()}
+                    >
+                      Revoke demo link
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p className={styles.publishNote}>This demo has not been published yet.</p>
+              )}
+              <button
+                className={styles.primaryButton}
+                type="button"
+                disabled={pendingAction === "publish"}
+                onClick={() => void handlePublishDemo()}
+              >
+                Publish demo
+              </button>
+            </div>
+          </section>
+        </div>
 
         <section aria-labelledby="demo-scenes-heading">
           <h2 className={styles.sectionTitle} id="demo-scenes-heading">Scenes</h2>

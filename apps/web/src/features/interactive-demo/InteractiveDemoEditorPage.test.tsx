@@ -11,6 +11,7 @@ import {
   type InteractiveDemoHotspotUpdateResponse,
   type InteractiveDemoHotspotReorderResponse,
 } from "../../lib/api";
+import type { GuidePublishStatusResponse } from "../guide/types";
 import { InteractiveDemoEditorPage } from "./InteractiveDemoEditorPage";
 import type { CreateDemoHotspotInput, DemoHotspot, DemoScene, InteractiveDemo, UpdateDemoHotspotInput } from "./types";
 
@@ -81,6 +82,31 @@ const hotspot: DemoHotspot = {
   updated_at: "2026-06-05T10:01:00.000Z",
 };
 
+const publishStatus: GuidePublishStatusResponse = {
+  publish_link: {
+    id: "publish_link_1",
+    artifact_type: "interactive_demo",
+    artifact_id: "interactive_demo_1",
+    published_artifact_id: "published_artifact_1",
+    slug: "demo123",
+    visibility: "public",
+    expires_at: null,
+    status: "active",
+    published_at: "2026-06-10T00:00:00.000Z",
+    revoked_at: null,
+    public_url: "/d/demo123",
+    password_protected: false,
+  },
+  published_artifact: {
+    id: "published_artifact_1",
+    artifact_type: "interactive_demo",
+    artifact_id: "interactive_demo_1",
+    version_number: 1,
+    title: "Department setup demo",
+    published_at: "2026-06-10T00:00:00.000Z",
+  },
+};
+
 const renderPage = (overrides: {
   loadDemo?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoDetailResponse>;
   loadScenes?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoSceneListResponse>;
@@ -122,6 +148,19 @@ const renderPage = (overrides: {
     hotspotIds: string[]
   ) => Promise<InteractiveDemoHotspotReorderResponse>;
   deleteHotspot?: (projectId: string, interactiveDemoId: string, sceneId: string, hotspotId: string) => Promise<void>;
+  loadPublishStatus?: (projectId: string, interactiveDemoId: string) => Promise<GuidePublishStatusResponse>;
+  publishDemo?: (projectId: string, interactiveDemoId: string) => Promise<GuidePublishStatusResponse>;
+  updatePublishAccess?: (
+    projectId: string,
+    interactiveDemoId: string,
+    input: { visibility: "public" | "restricted"; expires_at: string | null }
+  ) => Promise<GuidePublishStatusResponse>;
+  updatePublishPassword?: (
+    projectId: string,
+    interactiveDemoId: string,
+    input: { password: string | null }
+  ) => Promise<GuidePublishStatusResponse>;
+  revokePublishLink?: (projectId: string, interactiveDemoId: string) => Promise<{ publish_link: { id: string; status: "revoked"; revoked_at: string } }>;
   resolveAssetUrl?: (fileUrl: string) => string;
   currentPath?: string;
   navigate?: (path: string) => void;
@@ -154,6 +193,27 @@ const renderPage = (overrides: {
     demo_hotspots: hotspotIds.map((id: string, index: number) => ({ ...hotspot, id, hotspot_index: index + 1 })),
   }));
   const deleteHotspot = overrides.deleteHotspot ?? vi.fn(async () => undefined);
+  const loadPublishStatus = overrides.loadPublishStatus ?? vi.fn(async () => publishStatus);
+  const publishDemo = overrides.publishDemo ?? vi.fn(async () => publishStatus);
+  const updatePublishAccess = overrides.updatePublishAccess ?? vi.fn(async (_projectId, _demoId, input) => ({
+    ...publishStatus,
+    publish_link: publishStatus.publish_link
+      ? { ...publishStatus.publish_link, visibility: input.visibility, expires_at: input.expires_at }
+      : null,
+  }));
+  const updatePublishPassword = overrides.updatePublishPassword ?? vi.fn(async (_projectId, _demoId, input) => ({
+    ...publishStatus,
+    publish_link: publishStatus.publish_link
+      ? { ...publishStatus.publish_link, password_protected: input.password !== null }
+      : null,
+  }));
+  const revokePublishLink = overrides.revokePublishLink ?? vi.fn(async () => ({
+    publish_link: {
+      id: "publish_link_1",
+      status: "revoked" as const,
+      revoked_at: "2026-06-10T01:00:00.000Z",
+    },
+  }));
   const resolveAssetUrl = overrides.resolveAssetUrl ?? ((fileUrl: string) => `https://api.example.com${fileUrl}`);
 
   render(
@@ -171,6 +231,11 @@ const renderPage = (overrides: {
       saveHotspot={saveHotspot}
       reorderHotspots={reorderHotspots}
       deleteHotspot={deleteHotspot}
+      loadPublishStatus={loadPublishStatus}
+      publishDemo={publishDemo}
+      updatePublishAccess={updatePublishAccess}
+      updatePublishPassword={updatePublishPassword}
+      revokePublishLink={revokePublishLink}
       resolveAssetUrl={resolveAssetUrl}
       currentPath={overrides.currentPath}
       navigate={overrides.navigate}
@@ -178,7 +243,24 @@ const renderPage = (overrides: {
     />
   );
 
-  return { loadDemo, loadScenes, saveDemo, saveScene, reorderScenes, deleteScene, loadHotspots, createHotspot, saveHotspot, reorderHotspots, deleteHotspot };
+  return {
+    loadDemo,
+    loadScenes,
+    saveDemo,
+    saveScene,
+    reorderScenes,
+    deleteScene,
+    loadHotspots,
+    createHotspot,
+    saveHotspot,
+    reorderHotspots,
+    deleteHotspot,
+    loadPublishStatus,
+    publishDemo,
+    updatePublishAccess,
+    updatePublishPassword,
+    revokePublishLink,
+  };
 };
 
 describe("InteractiveDemoEditorPage", () => {
@@ -207,6 +289,46 @@ describe("InteractiveDemoEditorPage", () => {
       width: "30%",
       height: "12%",
     });
+  });
+
+  it("manages interactive demo publish controls", async () => {
+    const {
+      loadPublishStatus,
+      publishDemo,
+      updatePublishAccess,
+      updatePublishPassword,
+      revokePublishLink,
+    } = renderPage();
+
+    await screen.findByRole("heading", { name: "Department setup demo" });
+    expect(loadPublishStatus).toHaveBeenCalledWith("project_1", "interactive_demo_1");
+    expect(screen.getByDisplayValue(`${window.location.origin}/d/demo123`)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(`${window.location.origin}/d/demo123/embed`)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open public demo" })).toHaveAttribute(
+      "href",
+      `${window.location.origin}/d/demo123`
+    );
+    expect(screen.getByDisplayValue(`<iframe src="${window.location.origin}/d/demo123/embed" title="Department setup demo" loading="lazy"></iframe>`)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish demo" }));
+    await waitFor(() => expect(publishDemo).toHaveBeenCalledWith("project_1", "interactive_demo_1"));
+
+    fireEvent.change(screen.getByLabelText("Publish visibility"), { target: { value: "restricted" } });
+    fireEvent.change(screen.getByLabelText("Publish expiry"), { target: { value: "2026-06-20T10:30" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save publish access" }));
+    await waitFor(() => expect(updatePublishAccess).toHaveBeenCalledWith("project_1", "interactive_demo_1", {
+      visibility: "restricted",
+      expires_at: new Date("2026-06-20T10:30").toISOString(),
+    }));
+
+    fireEvent.change(screen.getByLabelText("Publish password"), { target: { value: "shared password" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save publish password" }));
+    await waitFor(() => expect(updatePublishPassword).toHaveBeenCalledWith("project_1", "interactive_demo_1", {
+      password: "shared password",
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Revoke demo link" }));
+    await waitFor(() => expect(revokePublishLink).toHaveBeenCalledWith("project_1", "interactive_demo_1"));
   });
 
   it("creates edits reorders and deletes hotspots", async () => {

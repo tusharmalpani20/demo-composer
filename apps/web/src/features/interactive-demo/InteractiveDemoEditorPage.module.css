@@ -80,6 +80,13 @@
   padding-top: 24px;
 }
 
+.sidePanelStack,
+.publishStack {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
 .panel,
 .scene {
   min-width: 0;
@@ -183,6 +190,19 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.publishActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.publishNote {
+  margin: 0;
+  color: #637083;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .screenshotFrame {
