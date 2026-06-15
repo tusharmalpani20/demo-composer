@@ -136,8 +136,8 @@ export const build = (opts: BuildOptions = {}) => {
   app.register(fastifySwagger, {
       openapi: {
           info: {
-              title: 'ORCA',
-              description: 'ORCA',
+              title: 'Demo Composer',
+              description: 'Demo Composer API',
               version: '1.0.0'
           },
           // Add security schemes definition
@@ -171,7 +171,6 @@ export const build = (opts: BuildOptions = {}) => {
       app.register(fastifyApiReference, {
           routePrefix: '/documentation',
           configuration: {
-              //title: 'ORCA API Documentation',
               theme: 'bluePlanet', //'alternate' | 'default' | 'moon' | 'purple' | 'solarized' | 'bluePlanet' | 'deepSpace' | 'saturn' | 'kepler' | 'mars' | 'none';
               spec: {
                   content: () => app.swagger(),

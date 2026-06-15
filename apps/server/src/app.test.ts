@@ -46,4 +46,16 @@ describe("app configuration", () => {
 
     await app.close();
   });
+
+  it("uses Demo Composer OpenAPI metadata", async () => {
+    const app = build({ logger: false });
+    await app.ready();
+
+    expect(app.swagger().info).toMatchObject({
+      title: "Demo Composer",
+      description: "Demo Composer API",
+    });
+
+    await app.close();
+  });
 });

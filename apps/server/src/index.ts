@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import { build } from "./app";
+import { validate_server_startup_config } from "./config/startup.config";
 
 const LOG_LEVEL = {
     SILENT: 'silent',
@@ -12,35 +13,13 @@ const LOG_LEVEL = {
 } as const;
 
 const start = async () => {
+    validate_server_startup_config();
 
     const app = build({
         logger: {
             level: LOG_LEVEL.WARN,
         }
     });
-
-    if (!process.env.TZ) {
-        throw new Error("Timezone must be defined!");
-    }
-
-    if (!process.env.SERVER_PORT) {
-        throw new Error("SERVER_PORT must be defined!");
-    }
-
-    if (!process.env.DEV_TYPE) {
-        throw new Error("DEV_TYPE must be defined!");
-    }
-
-    if (
-        !process.env.DB_HOST ||
-        !process.env.DB_PORT ||
-        !process.env.DB_USER ||
-        !process.env.DB_PASSWORD ||
-        !process.env.DB_NAME ||
-        !process.env.DB_MAX_POOL
-    ) {
-        throw new Error("Databse configuration must be defined!");
-    }
 
     try {
         await app.listen({
