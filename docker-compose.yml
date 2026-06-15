@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: demo-composer-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: demo_composer
+      POSTGRES_PASSWORD: demo_composer
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - demo_composer_postgres:/var/lib/postgresql/data
+
+volumes:
+  demo_composer_postgres:

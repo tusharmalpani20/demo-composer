@@ -27,6 +27,13 @@ out/
 build
 dist
 
+# Local generated data
+temp/
+storage/
+storage-test/
+apps/server/storage/
+apps/server/storage-test/
+
 
 # Debug
 npm-debug.log*
