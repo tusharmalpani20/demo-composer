@@ -18,6 +18,26 @@ describe("parsePortalRoute", () => {
     expect(parsePortalRoute("/projects/")).toEqual({ type: "project_list" });
   });
 
+  it("parses organization member routes", () => {
+    expect(parsePortalRoute("/organization/members")).toEqual({
+      type: "organization_members",
+    });
+    expect(parsePortalRoute("/organization/members/")).toEqual({
+      type: "organization_members",
+    });
+  });
+
+  it("parses organization invite acceptance routes", () => {
+    expect(parsePortalRoute("/invites/plain-token")).toEqual({
+      type: "organization_invite_accept",
+      token: "plain-token",
+    });
+    expect(parsePortalRoute("/invites/token%20%2F%201")).toEqual({
+      type: "organization_invite_accept",
+      token: "token / 1",
+    });
+  });
+
   it("parses project workspace routes", () => {
     expect(parsePortalRoute("/projects/project_1")).toEqual({
       type: "project_workspace",
@@ -160,5 +180,9 @@ describe("parsePortalRoute", () => {
     expect(parsePortalRoute("/d")).toEqual({ type: "unsupported" });
     expect(parsePortalRoute("/d/demo123/extra")).toEqual({ type: "unsupported" });
     expect(parsePortalRoute("/d/demo123/embed/extra")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/organization")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/organization/members/extra")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/invites")).toEqual({ type: "unsupported" });
+    expect(parsePortalRoute("/invites/plain-token/extra")).toEqual({ type: "unsupported" });
   });
 });

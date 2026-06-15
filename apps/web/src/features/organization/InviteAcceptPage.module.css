@@ -1,0 +1,27 @@
+.page { min-height: 100vh; background: #f4f6f8; color: #1c2430; }
+.topbar { display: flex; align-items: center; min-height: 64px; padding: 0 24px; border-bottom: 1px solid #d9e0e7; background: #ffffff; }
+.brand { color: #111827; font-weight: 800; }
+.main { max-width: 680px; margin: 0 auto; padding: 48px 24px; }
+.card, .state { border: 1px solid #d9e0e7; border-radius: 8px; background: #ffffff; padding: 24px; }
+.state { color: #637083; text-align: center; }
+.eyebrow { margin-bottom: 8px; color: #637083; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.title { margin: 0; color: #111827; font-size: 28px; line-height: 1.2; }
+.copy { margin: 14px 0 0; color: #4d5968; line-height: 1.5; }
+.details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+.details div { display: grid; gap: 4px; padding: 12px; border: 1px solid #e3e8ef; border-radius: 8px; }
+.details span { color: #637083; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.details strong { color: #111827; word-break: break-word; }
+.form, .existingUser { display: grid; gap: 14px; margin-top: 20px; }
+.field { display: grid; gap: 6px; color: #334155; font-size: 14px; font-weight: 700; }
+.field input { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 12px; color: #111827; font: inherit; font-weight: 500; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.primaryButton, .secondaryLink { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 14px; border-radius: 6px; font-weight: 700; }
+.primaryButton { justify-self: start; border: 1px solid #1f2937; background: #1f2937; color: #ffffff; cursor: pointer; }
+.primaryButton:disabled { cursor: not-allowed; opacity: 0.65; }
+.secondaryLink { border: 1px solid #b8c3cf; background: #ffffff; color: #1c2430; text-decoration: none; }
+.error { margin-top: 16px; border: 1px solid #f5b5b5; border-radius: 6px; background: #fff1f1; padding: 10px 12px; color: #9f1d1d; font-weight: 700; }
+
+@media (max-width: 640px) {
+  .main { padding: 28px 16px; }
+  .details { grid-template-columns: 1fr; }
+}

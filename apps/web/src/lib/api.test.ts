@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ApiClientError,
+  acceptPublicOrganizationInvite,
   createProject,
   createProjectCaptureSession,
   createCaptureSessionEvent,
@@ -8,6 +9,7 @@ import {
   createGuideFromCaptureSession,
   createInteractiveDemoFromCaptureSession,
   createInteractiveDemoHotspot,
+  createOrganizationInvite,
   completeFirstRunSetup,
   deleteGuideBlock,
   deleteInteractiveDemoHotspot,
@@ -22,8 +24,11 @@ import {
   getProject,
   getPublicInstanceStatus,
   getPublicPublishLink,
+  getPublicOrganizationInvite,
   createPublicPublishViewerSession,
   login,
+  listOrganizationInvites,
+  listOrganizationMembers,
   listProjectScreenshotAssets,
   listProjects,
   listProjectCaptureSessions,
@@ -41,6 +46,7 @@ import {
   resolveApiAssetUrl,
   revokeGuidePublishLink,
   revokeInteractiveDemoPublishLink,
+  revokeOrganizationInvite,
   archiveInteractiveDemo,
   deleteInteractiveDemoScene,
   updateGuidePublishAccess,
@@ -287,6 +293,54 @@ const auth_response = {
   },
 };
 
+const organization_member_response = {
+  members: [{
+    id: "org_user_1",
+    user_id: "user_1",
+    email: "owner@example.com",
+    display_name: "Owner User",
+    role: "owner",
+    status: "active",
+    created_at: "2026-06-05T10:00:00.000Z",
+    updated_at: "2026-06-05T10:00:00.000Z",
+  }],
+};
+
+const organization_invite_response = {
+  invites: [{
+    id: "org_invite_1",
+    organization_id: "organization_1",
+    email: "teammate@example.com",
+    role: "member",
+    status: "pending",
+    expires_at: "2026-06-22T10:00:00.000Z",
+    accepted_at: null,
+    accepted_user_id: null,
+    created_by_id: "org_user_1",
+    updated_by_id: "org_user_1",
+    created_at: "2026-06-15T10:00:00.000Z",
+    updated_at: "2026-06-15T10:00:00.000Z",
+  }],
+};
+
+const organization_invite_create_response = {
+  invite: organization_invite_response.invites[0],
+  invite_token: "plain-token",
+  invite_url: "http://localhost:5173/invites/plain-token",
+};
+
+const public_organization_invite_response = {
+  invite: {
+    id: "org_invite_1",
+    organization_name: "Example Org",
+    email: "teammate@example.com",
+    role: "member",
+    status: "pending",
+    expires_at: "2026-06-22T10:00:00.000Z",
+    requires_login: false,
+  },
+};
+
 describe("api client", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -446,6 +500,163 @@ describe("api client", () => {
         headers: {
           accept: "application/json",
         },
+      }
+    );
+  });
+
+  it("lists organization members with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(organization_member_response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(listOrganizationMembers()).resolves.toEqual(organization_member_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/organization/members",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("lists organization invites with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(organization_invite_response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(listOrganizationInvites()).resolves.toEqual(organization_invite_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/organization/invites",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("creates organization invites with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(organization_invite_create_response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(createOrganizationInvite({
+      email: " teammate@example.com ",
+      role: "member",
+    })).resolves.toEqual(organization_invite_create_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/organization/invites",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          email: " teammate@example.com ",
+          role: "member",
+        }),
+      }
+    );
+  });
+
+  it("revokes organization invites with session cookies", async () => {
+    const response = {
+      invite: {
+        ...organization_invite_response.invites[0],
+        status: "revoked",
+      },
+    };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(revokeOrganizationInvite("org invite/1")).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/organization/invites/org%20invite%2F1",
+      {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("loads public organization invite details", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(public_organization_invite_response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(getPublicOrganizationInvite("token / 1")).resolves.toEqual(public_organization_invite_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/public/invites/token%20%2F%201",
+      {
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+        },
+      }
+    );
+  });
+
+  it("accepts public organization invites with session cookies", async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(auth_response), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(acceptPublicOrganizationInvite("token / 1", {
+      password: "safe password",
+      display_name: "New Member",
+    })).resolves.toEqual(auth_response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/public/invites/token%20%2F%201/accept",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          password: "safe password",
+          display_name: "New Member",
+        }),
       }
     );
   });

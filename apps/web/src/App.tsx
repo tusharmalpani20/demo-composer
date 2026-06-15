@@ -9,6 +9,8 @@ import { ProjectGuideListPage } from "./features/guide/ProjectGuideListPage";
 import { InteractiveDemoEditorPage } from "./features/interactive-demo/InteractiveDemoEditorPage";
 import { ProjectInteractiveDemoListPage } from "./features/interactive-demo/ProjectInteractiveDemoListPage";
 import { PublicInteractiveDemoViewerPage } from "./features/interactive-demo/PublicInteractiveDemoViewerPage";
+import { InviteAcceptPage } from "./features/organization/InviteAcceptPage";
+import { OrganizationMembersPage } from "./features/organization/OrganizationMembersPage";
 import { ProjectListPage } from "./features/project/ProjectListPage";
 import { ProjectSettingsPage } from "./features/project/ProjectSettingsPage";
 import { ProjectWorkspacePage } from "./features/project/ProjectWorkspacePage";
@@ -21,6 +23,7 @@ type SetupGateState = "checking" | "ready" | "setup_required" | "error";
 
 const setupGuardedRouteTypes = new Set<PortalRoute["type"]>([
   "project_list",
+  "organization_members",
   "project_workspace",
   "project_settings",
   "capture_session_detail",
@@ -122,6 +125,12 @@ export default function App() {
     );
   }
 
+  if (route.type === "organization_invite_accept") {
+    return (
+      <InviteAcceptPage token={route.token} />
+    );
+  }
+
   if (setupGateState === "checking") {
     return (
       <div className={styles.page}>
@@ -156,6 +165,12 @@ export default function App() {
   if (route.type === "project_list") {
     return (
       <ProjectListPage currentPath={currentPath} />
+    );
+  }
+
+  if (route.type === "organization_members") {
+    return (
+      <OrganizationMembersPage currentPath={currentPath} />
     );
   }
 

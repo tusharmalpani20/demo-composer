@@ -1,0 +1,34 @@
+.page { min-height: 100vh; background: #f4f6f8; color: #1c2430; }
+.main { max-width: 1080px; margin: 0 auto; padding: 28px 24px 40px; }
+.header { padding-bottom: 24px; border-bottom: 1px solid #d9e0e7; }
+.eyebrow { margin-bottom: 8px; color: #637083; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.title { margin: 0; color: #111827; font-size: 28px; line-height: 1.2; }
+.panel { margin-top: 22px; padding: 18px; border: 1px solid #d9e0e7; border-radius: 8px; background: #ffffff; }
+.sectionTitle { margin: 0 0 14px; color: #1f2937; font-size: 16px; }
+.form { display: grid; gap: 14px; }
+.formGrid { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 12px; }
+.field { display: grid; gap: 6px; color: #334155; font-size: 14px; font-weight: 700; }
+.field input, .field select { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 12px; color: #111827; font: inherit; font-weight: 500; }
+.rows { display: grid; gap: 10px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px; border: 1px solid #e3e8ef; border-radius: 8px; }
+.rowTitle { margin: 0; color: #111827; font-size: 15px; }
+.rowMeta { margin-top: 4px; color: #637083; font-size: 13px; }
+.rowActions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+.badge { display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 999px; background: #ffffff; color: #334155; font-size: 12px; font-weight: 700; }
+.primaryButton, .secondaryButton { border: 1px solid #b8c3cf; border-radius: 6px; background: #ffffff; color: #1c2430; cursor: pointer; font-weight: 700; }
+.primaryButton { justify-self: start; min-height: 38px; padding: 0 14px; border-color: #1f2937; background: #1f2937; color: #ffffff; }
+.secondaryButton { min-height: 34px; padding: 0 12px; }
+.primaryButton:disabled, .secondaryButton:disabled { cursor: not-allowed; opacity: 0.65; }
+.inviteLink { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; color: #334155; word-break: break-all; }
+.message, .formError { border-radius: 6px; padding: 10px 12px; font-weight: 700; }
+.message { border: 1px solid #badbcc; background: #f0fdf4; color: #166534; }
+.formError { border: 1px solid #f5b5b5; background: #fff1f1; color: #9f1d1d; }
+.state, .empty { max-width: 640px; margin: 80px auto 0; padding: 18px; border: 1px solid #d9e0e7; border-radius: 8px; background: #ffffff; color: #637083; text-align: center; }
+.empty { margin: 0; }
+.stateLink { display: inline-flex; margin-top: 12px; color: #1f2937; font-weight: 700; }
+
+@media (max-width: 760px) {
+  .main { padding: 20px 16px 32px; }
+  .formGrid, .inviteLink { grid-template-columns: 1fr; }
+  .row { align-items: flex-start; flex-direction: column; }
+}

@@ -9,6 +9,13 @@ export type PortalRoute =
     type: "project_list";
   }
   | {
+    type: "organization_members";
+  }
+  | {
+    type: "organization_invite_accept";
+    token: string;
+  }
+  | {
     type: "project_workspace";
     projectId: string;
   }
@@ -93,6 +100,30 @@ export const parsePortalRoute = (pathname: string): PortalRoute => {
     )
   ) {
     return { type: "project_list" };
+  }
+
+  if (
+    segments.length === 2
+    && segments[0] === "organization"
+    && segments[1] === "members"
+  ) {
+    return { type: "organization_members" };
+  }
+
+  if (
+    segments.length === 2
+    && segments[0] === "invites"
+  ) {
+    const token = segments[1];
+
+    if (!token) {
+      return { type: "unsupported" };
+    }
+
+    return {
+      type: "organization_invite_accept",
+      token: decodeURIComponent(token),
+    };
   }
 
   if (

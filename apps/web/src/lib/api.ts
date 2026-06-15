@@ -43,6 +43,15 @@ import type {
   UpdateDemoSceneInput,
   UpdateInteractiveDemoInput,
 } from "../features/interactive-demo/types";
+import type {
+  AcceptOrganizationInviteInput,
+  OrganizationInviteCreateInput,
+  OrganizationInviteCreateResponse,
+  OrganizationInviteListResponse,
+  OrganizationInviteUpdateResponse,
+  OrganizationMemberListResponse,
+  PublicOrganizationInviteResponse,
+} from "../features/organization/types";
 import type { CreateProjectInput, Project, ProjectStatus, UpdateProjectInput } from "../features/project/types";
 
 export type ApiClientErrorKind = "unauthenticated" | "not_found" | "validation" | "unknown";
@@ -301,6 +310,61 @@ export const logout = async (): Promise<void> => (
   requestJson<void>("/api/v1/authentication/logout", {
     method: "POST",
   })
+);
+
+export const listOrganizationMembers = async (): Promise<OrganizationMemberListResponse> => (
+  requestJson<OrganizationMemberListResponse>("/api/v1/organization/members")
+);
+
+export const listOrganizationInvites = async (): Promise<OrganizationInviteListResponse> => (
+  requestJson<OrganizationInviteListResponse>("/api/v1/organization/invites")
+);
+
+export const createOrganizationInvite = async (
+  input: OrganizationInviteCreateInput
+): Promise<OrganizationInviteCreateResponse> => (
+  requestJson<OrganizationInviteCreateResponse>("/api/v1/organization/invites", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(input),
+  })
+);
+
+export const revokeOrganizationInvite = async (
+  inviteId: string
+): Promise<OrganizationInviteUpdateResponse> => (
+  requestJson<OrganizationInviteUpdateResponse>(
+    `/api/v1/organization/invites/${encodeURIComponent(inviteId)}`,
+    {
+      method: "DELETE",
+    }
+  )
+);
+
+export const getPublicOrganizationInvite = async (
+  token: string
+): Promise<PublicOrganizationInviteResponse> => (
+  requestJson<PublicOrganizationInviteResponse>(
+    `/api/v1/public/invites/${encodeURIComponent(token)}`
+  )
+);
+
+export const acceptPublicOrganizationInvite = async (
+  token: string,
+  input: AcceptOrganizationInviteInput
+): Promise<AuthResponse> => (
+  requestJson<AuthResponse>(
+    `/api/v1/public/invites/${encodeURIComponent(token)}/accept`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
+    }
+  )
 );
 
 export const listProjects = async (
