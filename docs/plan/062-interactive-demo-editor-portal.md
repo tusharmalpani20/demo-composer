@@ -27,31 +27,23 @@ Already built:
 
 - backend interactive demo metadata APIs
 - backend demo scene APIs
-- create demo from capture is planned in plan 061
+- create demo from capture via `POST /api/v1/projects/:project_id/capture-sessions/:capture_session_id/interactive-demos`
+- web API helper and route parsing for interactive demo detail routes from plan 061
 - project workspace currently links to capture sessions, guides, and settings
 
 Missing:
 
-- web routes for interactive demos
-- API client helpers for interactive demo endpoints
+- web route parsing and rendering for project interactive demo list routes
+- API client helpers for list/get/update/archive demo and scene edit endpoints
 - project demo list page
 - demo editor page
 - scene screenshot rendering
 - scene reorder/delete UI
+- visible capture-session action to create an interactive demo and open the editor
 
 ## Dependency On Plan 061
 
-This plan can land before or after `061-create-interactive-demo-from-capture`.
-
-If it lands before plan 061:
-
-- create/list/edit manually-created demo drafts through existing interactive demo APIs
-- show an empty-state action that links users back to capture sessions
-- do not show a non-working "create from capture" button
-
-If it lands after plan 061:
-
-- wire the capture-session "Create interactive demo" action directly to this editor route
+Plan `061-create-interactive-demo-from-capture` is implemented. This phase should therefore expose the capture-session "Create interactive demo" action and redirect to the new editor route returned by the API.
 
 ## Scope
 
@@ -64,12 +56,10 @@ Routes:
 
 API client helpers:
 
-- create interactive demo metadata manually when useful for testability and empty state flows
 - list interactive demos
 - get interactive demo
 - update interactive demo
 - archive interactive demo
-- create scene manually only if the backend route already supports it safely for UI use
 - list scenes
 - update scene
 - reorder scenes
@@ -79,6 +69,13 @@ API client helpers:
 Project workspace:
 
 - add an "Interactive demos" workspace action
+
+Capture session detail:
+
+- replace the current hidden/non-exposed create interactive demo state with a real action
+- show a pending state while the conversion runs
+- navigate to the returned editor route on success
+- show validation/API errors without losing the capture detail view
 
 Demo list page:
 
@@ -122,6 +119,7 @@ API tests:
 Route tests:
 
 - route parser handles demo list and editor routes
+- App renders demo list and editor routes
 
 Page tests:
 
@@ -134,11 +132,13 @@ Page tests:
 - editor deletes scenes
 - editor handles no-scene and no-screenshot states
 - auth failures route to login or show existing portal error pattern
+- capture session detail creates an interactive demo and navigates to the editor
 
 ## Acceptance Criteria
 
 - user can open a project interactive demo list
 - user can open an interactive demo editor
+- user can create an interactive demo from a capture session and land in the editor
 - user can see ordered screenshot scenes
 - user can edit demo metadata
 - user can edit scene text
