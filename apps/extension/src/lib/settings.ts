@@ -5,6 +5,8 @@ export type ExtensionSettings = {
   activeCaptureSessionId: string | null;
   activeCaptureProjectId: string | null;
   activeCaptureEventIndex: number | null;
+  activeCaptureMode: "manual" | "automatic" | null;
+  activeCapturePaused: boolean;
 };
 
 export type ExtensionStorageArea = {
@@ -20,6 +22,8 @@ const keys = {
   activeCaptureSessionId: "activeCaptureSessionId",
   activeCaptureProjectId: "activeCaptureProjectId",
   activeCaptureEventIndex: "activeCaptureEventIndex",
+  activeCaptureMode: "activeCaptureMode",
+  activeCapturePaused: "activeCapturePaused",
 } as const;
 
 const default_settings: ExtensionSettings = {
@@ -29,6 +33,8 @@ const default_settings: ExtensionSettings = {
   activeCaptureSessionId: null,
   activeCaptureProjectId: null,
   activeCaptureEventIndex: null,
+  activeCaptureMode: null,
+  activeCapturePaused: false,
 };
 
 const stringOrNull = (value: unknown) => (
@@ -39,9 +45,21 @@ const nonNegativeIntegerOrNull = (value: unknown) => (
   typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null
 );
 
+const activeCaptureModeOrNull = (value: unknown) => (
+  value === "manual" || value === "automatic" ? value : null
+);
+
+const booleanOrFalse = (value: unknown) => value === true;
+
 const assertNonNegativeInteger = (value: number) => {
   if (!Number.isInteger(value) || value < 0) {
     throw new Error("Active capture event index must be a non-negative integer.");
+  }
+};
+
+const assertActiveCaptureMode = (value: "manual" | "automatic") => {
+  if (value !== "manual" && value !== "automatic") {
+    throw new Error("Active capture mode is invalid.");
   }
 };
 
@@ -77,6 +95,8 @@ export const getSettings = async (
     activeCaptureSessionId: stringOrNull(stored[keys.activeCaptureSessionId]),
     activeCaptureProjectId: stringOrNull(stored[keys.activeCaptureProjectId]),
     activeCaptureEventIndex: nonNegativeIntegerOrNull(stored[keys.activeCaptureEventIndex]),
+    activeCaptureMode: activeCaptureModeOrNull(stored[keys.activeCaptureMode]),
+    activeCapturePaused: booleanOrFalse(stored[keys.activeCapturePaused]),
   };
 };
 
@@ -91,6 +111,8 @@ export const saveInstanceUrl = async (
     [keys.activeCaptureSessionId]: null,
     [keys.activeCaptureProjectId]: null,
     [keys.activeCaptureEventIndex]: null,
+    [keys.activeCaptureMode]: null,
+    [keys.activeCapturePaused]: false,
   });
 };
 
@@ -104,6 +126,8 @@ export const saveSessionToken = async (
       [keys.activeCaptureSessionId]: null,
       [keys.activeCaptureProjectId]: null,
       [keys.activeCaptureEventIndex]: null,
+      [keys.activeCaptureMode]: null,
+      [keys.activeCapturePaused]: false,
     } : {}),
   });
 };
@@ -121,15 +145,20 @@ export const saveActiveCapture = async (
     captureSessionId: string;
     projectId: string;
     eventIndex?: number;
+    mode?: "manual" | "automatic";
   }
 ) => {
   const eventIndex = input.eventIndex ?? 0;
+  const mode = input.mode ?? "manual";
   assertNonNegativeInteger(eventIndex);
+  assertActiveCaptureMode(mode);
 
   await storage.set({
     [keys.activeCaptureSessionId]: input.captureSessionId,
     [keys.activeCaptureProjectId]: input.projectId,
     [keys.activeCaptureEventIndex]: eventIndex,
+    [keys.activeCaptureMode]: mode,
+    [keys.activeCapturePaused]: false,
   });
 };
 
@@ -141,6 +170,20 @@ export const saveActiveCaptureEventIndex = async (
   await storage.set({ [keys.activeCaptureEventIndex]: eventIndex });
 };
 
+export const saveActiveCaptureMode = async (
+  storage: ExtensionStorageArea,
+  input: {
+    mode: "manual" | "automatic";
+    paused: boolean;
+  }
+) => {
+  assertActiveCaptureMode(input.mode);
+  await storage.set({
+    [keys.activeCaptureMode]: input.mode,
+    [keys.activeCapturePaused]: input.paused,
+  });
+};
+
 export const clearActiveCapture = async (
   storage: ExtensionStorageArea = chromeLocalStorage()
 ) => {
@@ -148,6 +191,8 @@ export const clearActiveCapture = async (
     [keys.activeCaptureSessionId]: null,
     [keys.activeCaptureProjectId]: null,
     [keys.activeCaptureEventIndex]: null,
+    [keys.activeCaptureMode]: null,
+    [keys.activeCapturePaused]: false,
   });
 };
 

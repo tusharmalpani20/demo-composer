@@ -146,12 +146,22 @@ export type CaptureEventResponse = {
 };
 
 export type CreateCaptureEventInput = {
-  event_type: "capture";
+  event_type: "capture" | "click";
   event_index: number;
   capture_asset_id: string;
   occurred_at?: string | null;
   page_url?: string | null;
   page_title?: string | null;
+  target_label?: string | null;
+  target_selector?: string | null;
+  target_role?: string | null;
+  target_test_id?: string | null;
+  target_text?: string | null;
+  client_x?: number | null;
+  client_y?: number | null;
+  viewport_width?: number | null;
+  viewport_height?: number | null;
+  device_pixel_ratio?: number | null;
   input_value_redacted?: true;
   metadata?: Record<string, unknown>;
 };

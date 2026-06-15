@@ -1,0 +1,214 @@
+import { describe, expect, it, vi } from "vitest";
+import { createAutomaticCaptureController, handleAutomaticClickCapture, type AutomaticClickMessage } from "./automatic-capture";
+import type { CaptureAssetResponse, CaptureEventResponse } from "./api";
+import type { ScreenshotCapture } from "./screenshot";
+import type { ExtensionSettings } from "./settings";
+
+const settings: ExtensionSettings = {
+  instanceUrl: "https://demo.example.com",
+  sessionToken: "extension-session-token",
+  selectedProjectId: "project_1",
+  activeCaptureSessionId: "capture_session_1",
+  activeCaptureProjectId: "project_1",
+  activeCaptureEventIndex: 1,
+  activeCaptureMode: "automatic",
+  activeCapturePaused: false,
+};
+
+const screenshot: ScreenshotCapture = {
+  blob: new Blob(["fake png bytes"], { type: "image/png" }),
+  mimeType: "image/png",
+  width: 1440,
+  height: 900,
+  devicePixelRatio: 2,
+  capturedAt: "2026-06-05T10:00:00.000Z",
+};
+
+const capture_asset_response: CaptureAssetResponse = {
+  capture_asset: {
+    id: "capture_asset_1",
+    project_id: "project_1",
+    capture_session_id: "capture_session_1",
+    asset_type: "screenshot",
+    width: 1440,
+    height: 900,
+    device_pixel_ratio: 2,
+    page_url: "https://example.com/path",
+    page_title: "Example Page",
+    captured_at: "2026-06-05T10:00:00.000Z",
+  },
+};
+
+const capture_event_response: CaptureEventResponse = {
+  capture_event: {
+    id: "capture_event_1",
+    organization_id: "organization_1",
+    project_id: "project_1",
+    capture_session_id: "capture_session_1",
+    capture_asset_id: "capture_asset_1",
+    event_type: "click",
+    event_index: 2,
+    occurred_at: "2026-06-05T10:00:00.000Z",
+    page_url: "https://example.com/path",
+    page_title: "Example Page",
+    target_label: null,
+    target_selector: "button[data-testid=\"add-department\"]",
+    target_role: "button",
+    target_test_id: "add-department",
+    target_text: "Add Department",
+    client_x: 240,
+    client_y: 80,
+    viewport_width: 1440,
+    viewport_height: 900,
+    device_pixel_ratio: 2,
+    input_intent: null,
+    input_value_redacted: true,
+    note: null,
+    created_by_id: "org_user_1",
+    updated_by_id: "org_user_1",
+    version: 1,
+    created_at: "2026-06-05T10:00:00.000Z",
+    updated_at: "2026-06-05T10:00:00.000Z",
+  },
+};
+
+const click_message: AutomaticClickMessage = {
+  type: "demo_composer:page_click",
+  payload: {
+    page_url: "https://example.com/path",
+    page_title: "Example Page",
+    target_text: "Add Department",
+    target_selector: "button[data-testid=\"add-department\"]",
+    target_role: "button",
+    target_test_id: "add-department",
+    client_x: 240,
+    client_y: 80,
+    viewport_width: 1440,
+    viewport_height: 900,
+    device_pixel_ratio: 2,
+    bounding_box: {
+      x: 200,
+      y: 60,
+      width: 160,
+      height: 44,
+    },
+  },
+};
+
+const build_dependencies = (overrides: Partial<Parameters<typeof handleAutomaticClickCapture>[1]> = {}) => ({
+  getSettings: vi.fn(async () => settings),
+  captureVisibleTabScreenshot: vi.fn(async () => screenshot),
+  uploadCaptureAsset: vi.fn(async () => capture_asset_response),
+  createCaptureEvent: vi.fn(async () => capture_event_response),
+  saveActiveCaptureEventIndex: vi.fn(async () => {}),
+  ...overrides,
+});
+
+describe("automatic capture orchestration", () => {
+  it("uploads a screenshot and records one ordered click event", async () => {
+    const dependencies = build_dependencies();
+
+    await expect(handleAutomaticClickCapture(click_message, dependencies)).resolves.toEqual({
+      ok: true,
+      event_index: 2,
+    });
+
+    expect(dependencies.uploadCaptureAsset).toHaveBeenCalledWith(
+      "https://demo.example.com",
+      "extension-session-token",
+      "project_1",
+      "capture_session_1",
+      expect.objectContaining({
+        file: screenshot.blob,
+        fileName: "screenshot-2026-06-05T10-00-00-000Z.png",
+        pageUrl: "https://example.com/path",
+        pageTitle: "Example Page",
+        metadata: expect.objectContaining({
+          capture_source: "extension_auto_click",
+        }),
+      })
+    );
+    expect(dependencies.createCaptureEvent).toHaveBeenCalledWith(
+      "https://demo.example.com",
+      "extension-session-token",
+      "project_1",
+      "capture_session_1",
+      expect.objectContaining({
+        event_type: "click",
+        event_index: 2,
+        capture_asset_id: "capture_asset_1",
+        target_text: "Add Department",
+        target_selector: "button[data-testid=\"add-department\"]",
+        target_role: "button",
+        target_test_id: "add-department",
+        client_x: 240,
+        client_y: 80,
+        viewport_width: 1440,
+        viewport_height: 900,
+        device_pixel_ratio: 2,
+        input_value_redacted: true,
+      })
+    );
+    expect(dependencies.saveActiveCaptureEventIndex).toHaveBeenCalledWith(2);
+  });
+
+  it("skips capture when automatic capture is paused or unavailable", async () => {
+    const dependencies = build_dependencies({
+      getSettings: vi.fn(async () => ({
+        ...settings,
+        activeCapturePaused: true,
+      })),
+    });
+
+    await expect(handleAutomaticClickCapture(click_message, dependencies)).resolves.toEqual({
+      ok: false,
+      reason: "automatic_capture_inactive",
+    });
+
+    expect(dependencies.captureVisibleTabScreenshot).not.toHaveBeenCalled();
+    expect(dependencies.uploadCaptureAsset).not.toHaveBeenCalled();
+    expect(dependencies.createCaptureEvent).not.toHaveBeenCalled();
+  });
+
+  it("does not advance the local event index when upload fails", async () => {
+    const dependencies = build_dependencies({
+      uploadCaptureAsset: vi.fn(async () => {
+        throw new Error("Upload failed");
+      }),
+    });
+
+    await expect(handleAutomaticClickCapture(click_message, dependencies)).resolves.toEqual({
+      ok: false,
+      reason: "automatic_capture_failed",
+      message: "Upload failed",
+    });
+
+    expect(dependencies.createCaptureEvent).not.toHaveBeenCalled();
+    expect(dependencies.saveActiveCaptureEventIndex).not.toHaveBeenCalled();
+  });
+
+  it("skips duplicate click messages while one automatic capture is still running", async () => {
+    let resolveScreenshot: (value: ScreenshotCapture) => void = () => {};
+    const screenshotPromise = new Promise<ScreenshotCapture>((resolve) => {
+      resolveScreenshot = resolve;
+    });
+    const dependencies = build_dependencies({
+      captureVisibleTabScreenshot: vi.fn(async () => screenshotPromise),
+    });
+    const controller = createAutomaticCaptureController(dependencies);
+
+    const firstResult = controller(click_message);
+    await expect(controller(click_message)).resolves.toEqual({
+      ok: false,
+      reason: "automatic_capture_busy",
+    });
+
+    resolveScreenshot(screenshot);
+    await expect(firstResult).resolves.toEqual({
+      ok: true,
+      event_index: 2,
+    });
+    expect(dependencies.uploadCaptureAsset).toHaveBeenCalledTimes(1);
+    expect(dependencies.createCaptureEvent).toHaveBeenCalledTimes(1);
+  });
+});

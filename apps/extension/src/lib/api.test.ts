@@ -392,6 +392,79 @@ describe("extension API client", () => {
     expect(body).not.toHaveProperty("device_pixel_ratio");
   });
 
+  it("creates click capture events with safe target metadata", async () => {
+    const response = {
+      capture_event: {
+        ...captureEvent,
+        event_type: "click",
+        target_text: "Add Department",
+        target_selector: "button[data-testid='add-department']",
+        target_role: "button",
+        client_x: 240,
+        client_y: 80,
+        viewport_width: 1440,
+        viewport_height: 900,
+        device_pixel_ratio: 2,
+      },
+    };
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(JSON.stringify(response), {
+      status: 201,
+      headers: {
+        "content-type": "application/json",
+      },
+    }));
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(createCaptureEvent(
+      "https://demo.example.com/",
+      "extension-session-token",
+      "project with spaces",
+      "capture session with spaces",
+      {
+        event_type: "click",
+        event_index: 2,
+        capture_asset_id: "capture_asset_1",
+        occurred_at: "2026-06-05T10:00:00.000Z",
+        page_url: "https://example.com/path",
+        page_title: "Example Page",
+        target_text: "Add Department",
+        target_selector: "button[data-testid='add-department']",
+        target_role: "button",
+        client_x: 240,
+        client_y: 80,
+        viewport_width: 1440,
+        viewport_height: 900,
+        device_pixel_ratio: 2,
+        input_value_redacted: true,
+        metadata: {
+          extension_version: "0.1.0",
+          capture_source: "extension_auto_click",
+          asset_type: "screenshot",
+        },
+      }
+    )).resolves.toEqual(response);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const body = JSON.parse((fetch.mock.calls[0]![1] as RequestInit).body as string) as Record<string, unknown>;
+    expect(body).toMatchObject({
+      event_type: "click",
+      event_index: 2,
+      capture_asset_id: "capture_asset_1",
+      target_text: "Add Department",
+      target_selector: "button[data-testid='add-department']",
+      target_role: "button",
+      client_x: 240,
+      client_y: 80,
+      viewport_width: 1440,
+      viewport_height: 900,
+      device_pixel_ratio: 2,
+      input_value_redacted: true,
+    });
+    expect(body).not.toHaveProperty("input_value");
+    expect(body).not.toHaveProperty("value");
+    expect(body).not.toHaveProperty("password");
+  });
+
   it("completes capture sessions with bearer auth and no request body", async () => {
     const response = {
       capture_session: completedCaptureSession,

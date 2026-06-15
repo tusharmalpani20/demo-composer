@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   clearSettings,
   getSettings,
+  saveActiveCaptureMode,
   saveActiveCapture,
   saveActiveCaptureEventIndex,
   saveInstanceUrl,
@@ -49,6 +50,8 @@ describe("extension settings", () => {
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
       activeCaptureEventIndex: null,
+      activeCaptureMode: null,
+      activeCapturePaused: false,
     });
   });
 
@@ -69,6 +72,8 @@ describe("extension settings", () => {
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
       activeCaptureEventIndex: null,
+      activeCaptureMode: null,
+      activeCapturePaused: false,
     });
   });
 
@@ -90,16 +95,19 @@ describe("extension settings", () => {
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
       activeCaptureEventIndex: null,
+      activeCaptureMode: null,
+      activeCapturePaused: false,
     });
   });
 
-  it("saves and clears active capture without clearing selected project", async () => {
+  it("saves automatic active capture mode and pause state without clearing selected project", async () => {
     await saveInstanceUrl(storage, "https://demo.example.com");
     await saveSessionToken(storage, "session-token");
     await saveSelectedProjectId(storage, "project_1");
     await saveActiveCapture(storage, {
       captureSessionId: "capture_session_1",
       projectId: "project_1",
+      mode: "automatic",
     });
 
     await expect(getSettings(storage)).resolves.toEqual({
@@ -109,6 +117,13 @@ describe("extension settings", () => {
       activeCaptureSessionId: "capture_session_1",
       activeCaptureProjectId: "project_1",
       activeCaptureEventIndex: 0,
+      activeCaptureMode: "automatic",
+      activeCapturePaused: false,
+    });
+
+    await saveActiveCaptureMode(storage, {
+      mode: "automatic",
+      paused: true,
     });
 
     await saveActiveCaptureEventIndex(storage, 3);
@@ -120,6 +135,8 @@ describe("extension settings", () => {
       activeCaptureSessionId: "capture_session_1",
       activeCaptureProjectId: "project_1",
       activeCaptureEventIndex: 3,
+      activeCaptureMode: "automatic",
+      activeCapturePaused: true,
     });
 
     await clearActiveCapture(storage);
@@ -131,6 +148,8 @@ describe("extension settings", () => {
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
       activeCaptureEventIndex: null,
+      activeCaptureMode: null,
+      activeCapturePaused: false,
     });
   });
 
@@ -152,6 +171,8 @@ describe("extension settings", () => {
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
       activeCaptureEventIndex: null,
+      activeCaptureMode: null,
+      activeCapturePaused: false,
     });
   });
 
@@ -165,6 +186,8 @@ describe("extension settings", () => {
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
       activeCaptureEventIndex: null,
+      activeCaptureMode: null,
+      activeCapturePaused: false,
     });
   });
 
@@ -179,5 +202,18 @@ describe("extension settings", () => {
       projectId: "project_1",
       eventIndex: -1,
     })).rejects.toThrow("Active capture event index must be a non-negative integer.");
+  });
+
+  it("rejects invalid active capture modes", async () => {
+    await expect(saveActiveCapture(storage, {
+      captureSessionId: "capture_session_1",
+      projectId: "project_1",
+      mode: "invalid" as "automatic",
+    })).rejects.toThrow("Active capture mode is invalid.");
+
+    await expect(saveActiveCaptureMode(storage, {
+      mode: "invalid" as "automatic",
+      paused: false,
+    })).rejects.toThrow("Active capture mode is invalid.");
   });
 });

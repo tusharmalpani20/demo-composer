@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ApiClientError, type AuthResponse, type CaptureAssetResponse, type CaptureEventResponse, type CompleteCaptureSessionResponse, type Project } from "./lib/api";
+import { ApiClientError, type AuthResponse, type CaptureAssetResponse, type CaptureEventResponse, type CompleteCaptureSessionResponse, type CreateCaptureEventInput, type Project } from "./lib/api";
 import { App } from "./App";
 import type { ExtensionSettings } from "./lib/settings";
 import type { ScreenshotCapture } from "./lib/screenshot";
@@ -66,6 +66,8 @@ const defaultSettings: ExtensionSettings = {
   activeCaptureSessionId: null,
   activeCaptureProjectId: null,
   activeCaptureEventIndex: null,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
 };
 
 const captureSessionResponse = {
@@ -187,16 +189,7 @@ const renderApp = (overrides: {
     sessionToken: string,
     projectId: string,
     captureSessionId: string,
-    data: {
-      event_type: "capture";
-      event_index: number;
-      capture_asset_id: string;
-      occurred_at?: string | null;
-      page_url?: string | null;
-      page_title?: string | null;
-      input_value_redacted?: true;
-      metadata?: Record<string, unknown>;
-    }
+    data: CreateCaptureEventInput
   ) => Promise<CaptureEventResponse>;
   completeCaptureSession?: (
     instanceUrl: string,
@@ -208,7 +201,13 @@ const renderApp = (overrides: {
   saveInstanceUrl?: (instanceUrl: string) => Promise<void>;
   saveSessionToken?: (sessionToken: string | null) => Promise<void>;
   saveSelectedProjectId?: (projectId: string | null) => Promise<void>;
-  saveActiveCapture?: (input: { captureSessionId: string; projectId: string; eventIndex?: number }) => Promise<void>;
+  saveActiveCapture?: (input: {
+    captureSessionId: string;
+    projectId: string;
+    eventIndex?: number;
+    mode?: "manual" | "automatic";
+  }) => Promise<void>;
+  saveActiveCaptureMode?: (input: { mode: "manual" | "automatic"; paused: boolean }) => Promise<void>;
   saveActiveCaptureEventIndex?: (eventIndex: number) => Promise<void>;
   clearActiveCapture?: () => Promise<void>;
   clearSettings?: () => Promise<void>;
@@ -234,6 +233,7 @@ const renderApp = (overrides: {
     completeCaptureSession: vi.fn(overrides.completeCaptureSession ?? (async () => completeCaptureSessionResponse)),
     openPortalUrl: vi.fn(overrides.openPortalUrl ?? (async () => {})),
     saveActiveCapture: vi.fn(overrides.saveActiveCapture ?? (async () => {})),
+    saveActiveCaptureMode: vi.fn(overrides.saveActiveCaptureMode ?? (async () => {})),
     saveActiveCaptureEventIndex: vi.fn(overrides.saveActiveCaptureEventIndex ?? (async () => {})),
     clearActiveCapture: vi.fn(overrides.clearActiveCapture ?? (async () => {})),
     logout: vi.fn(overrides.logout ?? (async () => {})),
@@ -284,6 +284,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: null,
         activeCaptureProjectId: null,
         activeCaptureEventIndex: null,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       getCurrentAuth: async () => {
         throw new ApiClientError({
@@ -307,6 +309,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: null,
         activeCaptureProjectId: null,
         activeCaptureEventIndex: null,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
@@ -346,6 +350,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: null,
         activeCaptureProjectId: null,
         activeCaptureEventIndex: null,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
@@ -364,6 +370,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: null,
         activeCaptureProjectId: null,
         activeCaptureEventIndex: null,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
@@ -380,6 +388,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: null,
         activeCaptureProjectId: null,
         activeCaptureEventIndex: null,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
@@ -403,6 +413,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: null,
         activeCaptureProjectId: null,
         activeCaptureEventIndex: null,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       listProjects: async () => listProjects(),
     });
@@ -413,7 +425,7 @@ describe("extension popup App", () => {
     expect(await screen.findByRole("heading", { name: "Select project" })).toBeInTheDocument();
   });
 
-  it("starts capture for the selected project with current tab metadata", async () => {
+  it("starts automatic capture for the selected project with current tab metadata", async () => {
     const dependencies = renderApp({
       settings: {
         instanceUrl: "https://demo.example.com",
@@ -422,13 +434,15 @@ describe("extension popup App", () => {
         activeCaptureSessionId: null,
         activeCaptureProjectId: null,
         activeCaptureEventIndex: null,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
     expect(await screen.findByRole("heading", { name: "Ready to capture" })).toBeInTheDocument();
     expect(screen.getAllByText("Internal onboarding demos")).toHaveLength(2);
 
-    fireEvent.click(screen.getByRole("button", { name: "Start capture" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start automatic capture" }));
 
     await waitFor(() => expect(dependencies.createCaptureSession).toHaveBeenCalledWith(
       "https://demo.example.com",
@@ -447,12 +461,16 @@ describe("extension popup App", () => {
       captureSessionId: "capture_session_1",
       projectId: "project_1",
       eventIndex: 0,
+      mode: "automatic",
     }));
     expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    expect(screen.getByText("Automatic click capture")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pause automatic capture" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Capture screenshot" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Change instance" })).not.toBeDisabled();
   });
 
-  it("positions the active flow as manual screenshot capture", async () => {
+  it("positions the active flow as automatic click capture with a manual screenshot fallback", async () => {
     renderApp({
       settings: {
         instanceUrl: "https://demo.example.com",
@@ -461,12 +479,15 @@ describe("extension popup App", () => {
         activeCaptureSessionId: null,
         activeCaptureProjectId: null,
         activeCaptureEventIndex: null,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
     expect(await screen.findByRole("heading", { name: "Ready to capture" })).toBeInTheDocument();
-    expect(screen.getByText("Manual screenshot capture")).toBeInTheDocument();
-    expect(screen.getByText("Capture one screenshot for each step you want in the guide.")).toBeInTheDocument();
+    expect(screen.getByText("Automatic click capture")).toBeInTheDocument();
+    expect(screen.getByText("Clicks on supported pages create ordered screenshot-backed steps.")).toBeInTheDocument();
+    expect(screen.getByText("Manual screenshots remain available after capture starts.")).toBeInTheDocument();
   });
 
   it("restores active capture state and prevents another start", async () => {
@@ -478,13 +499,48 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
     expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
     expect(screen.getByText("Internal onboarding demos")).toBeInTheDocument();
     expect(screen.getByText(/capture_session_1/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Start capture" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Start automatic capture" })).not.toBeInTheDocument();
+  });
+
+  it("pauses and resumes automatic capture without clearing active capture state", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 0,
+        activeCaptureMode: "automatic",
+        activeCapturePaused: false,
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pause automatic capture" }));
+
+    await waitFor(() => expect(dependencies.saveActiveCaptureMode).toHaveBeenCalledWith({
+      mode: "automatic",
+      paused: true,
+    }));
+    expect(await screen.findByRole("button", { name: "Resume automatic capture" })).toBeInTheDocument();
+    expect(dependencies.clearActiveCapture).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Resume automatic capture" }));
+
+    await waitFor(() => expect(dependencies.saveActiveCaptureMode).toHaveBeenLastCalledWith({
+      mode: "automatic",
+      paused: false,
+    }));
+    expect(await screen.findByRole("button", { name: "Pause automatic capture" })).toBeInTheDocument();
   });
 
   it("opens active captures in the portal without finishing or clearing local state", async () => {
@@ -496,6 +552,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 2,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
@@ -519,6 +577,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 2,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       openPortalUrl: async () => {
         throw new Error("No browser navigation available");
@@ -543,6 +603,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "missing_project",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
@@ -561,6 +623,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
@@ -580,6 +644,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
@@ -639,6 +705,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 3,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
@@ -667,6 +735,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       uploadCaptureAsset: async () => {
         throw new ApiClientError({
@@ -696,6 +766,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       createCaptureEvent: async () => {
         throw new ApiClientError({
@@ -728,6 +800,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       createCaptureEvent: async () => eventPromise,
     });
@@ -754,6 +828,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 2,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
     });
 
@@ -784,6 +860,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture/session",
         activeCaptureProjectId: "project 1",
         activeCaptureEventIndex: 2,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       completeCaptureSession: async () => ({
         ...completeCaptureSessionResponse,
@@ -815,6 +893,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       completeCaptureSession: async () => completePromise,
     });
@@ -842,6 +922,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       completeCaptureSession: async () => {
         throw new ApiClientError({
@@ -870,6 +952,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       clearActiveCapture: async () => {
         throw new Error("Storage failed");
@@ -893,6 +977,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       openPortalUrl: async () => {
         throw new Error("No browser navigation available");
@@ -916,6 +1002,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: "capture_session_1",
         activeCaptureProjectId: "project_1",
         activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       logout: async () => {
         throw new Error("Network failed");
@@ -937,6 +1025,8 @@ describe("extension popup App", () => {
         activeCaptureSessionId: null,
         activeCaptureProjectId: null,
         activeCaptureEventIndex: null,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
       },
       createCaptureSession: async () => {
         throw new ApiClientError({
@@ -948,7 +1038,7 @@ describe("extension popup App", () => {
     });
 
     expect(await screen.findByRole("heading", { name: "Ready to capture" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Start capture" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start automatic capture" }));
 
     expect(await screen.findByText("Project was not found")).toBeInTheDocument();
     expect(dependencies.saveSelectedProjectId).not.toHaveBeenCalledWith(null);

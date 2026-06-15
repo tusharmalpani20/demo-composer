@@ -32,6 +32,7 @@ import {
   getSettings,
   saveActiveCapture,
   saveActiveCaptureEventIndex,
+  saveActiveCaptureMode,
   saveInstanceUrl,
   saveSelectedProjectId,
   saveSessionToken,
@@ -46,7 +47,13 @@ type Dependencies = {
   saveInstanceUrl: (instanceUrl: string) => Promise<void>;
   saveSessionToken: (sessionToken: string | null) => Promise<void>;
   saveSelectedProjectId: (projectId: string | null) => Promise<void>;
-  saveActiveCapture: (input: { captureSessionId: string; projectId: string; eventIndex?: number }) => Promise<void>;
+  saveActiveCapture: (input: {
+    captureSessionId: string;
+    projectId: string;
+    eventIndex?: number;
+    mode?: "manual" | "automatic";
+  }) => Promise<void>;
+  saveActiveCaptureMode: (input: { mode: "manual" | "automatic"; paused: boolean }) => Promise<void>;
   saveActiveCaptureEventIndex: (eventIndex: number) => Promise<void>;
   clearActiveCapture: () => Promise<void>;
   clearSettings: () => Promise<void>;
@@ -110,6 +117,7 @@ const buildDefaultDependencies = (): Dependencies => {
     saveSessionToken: (sessionToken) => saveSessionToken(storage, sessionToken),
     saveSelectedProjectId: (projectId) => saveSelectedProjectId(storage, projectId),
     saveActiveCapture: (input) => saveActiveCapture(storage, input),
+    saveActiveCaptureMode: (input) => saveActiveCaptureMode(storage, input),
     saveActiveCaptureEventIndex: (eventIndex) => saveActiveCaptureEventIndex(storage, eventIndex),
     clearActiveCapture: () => clearActiveCapture(storage),
     clearSettings: () => clearSettings(storage),
@@ -201,6 +209,8 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
                 activeCaptureSessionId: null,
                 activeCaptureProjectId: null,
                 activeCaptureEventIndex: null,
+                activeCaptureMode: null,
+                activeCapturePaused: false,
               },
             });
           }
@@ -276,6 +286,8 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
                 activeCaptureSessionId: null,
                 activeCaptureProjectId: null,
                 activeCaptureEventIndex: null,
+                activeCaptureMode: null,
+                activeCapturePaused: false,
               },
               auth: result.auth,
               projects: projectResponse.projects,
@@ -319,6 +331,8 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
         activeCaptureSessionId={state.settings.activeCaptureSessionId}
         activeCaptureProjectId={state.settings.activeCaptureProjectId}
         activeCaptureEventIndex={state.settings.activeCaptureEventIndex}
+        activeCaptureMode={state.settings.activeCaptureMode}
+        activeCapturePaused={state.settings.activeCapturePaused}
         onSelect={async (projectId) => {
           await dependencies.saveSelectedProjectId(projectId);
           setState({
@@ -345,6 +359,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
             captureSessionId: result.capture_session.id,
             projectId,
             eventIndex: 0,
+            mode: "automatic",
           });
           setState({
             ...state,
@@ -353,6 +368,19 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
               activeCaptureSessionId: result.capture_session.id,
               activeCaptureProjectId: projectId,
               activeCaptureEventIndex: 0,
+              activeCaptureMode: "automatic",
+              activeCapturePaused: false,
+            },
+          });
+        }}
+        onSetActiveCaptureMode={async (input) => {
+          await dependencies.saveActiveCaptureMode(input);
+          setState({
+            ...state,
+            settings: {
+              ...state.settings,
+              activeCaptureMode: input.mode,
+              activeCapturePaused: input.paused,
             },
           });
         }}
@@ -365,6 +393,8 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
               activeCaptureSessionId: null,
               activeCaptureProjectId: null,
               activeCaptureEventIndex: null,
+              activeCaptureMode: null,
+              activeCapturePaused: false,
             },
           });
         }}
@@ -446,6 +476,8 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
               activeCaptureSessionId: null,
               activeCaptureProjectId: null,
               activeCaptureEventIndex: null,
+              activeCaptureMode: null,
+              activeCapturePaused: false,
             },
           });
 
@@ -681,8 +713,11 @@ const ProjectPicker = ({
   activeCaptureSessionId,
   activeCaptureProjectId,
   activeCaptureEventIndex,
+  activeCaptureMode,
+  activeCapturePaused,
   onSelect,
   onStartCapture,
+  onSetActiveCaptureMode,
   onDiscardActiveCapture,
   onCaptureScreenshot,
   onFinishCapture,
@@ -696,8 +731,11 @@ const ProjectPicker = ({
   activeCaptureSessionId: string | null;
   activeCaptureProjectId: string | null;
   activeCaptureEventIndex: number | null;
+  activeCaptureMode: "manual" | "automatic" | null;
+  activeCapturePaused: boolean;
   onSelect: (projectId: string) => Promise<void>;
   onStartCapture: (projectId: string) => Promise<void>;
+  onSetActiveCaptureMode: (input: { mode: "manual" | "automatic"; paused: boolean }) => Promise<void>;
   onDiscardActiveCapture: () => Promise<void>;
   onCaptureScreenshot: (input: {
     projectId: string;
@@ -719,6 +757,7 @@ const ProjectPicker = ({
   const [capturingScreenshot, setCapturingScreenshot] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [openingPortal, setOpeningPortal] = useState(false);
+  const [changingCaptureMode, setChangingCaptureMode] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [finishError, setFinishError] = useState<string | null>(null);
@@ -731,7 +770,9 @@ const ProjectPicker = ({
     ? projects.find((project) => project.id === activeCaptureProjectId) ?? null
     : null;
   const hasActiveCapture = Boolean(activeCaptureSessionId && activeCaptureProjectId);
-  const busy = starting || capturingScreenshot || finishing || openingPortal;
+  const busy = starting || capturingScreenshot || finishing || openingPortal || changingCaptureMode;
+  const resolvedCaptureMode = activeCaptureMode ?? "manual";
+  const isAutomaticCapture = resolvedCaptureMode === "automatic";
 
   const heading = hasActiveCapture
     ? "Capture active"
@@ -826,6 +867,28 @@ const ProjectPicker = ({
     }
   };
 
+  const handleSetAutomaticPaused = async (paused: boolean) => {
+    if (busy) {
+      return;
+    }
+
+    setChangingCaptureMode(true);
+    setScreenshotError(null);
+    setFinishError(null);
+    setPortalOpenError(null);
+
+    try {
+      await onSetActiveCaptureMode({
+        mode: "automatic",
+        paused,
+      });
+      setChangingCaptureMode(false);
+    } catch (error: unknown) {
+      setScreenshotError(errorMessage(error, "Could not update automatic capture state."));
+      setChangingCaptureMode(false);
+    }
+  };
+
   return (
     <section className="panel" aria-labelledby="project-heading">
       <div className="toolbar">
@@ -846,8 +909,16 @@ const ProjectPicker = ({
 
       {hasActiveCapture ? (
         <div className="captureState">
-          <p className="captureMode">Manual screenshot capture</p>
-          <p className="captureHelp">Capture one screenshot for each step you want in the guide.</p>
+          <p className="captureMode">
+            {isAutomaticCapture ? "Automatic click capture" : "Manual screenshot capture"}
+          </p>
+          <p className="captureHelp">
+            {isAutomaticCapture
+              ? activeCapturePaused
+                ? "Automatic click capture is paused. Manual screenshots still work."
+                : "Clicks on supported pages create ordered screenshot-backed steps."
+              : "Capture one screenshot for each step you want in the guide."}
+          </p>
           <p className="captureProject">{activeProject?.name ?? "Project unavailable"}</p>
           <p className="captureSession">Session {activeCaptureSessionId}</p>
           {screenshotError ? <div className="error">{screenshotError}</div> : null}
@@ -855,6 +926,16 @@ const ProjectPicker = ({
           {portalOpenError ? <div className="error">{portalOpenError}</div> : null}
           {lastCaptureEventIndex ? <p className="success">Capture event recorded: step {lastCaptureEventIndex}</p> : null}
           <div className="actions">
+            {isAutomaticCapture ? (
+              <button
+                type="button"
+                className="secondary"
+                disabled={busy}
+                onClick={() => void handleSetAutomaticPaused(!activeCapturePaused)}
+              >
+                {activeCapturePaused ? "Resume automatic capture" : "Pause automatic capture"}
+              </button>
+            ) : null}
             <button type="button" disabled={busy} onClick={() => void handleCaptureScreenshot()}>
               {capturingScreenshot ? "Capturing..." : "Capture screenshot"}
             </button>
@@ -873,13 +954,14 @@ const ProjectPicker = ({
 
       {!hasActiveCapture && selectedProject ? (
         <div className="captureState">
-          <p className="captureMode">Manual screenshot capture</p>
-          <p className="captureHelp">Capture one screenshot for each step you want in the guide.</p>
+          <p className="captureMode">Automatic click capture</p>
+          <p className="captureHelp">Clicks on supported pages create ordered screenshot-backed steps.</p>
+          <p className="captureHelp">Manual screenshots remain available after capture starts.</p>
           <p className="captureProject">{selectedProject.name}</p>
           {startError ? <div className="error">{startError}</div> : null}
           {finishError ? <div className="error">{finishError}</div> : null}
           <button type="button" disabled={busy} onClick={() => void handleStartCapture()}>
-            {starting ? "Starting..." : "Start capture"}
+            {starting ? "Starting..." : "Start automatic capture"}
           </button>
         </div>
       ) : null}
