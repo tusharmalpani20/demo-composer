@@ -6,7 +6,8 @@ import fastifyApiReference from "@scalar/fastify-api-reference";
 import fastify, { type FastifyError, type FastifyServerOptions } from "fastify";
 import { jsonSchemaTransform, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { error_handler } from './common/helper_function/error_handler.helper.js';
-import { cookieConfig } from "./config/cookie.config.js";
+import { get_cookie_config } from "./config/cookie.config.js";
+import { get_cors_config } from "./config/cors.config.js";
 import { initialize_event_emitter } from './config/event.config.js';
 import requestDec from './config/fastify_decoder.config.js';
 import { pool } from './config/database.config.js';
@@ -110,42 +111,10 @@ export const build = (opts: BuildOptions = {}) => {
   app.register(requestDec);
 
   // Register CORS
-  app.register(fastifyCors, {
-      origin: (origin, cb) => {
-          const allowedWebOrigins = [
-              'http://localhost:3000',
-              'http://localhost:4000',
-          ];
-
-          // In development, allow all origins
-          if (process.env.NODE_ENV !== 'production') {
-              return cb(null, true);
-          }
-
-          // In production, allow requests with no origin (mobile apps)
-          if (!origin) {
-              return cb(null, true);
-          }
-
-          // In production, check against allowed origins
-          const allowed = allowedWebOrigins.includes(origin);
-          if (allowed) {
-              return cb(null, true);
-          } else {
-              console.log('Blocked origin:', origin);
-              // Return null instead of an Error to prevent the error from being logged
-              return cb(null, false);
-          }
-      },
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      credentials: true,
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Demo-Composer-Client'],
-      preflight: true,
-      preflightContinue: false
-  });
+  app.register(fastifyCors, get_cors_config().fastify_options);
 
   // Register cookie plugin here, after CORS but before other plugins
-  app.register(cookie, cookieConfig);
+  app.register(cookie, get_cookie_config());
 
   // Register Multipart right after CORS
   app.register(fastifyMultipart, {
