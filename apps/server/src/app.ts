@@ -30,6 +30,12 @@ import {
 import { build_authentication_session_repository } from './modules/authentication/session.repository.js';
 import { build_authentication_session_service } from './modules/authentication/session.service.js';
 import {
+  build_organization_invites_routes,
+  type OrganizationInvitesRouteDependencies,
+} from './modules/organization/organization-invites.routes.js';
+import { build_organization_invites_repository } from './modules/organization/organization-invites.repository.js';
+import { build_organization_invites_service } from './modules/organization/organization-invites.service.js';
+import {
   build_project_routes,
   type ProjectRouteDependencies,
 } from './modules/project/project.routes.js';
@@ -77,6 +83,7 @@ type BuildOptions = FastifyServerOptions & {
   public_instance_service?: PublicInstanceRouteService;
   first_run_setup_service?: FirstRunSetupRouteService;
   authentication_session_service?: AuthenticationSessionRouteService;
+  organization_invites_service?: OrganizationInvitesRouteDependencies["organization_invites_service"];
   project_service?: ProjectRouteDependencies["project_service"];
   capture_session_service?: CaptureSessionRouteDependencies["capture_session_service"];
   capture_asset_service?: CaptureAssetRouteDependencies["capture_asset_service"];
@@ -103,6 +110,7 @@ export const build = (opts: BuildOptions = {}) => {
       public_instance_service,
       first_run_setup_service,
       authentication_session_service,
+      organization_invites_service,
       project_service,
       capture_session_service,
       capture_asset_service,
@@ -243,6 +251,18 @@ export const build = (opts: BuildOptions = {}) => {
   const default_authentication_session_service = authentication_session_service ?? build_authentication_session_service(
       build_authentication_session_repository(pool)
   );
+
+  app.register(build_organization_invites_routes({
+      auth_service: {
+          get_current_auth_context: default_authentication_session_service.get_current_auth_context,
+      },
+      organization_invites_service: organization_invites_service ?? build_organization_invites_service(
+          build_organization_invites_repository(pool)
+      ),
+  }), {
+      prefix: "/api/v1",
+  });
+
   const default_capture_file_storage = build_local_file_storage_provider({
       root: default_local_storage_root(),
   });
