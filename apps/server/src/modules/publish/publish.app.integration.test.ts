@@ -46,10 +46,75 @@ describe("publish app integration", () => {
       },
       publish_service: {
         publish_guide: async () => publish_result,
+        publish_interactive_demo: async () => ({
+          publish_link: {
+            ...publish_result.publish_link,
+            artifact_type: "interactive_demo",
+            artifact_id: "interactive_demo_1",
+            public_url: "/d/abc123",
+          },
+          published_artifact: {
+            ...publish_result.published_artifact,
+            artifact_type: "interactive_demo",
+            artifact_id: "interactive_demo_1",
+            title: "Department demo",
+          },
+        }),
         get_guide_publish_status: async () => publish_result,
+        get_interactive_demo_publish_status: async () => ({
+          publish_link: {
+            ...publish_result.publish_link,
+            artifact_type: "interactive_demo",
+            artifact_id: "interactive_demo_1",
+            public_url: "/d/abc123",
+          },
+          published_artifact: {
+            ...publish_result.published_artifact,
+            artifact_type: "interactive_demo",
+            artifact_id: "interactive_demo_1",
+            title: "Department demo",
+          },
+        }),
         revoke_guide_publish_link: async () => ({ publish_link: { ...publish_result.publish_link, status: "revoked" } }),
+        revoke_interactive_demo_publish_link: async () => ({
+          publish_link: {
+            ...publish_result.publish_link,
+            artifact_type: "interactive_demo",
+            artifact_id: "interactive_demo_1",
+            status: "revoked",
+            public_url: "/d/abc123",
+          },
+        }),
         update_guide_publish_access: async () => publish_result,
+        update_interactive_demo_publish_access: async () => ({
+          publish_link: {
+            ...publish_result.publish_link,
+            artifact_type: "interactive_demo",
+            artifact_id: "interactive_demo_1",
+            public_url: "/d/abc123",
+          },
+          published_artifact: {
+            ...publish_result.published_artifact,
+            artifact_type: "interactive_demo",
+            artifact_id: "interactive_demo_1",
+            title: "Department demo",
+          },
+        }),
         update_guide_publish_password: async () => publish_result,
+        update_interactive_demo_publish_password: async () => ({
+          publish_link: {
+            ...publish_result.publish_link,
+            artifact_type: "interactive_demo",
+            artifact_id: "interactive_demo_1",
+            public_url: "/d/abc123",
+          },
+          published_artifact: {
+            ...publish_result.published_artifact,
+            artifact_type: "interactive_demo",
+            artifact_id: "interactive_demo_1",
+            title: "Department demo",
+          },
+        }),
         resolve_public_publish_link: async () => ({
           publish_link: {
             slug: "abc123",

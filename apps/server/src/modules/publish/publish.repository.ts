@@ -1,12 +1,15 @@
 import { ulid } from "ulid";
 import type {
+  InteractiveDemoPublishDetail,
   GuidePublishStatus,
   PublishedArtifact,
   PublishLink,
+  PublishArtifactType,
   PublishRepository,
   PublishVisibility,
   PublicAssetFile,
 } from "./publish.service";
+import type { GuideSourceCaptureAsset } from "../guide/guide.service";
 import { PublishSlugConflictError } from "./publish.service";
 import { build_guide_repository } from "../guide/guide.repository";
 
@@ -91,9 +94,84 @@ type GuidePublishStatusRow = {
   artifact_published_at: Date;
 };
 
+type InteractiveDemoRow = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  source_capture_session_id: string | null;
+  title: string;
+  description: string | null;
+  status: "draft" | "archived";
+  created_by_id: string;
+  updated_by_id: string;
+  version: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type DemoSceneRow = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  interactive_demo_id: string;
+  source_capture_session_id: string | null;
+  source_capture_event_id: string | null;
+  source_capture_asset_id: string | null;
+  scene_index: number;
+  title: string | null;
+  description: string | null;
+  background_capture_asset_id: string | null;
+  created_by_id: string;
+  updated_by_id: string;
+  version: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type DemoHotspotRow = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  interactive_demo_id: string;
+  demo_scene_id: string;
+  hotspot_type: "click" | "info" | "next";
+  label: string | null;
+  content: string | null;
+  x: string;
+  y: string;
+  width: string;
+  height: string;
+  target_scene_id: string | null;
+  hotspot_index: number;
+  created_by_id: string;
+  updated_by_id: string;
+  version: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type SourceCaptureAssetRow = {
+  id: string;
+  project_id: string;
+  capture_session_id: string;
+  asset_type: GuideSourceCaptureAsset["asset_type"];
+  width: number | null;
+  height: number | null;
+  device_pixel_ratio: number | null;
+  page_url: string | null;
+  page_title: string | null;
+  captured_at: Date;
+  file_id: string;
+  original_name: string | null;
+  mime_type: string;
+  size_bytes: number;
+};
+
 const first_row = <Row>(result: QueryResult<Row>) => result.rows[0] ?? null;
 
-const public_url_for_slug = (slug: string) => `/p/${slug}`;
+const public_url_for_slug = (artifact_type: PublishArtifactType, slug: string) => (
+  artifact_type === "interactive_demo" ? `/d/${slug}` : `/p/${slug}`
+);
 
 const map_publish_link = (row: PublishLinkRow): PublishLink => ({
   id: row.id,
@@ -107,7 +185,7 @@ const map_publish_link = (row: PublishLinkRow): PublishLink => ({
   status: row.status,
   published_at: row.published_at.toISOString(),
   revoked_at: row.revoked_at?.toISOString() ?? null,
-  public_url: public_url_for_slug(row.slug),
+  public_url: public_url_for_slug(row.artifact_type, row.slug),
 });
 
 const map_published_artifact = (row: PublishedArtifactRow): PublishedArtifact => ({
@@ -151,7 +229,7 @@ const is_slug_conflict = (error: unknown) => {
   return pg_error.code === "23505" && pg_error.constraint === "uq_publish_link_slug";
 };
 
-const map_guide_publish_status = (row: GuidePublishStatusRow): GuidePublishStatus => ({
+const map_publish_status = (row: GuidePublishStatusRow): GuidePublishStatus => ({
   publish_link: map_publish_link({
     id: row.link_id,
     artifact_type: row.link_artifact_type,
@@ -179,6 +257,137 @@ const map_guide_publish_status = (row: GuidePublishStatusRow): GuidePublishStatu
   }),
 });
 
+const map_interactive_demo = (row: InteractiveDemoRow) => ({
+  id: row.id,
+  organization_id: row.organization_id,
+  project_id: row.project_id,
+  source_capture_session_id: row.source_capture_session_id,
+  title: row.title,
+  description: row.description,
+  status: row.status,
+  created_by_id: row.created_by_id,
+  updated_by_id: row.updated_by_id,
+  version: row.version,
+  created_at: row.created_at.toISOString(),
+  updated_at: row.updated_at.toISOString(),
+});
+
+const map_demo_scene = (row: DemoSceneRow) => ({
+  id: row.id,
+  organization_id: row.organization_id,
+  project_id: row.project_id,
+  interactive_demo_id: row.interactive_demo_id,
+  source_capture_session_id: row.source_capture_session_id,
+  source_capture_event_id: row.source_capture_event_id,
+  source_capture_asset_id: row.source_capture_asset_id,
+  scene_index: row.scene_index,
+  title: row.title,
+  description: row.description,
+  background_capture_asset_id: row.background_capture_asset_id,
+  created_by_id: row.created_by_id,
+  updated_by_id: row.updated_by_id,
+  version: row.version,
+  created_at: row.created_at.toISOString(),
+  updated_at: row.updated_at.toISOString(),
+});
+
+const map_demo_hotspot = (row: DemoHotspotRow) => ({
+  id: row.id,
+  organization_id: row.organization_id,
+  project_id: row.project_id,
+  interactive_demo_id: row.interactive_demo_id,
+  demo_scene_id: row.demo_scene_id,
+  hotspot_type: row.hotspot_type,
+  label: row.label,
+  content: row.content,
+  x: Number(row.x),
+  y: Number(row.y),
+  width: Number(row.width),
+  height: Number(row.height),
+  target_scene_id: row.target_scene_id,
+  hotspot_index: row.hotspot_index,
+  created_by_id: row.created_by_id,
+  updated_by_id: row.updated_by_id,
+  version: row.version,
+  created_at: row.created_at.toISOString(),
+  updated_at: row.updated_at.toISOString(),
+});
+
+const map_source_capture_asset = (row: SourceCaptureAssetRow): GuideSourceCaptureAsset => ({
+  id: row.id,
+  capture_session_id: row.capture_session_id,
+  asset_type: row.asset_type,
+  width: row.width,
+  height: row.height,
+  device_pixel_ratio: row.device_pixel_ratio,
+  page_url: row.page_url,
+  page_title: row.page_title,
+  captured_at: row.captured_at.toISOString(),
+  file_url: `/api/v1/projects/${row.project_id}/capture-sessions/${row.capture_session_id}/assets/${row.id}/file`,
+  file: {
+    id: row.file_id,
+    original_name: row.original_name,
+    mime_type: row.mime_type,
+    size_bytes: Number(row.size_bytes),
+  },
+});
+
+const interactive_demo_select = `
+  id,
+  organization_id,
+  project_id,
+  source_capture_session_id,
+  title,
+  description,
+  status,
+  created_by_id,
+  updated_by_id,
+  version,
+  created_at,
+  updated_at
+`;
+
+const demo_scene_select = `
+  id,
+  organization_id,
+  project_id,
+  interactive_demo_id,
+  source_capture_session_id,
+  source_capture_event_id,
+  source_capture_asset_id,
+  scene_index,
+  title,
+  description,
+  background_capture_asset_id,
+  created_by_id,
+  updated_by_id,
+  version,
+  created_at,
+  updated_at
+`;
+
+const demo_hotspot_select = `
+  id,
+  organization_id,
+  project_id,
+  interactive_demo_id,
+  demo_scene_id,
+  hotspot_type,
+  label,
+  content,
+  x::text AS x,
+  y::text AS y,
+  width::text AS width,
+  height::text AS height,
+  target_scene_id,
+  hotspot_index,
+  created_by_id,
+  updated_by_id,
+  version,
+  created_at,
+  updated_at
+`;
+
 const asset_referenced_by_snapshot = (snapshot: unknown, capture_asset_id: string) => {
   if (!snapshot || typeof snapshot !== "object") {
     return false;
@@ -186,15 +395,72 @@ const asset_referenced_by_snapshot = (snapshot: unknown, capture_asset_id: strin
 
   const blocks = (snapshot as { blocks?: unknown }).blocks;
 
-  if (!Array.isArray(blocks)) {
-    return false;
-  }
-
-  return blocks.some((block) => (
+  if (Array.isArray(blocks) && blocks.some((block) => (
     block
     && typeof block === "object"
     && (block as { source_asset?: { id?: unknown } | null }).source_asset?.id === capture_asset_id
+  ))) {
+    return true;
+  }
+
+  const scenes = (snapshot as { scenes?: unknown }).scenes;
+
+  return Array.isArray(scenes) && scenes.some((scene) => (
+    scene
+    && typeof scene === "object"
+    && (scene as { background_asset?: { id?: unknown } | null }).background_asset?.id === capture_asset_id
   ));
+};
+
+const read_source_capture_assets = async (
+  db: Queryable,
+  input: {
+    organization_id: string;
+    project_id: string;
+    source_capture_asset_ids: string[];
+  }
+) => {
+  if (input.source_capture_asset_ids.length === 0) {
+    return [];
+  }
+
+  const result = await db.query<SourceCaptureAssetRow>(`
+    SELECT
+      capture_asset.id,
+      capture_asset.project_id,
+      capture_asset.capture_session_id,
+      capture_asset.asset_type,
+      capture_asset.width,
+      capture_asset.height,
+      capture_asset.device_pixel_ratio,
+      capture_asset.page_url,
+      capture_asset.page_title,
+      capture_asset.captured_at,
+      app_file.id AS file_id,
+      app_file.original_name,
+      app_file.mime_type,
+      app_file.size_bytes
+    FROM capture_schema.capture_asset capture_asset
+    INNER JOIN file_schema.file app_file ON app_file.id = capture_asset.file_id
+    WHERE capture_asset.id = ANY($1::varchar[])
+    AND capture_asset.project_id = $2
+    AND capture_asset.organization_id = $3
+    AND capture_asset.asset_type IN ('screenshot', 'redacted_screenshot')
+    AND capture_asset.is_deleted = FALSE
+    AND app_file.is_deleted = FALSE
+  `, [
+    input.source_capture_asset_ids,
+    input.project_id,
+    input.organization_id,
+  ]);
+
+  const assets_by_id = new Map(
+    result.rows.map((row) => [row.id, map_source_capture_asset(row)])
+  );
+
+  return input.source_capture_asset_ids
+    .map((id) => assets_by_id.get(id))
+    .filter((asset): asset is GuideSourceCaptureAsset => Boolean(asset));
 };
 
 const build_transactional_repository = (db: Queryable): PublishRepository => {
@@ -221,6 +487,70 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
 
     async find_guide_detail(input) {
       return guide_repository.find_guide_detail(input);
+    },
+
+    async find_interactive_demo_detail(input): Promise<InteractiveDemoPublishDetail | null> {
+      const demo_result = await db.query<InteractiveDemoRow>(`
+        SELECT ${interactive_demo_select}
+        FROM interactive_demo_schema.interactive_demo
+        WHERE id = $1
+        AND project_id = $2
+        AND organization_id = $3
+        AND is_deleted = FALSE
+        LIMIT 1
+      `, [
+        input.interactive_demo_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+      const demo_row = first_row(demo_result);
+
+      if (!demo_row) {
+        return null;
+      }
+
+      const scenes_result = await db.query<DemoSceneRow>(`
+        SELECT ${demo_scene_select}
+        FROM interactive_demo_schema.demo_scene
+        WHERE interactive_demo_id = $1
+        AND project_id = $2
+        AND organization_id = $3
+        AND is_deleted = FALSE
+        ORDER BY scene_index ASC, id ASC
+      `, [
+        input.interactive_demo_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+      const hotspots_result = await db.query<DemoHotspotRow>(`
+        SELECT ${demo_hotspot_select}
+        FROM interactive_demo_schema.demo_hotspot
+        WHERE interactive_demo_id = $1
+        AND project_id = $2
+        AND organization_id = $3
+        AND is_deleted = FALSE
+        ORDER BY demo_scene_id ASC, hotspot_index ASC, id ASC
+      `, [
+        input.interactive_demo_id,
+        input.project_id,
+        input.organization_id,
+      ]);
+      const background_asset_ids = [
+        ...new Set(scenes_result.rows
+          .map((scene) => scene.background_capture_asset_id)
+          .filter((asset_id): asset_id is string => Boolean(asset_id))),
+      ];
+
+      return {
+        interactive_demo: map_interactive_demo(demo_row),
+        demo_scenes: scenes_result.rows.map(map_demo_scene),
+        demo_hotspots: hotspots_result.rows.map(map_demo_hotspot),
+        source_capture_assets: await read_source_capture_assets(db, {
+          organization_id: input.organization_id,
+          project_id: input.project_id,
+          source_capture_asset_ids: background_asset_ids,
+        }),
+      };
     },
 
     async find_active_publish_link(input) {
@@ -365,7 +695,7 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
       return map_publish_link(row);
     },
 
-    async find_guide_publish_status(input) {
+    async find_publish_status(input) {
       const result = await db.query<GuidePublishStatusRow>(`
         SELECT
           publish_link.id AS link_id,
@@ -394,14 +724,15 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
           ON published_artifact.id = publish_link.published_artifact_id
         WHERE publish_link.organization_id = $1
         AND publish_link.project_id = $2
-        AND publish_link.artifact_type = 'guide'
-        AND publish_link.artifact_id = $3
+        AND publish_link.artifact_type = $3
+        AND publish_link.artifact_id = $4
         AND publish_link.status = 'active'
         LIMIT 1
       `, [
         input.organization_id,
         input.project_id,
-        input.guide_id,
+        input.artifact_type,
+        input.artifact_id,
       ]);
       const row = first_row(result);
 
@@ -409,7 +740,7 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
         return null;
       }
 
-      return map_guide_publish_status(row);
+      return map_publish_status(row);
     },
 
     async revoke_active_publish_link(input) {
@@ -422,15 +753,16 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
           updated_at = CURRENT_TIMESTAMP
         WHERE organization_id = $2
         AND project_id = $3
-        AND artifact_type = 'guide'
-        AND artifact_id = $4
+        AND artifact_type = $4
+        AND artifact_id = $5
         AND status = 'active'
         RETURNING ${publish_link_select}
       `, [
         input.actor_org_user_id,
         input.organization_id,
         input.project_id,
-        input.guide_id,
+        input.artifact_type,
+        input.artifact_id,
       ]);
       const row = first_row(result);
 
@@ -447,8 +779,8 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
             updated_at = CURRENT_TIMESTAMP
           WHERE organization_id = $3
           AND project_id = $4
-          AND artifact_type = 'guide'
-          AND artifact_id = $5
+          AND artifact_type = $5
+          AND artifact_id = $6
           AND status = 'active'
           RETURNING *
         )
@@ -483,11 +815,12 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
         input.expires_at,
         input.organization_id,
         input.project_id,
-        input.guide_id,
+        input.artifact_type,
+        input.artifact_id,
       ]);
       const row = first_row(result);
 
-      return row ? map_guide_publish_status(row) : null;
+      return row ? map_publish_status(row) : null;
     },
 
     async update_publish_link_password(input) {
@@ -502,8 +835,8 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
             updated_at = CURRENT_TIMESTAMP
           WHERE organization_id = $3
           AND project_id = $4
-          AND artifact_type = 'guide'
-          AND artifact_id = $5
+          AND artifact_type = $5
+          AND artifact_id = $6
           AND status = 'active'
           RETURNING *
         )
@@ -538,11 +871,12 @@ const build_transactional_repository = (db: Queryable): PublishRepository => {
         input.password_salt,
         input.organization_id,
         input.project_id,
-        input.guide_id,
+        input.artifact_type,
+        input.artifact_id,
       ]);
       const row = first_row(result);
 
-      return row ? map_guide_publish_status(row) : null;
+      return row ? map_publish_status(row) : null;
     },
 
     async create_public_viewer_session(input) {

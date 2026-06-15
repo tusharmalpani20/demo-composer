@@ -8,6 +8,8 @@ import {
   GuideHasNoPublishableBlocksError,
   GuideNotFoundError,
   GuideNotPublishableError,
+  InteractiveDemoHasNoPublishableScenesError,
+  InteractiveDemoNotFoundError,
   InvalidPublishAccessSettingsError,
   InvalidPublishPasswordSettingsError,
   InvalidPublicViewerPasswordError,
@@ -20,6 +22,8 @@ import {
   UnsupportedPublishedAssetStorageProviderError,
   type GuidePublishResult,
   type GuidePublishStatus,
+  type InteractiveDemoPublishResult,
+  type InteractiveDemoPublishStatus,
   type PublishAuthContext,
   type PublicPublishResult,
   type PublishedAssetFileRead,
@@ -41,15 +45,30 @@ export type PublishRouteDependencies = {
       project_id: string;
       guide_id: string;
     }) => Promise<GuidePublishResult>;
+    publish_interactive_demo: (input: {
+      auth: PublishAuthContext;
+      project_id: string;
+      interactive_demo_id: string;
+    }) => Promise<InteractiveDemoPublishResult>;
     get_guide_publish_status: (input: {
       auth: PublishAuthContext;
       project_id: string;
       guide_id: string;
     }) => Promise<GuidePublishStatus>;
+    get_interactive_demo_publish_status: (input: {
+      auth: PublishAuthContext;
+      project_id: string;
+      interactive_demo_id: string;
+    }) => Promise<InteractiveDemoPublishStatus>;
     revoke_guide_publish_link: (input: {
       auth: PublishAuthContext;
       project_id: string;
       guide_id: string;
+    }) => Promise<RevokedGuidePublishResult>;
+    revoke_interactive_demo_publish_link: (input: {
+      auth: PublishAuthContext;
+      project_id: string;
+      interactive_demo_id: string;
     }) => Promise<RevokedGuidePublishResult>;
     update_guide_publish_access: (input: {
       auth: PublishAuthContext;
@@ -58,12 +77,25 @@ export type PublishRouteDependencies = {
       visibility: PublishVisibility;
       expires_at: string | null;
     }) => Promise<GuidePublishStatus>;
+    update_interactive_demo_publish_access: (input: {
+      auth: PublishAuthContext;
+      project_id: string;
+      interactive_demo_id: string;
+      visibility: PublishVisibility;
+      expires_at: string | null;
+    }) => Promise<InteractiveDemoPublishStatus>;
     update_guide_publish_password: (input: {
       auth: PublishAuthContext;
       project_id: string;
       guide_id: string;
       password: string | null;
     }) => Promise<GuidePublishStatus>;
+    update_interactive_demo_publish_password: (input: {
+      auth: PublishAuthContext;
+      project_id: string;
+      interactive_demo_id: string;
+      password: string | null;
+    }) => Promise<InteractiveDemoPublishStatus>;
     resolve_public_publish_link: (input: {
       slug: string;
       viewer_token?: string;
@@ -187,6 +219,10 @@ export const build_publish_routes = (
         return reply.status(404).send(error_response("guide_not_found", "Guide was not found"));
       }
 
+      if (error instanceof InteractiveDemoNotFoundError) {
+        return reply.status(404).send(error_response("interactive_demo_not_found", "Interactive demo was not found"));
+      }
+
       if (error instanceof GuideNotPublishableError) {
         return reply.status(409).send(error_response("guide_not_publishable", "Guide is not publishable"));
       }
@@ -194,6 +230,12 @@ export const build_publish_routes = (
       if (error instanceof GuideHasNoPublishableBlocksError) {
         return reply.status(400).send(
           error_response("guide_has_no_publishable_blocks", "Guide has no publishable blocks")
+        );
+      }
+
+      if (error instanceof InteractiveDemoHasNoPublishableScenesError) {
+        return reply.status(400).send(
+          error_response("interactive_demo_has_no_publishable_scenes", "Interactive demo has no publishable scenes")
         );
       }
 
@@ -352,6 +394,118 @@ export const build_publish_routes = (
           auth,
           project_id: request.params.project_id,
           guide_id: request.params.guide_id,
+          password: password_body.password,
+        });
+
+        return reply.status(200).send(result);
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.post<{
+      Params: {
+        project_id: string;
+        interactive_demo_id: string;
+      };
+    }>("/projects/:project_id/interactive-demos/:interactive_demo_id/publish", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const result = await dependencies.publish_service.publish_interactive_demo({
+          auth,
+          project_id: request.params.project_id,
+          interactive_demo_id: request.params.interactive_demo_id,
+        });
+
+        return reply.status(201).send(result);
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.get<{
+      Params: {
+        project_id: string;
+        interactive_demo_id: string;
+      };
+    }>("/projects/:project_id/interactive-demos/:interactive_demo_id/publish", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const result = await dependencies.publish_service.get_interactive_demo_publish_status({
+          auth,
+          project_id: request.params.project_id,
+          interactive_demo_id: request.params.interactive_demo_id,
+        });
+
+        return reply.status(200).send(result);
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.delete<{
+      Params: {
+        project_id: string;
+        interactive_demo_id: string;
+      };
+    }>("/projects/:project_id/interactive-demos/:interactive_demo_id/publish", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const result = await dependencies.publish_service.revoke_interactive_demo_publish_link({
+          auth,
+          project_id: request.params.project_id,
+          interactive_demo_id: request.params.interactive_demo_id,
+        });
+
+        return reply.status(200).send(result);
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.patch<{
+      Params: {
+        project_id: string;
+        interactive_demo_id: string;
+      };
+      Body: {
+        visibility: PublishVisibility;
+        expires_at?: string | null;
+      };
+    }>("/projects/:project_id/interactive-demos/:interactive_demo_id/publish/access", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const access_body = parse_publish_access_body(request.body);
+        const result = await dependencies.publish_service.update_interactive_demo_publish_access({
+          auth,
+          project_id: request.params.project_id,
+          interactive_demo_id: request.params.interactive_demo_id,
+          visibility: access_body.visibility,
+          expires_at: access_body.expires_at,
+        });
+
+        return reply.status(200).send(result);
+      } catch (error) {
+        return handle_domain_error(error, reply);
+      }
+    });
+
+    fastify.patch<{
+      Params: {
+        project_id: string;
+        interactive_demo_id: string;
+      };
+      Body: {
+        password: string | null;
+      };
+    }>("/projects/:project_id/interactive-demos/:interactive_demo_id/publish/password", async (request, reply) => {
+      try {
+        const auth = await require_auth(request.cookies[web_session_cookie_name]);
+        const password_body = parse_publish_password_body(request.body);
+        const result = await dependencies.publish_service.update_interactive_demo_publish_password({
+          auth,
+          project_id: request.params.project_id,
+          interactive_demo_id: request.params.interactive_demo_id,
           password: password_body.password,
         });
 

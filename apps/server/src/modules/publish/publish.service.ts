@@ -4,6 +4,11 @@ import type {
   GuideScreenshotAnnotation,
   GuideSourceCaptureAsset,
 } from "../guide/guide.service";
+import type {
+  DemoHotspot,
+  DemoScene,
+  InteractiveDemo,
+} from "../interactive-demo/interactive-demo.service";
 import {
   hash_public_link_password,
   verify_public_link_password,
@@ -47,10 +52,15 @@ export type GuidePublishResult = {
   published_artifact: PublishedArtifact;
 };
 
-export type GuidePublishStatus = {
+export type PublishStatus = {
   publish_link: PublishLink | null;
   published_artifact: PublishedArtifact | null;
 };
+
+export type GuidePublishStatus = PublishStatus;
+export type InteractiveDemoPublishStatus = PublishStatus;
+export type InteractiveDemoPublishResult = GuidePublishResult;
+export type RevokedInteractiveDemoPublishResult = RevokedGuidePublishResult;
 
 export type RevokedGuidePublishResult = {
   publish_link: PublishLink;
@@ -128,6 +138,59 @@ export type PublishedGuideSnapshot = {
   }>;
 };
 
+export type InteractiveDemoPublishDetail = {
+  interactive_demo: InteractiveDemo;
+  demo_scenes: DemoScene[];
+  demo_hotspots: DemoHotspot[];
+  source_capture_assets: GuideSourceCaptureAsset[];
+};
+
+export type PublishedInteractiveDemoSnapshot = {
+  artifact_type: "interactive_demo";
+  schema_version: 1;
+  interactive_demo: {
+    id: string;
+    title: string;
+    description: string | null;
+    source_capture_session_id: string | null;
+    published_version: number;
+    published_at: string;
+  };
+  scenes: Array<{
+    id: string;
+    scene_index: number;
+    title: string | null;
+    description: string | null;
+    background_asset: {
+      id: string;
+      asset_type: string;
+      width: number | null;
+      height: number | null;
+      page_title: string | null;
+      page_url: string | null;
+      file: {
+        id: string;
+        original_name: string | null;
+        mime_type: string;
+        size_bytes: number;
+      };
+      file_url: string;
+    };
+    hotspots: Array<{
+      id: string;
+      hotspot_type: DemoHotspot["hotspot_type"];
+      label: string | null;
+      content: string | null;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      target_scene_id: string | null;
+      hotspot_index: number;
+    }>;
+  }>;
+};
+
 export class PublishSlugConflictError extends Error {
   constructor() {
     super("Publish slug already exists");
@@ -153,32 +216,37 @@ export type PublishRepository = {
     project_id: string;
     guide_id: string;
   }) => Promise<GuideDetail | null>;
+  find_interactive_demo_detail: (input: {
+    organization_id: string;
+    project_id: string;
+    interactive_demo_id: string;
+  }) => Promise<InteractiveDemoPublishDetail | null>;
   find_active_publish_link: (input: {
     organization_id: string;
     project_id: string;
-    artifact_type: "guide";
+    artifact_type: PublishArtifactType;
     artifact_id: string;
   }) => Promise<PublishLink | null>;
   next_published_artifact_version: (input: {
     organization_id: string;
     project_id: string;
-    artifact_type: "guide";
+    artifact_type: PublishArtifactType;
     artifact_id: string;
   }) => Promise<number>;
   create_published_artifact: (input: {
     organization_id: string;
     project_id: string;
-    artifact_type: "guide";
+    artifact_type: PublishArtifactType;
     artifact_id: string;
     version_number: number;
     title: string;
-    snapshot_json: PublishedGuideSnapshot;
+    snapshot_json: PublishedGuideSnapshot | PublishedInteractiveDemoSnapshot;
     actor_org_user_id: string;
   }) => Promise<PublishedArtifact>;
   create_publish_link: (input: {
     organization_id: string;
     project_id: string;
-    artifact_type: "guide";
+    artifact_type: PublishArtifactType;
     artifact_id: string;
     published_artifact_id: string;
     slug: string;
@@ -190,31 +258,35 @@ export type PublishRepository = {
     publish_link_id: string;
     published_artifact_id: string;
   }) => Promise<PublishLink>;
-  find_guide_publish_status: (input: {
+  find_publish_status: (input: {
     organization_id: string;
     project_id: string;
-    guide_id: string;
-  }) => Promise<GuidePublishStatus | null>;
+    artifact_type: PublishArtifactType;
+    artifact_id: string;
+  }) => Promise<PublishStatus | null>;
   revoke_active_publish_link: (input: {
     organization_id: string;
     project_id: string;
-    guide_id: string;
+    artifact_type: PublishArtifactType;
+    artifact_id: string;
     actor_org_user_id: string;
   }) => Promise<PublishLink | null>;
   update_publish_link_access: (input: {
     organization_id: string;
     project_id: string;
-    guide_id: string;
+    artifact_type: PublishArtifactType;
+    artifact_id: string;
     visibility: PublishVisibility;
     expires_at: string | null;
-  }) => Promise<GuidePublishStatus | null>;
+  }) => Promise<PublishStatus | null>;
   update_publish_link_password: (input: {
     organization_id: string;
     project_id: string;
-    guide_id: string;
+    artifact_type: PublishArtifactType;
+    artifact_id: string;
     password_hash: string | null;
     password_salt: string | null;
-  }) => Promise<GuidePublishStatus | null>;
+  }) => Promise<PublishStatus | null>;
   create_public_viewer_session: (input: {
     publish_link_id: string;
     token_hash: string;
@@ -260,6 +332,18 @@ export class ProjectNotFoundError extends Error {
 export class GuideNotFoundError extends Error {
   constructor() {
     super("Guide was not found");
+  }
+}
+
+export class InteractiveDemoNotFoundError extends Error {
+  constructor() {
+    super("Interactive demo was not found");
+  }
+}
+
+export class InteractiveDemoHasNoPublishableScenesError extends Error {
+  constructor() {
+    super("Interactive demo has no publishable scenes");
   }
 }
 
@@ -410,6 +494,93 @@ const build_snapshot = (input: {
   };
 };
 
+const background_asset_for_scene = (
+  scene: DemoScene,
+  assets: Map<string, GuideSourceCaptureAsset>
+) => (
+  scene.background_capture_asset_id ? assets.get(scene.background_capture_asset_id) ?? null : null
+);
+
+const build_interactive_demo_snapshot = (input: {
+  demo_detail: InteractiveDemoPublishDetail;
+  version_number: number;
+  published_at: string;
+  slug: string;
+}): PublishedInteractiveDemoSnapshot => {
+  const assets = assets_by_id(input.demo_detail.source_capture_assets);
+  const scene_ids = new Set(input.demo_detail.demo_scenes.map((scene) => scene.id));
+  const hotspots_by_scene = input.demo_detail.demo_hotspots.reduce<Record<string, DemoHotspot[]>>((groups, hotspot) => {
+    groups[hotspot.demo_scene_id] = [...(groups[hotspot.demo_scene_id] ?? []), hotspot];
+    return groups;
+  }, {});
+  const scenes = [...input.demo_detail.demo_scenes]
+    .sort((left, right) => left.scene_index - right.scene_index)
+    .map((scene) => {
+      const background_asset = background_asset_for_scene(scene, assets);
+
+      if (!background_asset) {
+        return null;
+      }
+
+      return {
+        id: scene.id,
+        scene_index: scene.scene_index,
+        title: scene.title,
+        description: scene.description,
+        background_asset: {
+          id: background_asset.id,
+          asset_type: background_asset.asset_type,
+          width: background_asset.width,
+          height: background_asset.height,
+          page_title: background_asset.page_title,
+          page_url: background_asset.page_url,
+          file: {
+            id: background_asset.file.id,
+            original_name: background_asset.file.original_name,
+            mime_type: background_asset.file.mime_type,
+            size_bytes: background_asset.file.size_bytes,
+          },
+          file_url: `/api/v1/public/publish-links/${input.slug}/assets/${background_asset.id}/file`,
+        },
+        hotspots: [...(hotspots_by_scene[scene.id] ?? [])]
+          .sort((left, right) => left.hotspot_index - right.hotspot_index)
+          .map((hotspot) => ({
+            id: hotspot.id,
+            hotspot_type: hotspot.hotspot_type,
+            label: hotspot.label,
+            content: hotspot.content,
+            x: hotspot.x,
+            y: hotspot.y,
+            width: hotspot.width,
+            height: hotspot.height,
+            target_scene_id: hotspot.target_scene_id && scene_ids.has(hotspot.target_scene_id)
+              ? hotspot.target_scene_id
+              : null,
+            hotspot_index: hotspot.hotspot_index,
+          })),
+      };
+    })
+    .filter((scene): scene is NonNullable<typeof scene> => Boolean(scene));
+
+  if (scenes.length === 0) {
+    throw new InteractiveDemoHasNoPublishableScenesError();
+  }
+
+  return {
+    artifact_type: "interactive_demo",
+    schema_version: 1,
+    interactive_demo: {
+      id: input.demo_detail.interactive_demo.id,
+      title: input.demo_detail.interactive_demo.title,
+      description: input.demo_detail.interactive_demo.description,
+      source_capture_session_id: input.demo_detail.interactive_demo.source_capture_session_id,
+      published_version: input.version_number,
+      published_at: input.published_at,
+    },
+    scenes,
+  };
+};
+
 export const build_publish_service = (
   repository: PublishRepository,
   options: {
@@ -525,6 +696,91 @@ export const build_publish_service = (
     throw last_error;
   };
 
+  const publish_interactive_demo = async (input: {
+    auth: PublishAuthContext;
+    project_id: string;
+    interactive_demo_id: string;
+  }): Promise<InteractiveDemoPublishResult> => {
+    let last_error: unknown;
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        return await repository.transaction(async (transactional_repository) => {
+          const scope = {
+            organization_id: input.auth.organization_id,
+            project_id: input.project_id,
+          };
+
+          await ensure_project_exists(scope);
+
+          const demo_detail = await transactional_repository.find_interactive_demo_detail({
+            ...scope,
+            interactive_demo_id: input.interactive_demo_id,
+          });
+
+          if (!demo_detail) {
+            throw new InteractiveDemoNotFoundError();
+          }
+
+          const existing_link = await transactional_repository.find_active_publish_link({
+            ...scope,
+            artifact_type: "interactive_demo",
+            artifact_id: input.interactive_demo_id,
+          });
+          const version_number = await transactional_repository.next_published_artifact_version({
+            ...scope,
+            artifact_type: "interactive_demo",
+            artifact_id: input.interactive_demo_id,
+          });
+          const slug = existing_link?.slug ?? generate_slug();
+          const published_at = now().toISOString();
+          const snapshot_json = build_interactive_demo_snapshot({
+            demo_detail,
+            version_number,
+            published_at,
+            slug,
+          });
+          const published_artifact = await transactional_repository.create_published_artifact({
+            ...scope,
+            artifact_type: "interactive_demo",
+            artifact_id: input.interactive_demo_id,
+            version_number,
+            title: demo_detail.interactive_demo.title,
+            snapshot_json,
+            actor_org_user_id: input.auth.actor_org_user_id,
+          });
+          const publish_link = existing_link
+            ? await transactional_repository.update_publish_link_target({
+              ...scope,
+              publish_link_id: existing_link.id,
+              published_artifact_id: published_artifact.id,
+            })
+            : await transactional_repository.create_publish_link({
+              ...scope,
+              artifact_type: "interactive_demo",
+              artifact_id: input.interactive_demo_id,
+              published_artifact_id: published_artifact.id,
+              slug,
+              actor_org_user_id: input.auth.actor_org_user_id,
+            });
+
+          return {
+            publish_link,
+            published_artifact,
+          };
+        });
+      } catch (error) {
+        if (!(error instanceof PublishSlugConflictError)) {
+          throw error;
+        }
+
+        last_error = error;
+      }
+    }
+
+    throw last_error;
+  };
+
   const get_guide_publish_status = async (input: {
     auth: PublishAuthContext;
     project_id: string;
@@ -537,9 +793,32 @@ export const build_publish_service = (
 
     await ensure_project_exists(scope);
 
-    return await repository.find_guide_publish_status({
+    return await repository.find_publish_status({
       ...scope,
-      guide_id: input.guide_id,
+      artifact_type: "guide",
+      artifact_id: input.guide_id,
+    }) ?? {
+      publish_link: null,
+      published_artifact: null,
+    };
+  };
+
+  const get_interactive_demo_publish_status = async (input: {
+    auth: PublishAuthContext;
+    project_id: string;
+    interactive_demo_id: string;
+  }): Promise<InteractiveDemoPublishStatus> => {
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    };
+
+    await ensure_project_exists(scope);
+
+    return await repository.find_publish_status({
+      ...scope,
+      artifact_type: "interactive_demo",
+      artifact_id: input.interactive_demo_id,
     }) ?? {
       publish_link: null,
       published_artifact: null,
@@ -560,7 +839,38 @@ export const build_publish_service = (
 
     const publish_link = await repository.revoke_active_publish_link({
       ...scope,
-      guide_id: input.guide_id,
+      artifact_type: "guide",
+      artifact_id: input.guide_id,
+      actor_org_user_id: input.auth.actor_org_user_id,
+    });
+
+    if (!publish_link) {
+      throw new PublishLinkNotFoundError();
+    }
+
+    await repository.revoke_public_viewer_sessions_for_publish_link({
+      publish_link_id: publish_link.id,
+    });
+
+    return { publish_link };
+  };
+
+  const revoke_interactive_demo_publish_link = async (input: {
+    auth: PublishAuthContext;
+    project_id: string;
+    interactive_demo_id: string;
+  }): Promise<RevokedInteractiveDemoPublishResult> => {
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    };
+
+    await ensure_project_exists(scope);
+
+    const publish_link = await repository.revoke_active_publish_link({
+      ...scope,
+      artifact_type: "interactive_demo",
+      artifact_id: input.interactive_demo_id,
       actor_org_user_id: input.auth.actor_org_user_id,
     });
 
@@ -599,7 +909,45 @@ export const build_publish_service = (
 
     const result = await repository.update_publish_link_access({
       ...scope,
-      guide_id: input.guide_id,
+      artifact_type: "guide",
+      artifact_id: input.guide_id,
+      visibility: input.visibility,
+      expires_at: input.expires_at,
+    });
+
+    if (!result) {
+      throw new PublishLinkNotFoundError();
+    }
+
+    return result;
+  };
+
+  const update_interactive_demo_publish_access = async (input: {
+    auth: PublishAuthContext;
+    project_id: string;
+    interactive_demo_id: string;
+    visibility: PublishVisibility;
+    expires_at: string | null;
+  }): Promise<InteractiveDemoPublishStatus> => {
+    if (!["public", "restricted"].includes(input.visibility)) {
+      throw new InvalidPublishAccessSettingsError();
+    }
+
+    if (input.expires_at !== null && !Number.isFinite(new Date(input.expires_at).getTime())) {
+      throw new InvalidPublishAccessSettingsError();
+    }
+
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    };
+
+    await ensure_project_exists(scope);
+
+    const result = await repository.update_publish_link_access({
+      ...scope,
+      artifact_type: "interactive_demo",
+      artifact_id: input.interactive_demo_id,
       visibility: input.visibility,
       expires_at: input.expires_at,
     });
@@ -646,7 +994,46 @@ export const build_publish_service = (
 
     const result = await repository.update_publish_link_password({
       ...scope,
-      guide_id: input.guide_id,
+      artifact_type: "guide",
+      artifact_id: input.guide_id,
+      password_hash: password_hash?.hash ?? null,
+      password_salt: password_hash?.salt ?? null,
+    });
+
+    if (!result?.publish_link) {
+      throw new PublishLinkNotFoundError();
+    }
+
+    await repository.revoke_public_viewer_sessions_for_publish_link({
+      publish_link_id: result.publish_link.id,
+    });
+
+    return result;
+  };
+
+  const update_interactive_demo_publish_password = async (input: {
+    auth: PublishAuthContext;
+    project_id: string;
+    interactive_demo_id: string;
+    password: string | null;
+  }): Promise<InteractiveDemoPublishStatus> => {
+    validate_publish_password(input.password);
+
+    const scope = {
+      organization_id: input.auth.organization_id,
+      project_id: input.project_id,
+    };
+
+    await ensure_project_exists(scope);
+
+    const password_hash = input.password === null
+      ? null
+      : await hash_public_link_password(input.password);
+
+    const result = await repository.update_publish_link_password({
+      ...scope,
+      artifact_type: "interactive_demo",
+      artifact_id: input.interactive_demo_id,
       password_hash: password_hash?.hash ?? null,
       password_salt: password_hash?.salt ?? null,
     });
@@ -802,10 +1189,15 @@ export const build_publish_service = (
 
   return {
     publish_guide,
+    publish_interactive_demo,
     get_guide_publish_status,
+    get_interactive_demo_publish_status,
     revoke_guide_publish_link,
+    revoke_interactive_demo_publish_link,
     update_guide_publish_access,
+    update_interactive_demo_publish_access,
     update_guide_publish_password,
+    update_interactive_demo_publish_password,
     resolve_public_publish_link,
     create_public_publish_viewer_session,
     get_public_published_asset_file,

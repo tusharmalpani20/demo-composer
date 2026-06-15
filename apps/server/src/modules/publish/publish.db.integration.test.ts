@@ -47,6 +47,9 @@ const reset_foundation_tables = async () => {
       publish_schema.public_publish_viewer_session,
       publish_schema.publish_link,
       publish_schema.published_artifact,
+      interactive_demo_schema.demo_hotspot,
+      interactive_demo_schema.demo_scene,
+      interactive_demo_schema.interactive_demo,
       guide_schema.guide_step,
       guide_schema.guide_block,
       guide_schema.guide,
@@ -197,6 +200,96 @@ describe("DB-backed guide publishing API", () => {
   afterAll(async () => {
     await pool.end();
   });
+
+  it("publishes resolves and streams an interactive demo snapshot", async () => {
+    const bytes = Buffer.from("fake demo png bytes");
+    const session_token = await setup_owner();
+    const project_id = await create_project(session_token);
+    const capture_session_id = await create_capture_session(session_token, project_id);
+    const capture_asset_id = await upload_capture_asset(session_token, project_id, capture_session_id, bytes);
+    await create_capture_event(session_token, project_id, capture_session_id, capture_asset_id);
+    const app = build({ logger: false });
+
+    const create_demo_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/interactive-demos`,
+      cookies: { demo_composer_session: session_token },
+      payload: {},
+    });
+    expect(create_demo_response.statusCode).toBe(201);
+    const interactive_demo_id = create_demo_response.json().interactive_demo.id as string;
+    const scene_id = create_demo_response.json().demo_scenes[0].id as string;
+
+    const create_hotspot_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${scene_id}/hotspots`,
+      cookies: { demo_composer_session: session_token },
+      payload: {
+        hotspot_type: "info",
+        label: "Read first",
+        content: "Check the list before continuing.",
+        x: 0.1,
+        y: 0.2,
+        width: 0.3,
+        height: 0.1,
+      },
+    });
+    expect(create_hotspot_response.statusCode).toBe(201);
+
+    const publish_response = await app.inject({
+      method: "POST",
+      url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/publish`,
+      cookies: { demo_composer_session: session_token },
+    });
+    expect(publish_response.statusCode).toBe(201);
+    expect(publish_response.json().publish_link).toMatchObject({
+      artifact_type: "interactive_demo",
+      artifact_id: interactive_demo_id,
+      public_url: expect.stringMatching(/^\/d\//),
+      status: "active",
+    });
+    const slug = publish_response.json().publish_link.slug as string;
+
+    const public_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}`,
+    });
+    expect(public_response.statusCode).toBe(200);
+    expect(public_response.json().publish_link.artifact_type).toBe("interactive_demo");
+    expect(public_response.json().published_artifact.snapshot).toMatchObject({
+      artifact_type: "interactive_demo",
+      schema_version: 1,
+      interactive_demo: {
+        id: interactive_demo_id,
+        title: "Create department workflow",
+      },
+      scenes: [{
+        id: scene_id,
+        scene_index: 1,
+        background_asset: {
+          id: capture_asset_id,
+          file_url: `/api/v1/public/publish-links/${slug}/assets/${capture_asset_id}/file`,
+        },
+        hotspots: [{
+          hotspot_type: "info",
+          label: "Read first",
+          content: "Check the list before continuing.",
+        }],
+      }],
+    });
+    expect(JSON.stringify(public_response.json())).not.toContain("organization_id");
+    expect(JSON.stringify(public_response.json())).not.toContain("storage_key");
+
+    const public_asset_response = await app.inject({
+      method: "GET",
+      url: `/api/v1/public/publish-links/${slug}/assets/${capture_asset_id}/file`,
+    });
+    expect(public_asset_response.statusCode).toBe(200);
+    expect(public_asset_response.headers["content-type"]).toBe("image/png");
+    expect(public_asset_response.body).toBe(bytes.toString());
+
+    await app.close();
+  }, 30_000);
 
   it("publishes republishes resolves streams and revokes a guide snapshot", async () => {
     const bytes = Buffer.from("fake png bytes");

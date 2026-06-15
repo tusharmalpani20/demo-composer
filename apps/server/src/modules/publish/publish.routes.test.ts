@@ -16,6 +16,7 @@ import {
   PublishedAssetNotFoundError,
   UnsupportedPublishedAssetStorageProviderError,
   type GuidePublishResult,
+  type InteractiveDemoPublishResult,
 } from "./publish.service";
 import { build_publish_routes } from "./publish.routes";
 
@@ -65,6 +66,31 @@ const publish_result: GuidePublishResult = {
   },
 };
 
+const interactive_demo_publish_result: InteractiveDemoPublishResult = {
+  publish_link: {
+    id: "publish_link_demo_1",
+    artifact_type: "interactive_demo",
+    artifact_id: "interactive_demo_1",
+    published_artifact_id: "published_artifact_demo_1",
+    slug: "demo123",
+    visibility: "public",
+    status: "active",
+    published_at: "2026-06-10T00:00:00.000Z",
+    revoked_at: null,
+    expires_at: null,
+    password_protected: false,
+    public_url: "/d/demo123",
+  },
+  published_artifact: {
+    id: "published_artifact_demo_1",
+    artifact_type: "interactive_demo",
+    artifact_id: "interactive_demo_1",
+    version_number: 1,
+    title: "Department demo",
+    published_at: "2026-06-10T00:00:00.000Z",
+  },
+};
+
 const public_result = {
   publish_link: {
     slug: "abc123",
@@ -110,7 +136,9 @@ const build_test_app = async (
     },
     publish_service: {
       publish_guide: async () => publish_result,
+      publish_interactive_demo: async () => interactive_demo_publish_result,
       get_guide_publish_status: async () => publish_result,
+      get_interactive_demo_publish_status: async () => interactive_demo_publish_result,
       revoke_guide_publish_link: async () => ({
         publish_link: {
           ...publish_result.publish_link,
@@ -118,11 +146,26 @@ const build_test_app = async (
           revoked_at: "2026-06-10T01:00:00.000Z",
         },
       }),
+      revoke_interactive_demo_publish_link: async () => ({
+        publish_link: {
+          ...interactive_demo_publish_result.publish_link,
+          status: "revoked",
+          revoked_at: "2026-06-10T01:00:00.000Z",
+        },
+      }),
       update_guide_publish_access: async () => publish_result,
+      update_interactive_demo_publish_access: async () => interactive_demo_publish_result,
       update_guide_publish_password: async () => ({
         ...publish_result,
         publish_link: {
           ...publish_result.publish_link,
+          password_protected: true,
+        },
+      }),
+      update_interactive_demo_publish_password: async () => ({
+        ...interactive_demo_publish_result,
+        publish_link: {
+          ...interactive_demo_publish_result.publish_link,
           password_protected: true,
         },
       }),
@@ -143,6 +186,141 @@ const build_test_app = async (
 };
 
 describe("publish routes", () => {
+  it("publishes manages access password and revokes an interactive demo with authenticated scope", async () => {
+    const seen_inputs: unknown[] = [];
+    const app = await build_test_app({
+      publish_service: {
+        publish_interactive_demo: async (input) => {
+          seen_inputs.push(input);
+          return interactive_demo_publish_result;
+        },
+        get_interactive_demo_publish_status: async (input) => {
+          seen_inputs.push(input);
+          return interactive_demo_publish_result;
+        },
+        update_interactive_demo_publish_access: async (input) => {
+          seen_inputs.push(input);
+          return {
+            ...interactive_demo_publish_result,
+            publish_link: {
+              ...interactive_demo_publish_result.publish_link,
+              visibility: input.visibility,
+              expires_at: input.expires_at,
+            },
+          };
+        },
+        update_interactive_demo_publish_password: async (input) => {
+          seen_inputs.push(input);
+          return {
+            ...interactive_demo_publish_result,
+            publish_link: {
+              ...interactive_demo_publish_result.publish_link,
+              password_protected: input.password !== null,
+            },
+          };
+        },
+        revoke_interactive_demo_publish_link: async (input) => {
+          seen_inputs.push(input);
+          return {
+            publish_link: {
+              ...interactive_demo_publish_result.publish_link,
+              status: "revoked",
+              revoked_at: "2026-06-10T01:00:00.000Z",
+            },
+          };
+        },
+      },
+    });
+
+    const publish_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/publish",
+      cookies: { demo_composer_session: "session-token" },
+    });
+    const status_response = await app.inject({
+      method: "GET",
+      url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/publish",
+      cookies: { demo_composer_session: "session-token" },
+    });
+    const access_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/publish/access",
+      cookies: { demo_composer_session: "session-token" },
+      payload: {
+        visibility: "restricted",
+        expires_at: null,
+      },
+    });
+    const password_response = await app.inject({
+      method: "PATCH",
+      url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/publish/password",
+      cookies: { demo_composer_session: "session-token" },
+      payload: { password: "shared password" },
+    });
+    const revoke_response = await app.inject({
+      method: "DELETE",
+      url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/publish",
+      cookies: { demo_composer_session: "session-token" },
+    });
+
+    expect(publish_response.statusCode).toBe(201);
+    expect(publish_response.json()).toEqual(interactive_demo_publish_result);
+    expect(status_response.statusCode).toBe(200);
+    expect(status_response.json()).toEqual(interactive_demo_publish_result);
+    expect(access_response.statusCode).toBe(200);
+    expect(access_response.json().publish_link.visibility).toBe("restricted");
+    expect(password_response.statusCode).toBe(200);
+    expect(password_response.json().publish_link.password_protected).toBe(true);
+    expect(revoke_response.statusCode).toBe(200);
+    expect(revoke_response.json().publish_link.status).toBe("revoked");
+    expect(seen_inputs).toEqual([
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        interactive_demo_id: "interactive_demo_1",
+      },
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        interactive_demo_id: "interactive_demo_1",
+      },
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        interactive_demo_id: "interactive_demo_1",
+        visibility: "restricted",
+        expires_at: null,
+      },
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        interactive_demo_id: "interactive_demo_1",
+        password: "shared password",
+      },
+      {
+        auth: {
+          organization_id: "organization_1",
+          actor_org_user_id: "org_user_1",
+        },
+        project_id: "project_1",
+        interactive_demo_id: "interactive_demo_1",
+      },
+    ]);
+    await app.close();
+  });
+
   it("publishes reads status and revokes a guide with authenticated scope", async () => {
     const seen_inputs: unknown[] = [];
     const app = await build_test_app({
