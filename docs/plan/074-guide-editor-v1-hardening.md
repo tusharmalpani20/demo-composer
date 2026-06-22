@@ -64,6 +64,13 @@ Guide capabilities currently include:
 - embed-copy controls
 - public guide reader and embed route
 
+Manual portal dogfood on 2026-06-22 found one guide-specific blocker-level limitation:
+
+- Generated guide editing, preview, screenshot viewer, annotation, export, publish, public, embed, and password-gate flows worked.
+- Structural add-block controls for header, paragraph, tip, alert, and divider were visible but did not create blocks or API requests in the browser run.
+- Guide block reordering was not covered because only generated step blocks existed after add-block controls failed.
+- Some guide editor controls were more reliable through keyboard activation than pointer click in automation; investigate only where it reproduces outside the automation tool.
+
 Likely files:
 
 ```text
@@ -192,6 +199,7 @@ Possible work:
 
 Potential issues:
 
+- add-block controls can appear inert even though they are visible
 - insertion controls are hard to scan
 - block movement loses orientation
 - content block fields are unclear
@@ -199,6 +207,8 @@ Potential issues:
 
 Possible work:
 
+- restore or verify add-block submission for header, paragraph, tip, alert, and divider blocks
+- add tests that fail if visible add-block controls do not create blocks
 - improve block labels
 - improve reorder feedback
 - add focused confirmation only if needed

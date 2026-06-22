@@ -75,6 +75,7 @@ Known limits:
 
 - one-command production deployment packaging is deferred
 - local file storage is only provider
+- split API/web local development can produce browser-facing invite URLs with the API host unless public URL construction is portal-origin aware
 - automated retention cleanup is not built
 - rate limiting is in-memory
 - multi-instance production deployments need shared rate-limit state
