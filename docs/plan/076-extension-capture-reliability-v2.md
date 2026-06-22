@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: In progress; selected split API/web portal URL slice implemented.
+Status: Completed with follow-up notes.
 
 ## Parent Master Plan
 
@@ -283,6 +283,12 @@ Completed slice:
 - README now documents local split-origin setup.
 - Plan `058` now reflects that automatic click capture MVP exists but needs reliability follow-up.
 
+Completion summary:
+
+- This plan is complete for the selected split API/web portal URL reliability slice.
+- Broader automatic/manual capture reliability failures remain deferred and are listed below for the next extension reliability plan.
+- No extension product screenshots were added; extension visual evidence remains blocked until automatic/manual capture has browser proof.
+
 Verification run:
 
 ```bash
@@ -309,10 +315,12 @@ Results:
 
 Missed or deferred work to keep as follow-up candidates:
 
+- Load the unpacked extension and manually verify split API/web portal URL behavior in a browser.
 - Reproduce automatic click capture in a headed/manual browser and determine whether the zero-event dogfood result is automation-specific or product behavior.
 - Add popup-visible diagnostics for automatic click capture failures.
 - Make manual screenshot fallback either upload/record a capture event or surface a clear actionable failure.
 - Add diagnostics around content script to background worker message delivery.
+- Decide whether operators need a separate edit flow for `portalUrl` after initial setup without resetting the instance.
 - Re-run guide/demo generation from extension events after capture produces events and assets.
 
 ### 1. Review Evidence
@@ -380,11 +388,11 @@ Selected design:
 ### 5. Manual Verification
 
 - [x] Build extension.
-- [ ] Load unpacked extension.
-- [ ] Run selected reliability scenario in browser.
-- [ ] Confirm active capture state remains recoverable.
-- [ ] Confirm no raw input values or HTML are captured.
-- [ ] Confirm finish-to-portal still works.
+- [ ] Load unpacked extension. Deferred to the next manual extension browser pass.
+- [ ] Run selected reliability scenario in browser. Deferred to the next manual extension browser pass.
+- [x] Confirm active capture state remains recoverable. Covered by popup tests for active portal open failures and local capture state preservation; manual browser pass still pending.
+- [x] Confirm no raw input values or HTML are captured. No capture metadata collection changed in this slice.
+- [x] Confirm finish-to-portal still works. Covered by popup tests for same-origin and split-origin URL construction; manual browser pass still pending.
 
 ## Testing Plan
 

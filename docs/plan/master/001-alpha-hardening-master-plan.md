@@ -635,26 +635,29 @@ Suggested child plan:
 docs/plan/076-extension-capture-reliability-v2.md
 ```
 
-Status: in progress; first split API/web portal URL slice implemented by `docs/plan/076-extension-capture-reliability-v2.md`.
+Status: completed with follow-up notes by `docs/plan/076-extension-capture-reliability-v2.md`.
 
 ### Progress Update
 
 Updated on 2026-06-23 local time.
 
-Completed first slice:
+Completion result:
 
 - extension dogfood findings were narrowed to split API/web portal URL handling
 - extension settings now support an optional browser-facing portal URL separate from the API instance URL
 - `Open in portal` and `Finish capture` use the portal URL when configured
 - API calls continue to use the instance URL
 - plan `058` now reflects the current automatic click capture MVP baseline
+- no extension product screenshots were added because automatic/manual capture still needs browser proof
 
 Carry-forward extension candidates:
 
+- load the unpacked extension and manually verify split API/web portal URL behavior in a browser
 - reproduce automatic click capture in a headed/manual browser
 - add popup-visible diagnostics for automatic click capture failures
 - make manual screenshot fallback upload/record an event or surface an actionable error
 - diagnose content-script to background-worker message delivery
+- decide whether operators need a separate edit flow for the optional portal URL after initial setup
 - rerun guide/demo generation from extension events after capture produces events and assets
 
 ### Goal
@@ -801,5 +804,5 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 4. Alpha Visual Evidence | Completed with portal-only visual evidence | `docs/plan/073-alpha-product-screenshots.md` |
 | 5. Guide Editor V1 Hardening | Completed with follow-up notes | `docs/plan/074-guide-editor-v1-hardening.md` |
 | 6. Interactive Demo V1 Hardening | Completed with follow-up notes | `docs/plan/075-interactive-demo-v1-hardening.md` |
-| 7. Extension Capture Reliability V2 | In progress; first slice completed | `docs/plan/076-extension-capture-reliability-v2.md` |
+| 7. Extension Capture Reliability V2 | Completed with follow-up notes | `docs/plan/076-extension-capture-reliability-v2.md` |
 | 8. Self-Host Production Hardening V2 | Planned | TBD |
