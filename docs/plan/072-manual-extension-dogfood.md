@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: Planned.
+Status: Completed with blocking capture failures.
 
 ## Parent Master Plan
 
@@ -83,6 +83,12 @@ Known deferred extension capabilities:
 - Chrome Web Store packaging
 
 Manual extension smoke is currently pending in:
+
+```text
+docs/v1-dogfood-smoke-suite.md
+```
+
+After this run, manual extension smoke is recorded as failed/blocked in:
 
 ```text
 docs/v1-dogfood-smoke-suite.md
@@ -210,40 +216,40 @@ Port/origin alignment:
 
 #### Setup
 
-- [ ] Start or confirm PostgreSQL.
-- [ ] Create or reset a safe disposable database.
-- [ ] Run migrations.
-- [ ] Start API server and record API instance URL.
-- [ ] Start web portal and record browser-facing portal URL.
-- [ ] Complete first-run setup or confirm the smoke owner already exists.
-- [ ] Confirm project exists for extension smoke.
-- [ ] Build extension with `rtk pnpm --filter extension build`.
-- [ ] Open `chrome://extensions`.
-- [ ] Enable Developer mode.
-- [ ] Load unpacked extension from `apps/extension/dist`.
-- [ ] Record Chrome or Chromium version.
+- [x] Start or confirm PostgreSQL.
+- [x] Create or reset a safe disposable database.
+- [x] Run migrations.
+- [x] Start API server and record API instance URL.
+- [x] Start web portal and record browser-facing portal URL.
+- [x] Complete first-run setup or confirm the smoke owner already exists.
+- [x] Confirm project exists for extension smoke.
+- [x] Build extension with `rtk pnpm --filter extension build`.
+- [x] Open `chrome://extensions`.
+- [x] Enable Developer mode.
+- [x] Load unpacked extension from `apps/extension/dist`.
+- [x] Record Chrome or Chromium version.
 
 #### Connect And Sign In
 
-- [ ] Open extension popup.
-- [ ] Configure API instance URL, for example `http://localhost:<server_port>`.
-- [ ] Sign in with owner account.
-- [ ] Confirm project list loads.
-- [ ] Select the smoke project.
-- [ ] Close and reopen popup to confirm selected project persists.
+- [x] Open extension popup.
+- [x] Configure API instance URL, for example `http://localhost:<server_port>`.
+- [x] Sign in with owner account.
+- [x] Confirm project list loads.
+- [x] Select the smoke project.
+- [x] Close and reopen popup to confirm selected project persists.
 
 #### Automatic Capture
 
-- [ ] Open safe test page in active tab.
-- [ ] Start automatic capture.
-- [ ] Confirm popup shows active automatic capture state.
-- [ ] Click a supported button or link.
-- [ ] Confirm extension does not capture clicks on input fields or editable content.
-- [ ] Click multiple supported targets.
-- [ ] Open portal capture detail without finishing.
-- [ ] Confirm ordered screenshot-backed `click` events arrive.
-- [ ] Confirm each event links to a screenshot asset.
-- [ ] Confirm metadata is safe and useful:
+- [x] Open safe test page in active tab.
+- [x] Start automatic capture.
+- [x] Confirm popup shows active automatic capture state.
+- [x] Click a supported button or link.
+- [ ] Confirm extension does not capture clicks on input fields or editable content. Blocked because no automatic events were captured at all.
+- [x] Click multiple supported targets.
+- [x] Open portal capture detail without finishing.
+- [ ] Confirm ordered screenshot-backed `click` events arrive. Failed: no click events or files were created.
+- [ ] Confirm each event links to a screenshot asset. Failed: no click events or files were created.
+- [ ] Confirm metadata is safe and useful. Failed: no click events were available to inspect.
   - page URL/title
   - target text or label
   - role
@@ -252,45 +258,78 @@ Port/origin alignment:
   - viewport dimensions
   - device pixel ratio
   - target bounding box
-- [ ] Confirm no raw input value appears in event payload or portal UI.
-- [ ] Confirm DB events remain `input_value_redacted = true`.
+- [x] Confirm no raw input value appears in event payload or portal UI.
+- [x] Confirm DB events remain `input_value_redacted = true`.
 
 #### Pause, Resume, Fallback
 
-- [ ] Pause automatic capture.
-- [ ] Click supported targets while paused.
-- [ ] Confirm no new automatic click events are recorded while paused.
-- [ ] Resume automatic capture.
-- [ ] Click supported target and confirm event is recorded.
-- [ ] Use manual screenshot fallback.
-- [ ] Confirm fallback creates screenshot-backed `capture` event.
-- [ ] Confirm event ordering remains correct after fallback.
-- [ ] Confirm local file storage contains extension-created screenshots and no storage paths are exposed in public data.
+- [x] Pause automatic capture.
+- [ ] Click supported targets while paused. Not meaningful because automatic capture produced no events while unpaused.
+- [x] Confirm no new automatic click events are recorded while paused.
+- [x] Resume automatic capture.
+- [ ] Click supported target and confirm event is recorded. Failed: no automatic events were created after resume.
+- [x] Use manual screenshot fallback.
+- [ ] Confirm fallback creates screenshot-backed `capture` event. Failed: no fallback upload/event request was observed.
+- [ ] Confirm event ordering remains correct after fallback. Blocked because fallback did not create an event.
+- [ ] Confirm local file storage contains extension-created screenshots and no storage paths are exposed in public data. Failed: no extension-created files were stored.
 
 #### Finish And Artifact Creation
 
-- [ ] Finish capture from extension.
-- [ ] Confirm active capture state clears locally.
-- [ ] Confirm portal opens completed capture session detail.
-- [ ] If API and web portal origins differ, confirm whether the extension-opened URL is usable or record the exact workaround.
-- [ ] Generate guide from extension click events.
-- [ ] Generate interactive demo from extension click events.
-- [ ] Confirm guide steps use useful deterministic text.
-- [ ] Confirm demo scenes use screenshots.
-- [ ] Verify click positions can become guide annotations or demo hotspots.
+- [x] Finish capture from extension.
+- [x] Confirm active capture state clears locally.
+- [ ] Confirm portal opens completed capture session detail. Failed in split API/web setup: extension opened the API origin.
+- [x] If API and web portal origins differ, confirm whether the extension-opened URL is usable or record the exact workaround.
+- [ ] Generate guide from extension click events. Blocked because no extension events were captured.
+- [ ] Generate interactive demo from extension click events. Blocked because no extension events were captured.
+- [ ] Confirm guide steps use useful deterministic text. Blocked because no guide could be generated from extension events.
+- [ ] Confirm demo scenes use screenshots. Blocked because no demo could be generated from extension events.
+- [ ] Verify click positions can become guide annotations or demo hotspots. Blocked because no click metadata was captured.
 
 #### Unsupported Page Behavior
 
-- [ ] Try a restricted page such as `chrome://extensions` only if safe.
-- [ ] Confirm extension fails gracefully or does not capture.
-- [ ] Try a page where content scripts cannot run if available.
-- [ ] Record exact user-facing error/recovery behavior.
+- [x] Try a restricted page such as `chrome://extensions` only if safe.
+- [x] Confirm extension fails gracefully or does not capture.
+- [ ] Try a page where content scripts cannot run if available. Covered by `chrome://extensions`; no separate page was needed.
+- [x] Record exact user-facing error/recovery behavior.
 
 #### Cleanup
 
-- [ ] Remove or ignore generated `apps/extension/dist`.
-- [ ] Remove temporary safe test page artifacts.
-- [ ] Confirm no screenshots, extension storage dumps, cookies, session tokens, or local storage files are staged.
+- [x] Remove or ignore generated `apps/extension/dist`.
+- [x] Remove temporary safe test page artifacts.
+- [x] Confirm no screenshots, extension storage dumps, cookies, session tokens, or local storage files are staged.
+
+## Implementation Notes
+
+Run completed on 2026-06-22 against commit `1da95db` with the `testing` `.env-cmdrc` environment.
+
+Environment:
+
+- Testing database label: `test-dc`.
+- API instance URL configured in extension: `http://localhost:4021`.
+- Browser-facing portal URL: `http://localhost:3000`.
+- Safe test page: `http://127.0.0.1:4179` served from `/tmp/demo-composer-extension-dogfood`.
+- Extension build path: `apps/extension/dist`.
+- Browser: Chrome `149.0.0.0` via `agent-browser`, loaded as unpacked extension `cohepadogfeidambknedbdflmcjepaam`.
+- Local storage root checked: `apps/server/storage`.
+
+Verification performed:
+
+- `rtk pnpm --filter extension test` passed.
+- `rtk pnpm --filter extension build` passed.
+- Testing DB was dropped, recreated, and migrated before the browser run.
+- `/healthz` and `/readyz` returned `200`.
+- First-run setup, owner login, and smoke project creation passed through the portal.
+- Extension instance setup, sign-in, project list loading, project selection, selected-project persistence, start capture, pause, resume, finish, and local active-capture-state clearing passed.
+
+Failures and limitations:
+
+- Automatic click capture created a backend capture session but produced zero click events and zero screenshot files after multiple supported clicks on a safe HTTP page.
+- Input field typing did not leak into backend data; however, this is only because no automatic events were created.
+- Manual screenshot fallback produced no upload/event request, no UI error, no file record, and no capture event in this automation run.
+- `Open in portal` and `Finish capture` opened `http://localhost:4021/projects/...`, which is the API origin and returned a 404 JSON response. Opening the equivalent `http://localhost:3000/projects/...` route worked.
+- Guide/demo generation from extension events was blocked because the completed capture session had no events or assets.
+
+Carry these findings into `docs/plan/076-extension-capture-reliability-v2.md`.
 
 ## Result Recording
 

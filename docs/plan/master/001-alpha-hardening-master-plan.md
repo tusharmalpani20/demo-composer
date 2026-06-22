@@ -81,7 +81,7 @@ As of this master plan:
 - The portal has the core project, capture, guide, interactive demo, publish, and invite surfaces.
 - The extension has automatic click capture MVP plus manual screenshot fallback.
 - Manual portal dogfood completed with non-blocking limitations in `docs/plan/071-manual-portal-dogfood.md`.
-- Manual extension dogfood is still pending.
+- Manual extension dogfood completed as a failed/blocked smoke run in `docs/plan/072-manual-extension-dogfood.md`.
 - Product screenshots are still missing from public docs.
 - `apps/docs` is still starter content.
 - shared packages are mostly placeholders until real cross-app reuse exists.
@@ -346,27 +346,43 @@ Run the unpacked Chrome extension against a safe test page and prove the automat
 
 ### Todos
 
-- [ ] Build extension with `rtk pnpm --filter extension build`.
-- [ ] Load unpacked extension from `apps/extension/dist`.
-- [ ] Configure local or test instance URL.
-- [ ] Sign in from extension.
-- [ ] Select the smoke project.
-- [ ] Start automatic capture.
-- [ ] Click through a safe test workflow page.
-- [ ] Confirm ordered screenshot-backed `click` events arrive in portal capture detail.
-- [ ] Confirm target text, role, selector, coordinates, viewport, and bounding box metadata look safe and useful.
-- [ ] Pause capture.
-- [ ] Confirm clicks are not captured while paused.
-- [ ] Resume capture.
-- [ ] Use manual screenshot fallback.
-- [ ] Finish capture.
-- [ ] Confirm portal opens the completed capture session.
-- [ ] Generate a guide from automatic events.
-- [ ] Generate an interactive demo from automatic events.
-- [ ] Verify click positions create usable guide annotations or demo hotspots.
-- [ ] Test unsupported page behavior, such as browser-restricted pages, and record recovery behavior.
-- [ ] Record results in `docs/v1-dogfood-smoke-suite.md`.
-- [ ] Create child plans for reliability gaps.
+- [x] Build extension with `rtk pnpm --filter extension build`.
+- [x] Load unpacked extension from `apps/extension/dist`.
+- [x] Configure local or test instance URL.
+- [x] Sign in from extension.
+- [x] Select the smoke project.
+- [x] Start automatic capture.
+- [x] Click through a safe test workflow page.
+- [ ] Confirm ordered screenshot-backed `click` events arrive in portal capture detail. Failed: no click events or files were created.
+- [ ] Confirm target text, role, selector, coordinates, viewport, and bounding box metadata look safe and useful. Blocked: no click events were available to inspect.
+- [x] Pause capture.
+- [x] Confirm clicks are not captured while paused.
+- [x] Resume capture.
+- [x] Use manual screenshot fallback.
+- [x] Finish capture.
+- [ ] Confirm portal opens the completed capture session. Failed in split API/web setup: extension opened the API origin.
+- [ ] Generate a guide from automatic events. Blocked: no extension events were captured.
+- [ ] Generate an interactive demo from automatic events. Blocked: no extension events were captured.
+- [ ] Verify click positions create usable guide annotations or demo hotspots. Blocked: no click metadata was captured.
+- [x] Test unsupported page behavior, such as browser-restricted pages, and record recovery behavior.
+- [x] Record results in `docs/v1-dogfood-smoke-suite.md`.
+- [x] Create child plans for reliability gaps.
+
+### Result
+
+Completed as a failed/blocked smoke run on 2026-06-22. See:
+
+```text
+docs/plan/072-manual-extension-dogfood.md
+docs/v1-dogfood-smoke-suite.md
+```
+
+Reliability inputs for Phase 7:
+
+- Automatic click capture created a backend session but no events/files.
+- Manual screenshot fallback produced no upload/event request and no popup error.
+- Extension-opened portal URLs used the API origin in a split API/web local setup and returned 404 JSON.
+- Guide/demo generation from extension events was blocked because no events/assets were captured.
 
 ### Acceptance Criteria
 
@@ -677,7 +693,7 @@ DB-backed checks require the configured PostgreSQL testing database.
 | --- | --- | --- |
 | 1. Verification And Docs Sync | Completed | `docs/plan/070-verification-and-docs-sync.md` |
 | 2. Manual Portal Dogfood | Completed with limitations | `docs/plan/071-manual-portal-dogfood.md` |
-| 3. Manual Extension Dogfood | Planned | TBD |
+| 3. Manual Extension Dogfood | Completed with blocking failures | `docs/plan/072-manual-extension-dogfood.md` |
 | 4. Alpha Visual Evidence | Planned | TBD |
 | 5. Guide Editor V1 Hardening | Planned | TBD |
 | 6. Interactive Demo V1 Hardening | Planned | TBD |

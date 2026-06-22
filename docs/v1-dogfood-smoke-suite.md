@@ -134,6 +134,39 @@ Do not use production accounts, customer systems, private URLs, or private scree
 
 ## Result Log
 
+### 2026-06-22 Manual Extension Dogfood
+
+- Commit: `1da95db`
+- Environment: `.env-cmdrc` `testing`; disposable DB label `test-dc`; API instance URL `http://localhost:4021`; web portal `http://localhost:3000`; safe test page `http://127.0.0.1:4179`; extension build path `apps/extension/dist`; local storage root `apps/server/storage`
+- Browser: Chrome `149.0.0.0` via `agent-browser`; unpacked extension id `cohepadogfeidambknedbdflmcjepaam`
+- Automated smoke: `rtk pnpm --filter extension test` passed; `rtk pnpm --filter extension build` passed; DB was reset and migrated before the browser run
+- Manual portal smoke: passed with non-blocking limitations in the 2026-06-22 portal entry
+- Manual extension smoke: failed/blocked
+- Flows passed:
+  - extension loaded unpacked from `apps/extension/dist`
+  - API instance configuration accepted `http://localhost:4021`
+  - owner sign-in returned the project list
+  - smoke project selection persisted after popup reload
+  - starting automatic capture created an extension-sourced backend capture session
+  - popup restored active capture state
+  - pause and resume toggled local active capture state
+  - finish completed the backend capture session and cleared local active capture state
+  - equivalent web portal route could inspect the completed capture session
+  - `/healthz` and `/readyz`
+- Flows failed or limited:
+  - automatic click capture produced zero click events and zero screenshot files after multiple supported clicks on a safe HTTP page
+  - manual screenshot fallback produced no upload/event request, no UI error, no file, and no capture event
+  - `Open in portal` and `Finish capture` opened API-origin project URLs on `localhost:4021`, which returned 404 JSON instead of the web portal
+  - guide and interactive demo creation from extension events was blocked because the capture session had no events or assets
+  - unsupported-page behavior could only be recorded as no capture on `chrome://extensions`; no richer recovery surfaced
+- Known limitations found:
+  - direct extension-page automation is not identical to a human toolbar popup, so Phase 7 should reproduce in a headed/manual browser before deciding final root cause
+  - extension browser-facing portal URL construction is not split API/web origin safe
+  - extension capture failures did not surface a user-facing popup error in this run
+- Follow-up plans/issues:
+  - Feed automatic capture failure, silent fallback failure, and split-origin portal links into `docs/plan/076-extension-capture-reliability-v2.md`.
+  - Do not proceed to alpha visual screenshots from extension capture until extension dogfood has a passing or explicitly bounded capture path.
+
 ### 2026-06-22 Manual Portal Dogfood
 
 - Commit: `51d6b20`
@@ -141,7 +174,7 @@ Do not use production accounts, customer systems, private URLs, or private scree
 - Browser: `agent-browser` isolated owner, public, and teammate sessions
 - Automated smoke: quick package baseline passed with `rtk pnpm --filter server test`, `rtk pnpm --filter web test`, `rtk pnpm --filter extension test`, and `rtk git diff --check`; DB was reset and migrated before the manual run
 - Manual portal smoke: passed with non-blocking limitations recorded in `docs/plan/071-manual-portal-dogfood.md`
-- Manual extension smoke: pending
+- Manual extension smoke: failed/blocked in the 2026-06-22 manual extension dogfood entry
 - Flows passed:
   - first-run owner setup, logout, and login
   - project creation, settings edit, archive, and unarchive
