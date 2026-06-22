@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: Ready for implementation; selected startup/env validation and operator docs slice.
+Status: Completed with follow-up notes.
 
 ## Parent Master Plan
 
@@ -215,6 +215,46 @@ Options:
 
 ## Implementation Plan
 
+## Implementation Result: 2026-06-23
+
+Completed slice:
+
+- Added production startup validation for `SERVER_PORT`, `DB_PORT`, and `DB_MAX_POOL` positive-integer values.
+- Added production startup validation for explicit `DEMO_COMPOSER_DEPLOYMENT_MODE` and `DEMO_COMPOSER_ONBOARDING_MODE` values.
+- Added production startup validation for non-default durable `DEMO_COMPOSER_LOCAL_STORAGE_ROOT`.
+- Added production startup validation for absolute `http` or `https` `API_URL`.
+- Preserved existing production cookie secret and CORS validation precedence.
+- Updated self-hosting, operations, and production readiness docs with validated startup settings, backup/restore rehearsal expectations, manual cleanup limits, in-memory rate-limit limits, and split API/web extension setup.
+
+Verification run:
+
+```bash
+rtk pnpm --filter server test -- src/config/startup.config.test.ts
+rtk pnpm --filter server test
+rtk pnpm --filter server check-types
+rtk pnpm --filter server lint
+rtk pnpm --filter server build
+rtk git diff --check
+```
+
+Results:
+
+- Startup config suite passed with 11 tests.
+- Server test suite passed with 41 files and 247 tests.
+- Server typecheck passed.
+- Server lint passed.
+- Server build passed.
+- Whitespace check passed.
+
+Missed or deferred work to keep as follow-up candidates:
+
+- Storage reference inventory and dry-run cleanup tooling.
+- One-command production packaging or Docker image work.
+- Shared rate-limit backend for multi-instance deployments.
+- Object storage provider support.
+- Production env report/logging that summarizes validated settings without printing secrets.
+- Actual backup/restore rehearsal against a disposable deployment environment.
+
 ### 1. Audit Current Operations Surface
 
 Read:
@@ -270,19 +310,19 @@ For this slice, do not add cleanup tooling or deployment packaging.
 
 ### 4. Verify
 
-- [ ] Run docs whitespace check.
-- [ ] Run startup config tests.
-- [ ] Run server tests if the startup change has wider config impact.
-- [ ] If backup/restore docs are changed, rehearse commands when practical and record assumptions.
-- [ ] If packaging docs are changed, run the documented local path when practical.
+- [x] Run docs whitespace check.
+- [x] Run startup config tests.
+- [x] Run server tests if the startup change has wider config impact.
+- [ ] If backup/restore docs are changed, rehearse commands when practical and record assumptions. Not run in this slice; docs now require a disposable rehearsal environment.
+- [x] If packaging docs are changed, run the documented local path when practical. No packaging docs or Compose files changed.
 
 ### 5. Update Tracking
 
-- [ ] Add implementation notes to this plan.
-- [ ] Update master plan completion tracking after implementation.
-- [ ] Record missed/deferred production hardening items for the next master-plan wave.
-- [ ] Update master plan completion table if Phase 8 is complete.
-- [ ] Add follow-up plans for deferred operational work if they are specific enough to act on.
+- [x] Add implementation notes to this plan.
+- [x] Update master plan completion tracking after implementation.
+- [x] Record missed/deferred production hardening items for the next master-plan wave.
+- [x] Update master plan completion table if Phase 8 is complete.
+- [x] Add follow-up plans for deferred operational work if they are specific enough to act on. Deferred items are recorded here and in the master plan; no child follow-up files were created in this slice.
 
 ## Acceptance Boundary
 

@@ -715,6 +715,29 @@ Suggested child plan:
 docs/plan/077-self-host-production-hardening-v2.md
 ```
 
+Status: completed with follow-up notes by `docs/plan/077-self-host-production-hardening-v2.md`.
+
+### Progress Update
+
+Updated on 2026-06-23 local time.
+
+Completion result:
+
+- production startup now validates `SERVER_PORT`, `DB_PORT`, and `DB_MAX_POOL` as positive integers
+- production startup now requires explicit deployment and onboarding modes
+- production startup now rejects the default local storage path and requires an absolute public API URL
+- existing production CORS and cookie secret validation remains in place
+- self-hosting, operations, and production readiness docs now explain validated settings, operator-only checks, backup/restore rehearsal expectations, manual cleanup limits, in-memory rate-limit limits, and split API/web extension setup
+
+Carry-forward production hardening candidates:
+
+- storage reference inventory and dry-run cleanup tooling
+- one-command production packaging or Docker image work
+- shared rate-limit backend for multi-instance deployments
+- object storage provider support
+- production env report/logging that summarizes validated settings without printing secrets
+- backup/restore rehearsal against a disposable deployment environment
+
 ### Goal
 
 Make self-hosted operation safer and easier after the alpha product path is proven.
@@ -739,16 +762,16 @@ Make self-hosted operation safer and easier after the alpha product path is prov
 
 ### Todos
 
-- [ ] Review `docs/operations.md`.
-- [ ] Review `docs/production-readiness-checklist.md`.
-- [ ] Identify which operational risks block real internal usage.
-- [ ] Decide whether to implement cleanup tooling or only document manual cleanup first.
+- [x] Review `docs/operations.md`.
+- [x] Review `docs/production-readiness-checklist.md`.
+- [x] Identify which operational risks block real internal usage.
+- [x] Decide whether to implement cleanup tooling or only document manual cleanup first.
 - [ ] Add storage reference inventory queries if cleanup tooling is selected.
-- [ ] Add backup/restore rehearsal instructions and verification steps.
-- [ ] Decide Docker/Compose packaging scope.
-- [ ] Decide in-memory rate-limit replacement strategy.
-- [ ] Add tests for any operator command that touches storage or DB state.
-- [ ] Update operations, self-hosting, and production readiness docs.
+- [x] Add backup/restore rehearsal instructions and verification steps.
+- [x] Decide Docker/Compose packaging scope.
+- [x] Decide in-memory rate-limit replacement strategy.
+- [x] Add tests for any operator command that touches storage or DB state. No operator command was added; startup validation is covered by config tests.
+- [x] Update operations, self-hosting, and production readiness docs.
 
 ### Acceptance Criteria
 
@@ -805,4 +828,4 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 5. Guide Editor V1 Hardening | Completed with follow-up notes | `docs/plan/074-guide-editor-v1-hardening.md` |
 | 6. Interactive Demo V1 Hardening | Completed with follow-up notes | `docs/plan/075-interactive-demo-v1-hardening.md` |
 | 7. Extension Capture Reliability V2 | Completed with follow-up notes | `docs/plan/076-extension-capture-reliability-v2.md` |
-| 8. Self-Host Production Hardening V2 | Planned | TBD |
+| 8. Self-Host Production Hardening V2 | Completed with follow-up notes | `docs/plan/077-self-host-production-hardening-v2.md` |
