@@ -481,27 +481,30 @@ Suggested child plan:
 docs/plan/074-guide-editor-v1-hardening.md
 ```
 
-Status: in progress; first add-block authoring slice completed by `docs/plan/074-guide-editor-v1-hardening.md`.
+Status: completed with follow-up notes by `docs/plan/074-guide-editor-v1-hardening.md`.
 
 ### Progress Update
 
 Updated on 2026-06-23 local time.
 
-Completed first slice:
+Completion result:
 
 - guide editor dogfood findings were narrowed to the observed add-block friction
 - focused tests now cover step, header, paragraph, tip, alert, and divider insertion paths
 - header insertion is covered together with post-insert block reordering
 - non-step block actions now use type-specific labels for clearer movement and delete controls
 - no backend guide contract changes were required
+- no README screenshot refresh was required because the visible editor layout did not materially change
 
-Remaining guide editor candidates:
+Carry-forward guide editor candidates:
 
 - manual browser smoke for the affected add-block workflow
 - screenshot picker clarity and upload recovery
 - annotation editing affordances
 - publish stale-state clarity
 - export error messaging
+- save/error/retry behavior for metadata and step edits
+- empty and partial-data guide editor states
 
 ### Goal
 
@@ -530,7 +533,7 @@ Improve the guide editor so repeated real authoring feels reliable and efficient
 
 - [x] Review guide editor dogfood notes.
 - [x] Prioritize top 3-5 guide authoring friction points.
-- [ ] Create focused implementation subplans if needed.
+- [x] Create focused implementation subplans if needed.
 - [ ] Improve save/error/retry behavior for guide metadata and step edits.
 - [ ] Improve screenshot picker copy, state, and failure handling.
 - [ ] Improve annotation controls or visual positioning if dogfood shows confusion.
@@ -750,7 +753,7 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 2. Manual Portal Dogfood | Completed with limitations | `docs/plan/071-manual-portal-dogfood.md` |
 | 3. Manual Extension Dogfood | Completed with blocking failures | `docs/plan/072-manual-extension-dogfood.md` |
 | 4. Alpha Visual Evidence | Completed with portal-only visual evidence | `docs/plan/073-alpha-product-screenshots.md` |
-| 5. Guide Editor V1 Hardening | In progress; first slice completed | `docs/plan/074-guide-editor-v1-hardening.md` |
+| 5. Guide Editor V1 Hardening | Completed with follow-up notes | `docs/plan/074-guide-editor-v1-hardening.md` |
 | 6. Interactive Demo V1 Hardening | Planned | TBD |
 | 7. Extension Capture Reliability V2 | Planned | TBD |
 | 8. Self-Host Production Hardening V2 | Planned | TBD |

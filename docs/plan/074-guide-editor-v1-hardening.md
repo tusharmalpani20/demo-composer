@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: In progress; first focused implementation slice completed.
+Status: Completed with follow-up notes.
 
 ## Parent Master Plan
 
@@ -287,6 +287,12 @@ Possible work:
 
 ## Implementation Result: 2026-06-23
 
+Completion summary:
+
+- This plan is complete for the selected add-block authoring scope.
+- Broader guide editor hardening areas remain intentionally deferred and are listed below for the next guide-related plan.
+- No README or product screenshot refresh was required because the visible guide editor layout did not materially change.
+
 Completed slice:
 
 - Add-block authoring coverage now includes step, header, paragraph, tip, alert, and divider insertion paths.
@@ -311,13 +317,15 @@ Results:
 - Web typecheck passed.
 - Whitespace check passed.
 
-Remaining work to keep as follow-up candidates:
+Missed or deferred work to keep as follow-up candidates:
 
 - Manual browser smoke for the affected add-block workflow against a running app.
 - Screenshot picker clarity and upload recovery.
 - Annotation editing affordances.
 - Publish stale-state clarity.
 - Markdown and HTML ZIP export error messaging.
+- Save/error/retry behavior for guide metadata and step edits.
+- Empty and partial-data guide editor states.
 
 ## Implementation Plan
 
@@ -327,7 +335,7 @@ Remaining work to keep as follow-up candidates:
 - [x] Extract guide-specific issues.
 - [x] Group issues by editing, blocks, screenshots, annotations, preview/publish/export.
 - [x] Pick a small coherent slice: structural add-block reliability and post-insert ordering.
-- [ ] Create separate follow-up plans for unrelated issues.
+- [x] Create separate follow-up notes for unrelated issues.
 
 ### 2. Audit Current Tests
 
@@ -348,16 +356,16 @@ Remaining work to keep as follow-up candidates:
 
 - [x] Run focused web guide tests.
 - [x] Run focused server guide tests if backend changed.
-- [ ] Manually smoke the affected guide editor workflow.
+- [ ] Manually smoke the affected guide editor workflow. Deferred to the next browser dogfood pass.
 - [x] Confirm publish/export still work for affected guide.
 
 ### 5. Update Docs And Follow-Ups
 
 - [x] Update plan implementation notes.
-- [ ] Update README/status docs only if visible behavior changed.
+- [x] Update README/status docs only if visible behavior changed. Not needed; no visible layout change.
 - [x] Note whether current README guide editor screenshot needs later refresh.
-- [ ] Create follow-up plans for remaining guide editor issues.
-- [ ] Update master plan completion table if Phase 5 is complete.
+- [x] Create follow-up notes for remaining guide editor issues.
+- [x] Update master plan completion table if Phase 5 is complete.
 
 ## Testing Plan
 
