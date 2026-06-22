@@ -289,9 +289,10 @@ const Viewer = ({ snapshot, mode }: { snapshot: PublishedInteractiveDemoSnapshot
       return;
     }
 
-    const targetScene = hotspot.target_scene_id
+    const explicitTargetScene = hotspot.target_scene_id
       ? scenes.find((scene) => scene.id === hotspot.target_scene_id)
-      : scenes[activeIndex + 1];
+      : null;
+    const targetScene = explicitTargetScene ?? scenes[activeIndex + 1];
 
     if (targetScene) {
       setActiveSceneId(targetScene.id);
