@@ -559,18 +559,19 @@ Suggested child plan:
 docs/plan/075-interactive-demo-v1-hardening.md
 ```
 
-Status: in progress; first public viewer fallback slice implemented by `docs/plan/075-interactive-demo-v1-hardening.md`.
+Status: completed with follow-up notes by `docs/plan/075-interactive-demo-v1-hardening.md`.
 
 ### Progress Update
 
 Updated on 2026-06-23 local time.
 
-Completed first slice:
+Completion result:
 
 - demo dogfood findings were narrowed to public viewer navigation resilience rather than broad redesign
 - public viewer now falls back to the next linear scene when a click hotspot references a missing or stale target scene
 - focused tests cover the stale target-scene fallback
 - no backend snapshot shape or API contract changes were required
+- no README screenshot refresh was required because the visible demo editor/viewer layout did not materially change
 
 Carry-forward demo candidates:
 
@@ -580,6 +581,7 @@ Carry-forward demo candidates:
 - narrow viewport and embed visual QA
 - portal pointer-click/accessibility investigation from Phase 2 dogfood
 - extension-generated demo quality after Phase 7 restores capture evidence
+- public viewer behavior when a missing target occurs on the final scene
 
 ### Goal
 
@@ -776,6 +778,6 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 3. Manual Extension Dogfood | Completed with blocking failures | `docs/plan/072-manual-extension-dogfood.md` |
 | 4. Alpha Visual Evidence | Completed with portal-only visual evidence | `docs/plan/073-alpha-product-screenshots.md` |
 | 5. Guide Editor V1 Hardening | Completed with follow-up notes | `docs/plan/074-guide-editor-v1-hardening.md` |
-| 6. Interactive Demo V1 Hardening | In progress; first slice completed | `docs/plan/075-interactive-demo-v1-hardening.md` |
+| 6. Interactive Demo V1 Hardening | Completed with follow-up notes | `docs/plan/075-interactive-demo-v1-hardening.md` |
 | 7. Extension Capture Reliability V2 | Planned | TBD |
 | 8. Self-Host Production Hardening V2 | Planned | TBD |

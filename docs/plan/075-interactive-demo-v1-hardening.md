@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: In progress; selected public viewer fallback slice implemented.
+Status: Completed with follow-up notes.
 
 ## Parent Master Plan
 
@@ -247,6 +247,12 @@ Possible work:
 
 ## Implementation Result: 2026-06-23
 
+Completion summary:
+
+- This plan is complete for the selected public viewer target-fallback scope.
+- Broader interactive demo hardening areas remain intentionally deferred and are listed below for the next demo-related plan.
+- No README or product screenshot refresh was required because the visible demo editor/viewer layout did not materially change.
+
 Completed slice:
 
 - Public demo viewer now falls back to the next linear scene when a click hotspot references a missing or stale `target_scene_id`.
@@ -283,6 +289,7 @@ Missed or deferred work to keep as follow-up candidates:
 - Narrow viewport and embed visual QA.
 - Portal pointer-click/accessibility investigation from Phase 2 dogfood.
 - Extension-generated demo quality after Phase 7 restores capture evidence.
+- Public viewer behavior when a missing target occurs on the final scene; current behavior remains no-op because there is no next scene.
 
 ## Implementation Plan
 
@@ -311,20 +318,20 @@ Missed or deferred work to keep as follow-up candidates:
 
 ### 4. Manual Verification
 
-- [ ] Create demo from safe capture.
-- [ ] Edit scene.
-- [ ] Create hotspot.
+- [ ] Create demo from safe capture. Deferred to next browser dogfood pass.
+- [ ] Edit scene. Deferred to next browser dogfood pass.
+- [ ] Create hotspot. Deferred to next browser dogfood pass.
 - [ ] Test target-scene behavior. Deferred to next browser dogfood pass.
-- [ ] Publish demo.
-- [ ] Open public viewer.
-- [ ] Open embed route.
+- [ ] Publish demo. Deferred to next browser dogfood pass.
+- [ ] Open public viewer. Deferred to next browser dogfood pass.
+- [ ] Open embed route. Deferred to next browser dogfood pass.
 - [x] Confirm password gate if publish controls changed. Not needed; publish controls did not change.
 
 ### 5. Docs And Tracking
 
 - [x] Add implementation notes to this plan.
 - [x] Update status docs only if visible behavior changed. Not needed; no visible layout change.
-- [ ] Update master plan completion table if Phase 6 is complete.
+- [x] Update master plan completion table if Phase 6 is complete.
 
 ## Testing Plan
 
