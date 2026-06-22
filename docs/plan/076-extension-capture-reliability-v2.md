@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: Planned.
+Status: In progress.
 
 ## Parent Master Plan
 
@@ -69,6 +69,12 @@ Manual extension dogfood on 2026-06-22 produced these Phase 7 inputs:
 
 Phase 7 should first reproduce these failures in a headed/manual browser session to separate automation limitations from product defects, then pick the smallest reliability slice.
 
+Carry-over from completed Phase 6 interactive demo hardening:
+
+- Do not mix public demo viewer/editor follow-ups into this extension implementation.
+- Extension-generated demo quality remains blocked until extension capture produces real events and assets again.
+- Once extension capture is reliable, rerun guide/demo generation from extension events and record whether click metadata produces usable guide annotations or demo hotspots.
+
 Likely files:
 
 ```text
@@ -104,7 +110,7 @@ Included:
 - review manual extension dogfood findings
 - refresh plan `058` to reflect current automatic click capture baseline
 - choose one reliability slice
-- improve capture behavior around real observed failure mode
+- improve one real observed extension failure mode
 - preserve privacy defaults
 - preserve manual fallback
 - add focused tests
@@ -158,6 +164,30 @@ Only touch backend or portal code if the selected reliability slice needs a cont
 ## Candidate Reliability Slices
 
 Choose one primary slice for implementation.
+
+### Selected Slice: Split API/Web Portal URLs
+
+Problem:
+
+- the extension stores the API instance URL for authenticated API calls
+- in split local/self-host deployments, browser-facing portal routes may live on a different origin
+- dogfood showed `Open in portal` and `Finish capture` opened `http://localhost:4021/projects/...`, which is the API origin and returned `404`, while `http://localhost:3000/projects/...` worked
+
+Required work:
+
+- add a separate optional portal URL setting
+- keep API requests on `instanceUrl`
+- open active/finished capture portal routes on `portalUrl` when configured
+- preserve safe relative redirect-path handling
+- clear the portal URL when changing instance settings
+- update tests and README for split API/web configuration
+
+Out of this slice unless directly required:
+
+- automatic click capture diagnostics
+- manual screenshot upload diagnostics
+- background-owned capture state
+- extension-generated guide/demo verification
 
 ### Background-Owned Active Capture State
 
@@ -243,13 +273,13 @@ Possible work:
 
 ### 1. Review Evidence
 
-- [ ] Read `docs/v1-dogfood-smoke-suite.md`.
-- [ ] Extract extension-specific failures and limitations.
-- [ ] Read `apps/extension/README.md`.
-- [ ] Read current plan `058`.
+- [x] Read `docs/v1-dogfood-smoke-suite.md`.
+- [x] Extract extension-specific failures and limitations.
+- [x] Read `apps/extension/README.md`.
+- [x] Read current plan `058`.
 - [ ] Reproduce automatic capture and manual fallback in a headed/manual browser if possible.
-- [ ] Reproduce split API/web portal opening behavior.
-- [ ] Pick one reliability slice.
+- [x] Reproduce split API/web portal opening behavior from recorded dogfood evidence.
+- [x] Pick one reliability slice: split API/web portal URLs.
 
 ### 2. Refresh Plan 058
 
@@ -282,14 +312,23 @@ For the selected slice, write down:
 
 Keep this design in implementation notes or split into a new narrower plan if it grows.
 
+Selected design:
+
+- `instanceUrl` remains the API base URL used for login and API requests.
+- `portalUrl` is an optional browser-facing web origin used only for portal links.
+- if `portalUrl` is unset, portal links keep using `instanceUrl` for same-origin/self-host deployments.
+- safe relative redirect paths remain required; absolute or protocol-relative redirects fall back to a locally constructed capture-session path.
+- saving/changing the instance clears `portalUrl` with the rest of auth/project/capture state.
+- no raw input values, page HTML, or new page metadata are introduced by this slice.
+
 ### 4. Implement And Test
 
 - [ ] Add failing tests where practical.
-- [ ] Update extension state/message code.
+- [ ] Update extension URL/settings/popup code.
 - [ ] Preserve manual screenshot fallback.
 - [ ] Preserve input redaction.
 - [ ] Preserve event ordering guarantees.
-- [ ] Improve user-facing error or status copy.
+- [ ] Improve user-facing settings copy.
 - [ ] Update README if behavior changes.
 
 ### 5. Manual Verification
@@ -366,6 +405,8 @@ Refresh extension capture roadmap
 
 Possible follow-ups:
 
+- automatic click capture diagnostics for zero-event dogfood failure
+- manual screenshot fallback diagnostics for silent no-op dogfood failure
 - background-owned active capture state
 - navigation event capture
 - domain exclusion controls
