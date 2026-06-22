@@ -221,7 +221,7 @@ Completed slice:
 
 - Added production startup validation for `SERVER_PORT`, `DB_PORT`, and `DB_MAX_POOL` positive-integer values.
 - Added production startup validation for explicit `DEMO_COMPOSER_DEPLOYMENT_MODE` and `DEMO_COMPOSER_ONBOARDING_MODE` values.
-- Added production startup validation for non-default durable `DEMO_COMPOSER_LOCAL_STORAGE_ROOT`.
+- Added production startup validation for absolute, non-default durable `DEMO_COMPOSER_LOCAL_STORAGE_ROOT`.
 - Added production startup validation for absolute `http` or `https` `API_URL`.
 - Preserved existing production cookie secret and CORS validation precedence.
 - Updated self-hosting, operations, and production readiness docs with validated startup settings, backup/restore rehearsal expectations, manual cleanup limits, in-memory rate-limit limits, and split API/web extension setup.

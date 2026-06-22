@@ -725,7 +725,7 @@ Completion result:
 
 - production startup now validates `SERVER_PORT`, `DB_PORT`, and `DB_MAX_POOL` as positive integers
 - production startup now requires explicit deployment and onboarding modes
-- production startup now rejects the default local storage path and requires an absolute public API URL
+- production startup now rejects default or relative local storage paths and requires an absolute public API URL
 - existing production CORS and cookie secret validation remains in place
 - self-hosting, operations, and production readiness docs now explain validated settings, operator-only checks, backup/restore rehearsal expectations, manual cleanup limits, in-memory rate-limit limits, and split API/web extension setup
 

@@ -205,6 +205,23 @@ describe("startup config", () => {
     expect(() => validate_server_startup_config()).toThrow(
       "DEMO_COMPOSER_LOCAL_STORAGE_ROOT must be set to a durable storage path in production"
     );
+
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      NODE_ENV: "production",
+      DEV_TYPE: "production",
+      COOKIE_SECRET: "a-very-strong-cookie-secret",
+      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
+      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
+      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "storage",
+      API_URL: "https://api.example.com",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_LOCAL_STORAGE_ROOT must be set to an absolute durable storage path in production"
+    );
   });
 
   it("rejects production startup config without an absolute public API URL", () => {

@@ -19,7 +19,7 @@ These settings are validated at server startup in production:
 - [ ] Set PostgreSQL variables: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_MAX_POOL`.
 - [ ] Set `DEMO_COMPOSER_DEPLOYMENT_MODE` to `self_hosted` or `hosted`.
 - [ ] Set `DEMO_COMPOSER_ONBOARDING_MODE` to `first_run_setup` or `signup`.
-- [ ] Set `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` to a durable storage path.
+- [ ] Set `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` to an absolute durable storage path.
 - [ ] Set `DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES`.
 - [ ] Set `DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES`.
 - [ ] Set `DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS`.

@@ -1,3 +1,4 @@
+import path from "node:path";
 import { get_cookie_config } from "./cookie.config";
 import { get_cors_config } from "./cors.config";
 import {
@@ -80,11 +81,16 @@ const validate_production_startup_config = () => {
         "DEMO_COMPOSER_ONBOARDING_MODE must be first_run_setup or signup"
     );
 
-    if (
-        !process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT ||
-        process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT === "./storage"
-    ) {
+    const local_storage_root = process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT;
+
+    if (!local_storage_root || local_storage_root === "./storage") {
         throw new Error("DEMO_COMPOSER_LOCAL_STORAGE_ROOT must be set to a durable storage path in production");
+    }
+
+    if (!path.isAbsolute(local_storage_root)) {
+        throw new Error(
+            "DEMO_COMPOSER_LOCAL_STORAGE_ROOT must be set to an absolute durable storage path in production"
+        );
     }
 
     assert_production_public_api_url();

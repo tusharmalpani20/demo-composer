@@ -76,7 +76,7 @@ Production server startup validates these high-risk settings before listening:
 - `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS` must include the deployed portal origin and any extension origins that will call the API.
 - `DEMO_COMPOSER_DEPLOYMENT_MODE` must be explicitly set to `self_hosted` or `hosted`.
 - `DEMO_COMPOSER_ONBOARDING_MODE` must be explicitly set to `first_run_setup` or `signup`.
-- `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` must be set to a durable production storage path, not the default `./storage`.
+- `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` must be set to an absolute durable production storage path, not the default `./storage`.
 - `API_URL` must be an absolute `http` or `https` API origin.
 
 ## Database
