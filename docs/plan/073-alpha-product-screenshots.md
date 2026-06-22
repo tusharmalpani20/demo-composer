@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: Planned.
+Status: In progress.
 
 ## Parent Master Plan
 
@@ -14,14 +14,14 @@ This is Phase 4 of the alpha hardening master plan.
 
 ## Goal
 
-Add real, safe product screenshots to the public alpha documentation after portal and extension dogfood have produced trustworthy screens.
+Add real, safe product screenshots to the public alpha documentation after portal dogfood has produced trustworthy screens and extension dogfood has identified current visual limits.
 
 Target outcome:
 
 ```text
 external reader opens README
   -> sees real Demo Composer screens
-  -> understands capture, guide, demo, publish, and extension shape
+  -> understands capture, guide, demo, and publish shape
   -> sees alpha limitations clearly
   -> does not mistake mockups for implemented behavior
 ```
@@ -39,9 +39,10 @@ docs/plan/072-manual-extension-dogfood.md
 
 Reason:
 
-- screenshots should come from real dogfood flows
+- screenshots should come from real dogfood flows or a clean synthetic scenario that follows those flows
 - screenshots should reflect current product behavior
 - dogfood may reveal UI states that should or should not be shown publicly
+- extension dogfood is currently blocked, so extension screenshots must not be used as proof of working browser capture
 
 ## Current Baseline
 
@@ -53,6 +54,7 @@ Known current state:
 - docs use textual product description
 - `apps/docs` remains starter content and is not canonical product docs
 - public docs should not claim screenshots exist until this plan lands
+- extension dogfood is failed/blocked, so portal screenshots can land now while extension visual evidence waits for Phase 7
 
 ## Scope
 
@@ -60,13 +62,14 @@ Included:
 
 - choose screenshot set
 - create safe synthetic data for screenshots
-- capture real screenshots from local or test environment
+- capture real portal screenshots from local or test environment
 - store images under `docs/assets/`
 - update README with a compact visual section
 - update status docs if they currently say screenshots are pending
 - link README/status docs to the dated dogfood smoke result that produced the screenshots
 - document that screenshots use synthetic data
 - decide whether `apps/docs` should remain ignored/parked or get a separate follow-up plan
+- carry extension screenshot work forward until extension capture has a passing or explicitly bounded path
 
 ## Explicit Non-Goals
 
@@ -75,6 +78,7 @@ Included:
 - customer or private screenshots
 - visual redesign
 - implementing a real docs website in `apps/docs`
+- using extension screenshots as proof of working capture before Phase 7 resolves or bounds extension dogfood failures
 - adding analytics, lead capture, branding, or hosted SaaS language
 - changing product behavior to make screenshots look better
 
@@ -88,7 +92,6 @@ Recommended minimum set:
 - public guide reader
 - interactive demo editor with scene and hotspot
 - public interactive demo viewer
-- extension popup during active automatic capture
 
 Optional if useful:
 
@@ -206,6 +209,7 @@ Current note after 2026-06-22 dogfood:
 
 - Portal dogfood has acceptable non-blocking limitations for visual evidence.
 - Extension dogfood is blocked by capture failures, so do not use extension capture screens as proof until Phase 7 fixes or explicitly bounds the failure.
+- This implementation should produce portal screenshots only. Keep an explicit note that extension screenshots remain pending.
 
 ### 2. Prepare Synthetic Scenario
 
@@ -234,12 +238,6 @@ Suggested desktop size:
 1440x900
 ```
 
-Suggested extension popup:
-
-```text
-actual Chrome extension popup size
-```
-
 For public reader/embed screenshots, capture the actual route as a viewer would see it.
 
 Route patterns likely used for screenshots:
@@ -257,7 +255,7 @@ Route patterns likely used for screenshots:
 /d/:slug/embed
 ```
 
-For extension screenshots, capture the actual unpacked extension popup after Phase 3 has verified it.
+Do not include extension popup screenshots in this implementation. Phase 3 completed as a failed/blocked smoke run, so extension visual evidence should wait until Phase 7 fixes or explicitly bounds the capture path.
 
 ### 4. Review And Redact
 
@@ -355,6 +353,7 @@ No app tests are required unless product code changes, which this plan should av
 - Docs no longer say screenshots are pending if screenshots are committed.
 - Docs still clearly mark the project alpha.
 - `apps/docs` starter status is not misrepresented as product docs.
+- Extension screenshots remain explicitly pending because extension dogfood failed/blocked.
 - `rtk git diff --check` passes.
 
 ## Documentation Updates
@@ -398,5 +397,6 @@ Possible follow-ups:
 
 - real docs site foundation for `apps/docs`
 - screenshot refresh cadence
+- extension visual evidence after Phase 7
 - landing README visual polish
 - short product demo GIF or video plan
