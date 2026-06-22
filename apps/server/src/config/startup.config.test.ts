@@ -40,6 +40,38 @@ describe("startup config", () => {
     expect(() => validate_server_startup_config()).toThrow("Database configuration must be defined");
   });
 
+  it("rejects invalid server and database numeric startup config", () => {
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      SERVER_PORT: "not-a-port",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "SERVER_PORT must be a positive integer"
+    );
+
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      DB_PORT: "0",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DB_PORT must be a positive integer"
+    );
+
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      DB_MAX_POOL: "-1",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DB_MAX_POOL must be a positive integer"
+    );
+  });
+
   it("rejects production startup config without production CORS and cookie safety", () => {
     process.env = {
       ...original_env,
@@ -78,9 +110,120 @@ describe("startup config", () => {
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
       DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
+      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
+      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      API_URL: "https://api.example.com",
     };
 
     expect(() => validate_server_startup_config()).not.toThrow();
+  });
+
+  it("rejects production startup config without explicit deployment modes", () => {
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      NODE_ENV: "production",
+      DEV_TYPE: "production",
+      COOKIE_SECRET: "a-very-strong-cookie-secret",
+      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      API_URL: "https://api.example.com",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_DEPLOYMENT_MODE must be explicitly set in production"
+    );
+
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      NODE_ENV: "production",
+      DEV_TYPE: "production",
+      COOKIE_SECRET: "a-very-strong-cookie-secret",
+      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
+      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      API_URL: "https://api.example.com",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_ONBOARDING_MODE must be explicitly set in production"
+    );
+  });
+
+  it("rejects invalid production deployment modes", () => {
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      NODE_ENV: "production",
+      DEV_TYPE: "production",
+      COOKIE_SECRET: "a-very-strong-cookie-secret",
+      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      DEMO_COMPOSER_DEPLOYMENT_MODE: "private_cloud",
+      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
+      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      API_URL: "https://api.example.com",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_DEPLOYMENT_MODE must be self_hosted or hosted"
+    );
+
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      NODE_ENV: "production",
+      DEV_TYPE: "production",
+      COOKIE_SECRET: "a-very-strong-cookie-secret",
+      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
+      DEMO_COMPOSER_ONBOARDING_MODE: "invite_only",
+      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      API_URL: "https://api.example.com",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_ONBOARDING_MODE must be first_run_setup or signup"
+    );
+  });
+
+  it("rejects production startup config without a durable local storage root", () => {
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      NODE_ENV: "production",
+      DEV_TYPE: "production",
+      COOKIE_SECRET: "a-very-strong-cookie-secret",
+      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
+      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
+      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "./storage",
+      API_URL: "https://api.example.com",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_LOCAL_STORAGE_ROOT must be set to a durable storage path in production"
+    );
+  });
+
+  it("rejects production startup config without an absolute public API URL", () => {
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      NODE_ENV: "production",
+      DEV_TYPE: "production",
+      COOKIE_SECRET: "a-very-strong-cookie-secret",
+      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
+      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
+      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      API_URL: "/api",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "API_URL must be an absolute http(s) URL in production"
+    );
   });
 
   it("rejects invalid numeric production hardening config", () => {

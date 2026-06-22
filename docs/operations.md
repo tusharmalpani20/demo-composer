@@ -17,6 +17,8 @@ Back up both durable stores together:
 - PostgreSQL database
 - `DEMO_COMPOSER_LOCAL_STORAGE_ROOT`
 
+Before relying on a backup, rehearse restore into an isolated database and storage directory. Do not rehearse against the live production database or storage path.
+
 Example PostgreSQL backup:
 
 ```bash
@@ -46,9 +48,16 @@ After restore:
 
 - run migrations for the target application version
 - point `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` at the restored storage path
+- set `API_URL` to the API origin used for the rehearsal environment
 - start the API
 - check `/readyz`
-- open a project, a guide, a capture asset, and a published link
+- open a project
+- open a capture session and at least one capture asset
+- open a guide preview
+- open a published guide link
+- open a published interactive demo if the instance has demos
+
+Record the backup timestamp, database dump name, storage archive name, restore target, application version, and verification result. If any capture asset or published asset is missing after restore, treat the backup pair as incomplete.
 
 ## Storage Permissions
 
@@ -70,6 +79,8 @@ Before deleting local files manually:
 - confirm whether the file is referenced by capture assets, guide blocks, published snapshots, or interactive demo scenes
 - take a backup
 - prefer archiving whole old projects only after the product has built explicit deletion workflows
+
+Do not delete individual files from `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` unless you have verified they are unreferenced and have a restorable backup. A dry-run storage inventory command is still deferred.
 
 ## Migrations And Upgrades
 
@@ -95,6 +106,15 @@ Configure the reverse proxy to:
 - set body-size limits that are no larger than the configured API limits
 - send liveness checks to `/healthz`
 - send readiness checks to `/readyz`
+
+For split API/web deployments:
+
+- set server `API_URL` to the externally reachable API origin
+- set the portal build `VITE_DEMO_COMPOSER_API_URL` to that API origin when the portal is not same-origin proxied
+- configure the extension instance URL as the API origin
+- configure the extension portal URL as the browser-facing portal origin
+
+Server startup validates the API-side production settings it can inspect. It cannot validate the deployed portal build, reverse proxy, TLS certificate, backup jobs, or extension origin until those are exercised in the target environment.
 
 ## Secret And Token Rotation
 

@@ -8,12 +8,13 @@ Start with [self-hosting.md](self-hosting.md), then use this checklist before ex
 
 ## Environment
 
+These settings are validated at server startup in production:
+
 - [ ] Set `NODE_ENV=production`.
 - [ ] Set `DEV_TYPE=production`.
 - [ ] Set `TZ`.
 - [ ] Set `SERVER_PORT`.
 - [ ] Set `COOKIE_SECRET` to a strong secret with at least 20 characters.
-- [ ] Set `COOKIE_DOMAIN` for the deployed portal domain.
 - [ ] Set `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS` to comma-separated allowed browser origins.
 - [ ] Set PostgreSQL variables: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_MAX_POOL`.
 - [ ] Set `DEMO_COMPOSER_DEPLOYMENT_MODE` to `self_hosted` or `hosted`.
@@ -24,7 +25,13 @@ Start with [self-hosting.md](self-hosting.md), then use this checklist before ex
 - [ ] Set `DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS`.
 - [ ] Set `DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS`.
 - [ ] Set `API_URL` to the externally reachable API origin.
+
+These settings still require operator verification:
+
+- [ ] Set `COOKIE_DOMAIN` for the deployed portal domain if your cookie scope needs it.
 - [ ] Set `VITE_DEMO_COMPOSER_API_URL` for the portal build.
+- [ ] For split API/web deployments, confirm the extension instance URL is the API origin and the extension portal URL is the browser-facing portal origin.
+- [ ] Confirm `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` is on durable storage with backup coverage.
 
 ## Database
 
@@ -37,6 +44,7 @@ rtk pnpm --filter server run migrate:up
 
 - [ ] Confirm backups exist before allowing real usage.
 - [ ] Test restore on a separate database before relying on backups.
+- [ ] During restore rehearsal, verify project access, a capture asset, a guide preview, a published guide, and an interactive demo if demos exist.
 
 ## Build
 
@@ -62,10 +70,12 @@ rtk pnpm build
 - [ ] Confirm first-run setup is disabled after owner creation.
 - [ ] If running in hosted/signup mode, confirm `/api/v1/setup/first-run` is blocked.
 - [ ] Confirm local storage path is not publicly served except through API routes.
+- [ ] Confirm local storage cleanup remains manual; do not delete individual files without a restorable backup and reference check.
 - [ ] Confirm published guide asset reads only work for assets referenced by accessible published snapshots.
 - [ ] Confirm `COOKIE_SECRET` rotation is understood: existing web sessions become invalid.
 - [ ] Confirm extension bearer token/session rotation is handled by logging users out and asking them to sign in again.
 - [ ] Run dependency review, for example `rtk pnpm audit`, and record accepted risks.
+- [ ] If running more than one API process, document that rate limiting is still in-memory and must be replaced before relying on it for multi-instance abuse protection.
 
 ## Smoke Test
 

@@ -69,6 +69,16 @@ For a local self-hosted evaluation using the provided Compose database:
 For production, set `NODE_ENV=production`, `DEV_TYPE=production`, a strong `COOKIE_SECRET`, and explicit `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS`.
 For a production portal build, set `VITE_DEMO_COMPOSER_API_URL` when the API is not served from the same origin as the portal.
 
+Production server startup validates these high-risk settings before listening:
+
+- `SERVER_PORT`, `DB_PORT`, and `DB_MAX_POOL` must be positive integers.
+- `COOKIE_SECRET` must be set to at least 20 characters.
+- `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS` must include the deployed portal origin and any extension origins that will call the API.
+- `DEMO_COMPOSER_DEPLOYMENT_MODE` must be explicitly set to `self_hosted` or `hosted`.
+- `DEMO_COMPOSER_ONBOARDING_MODE` must be explicitly set to `first_run_setup` or `signup`.
+- `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` must be set to a durable production storage path, not the default `./storage`.
+- `API_URL` must be an absolute `http` or `https` API origin.
+
 ## Database
 
 ```bash
@@ -110,11 +120,12 @@ Load `apps/extension/dist` in Chrome:
 In the extension popup:
 
 1. Set the instance URL to your server origin, for example `http://localhost:3002`.
-2. Sign in with the owner account created through first-run setup.
-3. Select a project.
-4. Start a capture session.
-5. Capture visible-tab screenshots.
-6. Finish the capture session to open it in the portal.
+2. If the API and portal are on different origins, set the optional portal URL to the browser-facing portal origin, for example `http://localhost:3000` or `https://demo.example.com`.
+3. Sign in with the owner account created through first-run setup.
+4. Select a project.
+5. Start a capture session.
+6. Capture visible-tab screenshots.
+7. Finish the capture session to open it in the portal.
 
 ## Publish A Guide
 
