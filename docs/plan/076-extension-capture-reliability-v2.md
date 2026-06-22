@@ -300,8 +300,8 @@ Results:
 
 - URL helper suite passed with 5 tests.
 - Settings suite passed with 10 tests.
-- Popup App suite passed with 31 tests.
-- Full extension suite passed with 75 tests.
+- Popup App suite passed with 32 tests.
+- Full extension suite passed with 76 tests.
 - Extension typecheck passed.
 - Extension build passed.
 - Extension lint passed.
@@ -379,7 +379,7 @@ Selected design:
 
 ### 5. Manual Verification
 
-- [ ] Build extension.
+- [x] Build extension.
 - [ ] Load unpacked extension.
 - [ ] Run selected reliability scenario in browser.
 - [ ] Confirm active capture state remains recoverable.
