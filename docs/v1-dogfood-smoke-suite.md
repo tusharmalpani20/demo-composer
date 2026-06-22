@@ -134,6 +134,35 @@ Do not use production accounts, customer systems, private URLs, or private scree
 
 ## Result Log
 
+### 2026-06-22 Manual Portal Dogfood
+
+- Commit: `51d6b20`
+- Environment: `.env-cmdrc` `testing`; disposable DB label `test-dc`; API `http://localhost:4021`; web `http://localhost:3000`; web proxy override `VITE_DEMO_COMPOSER_API_URL=http://localhost:4021`; local storage root `apps/server/storage`
+- Browser: `agent-browser` isolated owner, public, and teammate sessions
+- Automated smoke: quick package baseline passed with `rtk pnpm --filter server test`, `rtk pnpm --filter web test`, `rtk pnpm --filter extension test`, and `rtk git diff --check`; DB was reset and migrated before the manual run
+- Manual portal smoke: passed with non-blocking limitations recorded in `docs/plan/071-manual-portal-dogfood.md`
+- Manual extension smoke: pending
+- Flows passed:
+  - first-run owner setup, logout, and login
+  - project creation, settings edit, archive, and unarchive
+  - manual capture session creation, two synthetic screenshot uploads, event reorder, event edit, and redaction guard check
+  - guide generation, metadata/step editing, highlight creation, preview, screenshot viewer, Markdown export, HTML ZIP export, publish, public route, embed route, password gate, and unlock
+  - interactive demo generation, metadata/scene editing, scene reorder, hotspot creation/editing, publish, public route, embed route, hotspot navigation, password gate, and unlock
+  - organization invite creation, teammate invite acceptance, teammate project list access, and teammate project open
+  - `/healthz` and `/readyz`
+- Flows failed or limited:
+  - guide structural add-block controls were visible but did not create header, paragraph, or divider blocks
+  - several portal controls required keyboard activation in automation even when pointer click did not navigate or submit
+  - copied invite URL used `http://localhost/invites/<token>` while the web dev portal was running on `http://localhost:3000`; opening the equivalent web route worked
+- Known limitations found:
+  - local dogfood with a non-default server port requires explicit Vite API proxy alignment
+  - local invite URL construction should be clarified for split API/web dev ports
+  - generated screenshots and storage files were intentionally left uncommitted
+- Follow-up plans/issues:
+  - Feed guide add-block behavior into Phase 5 guide editor hardening.
+  - Investigate pointer-click versus keyboard activation reliability as part of portal accessibility/editor hardening.
+  - Keep manual extension dogfood pending for Phase 3.
+
 ### 2026-06-16 Initial Automated Smoke
 
 - Commit: `1ff3d1e`

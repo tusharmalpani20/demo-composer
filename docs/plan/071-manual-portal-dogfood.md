@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: Planned.
+Status: Completed with non-blocking limitations.
 
 ## Parent Master Plan
 
@@ -206,100 +206,128 @@ Use `docs/v1-dogfood-smoke-suite.md` as the source checklist. This section expan
 
 #### Setup And Auth
 
-- [ ] Start PostgreSQL.
-- [ ] Create or reset a safe development database.
-- [ ] Run migrations.
-- [ ] Start API server.
-- [ ] Start web portal.
-- [ ] Open portal from a clean browser context.
-- [ ] Complete first-run setup.
-- [ ] Confirm first-run setup is disabled after owner creation.
-- [ ] Log out.
-- [ ] Log back in.
-- [ ] Confirm authenticated portal shell loads.
+- [x] Start PostgreSQL.
+- [x] Create or reset a safe development database.
+- [x] Run migrations.
+- [x] Start API server.
+- [x] Start web portal.
+- [x] Open portal from a clean browser context.
+- [x] Complete first-run setup.
+- [x] Confirm first-run setup is disabled after owner creation.
+- [x] Log out.
+- [x] Log back in.
+- [x] Confirm authenticated portal shell loads.
 
 #### Project
 
-- [ ] Create a project.
-- [ ] Open project workspace.
-- [ ] Confirm project status and metadata render.
-- [ ] Open project settings.
-- [ ] Edit project name, description, or slug.
-- [ ] Archive project.
-- [ ] Unarchive project.
-- [ ] Return to project workspace.
+- [x] Create a project.
+- [x] Open project workspace.
+- [x] Confirm project status and metadata render.
+- [x] Open project settings.
+- [x] Edit project name, description, or slug.
+- [x] Archive project.
+- [x] Unarchive project.
+- [x] Return to project workspace.
 
 #### Manual Capture
 
-- [ ] Create a manual capture session.
-- [ ] Upload one safe screenshot.
-- [ ] Upload multiple screenshots if the UI supports bulk upload.
-- [ ] Create screenshot-backed capture events.
-- [ ] Confirm events have correct order.
-- [ ] Reorder capture events.
-- [ ] Edit a manual capture event.
-- [ ] Confirm unsafe raw input values are not collected.
-- [ ] Complete or finalize the capture session if needed for artifact creation.
+- [x] Create a manual capture session.
+- [x] Upload one safe screenshot.
+- [x] Upload multiple screenshots if the UI supports bulk upload.
+- [x] Create screenshot-backed capture events.
+- [x] Confirm events have correct order.
+- [x] Reorder capture events.
+- [x] Edit a manual capture event.
+- [x] Confirm unsafe raw input values are not collected.
+- [x] Complete or finalize the capture session if needed for artifact creation.
 
 #### Guide Workflow
 
-- [ ] Generate a guide from the capture session.
-- [ ] Open guide editor.
-- [ ] Edit guide title and description.
-- [ ] Edit at least one step title/body.
-- [ ] Add a header block.
-- [ ] Add a paragraph block.
-- [ ] Add a divider block.
-- [ ] Reorder guide blocks.
-- [ ] Upload or select a screenshot for a step if supported.
-- [ ] Add or edit screenshot annotation data.
-- [ ] Open guide preview.
-- [ ] Open screenshot viewer from preview.
-- [ ] Export Markdown.
-- [ ] Export HTML ZIP.
-- [ ] Publish guide.
-- [ ] Open public guide route.
-- [ ] Confirm public guide does not show private source metadata.
-- [ ] Enable guide password protection.
-- [ ] Verify password gate.
-- [ ] Open guide embed route.
-- [ ] Revoke or restrict guide link if testing access controls.
+- [x] Generate a guide from the capture session.
+- [x] Open guide editor.
+- [x] Edit guide title and description.
+- [x] Edit at least one step title/body.
+- [ ] Add a header block. Blocked: visible add-block controls did not create blocks or requests.
+- [ ] Add a paragraph block. Blocked: visible add-block controls did not create blocks or requests.
+- [ ] Add a divider block. Blocked: visible add-block controls did not create blocks or requests.
+- [ ] Reorder guide blocks. Not covered because only generated step blocks existed.
+- [x] Upload or select a screenshot for a step if supported.
+- [x] Add or edit screenshot annotation data.
+- [x] Open guide preview.
+- [x] Open screenshot viewer from preview.
+- [x] Export Markdown.
+- [x] Export HTML ZIP.
+- [x] Publish guide.
+- [x] Open public guide route.
+- [x] Confirm public guide does not show private source metadata.
+- [x] Enable guide password protection.
+- [x] Verify password gate.
+- [x] Open guide embed route.
+- [ ] Revoke or restrict guide link if testing access controls. Not required for this smoke after password gate verification.
 
 #### Interactive Demo Workflow
 
-- [ ] Create an interactive demo from the same capture session.
-- [ ] Open interactive demo editor.
-- [ ] Edit demo title or description.
-- [ ] Edit scene title.
-- [ ] Reorder scenes if more than one scene exists.
-- [ ] Create a hotspot.
-- [ ] Edit hotspot label/content/coordinates.
-- [ ] Set hotspot target scene if available.
-- [ ] Publish interactive demo.
-- [ ] Open public demo viewer.
-- [ ] Confirm public demo does not show private source metadata.
-- [ ] Verify viewer navigation through hotspots or next/back controls.
-- [ ] Enable password protection if available.
-- [ ] Verify password gate.
-- [ ] Open demo embed route.
+- [x] Create an interactive demo from the same capture session.
+- [x] Open interactive demo editor.
+- [x] Edit demo title or description.
+- [x] Edit scene title.
+- [x] Reorder scenes if more than one scene exists.
+- [x] Create a hotspot.
+- [x] Edit hotspot label/content/coordinates.
+- [x] Set hotspot target scene if available.
+- [x] Publish interactive demo.
+- [x] Open public demo viewer.
+- [x] Confirm public demo does not show private source metadata.
+- [x] Verify viewer navigation through hotspots or next/back controls.
+- [x] Enable password protection if available.
+- [x] Verify password gate.
+- [x] Open demo embed route.
 
 #### Organization Invite
 
-- [ ] Open organization members page.
-- [ ] Create teammate invite.
-- [ ] Copy invite link.
-- [ ] Open invite link in a clean browser context.
-- [ ] Accept invite as teammate.
-- [ ] Confirm teammate can access project list.
-- [ ] Confirm teammate can open the smoke project.
-- [ ] Record any role or permission ambiguity.
+- [x] Open organization members page.
+- [x] Create teammate invite.
+- [x] Copy invite link.
+- [x] Open invite link in a clean browser context.
+- [x] Accept invite as teammate.
+- [x] Confirm teammate can access project list.
+- [x] Confirm teammate can open the smoke project.
+- [x] Record any role or permission ambiguity.
 
 #### Operations Checks
 
-- [ ] Check `/healthz`.
-- [ ] Check `/readyz`.
-- [ ] Confirm local storage files are created under configured local storage root.
-- [ ] Confirm no direct storage URL is required to view published assets.
+- [x] Check `/healthz`.
+- [x] Check `/readyz`.
+- [x] Confirm local storage files are created under configured local storage root.
+- [x] Confirm no direct storage URL is required to view published assets.
+
+## Implementation Notes
+
+Run completed on 2026-06-22 against commit `51d6b20` with the `testing` `.env-cmdrc` environment.
+
+Environment:
+
+- Testing database label: `test-dc`.
+- API server: `http://localhost:4021`.
+- Web portal: `http://localhost:3000`.
+- Web API proxy override: `VITE_DEMO_COMPOSER_API_URL=http://localhost:4021`.
+- Local storage root: `apps/server/storage`.
+- Browser runner: `agent-browser` with isolated owner, public, and teammate sessions.
+- Screenshots: synthetic PNGs generated under `/tmp/demo-composer-dogfood`; not committed.
+
+Verification performed:
+
+- Quick baseline before dogfood passed: `rtk pnpm --filter server test`, `rtk pnpm --filter web test`, `rtk pnpm --filter extension test`, and `rtk git diff --check`.
+- Disposable testing DB was dropped and recreated, then 14 migrations were applied before manual dogfood.
+- `/healthz` and `/readyz` returned `200`.
+- Storage contained two 70-byte synthetic screenshots under `apps/server/storage`.
+- DB sanity check found 1 project, 2 capture events, 2 file records, 1 invite, 1 accepted invite, and 0 unredacted capture events.
+
+Observed limitations and follow-ups:
+
+- Guide add-block controls for header, paragraph, tip, alert, and divider were visible but did not create blocks or API requests in this run. This should feed Phase 5 guide editor hardening.
+- Several portal buttons/links were more reliable through keyboard activation than pointer click in automation, including first-run submit, settings save/archive, event edit, preview link, and workspace/settings navigation. This needs targeted UI event/accessibility investigation before treating it as user-facing breakage.
+- Invite copy produced a link with `http://localhost/invites/<token>` while the Vite web portal was on `http://localhost:3000`; the equivalent `http://localhost:3000/invites/<token>` route worked. Local dev URL construction should be clarified or made portal-origin aware.
 
 ## Result Recording
 

@@ -80,7 +80,7 @@ As of this master plan:
 - The backend has a DB-backed smoke test proving the core setup-to-published-guide/demo-and-invite path.
 - The portal has the core project, capture, guide, interactive demo, publish, and invite surfaces.
 - The extension has automatic click capture MVP plus manual screenshot fallback.
-- Manual portal dogfood is still pending.
+- Manual portal dogfood completed with non-blocking limitations in `docs/plan/071-manual-portal-dogfood.md`.
 - Manual extension dogfood is still pending.
 - Product screenshots are still missing from public docs.
 - `apps/docs` is still starter content.
@@ -266,40 +266,55 @@ This is evidence-gathering first, implementation second. Do not hide failures. R
 
 ### Todos
 
-- [ ] Prepare a clean testing database.
-- [ ] Run migrations.
-- [ ] Start API and web portal.
-- [ ] Complete first-run setup in the browser.
-- [ ] Log out and log back in.
-- [ ] Create a project.
-- [ ] Create a manual capture session.
-- [ ] Upload synthetic screenshots.
-- [ ] Create screenshot-backed capture events.
-- [ ] Reorder capture events.
-- [ ] Edit a manual capture event.
-- [ ] Generate a guide from the capture session.
-- [ ] Edit guide title/body for at least one step.
-- [ ] Add or edit screenshot annotations.
-- [ ] Open guide preview.
-- [ ] Export Markdown.
-- [ ] Export HTML ZIP.
-- [ ] Publish the guide.
-- [ ] Open the public guide.
-- [ ] Enable password protection and verify unlock flow.
-- [ ] Open guide embed route.
-- [ ] Create an interactive demo from the same capture.
-- [ ] Edit scene title.
-- [ ] Create and edit at least one hotspot.
-- [ ] Publish the interactive demo.
-- [ ] Open public demo viewer.
-- [ ] Open demo embed route.
-- [ ] Invite a teammate.
-- [ ] Accept invite as teammate.
-- [ ] Confirm teammate project access.
-- [ ] Check `/healthz`.
-- [ ] Check `/readyz`.
-- [ ] Record results in `docs/v1-dogfood-smoke-suite.md`.
-- [ ] Create child plans for any blocker or major friction.
+- [x] Prepare a clean testing database.
+- [x] Run migrations.
+- [x] Start API and web portal.
+- [x] Complete first-run setup in the browser.
+- [x] Log out and log back in.
+- [x] Create a project.
+- [x] Create a manual capture session.
+- [x] Upload synthetic screenshots.
+- [x] Create screenshot-backed capture events.
+- [x] Reorder capture events.
+- [x] Edit a manual capture event.
+- [x] Generate a guide from the capture session.
+- [x] Edit guide title/body for at least one step.
+- [x] Add or edit screenshot annotations.
+- [x] Open guide preview.
+- [x] Export Markdown.
+- [x] Export HTML ZIP.
+- [x] Publish the guide.
+- [x] Open the public guide.
+- [x] Enable password protection and verify unlock flow.
+- [x] Open guide embed route.
+- [x] Create an interactive demo from the same capture.
+- [x] Edit scene title.
+- [x] Create and edit at least one hotspot.
+- [x] Publish the interactive demo.
+- [x] Open public demo viewer.
+- [x] Open demo embed route.
+- [x] Invite a teammate.
+- [x] Accept invite as teammate.
+- [x] Confirm teammate project access.
+- [x] Check `/healthz`.
+- [x] Check `/readyz`.
+- [x] Record results in `docs/v1-dogfood-smoke-suite.md`.
+- [x] Record explicit follow-up inputs for non-blocking friction.
+
+### Result
+
+Completed with non-blocking limitations on 2026-06-22. See:
+
+```text
+docs/plan/071-manual-portal-dogfood.md
+docs/v1-dogfood-smoke-suite.md
+```
+
+Follow-up inputs:
+
+- Guide structural add-block controls were visible but inert during the dogfood run; carry this into Phase 5 guide editor hardening.
+- Several portal controls were more reliable with keyboard activation than pointer click in automation; investigate during portal/editor hardening.
+- Invite URL construction in split API/web local development omitted the Vite port; clarify or make it portal-origin aware.
 
 ### Acceptance Criteria
 
@@ -660,7 +675,7 @@ DB-backed checks require the configured PostgreSQL testing database.
 | Phase | Status | Result Link |
 | --- | --- | --- |
 | 1. Verification And Docs Sync | Completed | `docs/plan/070-verification-and-docs-sync.md` |
-| 2. Manual Portal Dogfood | Planned | TBD |
+| 2. Manual Portal Dogfood | Completed with limitations | `docs/plan/071-manual-portal-dogfood.md` |
 | 3. Manual Extension Dogfood | Planned | TBD |
 | 4. Alpha Visual Evidence | Planned | TBD |
 | 5. Guide Editor V1 Hardening | Planned | TBD |
