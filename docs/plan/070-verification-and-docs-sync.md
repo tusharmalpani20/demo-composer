@@ -38,6 +38,17 @@ All passed.
 
 DB-backed checks were run against the configured PostgreSQL testing database. The testing database was reset with `rtk pnpm --filter server run test:db:drop` and `rtk pnpm --filter server run test:setup` before the final DB integration run, then reset again before the final smoke run so first-run setup started cleanly.
 
+## Follow-Up Notes For Next Plans
+
+These are not blockers for Phase 1 completion, but they should stay visible for the next implementation plans:
+
+- DB-backed suites share first-run setup state. Run `test:db` and `test:smoke` sequentially, with a testing database reset before each suite, unless future work adds stronger per-suite isolation.
+- Long DB integration workflows now have a 60s Vitest budget. If they keep approaching that limit, create a focused DB test performance/isolation plan instead of increasing timeouts again.
+- Manual portal dogfood remains pending and should be handled by `docs/plan/071-manual-portal-dogfood.md`.
+- Manual extension dogfood remains pending and should be handled by `docs/plan/072-manual-extension-dogfood.md`.
+- Real product screenshots remain pending until dogfood evidence exists, then continue with `docs/plan/073-alpha-product-screenshots.md`.
+- `apps/docs` is documented as parked starter content for alpha. Do not point users to it as canonical product docs unless a later docs-site plan implements it.
+
 ## Parent Master Plan
 
 ```text

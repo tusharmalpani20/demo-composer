@@ -169,6 +169,23 @@ docs/plan/070-verification-and-docs-sync.md
 
 Status: completed by `docs/plan/070-verification-and-docs-sync.md`.
 
+### Completion Result
+
+Completed on 2026-06-22.
+
+Result:
+
+- invite service tests no longer depend on wall-clock time
+- expired invite lookup and acceptance behavior has explicit regression coverage
+- DB integration tests have a server Vitest timeout budget suitable for current long workflows
+- verification commands passed, including non-DB tests, DB integration, smoke, typecheck, build, lint, and whitespace checks
+- plans `049` and `067` now have truthful statuses
+- `apps/docs` is documented as parked starter content for alpha
+
+Follow-up note:
+
+- DB-backed suites currently share first-run setup state, so `test:db` and `test:smoke` should be run sequentially with a test database reset before each suite until future work improves isolation.
+
 ### Goal
 
 Make the repository's stated alpha status match actual behavior and make the baseline checks green.
@@ -200,23 +217,23 @@ Known docs drift before completion:
 
 ### Todos
 
-- [ ] Read `apps/server/src/modules/organization/organization-invites.service.test.ts`.
-- [ ] Fix expired invite fixture behavior without weakening expiration coverage.
-- [ ] Add a regression test that proves expired invites are still rejected.
-- [ ] Run `rtk pnpm --filter server test`.
-- [ ] Run `rtk pnpm --filter web test`.
-- [ ] Run `rtk pnpm --filter extension test`.
-- [ ] Run `rtk pnpm --filter server test:db`.
-- [ ] Run `rtk pnpm --filter server test:smoke`.
-- [ ] Run `rtk pnpm check-types`.
-- [ ] Run `rtk pnpm build`.
-- [ ] Run `rtk pnpm lint`.
-- [ ] Run `rtk git diff --check`.
-- [ ] Update `docs/plan/049-project-settings-archive-portal.md` status and implementation notes.
-- [ ] Decide whether `067` should be marked implemented, superseded, or partially implemented.
-- [ ] Update `docs/project-zoomout-status.md` only if current state changed.
-- [ ] Record whether `apps/docs` is intentionally parked or should become a follow-up plan.
-- [ ] Record whether placeholder shared packages are intentional for now.
+- [x] Read `apps/server/src/modules/organization/organization-invites.service.test.ts`.
+- [x] Fix expired invite fixture behavior without weakening expiration coverage.
+- [x] Add a regression test that proves expired invites are still rejected.
+- [x] Run `rtk pnpm --filter server test`.
+- [x] Run `rtk pnpm --filter web test`.
+- [x] Run `rtk pnpm --filter extension test`.
+- [x] Run `rtk pnpm --filter server test:db`.
+- [x] Run `rtk pnpm --filter server test:smoke`.
+- [x] Run `rtk pnpm check-types`.
+- [x] Run `rtk pnpm build`.
+- [x] Run `rtk pnpm lint`.
+- [x] Run `rtk git diff --check`.
+- [x] Update `docs/plan/049-project-settings-archive-portal.md` status and implementation notes.
+- [x] Decide whether `067` should be marked implemented, superseded, or partially implemented.
+- [x] Update `docs/project-zoomout-status.md` only if current state changed.
+- [x] Record whether `apps/docs` is intentionally parked or should become a follow-up plan.
+- [x] Record whether placeholder shared packages are intentional for now.
 
 ### Acceptance Criteria
 
