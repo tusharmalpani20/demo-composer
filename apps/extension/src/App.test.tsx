@@ -285,6 +285,27 @@ describe("extension popup App", () => {
     expect(screen.getByText("Enter a valid http:// or https:// instance URL.")).toBeInTheDocument();
   });
 
+  it("rejects invalid portal URLs without saving the instance", async () => {
+    const dependencies = renderApp();
+
+    expect(await screen.findByRole("heading", { name: "Connect instance" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Instance URL"), {
+      target: {
+        value: "http://localhost:3002",
+      },
+    });
+    fireEvent.change(screen.getByLabelText("Portal URL (optional)"), {
+      target: {
+        value: "localhost:3000",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Connect" }));
+
+    expect(screen.getByText("Enter a valid http:// or https:// portal URL.")).toBeInTheDocument();
+    expect(dependencies.saveInstanceUrl).not.toHaveBeenCalled();
+    expect(dependencies.savePortalUrl).not.toHaveBeenCalled();
+  });
+
   it("renders signed-out form when saved token is unauthenticated", async () => {
     renderApp({
       settings: {
