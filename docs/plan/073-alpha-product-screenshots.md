@@ -4,6 +4,8 @@ Date: 2026-06-22
 
 Status: Completed with portal-only visual evidence.
 
+Completion update: this plan is closed as the portal visual-evidence phase. It added README screenshots from safe synthetic portal/public routes, updated status docs, and kept extension visuals out of scope because extension dogfood is failed/blocked. Remaining visual work should happen through follow-up plans, not by reopening this phase.
+
 ## Parent Master Plan
 
 ```text
@@ -181,6 +183,7 @@ Missed work to carry forward:
 
 - Add extension visual evidence after Phase 7 fixes or explicitly bounds extension capture.
 - Consider a later screenshot refresh cadence after guide/editor and demo hardening changes the UI.
+- Consider replacing the README image tables with a lighter gallery or docs-site page if the README becomes too image-heavy.
 - Keep `apps/docs` as starter content for now; create a separate docs-site plan before presenting it as product documentation.
 
 ## Asset Location And Naming

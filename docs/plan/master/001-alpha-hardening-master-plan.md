@@ -427,6 +427,8 @@ Follow-up note:
 
 - add extension visual evidence only after Phase 7 fixes or explicitly bounds extension capture reliability
 - consider a screenshot refresh cadence after guide/editor and demo hardening changes the UI
+- consider moving visual evidence into a lighter gallery or docs-site page if README image tables become too heavy
+- keep `apps/docs` as starter content until a separate docs-site plan is created
 
 ### Goal
 
@@ -725,7 +727,7 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 1. Verification And Docs Sync | Completed | `docs/plan/070-verification-and-docs-sync.md` |
 | 2. Manual Portal Dogfood | Completed with limitations | `docs/plan/071-manual-portal-dogfood.md` |
 | 3. Manual Extension Dogfood | Completed with blocking failures | `docs/plan/072-manual-extension-dogfood.md` |
-| 4. Alpha Visual Evidence | Planned | TBD |
+| 4. Alpha Visual Evidence | Completed with portal-only visual evidence | `docs/plan/073-alpha-product-screenshots.md` |
 | 5. Guide Editor V1 Hardening | Planned | TBD |
 | 6. Interactive Demo V1 Hardening | Planned | TBD |
 | 7. Extension Capture Reliability V2 | Planned | TBD |
