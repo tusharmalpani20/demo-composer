@@ -388,8 +388,8 @@ Reliability inputs for Phase 7:
 
 - Manual extension smoke has a dated result entry.
 - Automatic click capture is either passed or has specific limitations recorded.
-- Manual screenshot fallback is verified.
-- Finish-to-portal flow is verified.
+- Manual screenshot fallback is either verified or has specific limitations recorded.
+- Finish-to-portal flow is either verified or has specific limitations recorded.
 - No private sites or private screenshots are used.
 
 ## Phase 4: Alpha Visual Evidence

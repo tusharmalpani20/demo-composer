@@ -82,7 +82,7 @@ Known deferred extension capabilities:
 - HTML snapshots
 - Chrome Web Store packaging
 
-Manual extension smoke is currently pending in:
+Before this run, manual extension smoke was pending in:
 
 ```text
 docs/v1-dogfood-smoke-suite.md
@@ -289,7 +289,7 @@ Port/origin alignment:
 
 - [x] Try a restricted page such as `chrome://extensions` only if safe.
 - [x] Confirm extension fails gracefully or does not capture.
-- [ ] Try a page where content scripts cannot run if available. Covered by `chrome://extensions`; no separate page was needed.
+- [x] Try a page where content scripts cannot run if available. Covered by `chrome://extensions`; no separate page was needed.
 - [x] Record exact user-facing error/recovery behavior.
 
 #### Cleanup
@@ -330,6 +330,16 @@ Failures and limitations:
 - Guide/demo generation from extension events was blocked because the completed capture session had no events or assets.
 
 Carry these findings into `docs/plan/076-extension-capture-reliability-v2.md`.
+
+## Missed Work To Carry Forward
+
+Do not reopen this evidence phase as an implementation bucket. Carry the failed proof points into Phase 7:
+
+- Reproduce automatic click capture in a headed/manual browser and determine whether the failure is automation-specific or a product bug.
+- Make manual screenshot fallback either upload and record a `capture` event or surface a clear user-facing failure.
+- Split extension API origin from browser-facing portal origin so `Open in portal` and `Finish capture` work in local split-port setups.
+- Keep extension-captured product screenshots out of Phase 4 until capture has a passing or explicitly bounded path.
+- Re-run guide/demo generation from extension events after extension capture reliability is fixed.
 
 ## Result Recording
 
@@ -393,9 +403,9 @@ Manual browser testing is required for this plan. Unit tests alone do not comple
 - Instance configuration and extension sign-in are verified.
 - Automatic click capture is tested on a safe page.
 - Pause/resume behavior is verified.
-- Manual screenshot fallback is verified.
-- Finish-to-portal behavior is verified.
-- Guide and interactive demo creation from extension events is verified.
+- Manual screenshot fallback is verified or has a specific failure recorded.
+- Finish-to-portal behavior is verified or has a specific failure recorded.
+- Guide and interactive demo creation from extension events is verified or has a specific blocker recorded.
 - Unsafe input value collection is not observed.
 - Unsupported page behavior is recorded.
 - Result is logged in `docs/v1-dogfood-smoke-suite.md`.
