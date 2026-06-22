@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: Planned.
+Status: Ready for implementation; selected startup/env validation and operator docs slice.
 
 ## Parent Master Plan
 
@@ -42,12 +42,14 @@ Recommended after:
 
 ```text
 docs/plan/071-manual-portal-dogfood.md
+docs/plan/076-extension-capture-reliability-v2.md
 ```
 
 Reason:
 
 - verification should be stable first
 - dogfood may reveal storage, upload, or operational recovery gaps
+- Phase 7 clarified split API/web extension setup; this plan should document self-host deployment inputs without taking on remaining browser capture reliability work
 
 ## Current Baseline
 
@@ -80,6 +82,7 @@ Known limits:
 - rate limiting is in-memory
 - multi-instance production deployments need shared rate-limit state
 - operators are responsible for DB and local file storage backups
+- startup config validation exists, but it does not yet validate all production operator checklist requirements
 
 ## Scope
 
@@ -89,10 +92,9 @@ Included:
 - identify top operational risks for internal self-host use
 - strengthen backup/restore rehearsal guidance
 - clarify local storage permissions and cleanup responsibilities
-- decide whether to implement storage reference inventory or only plan it
-- decide Docker/Compose packaging scope
-- decide rate-limit replacement strategy or document limitation more sharply
-- add tests for any operator command/tooling introduced
+- implement the selected startup/env validation slice
+- document the current limits for cleanup, packaging, and rate limiting sharply enough for internal self-host use
+- add tests for any startup validation behavior introduced
 - keep docs alpha-honest
 
 ## Explicit Non-Goals
@@ -139,9 +141,26 @@ docs/plan/<new-ops-follow-up-plan>.md
 
 Any storage cleanup or backup-related code must ship with conservative tests and dry-run behavior before destructive behavior is considered.
 
+## Prior Phase Carry-Forward Review
+
+From `docs/plan/076-extension-capture-reliability-v2.md`:
+
+- manual unpacked-extension browser verification, automatic click diagnostics, manual screenshot fallback events, background message delivery diagnostics, optional portal URL edit flow, and extension-generated guide/demo reruns remain extension reliability work
+- this self-host plan should not implement those browser reliability items
+- this plan should include the self-host documentation impact of split API/web deployments: API origin, portal origin, CORS origins, and extension portal URL setup should be clear in operator docs
+
 ## Candidate Work Areas
 
-Choose a focused slice or split into separate follow-up plans.
+Selected focused slice:
+
+- production startup/env validation and operator documentation
+
+Deferred follow-up slices:
+
+- storage reference inventory and dry-run cleanup tooling
+- one-command production packaging or Docker image work
+- shared rate-limit backend for multi-instance deployments
+- object storage support
 
 ### Backup And Restore Rehearsal
 
@@ -221,17 +240,23 @@ Record:
 - operational risks not addressed
 - whether implementation is needed or docs are enough
 
-### 2. Pick Focused Slice
+### 2. Selected Slice: Startup/Env Validation
 
-Pick one:
+Implement production startup validation for the highest-risk checklist items that are currently only documented:
 
-- backup/restore rehearsal docs
-- storage cleanup inventory plan/tool
-- packaging docs/Compose improvement
-- rate-limit strategy plan
-- startup/env validation hardening
+- valid `SERVER_PORT`
+- valid database port and pool values
+- explicit production deployment/onboarding modes
+- explicit production local storage root
+- explicit production public API URL
 
-If more than one is important, create follow-up plans.
+Document:
+
+- what startup validates
+- what remains operator-verified
+- backup/restore rehearsal steps
+- split API/web self-host inputs, including extension portal URL setup
+- rate-limit and cleanup limitations
 
 ### 3. Implement Or Document
 
@@ -241,25 +266,33 @@ For docs-only slice:
 - add examples
 - keep alpha limitations explicit
 
-For tooling slice:
-
-- add conservative implementation
-- default to read-only or dry-run
-- add tests
-- document usage and risks
+For this slice, do not add cleanup tooling or deployment packaging.
 
 ### 4. Verify
 
 - [ ] Run docs whitespace check.
-- [ ] Run tests for any code touched.
+- [ ] Run startup config tests.
+- [ ] Run server tests if the startup change has wider config impact.
 - [ ] If backup/restore docs are changed, rehearse commands when practical and record assumptions.
 - [ ] If packaging docs are changed, run the documented local path when practical.
 
 ### 5. Update Tracking
 
 - [ ] Add implementation notes to this plan.
+- [ ] Update master plan completion tracking after implementation.
+- [ ] Record missed/deferred production hardening items for the next master-plan wave.
 - [ ] Update master plan completion table if Phase 8 is complete.
-- [ ] Add follow-up plans for deferred operational work.
+- [ ] Add follow-up plans for deferred operational work if they are specific enough to act on.
+
+## Acceptance Boundary
+
+This phase can be marked complete when:
+
+- production startup validation rejects the selected unsafe/missing env combinations with clear errors
+- docs explain the validated env surface and the operator-only checks
+- backup/restore rehearsal guidance is more concrete
+- split API/web and extension portal URL setup are documented for self-host operators
+- deferred cleanup, packaging, object storage, and shared rate limiting work are preserved as follow-up candidates
 
 ## Testing Plan
 
