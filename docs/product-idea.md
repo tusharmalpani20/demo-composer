@@ -1,5 +1,11 @@
 # Demo Composer Product Idea
 
+## Current Status Pointer
+
+This document is the product thesis. For current implementation status, see `docs/project-zoomout-status.md`.
+
+As of the alpha hardening planning pass on 2026-06-22, the screenshot-first guide and interactive demo paths are implemented at MVP level. HTML replay, AI/BYO-key authoring, analytics, lead capture, custom branding, and hosted SaaS behavior remain deferred.
+
 ## Purpose
 
 Demo Composer is a product for capturing real software workflows and turning those captures into useful, shareable walkthrough artifacts.
@@ -780,4 +786,3 @@ These questions should be answered during the detailed implementation grill-down
 Demo Composer is a no-AI capture and composition platform for turning real software workflows into reusable internal guides and interactive product demos.
 
 It captures screenshots and action metadata through a Chrome extension, stores those captures as reusable source material, and lets users compose them into either Scribe-style process docs or Storylane-style interactive walkthroughs.
-

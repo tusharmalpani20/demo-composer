@@ -167,19 +167,21 @@ Suggested child plan:
 docs/plan/070-verification-and-docs-sync.md
 ```
 
+Status: completed by `docs/plan/070-verification-and-docs-sync.md`.
+
 ### Goal
 
 Make the repository's stated alpha status match actual behavior and make the baseline checks green.
 
 This phase should be completed before broader dogfooding so agents are not chasing stale test failures or stale docs.
 
-### Current Baseline
+### Original Baseline
 
-Known current issue:
+Known issue before completion:
 
 - `rtk pnpm --filter server test` has failing organization invite service tests because fixtures expired on `2026-06-20T00:00:00.000Z`.
 
-Known docs drift:
+Known docs drift before completion:
 
 - `docs/plan/049-project-settings-archive-portal.md` still says `Status: Planned`, but project settings/archive UI exists.
 - `docs/plan/067-docs-freshness-and-status-sync.md` still says `Status: Planned`, but much of the docs freshness work appears to have landed through later launch polish.
@@ -640,7 +642,7 @@ DB-backed checks require the configured PostgreSQL testing database.
 
 | Phase | Status | Result Link |
 | --- | --- | --- |
-| 1. Verification And Docs Sync | Planned | TBD |
+| 1. Verification And Docs Sync | Completed | `docs/plan/070-verification-and-docs-sync.md` |
 | 2. Manual Portal Dogfood | Planned | TBD |
 | 3. Manual Extension Dogfood | Planned | TBD |
 | 4. Alpha Visual Evidence | Planned | TBD |

@@ -2,7 +2,34 @@
 
 Date: 2026-06-13
 
-Status: Planned.
+Status: Implemented.
+
+## Implementation Notes
+
+Implemented before the 2026-06-22 verification sync.
+
+The portal now includes:
+
+- `/projects/:project_id/settings`
+- project detail editing for name, description, and slug
+- archive and unarchive controls
+- workspace link to project settings
+- archived project settings access so archived projects can be restored
+
+Relevant implementation files:
+
+```text
+apps/web/src/features/project/ProjectSettingsPage.tsx
+apps/web/src/features/project/ProjectSettingsPage.test.tsx
+apps/web/src/features/project/ProjectWorkspacePage.tsx
+apps/web/src/features/project/ProjectWorkspacePage.test.tsx
+apps/web/src/lib/routes.ts
+apps/web/src/lib/routes.test.ts
+apps/web/src/lib/api.ts
+apps/web/src/lib/api.test.ts
+```
+
+The current project zoom-out status already lists project settings/archive controls as built.
 
 ## Goal
 

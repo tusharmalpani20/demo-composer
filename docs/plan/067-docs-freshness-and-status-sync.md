@@ -2,7 +2,33 @@
 
 Date: 2026-06-16
 
-Status: Planned.
+Status: Completed by later docs polish.
+
+## Implementation Notes
+
+Completed before the 2026-06-22 verification sync through later OSS alpha docs polish, primarily around plan `069`.
+
+Current docs now reflect:
+
+- automatic extension click capture MVP as built
+- interactive demo generation, editor, hotspots, publish controls, public viewer, and embeds as built
+- organization invites as built
+- production hardening basics as built
+- health/readiness and current route groups in the backend route inventory
+- project settings/archive portal as implemented in plan `049`
+
+Docs still correctly mark these as pending/deferred:
+
+- manual portal dogfood smoke
+- manual Chrome extension dogfood smoke
+- real product screenshots
+- HTML replay
+- AI/BYO-key authoring
+- analytics, lead capture, sales tracking, and custom branding
+- one-command production deployment packaging
+- Chrome Web Store packaging
+
+This plan is historical. Do not use it as the next implementation plan; use the active alpha hardening master plan and its child plans instead.
 
 ## Goal
 
