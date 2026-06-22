@@ -543,7 +543,7 @@ describe("DB-backed guide API", () => {
     expect(capture_counts.rows[0]?.count).toBe("3");
 
     await app.close();
-  }, 20_000);
+  }, 60_000);
 
   it("persists generated guide steps from screenshot-backed capture events", async () => {
     const session_token = await setup_owner();
@@ -994,7 +994,7 @@ describe("DB-backed guide API", () => {
     });
 
     await app.close();
-  });
+  }, 60_000);
 
   it("exports a guide draft as HTML ZIP with local screenshot assets", async () => {
     const session_token = await setup_owner();

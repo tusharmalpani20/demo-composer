@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AcceptedInviteError,
+  ExpiredInviteError,
   InviteNotFoundError,
   InvitePermissionError,
   build_organization_invites_service,
@@ -21,6 +22,8 @@ const member_auth = {
   actor_org_user_id: "org_user_member",
   actor_role: "member",
 };
+
+const stable_invite_now = () => new Date("2026-06-10T00:00:00.000Z");
 
 const owner_member: OrgMember = {
   id: "org_user_owner",
@@ -207,7 +210,9 @@ describe("organization invites service", () => {
   it("returns safe public invite metadata without token hash or account existence", async () => {
     const repository = build_repository();
     repository.invites.push({ ...pending_invite(), token_hash: hash_invite_token("plain-token") });
-    const service = build_organization_invites_service(repository);
+    const service = build_organization_invites_service(repository, {
+      now: stable_invite_now,
+    });
 
     const result = await service.get_public_invite({ token: "plain-token" });
 
@@ -230,6 +235,7 @@ describe("organization invites service", () => {
     repository.invites.push({ ...pending_invite(), token_hash: hash_invite_token("plain-token") });
     const service = build_organization_invites_service(repository, {
       generate_session_token: () => "session-token",
+      now: stable_invite_now,
     });
 
     const result = await service.accept_invite({
@@ -243,6 +249,23 @@ describe("organization invites service", () => {
     expect(result.auth.org_user.role).toBe("member");
     expect(repository.users[0]?.password_hash).not.toBe("very safe local password");
     expect(repository.invites[0]?.status).toBe("accepted");
+  });
+
+  it("rejects expired public invite lookup and acceptance", async () => {
+    const repository = build_repository();
+    repository.invites.push({
+      ...pending_invite({ expires_at: "2026-06-09T00:00:00.000Z" }),
+      token_hash: hash_invite_token("plain-token"),
+    });
+    const service = build_organization_invites_service(repository, {
+      now: stable_invite_now,
+    });
+
+    await expect(service.get_public_invite({ token: "plain-token" })).rejects.toBeInstanceOf(ExpiredInviteError);
+    await expect(service.accept_invite({
+      token: "plain-token",
+      password: "very safe local password",
+    })).rejects.toBeInstanceOf(ExpiredInviteError);
   });
 
   it("rejects already accepted invites", async () => {

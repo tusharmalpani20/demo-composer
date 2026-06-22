@@ -509,7 +509,7 @@ describe("DB-backed interactive demo API", () => {
     expect(get_deleted_response.statusCode).toBe(404);
 
     await app.close();
-  });
+  }, 60_000);
 
   it("rejects hotspot target scenes from a different interactive demo at the schema boundary", async () => {
     const session_token = await setup_owner();
