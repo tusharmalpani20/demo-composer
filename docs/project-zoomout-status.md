@@ -1,6 +1,6 @@
 # Project Zoom-Out Status
 
-Date: 2026-06-16
+Date: 2026-06-22
 
 ## Product Intent
 
@@ -41,7 +41,7 @@ The automated DB-backed smoke test for that workflow lives in `apps/server/src/s
 rtk pnpm --filter server test:smoke
 ```
 
-Manual portal and Chrome extension dogfood smoke are documented but still pending in `docs/v1-dogfood-smoke-suite.md`.
+Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-22 and is recorded in `docs/v1-dogfood-smoke-suite.md`. Chrome extension dogfood smoke is still pending.
 
 ## Built So Far
 
@@ -103,7 +103,7 @@ Manual portal and Chrome extension dogfood smoke are documented but still pendin
 
 ## Known Gaps
 
-- Manual portal dogfood smoke is pending.
+- Manual portal dogfood found non-blocking guide editor and local dev URL friction that should feed the next hardening phases.
 - Manual Chrome extension dogfood smoke is pending.
 - No real product screenshots are committed yet.
 - HTML capture/replay is deferred.
@@ -120,8 +120,8 @@ Manual portal and Chrome extension dogfood smoke are documented but still pendin
 
 The next phase should finish public alpha readiness:
 
-1. Complete `069` OSS launch polish.
-2. Run and record manual portal smoke.
-3. Run and record manual Chrome extension smoke.
-4. Add real alpha screenshots after dogfooding.
-5. Continue usability hardening for guide editing, interactive demo editing, and extension capture reliability.
+1. Run and record manual Chrome extension smoke.
+2. Feed the manual portal dogfood findings into guide/editor hardening.
+3. Add real alpha screenshots after dogfooding.
+4. Continue usability hardening for guide editing, interactive demo editing, and extension capture reliability.
+5. Keep public docs synchronized with recorded smoke evidence.

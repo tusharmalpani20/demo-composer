@@ -1,6 +1,6 @@
 # Roadmap
 
-Date: 2026-06-16
+Date: 2026-06-22
 
 Demo Composer is alpha software. This roadmap describes product direction, not a guarantee of dates.
 
@@ -21,7 +21,7 @@ Demo Composer is alpha software. This roadmap describes product direction, not a
 
 ## V1 Hardening
 
-- Run and record manual portal dogfood smoke.
+- Address manual portal dogfood findings from the 2026-06-22 smoke run.
 - Run and record manual Chrome extension dogfood smoke.
 - Add real alpha screenshots to docs after dogfooding.
 - Improve guide editor ergonomics for repeated authoring.

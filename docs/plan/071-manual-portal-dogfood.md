@@ -63,7 +63,7 @@ Known current status:
 
 - Phase 1 completed and recorded green baseline verification in `docs/plan/070-verification-and-docs-sync.md`
 - automated DB-backed smoke has fresh passing evidence from Phase 1
-- manual portal smoke is pending
+- manual portal smoke completed with non-blocking limitations in this plan
 - manual Chrome extension smoke is pending
 - no real product screenshots are committed yet
 
@@ -75,7 +75,7 @@ Included:
 - use only safe synthetic screenshots and data
 - exercise setup, auth, projects, manual capture, guide authoring, guide publishing, interactive demo authoring, demo publishing, org invites, health, and readiness
 - record pass/fail result in `docs/v1-dogfood-smoke-suite.md`
-- create follow-up child plans for blockers or important friction
+- record explicit follow-up inputs for blockers or important friction
 - update status docs only with evidence actually observed
 
 ## Explicit Non-Goals
