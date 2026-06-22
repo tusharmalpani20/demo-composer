@@ -23,7 +23,7 @@ Workflow captures often contain internal product screens, operational processes,
 
 - first-run setup, auth, projects, and org membership basics
 - screenshot-first capture sessions
-- Chrome extension capture with automatic click capture MVP
+- Chrome extension capture with automatic click capture MVP in code/tests; manual dogfood currently blocks real-browser extension capture
 - manual portal capture and screenshot upload
 - guide generation, editing, preview, publishing, password access, embeds, Markdown export, and HTML ZIP export
 - interactive demo generation, editing, hotspots, publishing, password access, embeds, and public viewer
@@ -34,6 +34,7 @@ Workflow captures often contain internal product screens, operational processes,
 ## Known Limits
 
 - alpha quality
+- manual Chrome extension dogfood is blocked by capture and split-origin portal link failures
 - no HTML replay
 - no analytics or lead capture
 - no custom branding

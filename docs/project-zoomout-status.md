@@ -95,10 +95,10 @@ Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-2
 - Capture session creation with active-tab metadata.
 - Active capture restoration.
 - Visible-tab screenshot upload.
-- Automatic click capture MVP that records screenshot-backed click events.
-- Manual screenshot fallback.
-- Pause/resume and finish behavior.
-- Finish-to-portal flow that opens the completed capture session.
+- Automatic click capture MVP exists in code/tests, but manual dogfood currently failed to produce browser events/files.
+- Manual screenshot fallback exists in code/tests, but manual dogfood currently failed to upload or create an event.
+- Pause/resume and finish behavior; finish completed the backend session in dogfood.
+- Finish-to-portal flow exists, but split API/web dogfood opened API-origin URLs instead of the web portal.
 - Focused popup/content/background tests.
 
 ## Known Gaps

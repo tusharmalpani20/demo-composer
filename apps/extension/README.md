@@ -6,6 +6,8 @@ Chrome extension popup for connecting a browser to a hosted or self-hosted Demo 
 
 This extension is currently an alpha automatic click capture tool with manual screenshot capture as a fallback.
 
+Manual dogfood on 2026-06-22 showed that these flows exist in code/tests but are not yet reliable in a real browser run: automatic clicks produced no events/files, manual fallback produced no upload/event, and portal links opened the API origin in a split API/web local setup. Treat the workflow below as the intended extension path until the Phase 7 reliability work is complete.
+
 The current workflow is:
 
 ```text
@@ -20,7 +22,7 @@ start capture
 
 ## Current Scope
 
-This app currently supports:
+This app currently supports in code and focused tests:
 
 - configuring a Demo Composer instance URL
 - signing in against that instance

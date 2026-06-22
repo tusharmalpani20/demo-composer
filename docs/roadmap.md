@@ -11,7 +11,7 @@ Demo Composer is alpha software. This roadmap describes product direction, not a
 - Projects and project workspaces.
 - Screenshot-first capture sessions.
 - Manual portal screenshot upload and capture event ordering/editing.
-- Chrome extension capture with instance URL setup, login, project selection, automatic click capture MVP, manual screenshot fallback, and finish-to-portal flow.
+- Chrome extension capture with instance URL setup, login, project selection, automatic click capture MVP, manual screenshot fallback, and finish-to-portal flow in code/tests; manual dogfood found capture and split-origin link failures.
 - Scribe-style guide generation from capture sessions.
 - Guide editor, preview, screenshot management, rectangle annotations, Markdown export, HTML ZIP export, publish controls, password access, and embeds.
 - Storylane-style interactive demo generation from capture sessions.
