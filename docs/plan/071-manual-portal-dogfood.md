@@ -14,7 +14,7 @@ This is Phase 2 of the alpha hardening master plan.
 
 ## Goal
 
-Run the full portal workflow manually from a clean self-host-style setup, record the result, and turn real browser friction into follow-up plans.
+Run the full portal workflow manually from a clean self-host-style setup, record the result, and turn real browser friction into follow-up inputs for the next hardening plans.
 
 Target outcome:
 
@@ -29,7 +29,7 @@ operator starts a clean local/self-host-style instance
   -> records exact pass/fail evidence
 ```
 
-This plan is evidence-first. Do not hide failures by fixing them in the same broad pass unless the failure is tiny, isolated, and necessary to complete the smoke. Create follow-up plans for meaningful issues.
+This plan is evidence-first. Do not hide failures by fixing them in the same broad pass unless the failure is tiny, isolated, and necessary to complete the smoke. Record meaningful issues as follow-up inputs or child plans.
 
 ## Dependencies
 
@@ -329,6 +329,15 @@ Observed limitations and follow-ups:
 - Several portal buttons/links were more reliable through keyboard activation than pointer click in automation, including first-run submit, settings save/archive, event edit, preview link, and workspace/settings navigation. This needs targeted UI event/accessibility investigation before treating it as user-facing breakage.
 - Invite copy produced a link with `http://localhost/invites/<token>` while the Vite web portal was on `http://localhost:3000`; the equivalent `http://localhost:3000/invites/<token>` route worked. Local dev URL construction should be clarified or made portal-origin aware.
 
+## Missed Work To Carry Forward
+
+Do not reopen this completed dogfood phase for these items. Carry them into the next relevant plans:
+
+- Phase 5 guide hardening should start with the inert add-block controls and missing guide block reorder coverage.
+- Portal/editor hardening should verify whether pointer-click activation issues reproduce outside `agent-browser`; if they reproduce, add focused accessibility/event tests.
+- Phase 8 self-host hardening should clarify browser-facing public URL generation for split API/web development setups.
+- Phase 3 extension dogfood remains pending and should not inherit portal-only assumptions; it needs its own browser extension evidence.
+
 ## Result Recording
 
 Update:
@@ -430,7 +439,7 @@ Recommended:
 Record manual portal dogfood smoke
 ```
 
-If follow-up plans are created:
+If separate follow-up plans are created later:
 
 ```text
 Record portal dogfood follow-up plans

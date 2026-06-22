@@ -104,7 +104,7 @@ As of this master plan:
 | Phase | Name | Primary Outcome |
 | --- | --- | --- |
 | 1 | Verification And Docs Sync | All non-DB, DB, smoke, build, type, lint, and docs status checks are truthful and green. |
-| 2 | Manual Portal Dogfood | Manual portal workflow is run, recorded, and converted into follow-up issues/plans. |
+| 2 | Manual Portal Dogfood | Manual portal workflow is run, recorded, and converted into explicit follow-up inputs. |
 | 3 | Manual Extension Dogfood | Unpacked Chrome extension workflow is run, recorded, and converted into reliability follow-ups. |
 | 4 | Alpha Visual Evidence | README/status docs get real product screenshots and smoke evidence without fake mockups. |
 | 5 | Guide Editor V1 Hardening | Guide authoring becomes smoother for repeated real usage. |
@@ -310,11 +310,12 @@ docs/plan/071-manual-portal-dogfood.md
 docs/v1-dogfood-smoke-suite.md
 ```
 
-Follow-up inputs:
+Missed work to carry forward:
 
 - Guide structural add-block controls were visible but inert during the dogfood run; carry this into Phase 5 guide editor hardening.
 - Several portal controls were more reliable with keyboard activation than pointer click in automation; investigate during portal/editor hardening.
 - Invite URL construction in split API/web local development omitted the Vite port; clarify or make it portal-origin aware.
+- Manual extension dogfood remains pending and must be handled by Phase 3 with separate extension evidence.
 
 ### Acceptance Criteria
 
