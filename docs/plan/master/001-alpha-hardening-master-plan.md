@@ -481,7 +481,7 @@ Suggested child plan:
 docs/plan/074-guide-editor-v1-hardening.md
 ```
 
-Status: in progress; first structural block authoring slice completed by `docs/plan/074-guide-editor-v1-hardening.md`.
+Status: in progress; first add-block authoring slice completed by `docs/plan/074-guide-editor-v1-hardening.md`.
 
 ### Progress Update
 
@@ -489,8 +489,8 @@ Updated on 2026-06-23 local time.
 
 Completed first slice:
 
-- guide editor dogfood findings were narrowed to the observed structural add-block friction
-- focused tests now cover header, paragraph, tip, alert, and divider structural insertion paths
+- guide editor dogfood findings were narrowed to the observed add-block friction
+- focused tests now cover step, header, paragraph, tip, alert, and divider insertion paths
 - header insertion is covered together with post-insert block reordering
 - non-step block actions now use type-specific labels for clearer movement and delete controls
 - no backend guide contract changes were required

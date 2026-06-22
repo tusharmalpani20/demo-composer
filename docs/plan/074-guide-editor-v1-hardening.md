@@ -69,7 +69,7 @@ Guide capabilities currently include:
 Manual portal dogfood on 2026-06-22 found one guide-specific blocker-level limitation:
 
 - Generated guide editing, preview, screenshot viewer, annotation, export, publish, public, embed, and password-gate flows worked.
-- Structural add-block controls for header, paragraph, tip, alert, and divider were visible but did not create blocks or API requests in the browser run.
+- Add-block controls for header, paragraph, tip, alert, and divider were visible but did not create blocks or API requests in the browser run.
 - Guide block reordering was not covered because only generated step blocks existed after add-block controls failed.
 - Some guide editor controls were more reliable through keyboard activation than pointer click in automation; investigate only where it reproduces outside the automation tool.
 
@@ -104,7 +104,7 @@ apps/server/src/modules/guide/guide.routes.test.ts
 Included:
 
 - audit guide editor dogfood notes
-- fix or explicitly bound structural add-block controls for header, paragraph, tip, alert, and divider
+- fix or explicitly bound add-block controls for step, header, paragraph, tip, alert, and divider
 - verify block insertion creates API calls and visible blocks
 - verify block ordering after insertion remains understandable
 - improve focused UI states only where needed for add-block reliability
@@ -193,7 +193,7 @@ Primary issue:
 Required work:
 
 - reproduce current behavior in tests before changing product code
-- restore or verify add-block submission for header, paragraph, tip, alert, and divider blocks
+- restore or verify add-block submission for step, header, paragraph, tip, alert, and divider blocks
 - add tests that fail if visible add-block controls do not create blocks
 - verify inserted blocks appear in the editor in the expected order
 - verify guide block reordering can operate after a structural block exists
@@ -289,7 +289,7 @@ Possible work:
 
 Completed slice:
 
-- Structural block authoring coverage now includes header, paragraph, tip, alert, and divider insertion paths.
+- Add-block authoring coverage now includes step, header, paragraph, tip, alert, and divider insertion paths.
 - Header insertion is covered together with post-insert guide block ordering.
 - Non-step guide block actions now use type-specific labels such as `Move header 2 down` and `Delete header 3`, so inserted structural blocks are easier to identify while reordering or deleting.
 - No backend contract changes were required.
@@ -306,8 +306,8 @@ rtk git diff --check
 
 Results:
 
-- `GuideEditorPage` focused suite passed with 35 tests.
-- Full web suite passed with 291 tests.
+- `GuideEditorPage` focused suite passed with 36 tests after the recheck coverage addition.
+- Full web suite passed with 292 tests.
 - Web typecheck passed.
 - Whitespace check passed.
 
