@@ -848,6 +848,77 @@ describe("GuideEditorPage", () => {
     expect(await screen.findByLabelText("Alert body 2")).toHaveValue("Add an important note.");
   });
 
+  it("adds step blocks from the visible add-block controls", async () => {
+    const createBlock = vi.fn(async (_projectId, _guideId, data) => ({
+      guide_blocks: [
+        {
+          ...guideDetail.guide_blocks[1]!,
+          block_index: 1,
+        },
+        {
+          id: "block_step_new",
+          organization_id: "organization_1",
+          project_id: "project_1",
+          guide_id: "guide_1",
+          source_capture_session_id: null,
+          source_capture_event_id: null,
+          source_capture_asset_id: null,
+          selected_capture_asset_id: null,
+          screenshot_hidden: false,
+          display_capture_asset_id: null,
+          block_type: "step" as const,
+          content: null,
+          block_index: 2,
+          created_by_id: "org_user_1",
+          updated_by_id: "org_user_1",
+          version: 1,
+          created_at: "2026-06-05T10:03:00.000Z",
+          updated_at: "2026-06-05T10:03:00.000Z",
+          step: {
+            id: "step_new",
+            organization_id: "organization_1",
+            project_id: "project_1",
+            guide_id: "guide_1",
+            guide_block_id: "block_step_new",
+            source_capture_session_id: null,
+            source_capture_event_id: null,
+            source_capture_asset_id: null,
+            title: data.step?.title ?? "",
+            body: data.step?.body ?? null,
+            created_by_id: "org_user_1",
+            updated_by_id: "org_user_1",
+            version: 1,
+            created_at: "2026-06-05T10:03:00.000Z",
+            updated_at: "2026-06-05T10:03:00.000Z",
+          },
+        },
+        {
+          ...guideDetail.guide_blocks[0]!,
+          block_index: 3,
+        },
+      ],
+    }));
+
+    renderPage({ createBlock });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Add step after block 1" }));
+
+    await waitFor(() => expect(createBlock).toHaveBeenCalledWith("project_1", "guide_1", {
+      block_type: "step",
+      position: {
+        placement: "after",
+        guide_block_id: "block_1",
+      },
+      step: {
+        title: "New step",
+        body: null,
+      },
+    }));
+    expect(await screen.findByLabelText("Step title 2")).toHaveValue("New step");
+    expect(screen.getByRole("button", { name: "Move step 2 down" })).toBeInTheDocument();
+  });
+
   it("adds and edits paragraph blocks and adds divider blocks from the editor", async () => {
     const createBlock = vi.fn(async (_projectId, _guideId, data) => ({
       guide_blocks: [
