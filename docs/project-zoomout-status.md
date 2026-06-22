@@ -41,7 +41,7 @@ The automated DB-backed smoke test for that workflow lives in `apps/server/src/s
 rtk pnpm --filter server test:smoke
 ```
 
-Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-22 and is recorded in `docs/v1-dogfood-smoke-suite.md`. Chrome extension dogfood smoke is still pending.
+Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-22 and is recorded in `docs/v1-dogfood-smoke-suite.md`. Chrome extension dogfood smoke ran on 2026-06-22 and is currently blocked by capture failures.
 
 ## Built So Far
 
@@ -104,7 +104,7 @@ Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-2
 ## Known Gaps
 
 - Manual portal dogfood found non-blocking guide editor and local dev URL friction that should feed the next hardening phases.
-- Manual Chrome extension dogfood smoke is pending.
+- Manual Chrome extension dogfood smoke is blocked by automatic capture and manual fallback failures.
 - No real product screenshots are committed yet.
 - HTML capture/replay is deferred.
 - AI/BYO-key authoring is deferred.
@@ -120,8 +120,8 @@ Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-2
 
 The next phase should finish public alpha readiness:
 
-1. Run and record manual Chrome extension smoke.
+1. Fix or bound the extension capture failures from manual dogfood.
 2. Feed the manual portal dogfood findings into guide/editor hardening.
-3. Add real alpha screenshots after dogfooding.
+3. Add real alpha screenshots after dogfooding has trustworthy capture screens.
 4. Continue usability hardening for guide editing, interactive demo editing, and extension capture reliability.
 5. Keep public docs synchronized with recorded smoke evidence.

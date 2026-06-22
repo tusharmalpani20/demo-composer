@@ -59,6 +59,16 @@ Current extension capabilities:
 - pause/resume
 - finish-to-portal
 
+Manual extension dogfood on 2026-06-22 produced these Phase 7 inputs:
+
+- Extension setup, API sign-in, project listing, project selection persistence, start capture, pause/resume state, backend finish, and local active capture cleanup worked.
+- Automatic click capture created an extension-sourced capture session but produced zero click events and zero screenshot files on a safe HTTP page.
+- Manual screenshot fallback produced no upload/event request, no popup error, no file, and no capture event.
+- `Open in portal` and `Finish capture` opened API-origin project URLs when API and web ran on different local ports; those URLs returned 404 JSON instead of the web portal.
+- Guide/demo generation from extension events was blocked because no events or assets were captured.
+
+Phase 7 should first reproduce these failures in a headed/manual browser session to separate automation limitations from product defects, then pick the smallest reliability slice.
+
 Likely files:
 
 ```text
@@ -180,6 +190,7 @@ Possible work:
 Problem:
 
 - pages where content scripts or capture APIs cannot run need clearer user recovery
+- the 2026-06-22 dogfood run surfaced silent capture/fallback failure with no popup error
 
 Possible work:
 
@@ -193,6 +204,7 @@ Possible work:
 Problem:
 
 - screenshot upload or event creation can fail after a user clicks
+- manual screenshot fallback can fail without creating any upload/event request or user-facing error
 
 Possible work:
 
@@ -214,6 +226,19 @@ Possible work:
 - skip capture with clear reason
 - keep privacy posture explicit
 
+### Split API/Web Portal URLs
+
+Problem:
+
+- extension instance URL is the API origin, but browser-facing portal routes may need a different web origin in local/self-host split deployments
+
+Possible work:
+
+- add a separate portal/base web URL setting or derive it from a server-provided public web origin
+- keep API calls on the API instance URL
+- open portal routes on the browser-facing web origin
+- add tests for `Open active capture` and `Finish capture` URL construction
+
 ## Implementation Plan
 
 ### 1. Review Evidence
@@ -222,6 +247,8 @@ Possible work:
 - [ ] Extract extension-specific failures and limitations.
 - [ ] Read `apps/extension/README.md`.
 - [ ] Read current plan `058`.
+- [ ] Reproduce automatic capture and manual fallback in a headed/manual browser if possible.
+- [ ] Reproduce split API/web portal opening behavior.
 - [ ] Pick one reliability slice.
 
 ### 2. Refresh Plan 058

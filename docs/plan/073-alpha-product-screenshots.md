@@ -202,6 +202,11 @@ Confirm:
 
 If manual dogfood has not run, do not proceed with screenshots. Return to Phase 2 or Phase 3.
 
+Current note after 2026-06-22 dogfood:
+
+- Portal dogfood has acceptable non-blocking limitations for visual evidence.
+- Extension dogfood is blocked by capture failures, so do not use extension capture screens as proof until Phase 7 fixes or explicitly bounds the failure.
+
 ### 2. Prepare Synthetic Scenario
 
 Use a clean or disposable environment.
