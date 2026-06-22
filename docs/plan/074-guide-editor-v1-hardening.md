@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: In progress.
+Status: In progress; first focused implementation slice completed.
 
 ## Parent Master Plan
 
@@ -285,43 +285,77 @@ Possible work:
 - better public link action state
 - stronger tests around exported content
 
+## Implementation Result: 2026-06-23
+
+Completed slice:
+
+- Structural block authoring coverage now includes header, paragraph, tip, alert, and divider insertion paths.
+- Header insertion is covered together with post-insert guide block ordering.
+- Non-step guide block actions now use type-specific labels such as `Move header 2 down` and `Delete header 3`, so inserted structural blocks are easier to identify while reordering or deleting.
+- No backend contract changes were required.
+- README guide editor screenshots do not need refresh from this slice because the visible editor layout did not materially change.
+
+Verification run:
+
+```bash
+rtk pnpm --filter web test -- GuideEditorPage
+rtk pnpm --filter web test
+rtk pnpm --filter web check-types
+rtk git diff --check
+```
+
+Results:
+
+- `GuideEditorPage` focused suite passed with 35 tests.
+- Full web suite passed with 291 tests.
+- Web typecheck passed.
+- Whitespace check passed.
+
+Remaining work to keep as follow-up candidates:
+
+- Manual browser smoke for the affected add-block workflow against a running app.
+- Screenshot picker clarity and upload recovery.
+- Annotation editing affordances.
+- Publish stale-state clarity.
+- Markdown and HTML ZIP export error messaging.
+
 ## Implementation Plan
 
 ### 1. Triage Dogfood Findings
 
-- [ ] Read portal dogfood result log.
-- [ ] Extract guide-specific issues.
-- [ ] Group issues by editing, blocks, screenshots, annotations, preview/publish/export.
+- [x] Read portal dogfood result log.
+- [x] Extract guide-specific issues.
+- [x] Group issues by editing, blocks, screenshots, annotations, preview/publish/export.
 - [x] Pick a small coherent slice: structural add-block reliability and post-insert ordering.
 - [ ] Create separate follow-up plans for unrelated issues.
 
 ### 2. Audit Current Tests
 
-- [ ] Read guide editor tests.
-- [ ] Identify existing coverage for the selected issue.
-- [ ] Add failing tests before implementation when practical.
-- [ ] Avoid asserting private implementation details.
+- [x] Read guide editor tests.
+- [x] Identify existing coverage for the selected issue.
+- [x] Add failing tests before implementation when practical.
+- [x] Avoid asserting private implementation details.
 
 ### 3. Implement Focused Fixes
 
-- [ ] Make minimal product changes for structural add-block reliability.
-- [ ] Keep existing API contracts unless server behavior must change.
-- [ ] Keep source capture immutable.
-- [ ] Keep guide blocks and guide steps first-class.
-- [ ] Preserve public snapshot safety.
+- [x] Make minimal product changes for structural add-block reliability.
+- [x] Keep existing API contracts unless server behavior must change.
+- [x] Keep source capture immutable.
+- [x] Keep guide blocks and guide steps first-class.
+- [x] Preserve public snapshot safety.
 
 ### 4. Verify Guide Workflows
 
-- [ ] Run focused web guide tests.
-- [ ] Run focused server guide tests if backend changed.
+- [x] Run focused web guide tests.
+- [x] Run focused server guide tests if backend changed.
 - [ ] Manually smoke the affected guide editor workflow.
-- [ ] Confirm publish/export still work for affected guide.
+- [x] Confirm publish/export still work for affected guide.
 
 ### 5. Update Docs And Follow-Ups
 
-- [ ] Update plan implementation notes.
+- [x] Update plan implementation notes.
 - [ ] Update README/status docs only if visible behavior changed.
-- [ ] Note whether current README guide editor screenshot needs later refresh.
+- [x] Note whether current README guide editor screenshot needs later refresh.
 - [ ] Create follow-up plans for remaining guide editor issues.
 - [ ] Update master plan completion table if Phase 5 is complete.
 

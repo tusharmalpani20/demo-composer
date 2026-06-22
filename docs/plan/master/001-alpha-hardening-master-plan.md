@@ -481,6 +481,28 @@ Suggested child plan:
 docs/plan/074-guide-editor-v1-hardening.md
 ```
 
+Status: in progress; first structural block authoring slice completed by `docs/plan/074-guide-editor-v1-hardening.md`.
+
+### Progress Update
+
+Updated on 2026-06-23 local time.
+
+Completed first slice:
+
+- guide editor dogfood findings were narrowed to the observed structural add-block friction
+- focused tests now cover header, paragraph, tip, alert, and divider structural insertion paths
+- header insertion is covered together with post-insert block reordering
+- non-step block actions now use type-specific labels for clearer movement and delete controls
+- no backend guide contract changes were required
+
+Remaining guide editor candidates:
+
+- manual browser smoke for the affected add-block workflow
+- screenshot picker clarity and upload recovery
+- annotation editing affordances
+- publish stale-state clarity
+- export error messaging
+
 ### Goal
 
 Improve the guide editor so repeated real authoring feels reliable and efficient.
@@ -506,17 +528,17 @@ Improve the guide editor so repeated real authoring feels reliable and efficient
 
 ### Todos
 
-- [ ] Review guide editor dogfood notes.
-- [ ] Prioritize top 3-5 guide authoring friction points.
+- [x] Review guide editor dogfood notes.
+- [x] Prioritize top 3-5 guide authoring friction points.
 - [ ] Create focused implementation subplans if needed.
 - [ ] Improve save/error/retry behavior for guide metadata and step edits.
 - [ ] Improve screenshot picker copy, state, and failure handling.
 - [ ] Improve annotation controls or visual positioning if dogfood shows confusion.
 - [ ] Confirm publish panel clearly shows stale draft vs published snapshot.
 - [ ] Confirm Markdown and HTML ZIP export failures produce actionable messages.
-- [ ] Add or update focused web tests.
-- [ ] Add backend tests only when behavior changes server contracts.
-- [ ] Run relevant tests and full verification as appropriate.
+- [x] Add or update focused web tests.
+- [x] Add backend tests only when behavior changes server contracts.
+- [x] Run relevant tests and full verification as appropriate.
 
 ### Acceptance Criteria
 
@@ -728,7 +750,7 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 2. Manual Portal Dogfood | Completed with limitations | `docs/plan/071-manual-portal-dogfood.md` |
 | 3. Manual Extension Dogfood | Completed with blocking failures | `docs/plan/072-manual-extension-dogfood.md` |
 | 4. Alpha Visual Evidence | Completed with portal-only visual evidence | `docs/plan/073-alpha-product-screenshots.md` |
-| 5. Guide Editor V1 Hardening | Planned | TBD |
+| 5. Guide Editor V1 Hardening | In progress; first slice completed | `docs/plan/074-guide-editor-v1-hardening.md` |
 | 6. Interactive Demo V1 Hardening | Planned | TBD |
 | 7. Extension Capture Reliability V2 | Planned | TBD |
 | 8. Self-Host Production Hardening V2 | Planned | TBD |
