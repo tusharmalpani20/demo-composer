@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: Planned.
+Status: In progress.
 
 ## Parent Master Plan
 
@@ -36,12 +36,14 @@ Should start after:
 
 ```text
 docs/plan/071-manual-portal-dogfood.md
+docs/plan/073-alpha-product-screenshots.md
 ```
 
 Reason:
 
 - guide hardening priorities should come from observed authoring friction
 - this phase should fix real issues, not redesign the editor without evidence
+- Phase 4 added portal screenshots, so any guide editor UI change should note whether screenshot refresh is needed later
 
 ## Current Baseline
 
@@ -71,6 +73,12 @@ Manual portal dogfood on 2026-06-22 found one guide-specific blocker-level limit
 - Guide block reordering was not covered because only generated step blocks existed after add-block controls failed.
 - Some guide editor controls were more reliable through keyboard activation than pointer click in automation; investigate only where it reproduces outside the automation tool.
 
+Carry-over from completed Phase 4:
+
+- README portal screenshots now include the guide editor; if this phase changes guide editor visuals materially, note that screenshots may need a later refresh.
+- Keep `apps/docs` as starter content in this phase. A real docs-site or gallery belongs in a separate follow-up plan.
+- Do not add extension visual evidence here; that remains blocked on Phase 7 extension capture reliability.
+
 Likely files:
 
 ```text
@@ -96,13 +104,10 @@ apps/server/src/modules/guide/guide.routes.test.ts
 Included:
 
 - audit guide editor dogfood notes
-- identify top guide authoring friction points
-- improve focused UI states and workflows
-- improve save/error/retry behavior
-- improve screenshot picker and upload feedback
-- improve annotation usability if dogfood shows issues
-- improve publish stale-state clarity
-- improve export failure clarity
+- fix or explicitly bound structural add-block controls for header, paragraph, tip, alert, and divider
+- verify block insertion creates API calls and visible blocks
+- verify block ordering after insertion remains understandable
+- improve focused UI states only where needed for add-block reliability
 - add focused tests
 - update docs with behavior changes
 
@@ -117,6 +122,8 @@ Included:
 - PDF/DOCX/Confluence/Notion exports
 - analytics
 - custom branding
+- docs-site/gallery implementation
+- screenshot refresh unless the guide editor visual change invalidates current README screenshots
 
 ## Discovery Checklist
 
@@ -177,7 +184,33 @@ Do not touch server guide contracts unless the selected dogfood issue requires a
 
 Prioritize from dogfood evidence.
 
-### Editing Flow
+### Selected Slice: Block Authoring
+
+Primary issue:
+
+- add-block controls can appear inert even though they are visible
+
+Required work:
+
+- reproduce current behavior in tests before changing product code
+- restore or verify add-block submission for header, paragraph, tip, alert, and divider blocks
+- add tests that fail if visible add-block controls do not create blocks
+- verify inserted blocks appear in the editor in the expected order
+- verify guide block reordering can operate after a structural block exists
+- keep generated step editing, screenshot rendering, annotations, publish, preview, and export behavior stable
+
+Out of this slice unless discovered as directly blocking:
+
+- screenshot picker redesign
+- annotation tool redesign
+- publish panel redesign
+- export pipeline changes
+
+### Deferred Candidate Areas
+
+These remain useful but should not be mixed into the selected implementation unless directly required by the add-block fix.
+
+#### Editing Flow
 
 Potential issues:
 
@@ -186,14 +219,6 @@ Potential issues:
 - errors are too generic
 - controls allow conflicting actions while busy
 - archived/read-only guide behavior is unclear
-
-Possible work:
-
-- clearer per-step save status
-- better disable states
-- more specific error messages
-- retry affordances
-- clearer read-only banners
 
 ### Block Authoring
 
@@ -207,8 +232,6 @@ Potential issues:
 
 Possible work:
 
-- restore or verify add-block submission for header, paragraph, tip, alert, and divider blocks
-- add tests that fail if visible add-block controls do not create blocks
 - improve block labels
 - improve reorder feedback
 - add focused confirmation only if needed
@@ -269,7 +292,7 @@ Possible work:
 - [ ] Read portal dogfood result log.
 - [ ] Extract guide-specific issues.
 - [ ] Group issues by editing, blocks, screenshots, annotations, preview/publish/export.
-- [ ] Pick a small coherent slice.
+- [x] Pick a small coherent slice: structural add-block reliability and post-insert ordering.
 - [ ] Create separate follow-up plans for unrelated issues.
 
 ### 2. Audit Current Tests
@@ -281,7 +304,7 @@ Possible work:
 
 ### 3. Implement Focused Fixes
 
-- [ ] Make minimal product changes for selected issue.
+- [ ] Make minimal product changes for structural add-block reliability.
 - [ ] Keep existing API contracts unless server behavior must change.
 - [ ] Keep source capture immutable.
 - [ ] Keep guide blocks and guide steps first-class.
@@ -298,6 +321,7 @@ Possible work:
 
 - [ ] Update plan implementation notes.
 - [ ] Update README/status docs only if visible behavior changed.
+- [ ] Note whether current README guide editor screenshot needs later refresh.
 - [ ] Create follow-up plans for remaining guide editor issues.
 - [ ] Update master plan completion table if Phase 5 is complete.
 
