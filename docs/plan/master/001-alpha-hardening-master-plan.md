@@ -559,6 +559,28 @@ Suggested child plan:
 docs/plan/075-interactive-demo-v1-hardening.md
 ```
 
+Status: in progress; first public viewer fallback slice implemented by `docs/plan/075-interactive-demo-v1-hardening.md`.
+
+### Progress Update
+
+Updated on 2026-06-23 local time.
+
+Completed first slice:
+
+- demo dogfood findings were narrowed to public viewer navigation resilience rather than broad redesign
+- public viewer now falls back to the next linear scene when a click hotspot references a missing or stale target scene
+- focused tests cover the stale target-scene fallback
+- no backend snapshot shape or API contract changes were required
+
+Carry-forward demo candidates:
+
+- manual browser smoke for target-scene fallback
+- scene list/reorder feedback improvements
+- hotspot editor affordance improvements
+- narrow viewport and embed visual QA
+- portal pointer-click/accessibility investigation from Phase 2 dogfood
+- extension-generated demo quality after Phase 7 restores capture evidence
+
 ### Goal
 
 Improve interactive demo authoring and viewing so screenshot-first demos are credible for alpha users.
@@ -583,17 +605,17 @@ Improve interactive demo authoring and viewing so screenshot-first demos are cre
 
 ### Todos
 
-- [ ] Review demo editor and public viewer dogfood notes.
-- [ ] Prioritize top 3-5 demo authoring/viewing issues.
-- [ ] Verify hotspot coordinates remain normalized and safe.
+- [x] Review demo editor and public viewer dogfood notes.
+- [x] Prioritize top 3-5 demo authoring/viewing issues.
+- [x] Verify hotspot coordinates remain normalized and safe.
 - [ ] Improve hotspot creation/editing affordances.
 - [ ] Improve target-scene selection if current flow is unclear.
 - [ ] Improve scene list/reorder feedback.
-- [ ] Improve public viewer next/back/click behavior if needed.
+- [x] Improve public viewer next/back/click behavior if needed.
 - [ ] Test embed mode for guide/demo parity.
-- [ ] Add focused web tests around updated interactions.
-- [ ] Add backend tests if scene/hotspot validation changes.
-- [ ] Run relevant verification.
+- [x] Add focused web tests around updated interactions.
+- [x] Add backend tests if scene/hotspot validation changes.
+- [x] Run relevant verification.
 
 ### Acceptance Criteria
 
@@ -754,6 +776,6 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 3. Manual Extension Dogfood | Completed with blocking failures | `docs/plan/072-manual-extension-dogfood.md` |
 | 4. Alpha Visual Evidence | Completed with portal-only visual evidence | `docs/plan/073-alpha-product-screenshots.md` |
 | 5. Guide Editor V1 Hardening | Completed with follow-up notes | `docs/plan/074-guide-editor-v1-hardening.md` |
-| 6. Interactive Demo V1 Hardening | Planned | TBD |
+| 6. Interactive Demo V1 Hardening | In progress; first slice completed | `docs/plan/075-interactive-demo-v1-hardening.md` |
 | 7. Extension Capture Reliability V2 | Planned | TBD |
 | 8. Self-Host Production Hardening V2 | Planned | TBD |

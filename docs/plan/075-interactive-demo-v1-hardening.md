@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: In progress.
+Status: In progress; selected public viewer fallback slice implemented.
 
 ## Parent Master Plan
 
@@ -245,6 +245,45 @@ Possible work:
 - embed-specific spacing fixes
 - viewport-responsive screenshot framing
 
+## Implementation Result: 2026-06-23
+
+Completed slice:
+
+- Public demo viewer now falls back to the next linear scene when a click hotspot references a missing or stale `target_scene_id`.
+- Existing explicit target-scene navigation remains unchanged when the target scene exists.
+- Info hotspots still open the information panel instead of navigating.
+- Embed mode remains covered by the public viewer suite.
+- No backend snapshot shape or API contract changes were required.
+
+Verification run:
+
+```bash
+rtk pnpm --filter web test -- PublicInteractiveDemoViewerPage -t "falls back to the next scene"
+rtk pnpm --filter web test -- PublicInteractiveDemoViewerPage
+rtk pnpm --filter web test -- InteractiveDemoEditorPage PublicInteractiveDemoViewerPage
+rtk pnpm --filter web test
+rtk pnpm --filter web check-types
+rtk git diff --check
+```
+
+Results:
+
+- Targeted stale-target test passed.
+- Public viewer suite passed with 3 tests.
+- Focused interactive demo editor/viewer suites passed with 11 tests.
+- Full web suite passed with 293 tests.
+- Web typecheck passed.
+- Whitespace check passed.
+
+Missed or deferred work to keep as follow-up candidates:
+
+- Manual browser smoke for target-scene fallback against a running app.
+- Scene list/reorder feedback improvements.
+- Hotspot editor affordance improvements.
+- Narrow viewport and embed visual QA.
+- Portal pointer-click/accessibility investigation from Phase 2 dogfood.
+- Extension-generated demo quality after Phase 7 restores capture evidence.
+
 ## Implementation Plan
 
 ### 1. Triage Dogfood Findings
@@ -258,24 +297,24 @@ Possible work:
 ### 2. Add Or Update Tests
 
 - [ ] Add web tests for changed editor behavior.
-- [ ] Add public viewer tests for stale target-scene fallback.
-- [ ] Add API client tests if request/response handling changes.
-- [ ] Add server tests only if validation or snapshot behavior changes.
+- [x] Add public viewer tests for stale target-scene fallback.
+- [x] Add API client tests if request/response handling changes. Not needed; no API change.
+- [x] Add server tests only if validation or snapshot behavior changes. Not needed; no server change.
 
 ### 3. Implement Focused Fix
 
-- [ ] Keep demo scenes and hotspots first-class.
-- [ ] Keep screenshot-first model.
-- [ ] Preserve hotspot coordinate validation.
-- [ ] Preserve public snapshot safety.
-- [ ] Avoid changing guide behavior.
+- [x] Keep demo scenes and hotspots first-class.
+- [x] Keep screenshot-first model.
+- [x] Preserve hotspot coordinate validation.
+- [x] Preserve public snapshot safety.
+- [x] Avoid changing guide behavior.
 
 ### 4. Manual Verification
 
 - [ ] Create demo from safe capture.
 - [ ] Edit scene.
 - [ ] Create hotspot.
-- [ ] Test target-scene behavior.
+- [ ] Test target-scene behavior. Deferred to next browser dogfood pass.
 - [ ] Publish demo.
 - [ ] Open public viewer.
 - [ ] Open embed route.
@@ -283,8 +322,8 @@ Possible work:
 
 ### 5. Docs And Tracking
 
-- [ ] Add implementation notes to this plan.
-- [ ] Update status docs only if visible behavior changed.
+- [x] Add implementation notes to this plan.
+- [x] Update status docs only if visible behavior changed. Not needed; no visible layout change.
 - [ ] Update master plan completion table if Phase 6 is complete.
 
 ## Testing Plan
