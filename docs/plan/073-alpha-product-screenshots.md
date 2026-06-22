@@ -200,7 +200,6 @@ alpha-guide-editor.png
 alpha-public-guide-reader.png
 alpha-demo-editor.png
 alpha-public-demo-viewer.png
-alpha-extension-popup.png
 ```
 
 If using subdirectories:
@@ -252,7 +251,7 @@ docs/v1-dogfood-smoke-suite.md
 Confirm:
 
 - manual portal smoke has passed or has acceptable limitations
-- manual extension smoke has passed or has acceptable limitations
+- manual extension smoke has run and has explicit failed/blocked limitations recorded
 - any known UI limitations are understood before choosing screenshots
 
 If manual dogfood has not run, do not proceed with screenshots. Return to Phase 2 or Phase 3.
