@@ -43,6 +43,7 @@ Reason:
 
 - manual dogfood should start from green baseline checks and truthful docs
 - this phase should not be mixed with test fixture or docs status cleanup
+- Phase 1 found that DB-backed verification suites share first-run setup state, so DB verification should run sequentially with a reset before each DB suite when rerun
 
 ## Current Baseline
 
@@ -60,7 +61,8 @@ docs/v1-dogfood-smoke-suite.md
 
 Known current status:
 
-- automated DB-backed smoke has historical passing evidence
+- Phase 1 completed and recorded green baseline verification in `docs/plan/070-verification-and-docs-sync.md`
+- automated DB-backed smoke has fresh passing evidence from Phase 1
 - manual portal smoke is pending
 - manual Chrome extension smoke is pending
 - no real product screenshots are committed yet
@@ -155,6 +157,13 @@ Product source files should stay untouched unless a tiny smoke-blocking fix is r
 
 ## Expected Environment
 
+Before starting:
+
+- confirm whether the run uses the `development` or `testing` `.env-cmdrc` environment
+- use a disposable clean database for browser dogfood
+- do not drop a developer's non-disposable database without an explicit operator decision
+- record the actual DB name or disposable environment label in the result log
+
 Likely local services:
 
 ```bash
@@ -171,7 +180,23 @@ Expected browser entry:
 http://localhost:3000
 ```
 
-If ports differ, record the actual ports in the result log.
+Port/proxy alignment:
+
+- the server listens on `.env-cmdrc` `SERVER_PORT`
+- the web dev proxy defaults to `http://localhost:3002`
+- if the server port is not `3002`, start the web portal with `VITE_DEMO_COMPOSER_API_URL=http://localhost:<server_port>` or otherwise align the proxy before testing
+- record the actual server URL, web URL, and storage root in the result log
+
+If ports differ from the examples, record the actual ports in the result log.
+
+## Carry-Over From Phase 1
+
+Phase 1 left these operational notes for this implementation:
+
+- `test:db` and `test:smoke` should not be run in parallel against the same testing database.
+- Reset the testing database before `test:db`, and reset it again before `test:smoke`, unless future isolation work changes that.
+- Long DB integration tests now have a 60s server Vitest timeout budget. If DB workflows approach that limit again, create a DB test performance/isolation follow-up instead of raising timeouts again.
+- Manual extension dogfood and product screenshots remain pending; do not mark them complete in this plan.
 
 ## Implementation Plan
 
@@ -294,6 +319,8 @@ Record:
 - database setup
 - storage root
 - browser
+- web URL and API/server URL
+- whether browser automation or fully manual interaction was used
 - automated smoke status if rerun
 - manual portal smoke status
 - manual extension smoke status remains pending unless Phase 3 has run
@@ -317,15 +344,24 @@ Do not mark a failed item as passed because a workaround exists. Record the work
 
 ## Testing Plan
 
-Before or after manual dogfood, run the baseline checks if Phase 1 has not just run them:
+Before manual dogfood, run a quick baseline unless the same commit already has fresh results:
 
 ```bash
 rtk pnpm --filter server test
 rtk pnpm --filter web test
 rtk pnpm --filter extension test
-rtk pnpm --filter server test:db
-rtk pnpm --filter server test:smoke
 rtk git diff --check
+```
+
+If rerunning DB-backed checks, do them sequentially:
+
+```bash
+rtk pnpm --filter server run test:db:drop
+rtk pnpm --filter server run test:setup
+rtk pnpm --filter server test:db
+rtk pnpm --filter server run test:db:drop
+rtk pnpm --filter server run test:setup
+rtk pnpm --filter server test:smoke
 ```
 
 For this manual phase, the browser walkthrough is the main verification artifact.
