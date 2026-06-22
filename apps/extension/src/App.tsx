@@ -34,6 +34,7 @@ import {
   saveActiveCaptureEventIndex,
   saveActiveCaptureMode,
   saveInstanceUrl,
+  savePortalUrl,
   saveSelectedProjectId,
   saveSessionToken,
   type ExtensionSettings,
@@ -45,6 +46,7 @@ import "./index.css";
 type Dependencies = {
   getSettings: () => Promise<ExtensionSettings>;
   saveInstanceUrl: (instanceUrl: string) => Promise<void>;
+  savePortalUrl: (portalUrl: string | null) => Promise<void>;
   saveSessionToken: (sessionToken: string | null) => Promise<void>;
   saveSelectedProjectId: (projectId: string | null) => Promise<void>;
   saveActiveCapture: (input: {
@@ -114,6 +116,7 @@ const buildDefaultDependencies = (): Dependencies => {
   return {
     getSettings: () => getSettings(storage),
     saveInstanceUrl: (instanceUrl) => saveInstanceUrl(storage, instanceUrl),
+    savePortalUrl: (portalUrl) => savePortalUrl(storage, portalUrl),
     saveSessionToken: (sessionToken) => saveSessionToken(storage, sessionToken),
     saveSelectedProjectId: (projectId) => saveSelectedProjectId(storage, projectId),
     saveActiveCapture: (input) => saveActiveCapture(storage, input),
@@ -253,7 +256,10 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
       <Shell>
         <ConnectInstance
           onSave={async (instanceUrl) => {
-            await dependencies.saveInstanceUrl(instanceUrl);
+            await dependencies.saveInstanceUrl(instanceUrl.instanceUrl);
+            if (instanceUrl.portalUrl) {
+              await dependencies.savePortalUrl(instanceUrl.portalUrl);
+            }
             reload();
           }}
         />
@@ -281,6 +287,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
               status: "signed_in",
               settings: {
                 instanceUrl: state.settings.instanceUrl ?? "",
+                portalUrl: state.settings.portalUrl ?? null,
                 sessionToken: result.session_token,
                 selectedProjectId: null,
                 activeCaptureSessionId: null,
@@ -463,6 +470,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
           );
           const portalUrl = buildPortalCaptureSessionUrl(
             state.settings.instanceUrl,
+            state.settings.portalUrl,
             result.redirect.path,
             input.projectId,
             input.captureSessionId
@@ -494,6 +502,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
         onOpenActiveCapture={async (input) => {
           const portalUrl = buildPortalCaptureSessionUrl(
             state.settings.instanceUrl,
+            state.settings.portalUrl,
             null,
             input.projectId,
             input.captureSessionId
@@ -588,9 +597,10 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
 const ConnectInstance = ({
   onSave,
 }: {
-  onSave: (instanceUrl: string) => Promise<void>;
+  onSave: (input: { instanceUrl: string; portalUrl: string | null }) => Promise<void>;
 }) => {
   const [instanceUrl, setInstanceUrl] = useState("");
+  const [portalUrl, setPortalUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -603,11 +613,21 @@ const ConnectInstance = ({
       return;
     }
 
+    const portalUrlValue = portalUrl.trim();
+    const normalizedPortalUrl = portalUrlValue ? normalizeInstanceUrl(portalUrlValue) : null;
+    if (normalizedPortalUrl && !normalizedPortalUrl.ok) {
+      setError("Enter a valid http:// or https:// portal URL.");
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
     try {
-      await onSave(result.value);
+      await onSave({
+        instanceUrl: result.value,
+        portalUrl: normalizedPortalUrl?.value ?? null,
+      });
     } catch {
       setError("Could not save instance URL.");
       setSubmitting(false);
@@ -626,6 +646,16 @@ const ConnectInstance = ({
             placeholder="http://localhost:3002"
             disabled={submitting}
             onChange={(event) => setInstanceUrl(event.target.value)}
+          />
+        </label>
+        <label>
+          <span>Portal URL (optional)</span>
+          <input
+            type="url"
+            value={portalUrl}
+            placeholder="http://localhost:3000"
+            disabled={submitting}
+            onChange={(event) => setPortalUrl(event.target.value)}
           />
         </label>
         {error ? <div className="error">{error}</div> : null}

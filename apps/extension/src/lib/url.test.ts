@@ -29,6 +29,7 @@ describe("buildPortalCaptureSessionUrl", () => {
   it("builds absolute portal URLs from safe relative redirect paths", () => {
     expect(buildPortalCaptureSessionUrl(
       "https://demo.example.com/",
+      null,
       "/projects/project_1/capture-sessions/capture_session_1",
       "fallback_project",
       "fallback_session"
@@ -39,12 +40,14 @@ describe("buildPortalCaptureSessionUrl", () => {
     expect(buildPortalCaptureSessionUrl(
       "https://demo.example.com///",
       null,
+      null,
       "project with spaces",
       "capture/session"
     )).toBe("https://demo.example.com/projects/project%20with%20spaces/capture-sessions/capture%2Fsession");
 
     expect(buildPortalCaptureSessionUrl(
       "https://demo.example.com",
+      null,
       "https://evil.example/projects/project_1",
       "project with spaces",
       "capture/session"
@@ -52,9 +55,28 @@ describe("buildPortalCaptureSessionUrl", () => {
 
     expect(buildPortalCaptureSessionUrl(
       "https://demo.example.com",
+      null,
       "//evil.example/projects/project_1",
       "project with spaces",
       "capture/session"
     )).toBe("https://demo.example.com/projects/project%20with%20spaces/capture-sessions/capture%2Fsession");
+  });
+
+  it("uses a separate portal origin for split API and web deployments", () => {
+    expect(buildPortalCaptureSessionUrl(
+      "http://localhost:4021",
+      "http://localhost:3000",
+      "/projects/project_1/capture-sessions/capture_session_1",
+      "fallback_project",
+      "fallback_session"
+    )).toBe("http://localhost:3000/projects/project_1/capture-sessions/capture_session_1");
+
+    expect(buildPortalCaptureSessionUrl(
+      "http://localhost:4021",
+      "http://localhost:3000/",
+      "https://evil.example/projects/project_1",
+      "project with spaces",
+      "capture/session"
+    )).toBe("http://localhost:3000/projects/project%20with%20spaces/capture-sessions/capture%2Fsession");
   });
 });

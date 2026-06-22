@@ -50,11 +50,12 @@ const safeRedirectPath = (
 
 export const buildPortalCaptureSessionUrl = (
   instanceUrl: string,
+  portalUrl: string | null | undefined,
   redirectPath: string | null | undefined,
   projectId: string,
   captureSessionId: string
 ) => {
-  const origin = instanceUrl.replace(/\/+$/, "");
+  const origin = (portalUrl ?? instanceUrl).replace(/\/+$/, "");
   const path = safeRedirectPath(redirectPath)
     ?? buildFallbackCaptureSessionPath(projectId, captureSessionId);
 

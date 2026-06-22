@@ -61,13 +61,14 @@ const projects: Project[] = [
 
 const defaultSettings: ExtensionSettings = {
   instanceUrl: null,
+  portalUrl: null,
   sessionToken: null,
   selectedProjectId: null,
   activeCaptureSessionId: null,
   activeCaptureProjectId: null,
   activeCaptureEventIndex: null,
-        activeCaptureMode: null,
-        activeCapturePaused: false,
+  activeCaptureMode: null,
+  activeCapturePaused: false,
 };
 
 const captureSessionResponse = {
@@ -199,6 +200,7 @@ const renderApp = (overrides: {
   ) => Promise<CompleteCaptureSessionResponse>;
   openPortalUrl?: (url: string) => Promise<void>;
   saveInstanceUrl?: (instanceUrl: string) => Promise<void>;
+  savePortalUrl?: (portalUrl: string | null) => Promise<void>;
   saveSessionToken?: (sessionToken: string | null) => Promise<void>;
   saveSelectedProjectId?: (projectId: string | null) => Promise<void>;
   saveActiveCapture?: (input: {
@@ -216,6 +218,7 @@ const renderApp = (overrides: {
   const dependencies = {
     getSettings: vi.fn(async () => overrides.settings ?? defaultSettings),
     saveInstanceUrl: vi.fn(overrides.saveInstanceUrl ?? (async () => {})),
+    savePortalUrl: vi.fn(overrides.savePortalUrl ?? (async () => {})),
     saveSessionToken: vi.fn(overrides.saveSessionToken ?? (async () => {})),
     saveSelectedProjectId: vi.fn(overrides.saveSelectedProjectId ?? (async () => {})),
     clearSettings: vi.fn(overrides.clearSettings ?? (async () => {})),
@@ -250,15 +253,22 @@ describe("extension popup App", () => {
 
     expect(await screen.findByRole("heading", { name: "Connect instance" })).toBeInTheDocument();
     expect(screen.getByLabelText("Instance URL")).toHaveAttribute("placeholder", "http://localhost:3002");
+    expect(screen.getByLabelText("Portal URL (optional)")).toHaveAttribute("placeholder", "http://localhost:3000");
 
     fireEvent.change(screen.getByLabelText("Instance URL"), {
       target: {
         value: "http://localhost:3002/",
       },
     });
+    fireEvent.change(screen.getByLabelText("Portal URL (optional)"), {
+      target: {
+        value: "http://localhost:3000/",
+      },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Connect" }));
 
     await waitFor(() => expect(dependencies.saveInstanceUrl).toHaveBeenCalledWith("http://localhost:3002"));
+    await waitFor(() => expect(dependencies.savePortalUrl).toHaveBeenCalledWith("http://localhost:3000"));
   });
 
   it("rejects invalid instance URLs", async () => {
@@ -547,6 +557,7 @@ describe("extension popup App", () => {
     const dependencies = renderApp({
       settings: {
         instanceUrl: "https://demo.example.com",
+        portalUrl: null,
         sessionToken: "extension-session-token",
         selectedProjectId: "project_1",
         activeCaptureSessionId: "capture_session_1",
@@ -566,6 +577,31 @@ describe("extension popup App", () => {
     expect(dependencies.completeCaptureSession).not.toHaveBeenCalled();
     expect(dependencies.clearActiveCapture).not.toHaveBeenCalled();
     expect(screen.getByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+  });
+
+  it("opens active captures with the configured portal URL in split API and web deployments", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "http://localhost:4021",
+        portalUrl: "http://localhost:3000",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 2,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open in portal" }));
+
+    await waitFor(() => expect(dependencies.openPortalUrl).toHaveBeenCalledWith(
+      "http://localhost:3000/projects/project_1/capture-sessions/capture_session_1"
+    ));
+    expect(dependencies.completeCaptureSession).not.toHaveBeenCalled();
+    expect(dependencies.clearActiveCapture).not.toHaveBeenCalled();
   });
 
   it("keeps active capture state when opening active capture in portal fails", async () => {
@@ -823,6 +859,7 @@ describe("extension popup App", () => {
     const dependencies = renderApp({
       settings: {
         instanceUrl: "https://demo.example.com",
+        portalUrl: null,
         sessionToken: "extension-session-token",
         selectedProjectId: "project_1",
         activeCaptureSessionId: "capture_session_1",
@@ -849,6 +886,36 @@ describe("extension popup App", () => {
     expect(screen.queryByRole("heading", { name: "Capture active" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ready to capture" })).toBeInTheDocument();
     expect(screen.getAllByText("Internal onboarding demos")).toHaveLength(2);
+  });
+
+  it("opens finished captures with the configured portal URL in split API and web deployments", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "http://localhost:4021",
+        portalUrl: "http://localhost:3000",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 2,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Finish capture" }));
+
+    await waitFor(() => expect(dependencies.completeCaptureSession).toHaveBeenCalledWith(
+      "http://localhost:4021",
+      "extension-session-token",
+      "project_1",
+      "capture_session_1"
+    ));
+    await waitFor(() => expect(dependencies.openPortalUrl).toHaveBeenCalledWith(
+      "http://localhost:3000/projects/project_1/capture-sessions/capture_session_1"
+    ));
+    await waitFor(() => expect(dependencies.clearActiveCapture).toHaveBeenCalled());
   });
 
   it("falls back to encoded portal route when completion redirect is unsafe", async () => {

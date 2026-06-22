@@ -6,6 +6,7 @@ import {
   saveActiveCapture,
   saveActiveCaptureEventIndex,
   saveInstanceUrl,
+  savePortalUrl,
   saveSelectedProjectId,
   saveSessionToken,
   clearActiveCapture,
@@ -45,12 +46,38 @@ describe("extension settings", () => {
   it("returns null defaults when no settings are stored", async () => {
     await expect(getSettings(storage)).resolves.toEqual({
       instanceUrl: null,
+      portalUrl: null,
       sessionToken: null,
       selectedProjectId: null,
       activeCaptureSessionId: null,
       activeCaptureProjectId: null,
       activeCaptureEventIndex: null,
       activeCaptureMode: null,
+      activeCapturePaused: false,
+    });
+  });
+
+  it("saves portal URL without clearing auth or active capture state", async () => {
+    await saveInstanceUrl(storage, "http://localhost:4021");
+    await saveSessionToken(storage, "session-token");
+    await saveSelectedProjectId(storage, "project_1");
+    await saveActiveCapture(storage, {
+      captureSessionId: "capture_session_1",
+      projectId: "project_1",
+      mode: "automatic",
+    });
+
+    await savePortalUrl(storage, "http://localhost:3000");
+
+    await expect(getSettings(storage)).resolves.toEqual({
+      instanceUrl: "http://localhost:4021",
+      portalUrl: "http://localhost:3000",
+      sessionToken: "session-token",
+      selectedProjectId: "project_1",
+      activeCaptureSessionId: "capture_session_1",
+      activeCaptureProjectId: "project_1",
+      activeCaptureEventIndex: 0,
+      activeCaptureMode: "automatic",
       activeCapturePaused: false,
     });
   });
@@ -62,11 +89,13 @@ describe("extension settings", () => {
       captureSessionId: "capture_session_1",
       projectId: "project_1",
     });
+    await savePortalUrl(storage, "http://localhost:3000");
 
     await saveInstanceUrl(storage, "https://demo.example.com");
 
     await expect(getSettings(storage)).resolves.toEqual({
       instanceUrl: "https://demo.example.com",
+      portalUrl: null,
       sessionToken: null,
       selectedProjectId: null,
       activeCaptureSessionId: null,
@@ -90,6 +119,7 @@ describe("extension settings", () => {
 
     await expect(getSettings(storage)).resolves.toEqual({
       instanceUrl: "https://demo.example.com",
+      portalUrl: null,
       sessionToken: null,
       selectedProjectId: "project_1",
       activeCaptureSessionId: null,
@@ -112,6 +142,7 @@ describe("extension settings", () => {
 
     await expect(getSettings(storage)).resolves.toEqual({
       instanceUrl: "https://demo.example.com",
+      portalUrl: null,
       sessionToken: "session-token",
       selectedProjectId: "project_1",
       activeCaptureSessionId: "capture_session_1",
@@ -130,6 +161,7 @@ describe("extension settings", () => {
 
     await expect(getSettings(storage)).resolves.toEqual({
       instanceUrl: "https://demo.example.com",
+      portalUrl: null,
       sessionToken: "session-token",
       selectedProjectId: "project_1",
       activeCaptureSessionId: "capture_session_1",
@@ -143,6 +175,7 @@ describe("extension settings", () => {
 
     await expect(getSettings(storage)).resolves.toEqual({
       instanceUrl: "https://demo.example.com",
+      portalUrl: null,
       sessionToken: "session-token",
       selectedProjectId: "project_1",
       activeCaptureSessionId: null,
@@ -166,6 +199,7 @@ describe("extension settings", () => {
 
     await expect(getSettings(storage)).resolves.toEqual({
       instanceUrl: null,
+      portalUrl: null,
       sessionToken: null,
       selectedProjectId: null,
       activeCaptureSessionId: null,
@@ -181,6 +215,7 @@ describe("extension settings", () => {
 
     await expect(getSettings(storage)).resolves.toEqual({
       instanceUrl: null,
+      portalUrl: null,
       sessionToken: null,
       selectedProjectId: null,
       activeCaptureSessionId: null,

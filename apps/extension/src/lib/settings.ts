@@ -1,5 +1,6 @@
 export type ExtensionSettings = {
   instanceUrl: string | null;
+  portalUrl?: string | null;
   sessionToken: string | null;
   selectedProjectId: string | null;
   activeCaptureSessionId: string | null;
@@ -17,6 +18,7 @@ export type ExtensionStorageArea = {
 
 const keys = {
   instanceUrl: "instanceUrl",
+  portalUrl: "portalUrl",
   sessionToken: "sessionToken",
   selectedProjectId: "selectedProjectId",
   activeCaptureSessionId: "activeCaptureSessionId",
@@ -28,6 +30,7 @@ const keys = {
 
 const default_settings: ExtensionSettings = {
   instanceUrl: null,
+  portalUrl: null,
   sessionToken: null,
   selectedProjectId: null,
   activeCaptureSessionId: null,
@@ -90,6 +93,7 @@ export const getSettings = async (
 
   return {
     instanceUrl: stringOrNull(stored[keys.instanceUrl]),
+    portalUrl: stringOrNull(stored[keys.portalUrl]),
     sessionToken: stringOrNull(stored[keys.sessionToken]),
     selectedProjectId: stringOrNull(stored[keys.selectedProjectId]),
     activeCaptureSessionId: stringOrNull(stored[keys.activeCaptureSessionId]),
@@ -106,6 +110,7 @@ export const saveInstanceUrl = async (
 ) => {
   await storage.set({
     [keys.instanceUrl]: instanceUrl,
+    [keys.portalUrl]: null,
     [keys.sessionToken]: null,
     [keys.selectedProjectId]: null,
     [keys.activeCaptureSessionId]: null,
@@ -114,6 +119,13 @@ export const saveInstanceUrl = async (
     [keys.activeCaptureMode]: null,
     [keys.activeCapturePaused]: false,
   });
+};
+
+export const savePortalUrl = async (
+  storage: ExtensionStorageArea,
+  portalUrl: string | null
+) => {
+  await storage.set({ [keys.portalUrl]: portalUrl });
 };
 
 export const saveSessionToken = async (
