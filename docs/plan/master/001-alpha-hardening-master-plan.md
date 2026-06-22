@@ -332,6 +332,8 @@ Suggested child plan:
 docs/plan/072-manual-extension-dogfood.md
 ```
 
+Status: completed as a failed/blocked evidence run by `docs/plan/072-manual-extension-dogfood.md`.
+
 ### Goal
 
 Run the unpacked Chrome extension against a safe test page and prove the automatic click capture MVP works outside unit tests.
@@ -383,6 +385,13 @@ Reliability inputs for Phase 7:
 - Manual screenshot fallback produced no upload/event request and no popup error.
 - Extension-opened portal URLs used the API origin in a split API/web local setup and returned 404 JSON.
 - Guide/demo generation from extension events was blocked because no events/assets were captured.
+
+Missed work to carry into the next implementation plan:
+
+- Identify whether automatic click loss happens in content-script injection, message passing, background handling, screenshot capture/upload, or event creation.
+- Add user-visible extension diagnostics for failed automatic and manual capture attempts.
+- Add a browser-facing portal origin setting or equivalent URL builder so API-origin and web-origin local setups are both supported.
+- Re-run extension guide/demo generation only after at least one extension-created event and asset exists.
 
 ### Acceptance Criteria
 
@@ -583,6 +592,9 @@ Move the extension from a working automatic click capture MVP toward reliable re
 
 - [ ] Review extension dogfood findings.
 - [ ] Update plan `058` with current baseline and next milestone.
+- [ ] Trace automatic capture through content script, background worker, screenshot upload, and event creation.
+- [ ] Make manual screenshot fallback produce a capture event or a visible actionable error.
+- [ ] Fix split API/web portal URL handling for `Open in portal` and `Finish capture`.
 - [ ] Decide whether background-owned capture state is the next slice.
 - [ ] Decide how to persist in-flight or failed automatic captures.
 - [ ] Define privacy rules for any new metadata.

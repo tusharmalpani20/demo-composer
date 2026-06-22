@@ -4,6 +4,8 @@ Date: 2026-06-22
 
 Status: Completed with blocking capture failures.
 
+Completion update: this plan is closed as an evidence-gathering phase. It proved setup, auth, project selection, local capture state, pause/resume state, and backend finalization, but it did not prove usable real-browser extension capture. The remaining work belongs in the extension reliability follow-up plan, not in this completed dogfood plan.
+
 ## Parent Master Plan
 
 ```text
@@ -336,7 +338,9 @@ Carry these findings into `docs/plan/076-extension-capture-reliability-v2.md`.
 Do not reopen this evidence phase as an implementation bucket. Carry the failed proof points into Phase 7:
 
 - Reproduce automatic click capture in a headed/manual browser and determine whether the failure is automation-specific or a product bug.
+- Instrument the content script, background worker, screenshot upload, and event-create path enough to identify where automatic clicks are lost.
 - Make manual screenshot fallback either upload and record a `capture` event or surface a clear user-facing failure.
+- Add popup-visible diagnostics for capture failures so users are not left with a silent no-op.
 - Split extension API origin from browser-facing portal origin so `Open in portal` and `Finish capture` work in local split-port setups.
 - Keep extension-captured product screenshots out of Phase 4 until capture has a passing or explicitly bounded path.
 - Re-run guide/demo generation from extension events after extension capture reliability is fixed.
