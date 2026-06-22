@@ -2,34 +2,41 @@
 
 Date: 2026-06-15
 
-Status: Planned.
+Status: Implemented as MVP; reliability follow-up active in `docs/plan/076-extension-capture-reliability-v2.md`.
 
 ## Goal
 
 Move the Chrome extension from manual popup screenshot capture toward privacy-preserving automatic workflow recording.
 
-This is a roadmap plan only. Do not implement automatic event capture as part of plan 057.
+This roadmap is partially complete. Automatic click capture MVP exists, but the 2026-06-22 extension dogfood run showed it is not reliable enough yet for alpha evidence.
 
 ## Current Baseline
 
-The extension currently supports manual screenshot capture:
+The extension currently supports automatic click capture MVP plus manual screenshot fallback:
 
 ```text
 popup
   -> user starts capture
-  -> user clicks Capture screenshot once per step-worthy moment
+  -> extension starts automatic click capture
+  -> content script listens for safe click events on http/https pages
+  -> background worker captures the visible tab
   -> extension uploads visible-tab PNG
-  -> extension creates one ordered capture event
+  -> extension creates one ordered click event
+  -> user can still click Capture screenshot as a fallback
   -> user finishes capture
   -> portal opens capture session detail
 ```
 
+Current reliability findings from manual dogfood:
+
+- setup, auth, project selection, start capture, pause/resume, backend finish, and local active-state cleanup worked
+- automatic click capture created a backend capture session but produced zero click events and zero screenshot files in the dogfood run
+- manual screenshot fallback produced no upload/event request or popup error in the dogfood run
+- split API/web local setups need a separate portal URL so portal links do not open the API origin
+
 It does not currently include:
 
-- content scripts
-- background-owned capture orchestration
-- automatic click listeners
-- DOM target metadata capture
+- reliable browser-proven automatic click capture
 - navigation timing capture
 - input/change event capture
 - pause/resume overlay
@@ -38,15 +45,10 @@ It does not currently include:
 
 ## Next Milestone Shape
 
-Recommended next milestone:
+Current reliability milestone:
 
 ```text
-content script
-  -> listens for safe click events
-  -> extracts safe target metadata
-  -> asks extension runtime to capture visible screenshot
-  -> uploads screenshot
-  -> records ordered capture event
+docs/plan/076-extension-capture-reliability-v2.md
 ```
 
 Keep raw input values redacted by default.

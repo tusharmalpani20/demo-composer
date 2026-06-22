@@ -78,11 +78,19 @@ Then load `apps/extension/dist` in Chrome:
 3. Click Load unpacked.
 4. Select `apps/extension/dist`.
 
-For local self-host testing, configure the extension instance URL as:
+For local self-host testing, configure the extension instance URL as the API origin:
 
 ```text
 http://localhost:3002
 ```
+
+If the API and web portal run on different origins, also set the optional portal URL. For the default local Vite portal this is:
+
+```text
+http://localhost:3000
+```
+
+API calls still use the instance URL. `Open in portal` and `Finish capture` use the portal URL when it is configured.
 
 ## Auth Transport
 
@@ -188,7 +196,7 @@ Each manual screenshot creates one ordered capture event. In the current MVP, tr
 Opening an active capture in the portal uses:
 
 ```text
-{instance_url}/projects/:project_id/capture-sessions/:capture_session_id
+{portal_url_or_instance_url}/projects/:project_id/capture-sessions/:capture_session_id
 ```
 
 This action does not complete the backend capture session and does not clear local active capture state. Use it when you want to inspect the capture session while continuing manual screenshot capture from the extension.
@@ -208,7 +216,7 @@ Authorization: Bearer <session_token>
 x-demo-composer-client: extension
 ```
 
-After backend completion succeeds, the extension clears only the local active capture fields and preserves the selected project. It then opens the portal capture session detail page using the backend's relative redirect path when safe, or a locally constructed project/capture-session route as fallback. Session tokens are never included in the portal URL.
+After backend completion succeeds, the extension clears only the local active capture fields and preserves the selected project. It then opens the portal capture session detail page on the configured portal URL when present, using the backend's relative redirect path when safe, or a locally constructed project/capture-session route as fallback. Session tokens are never included in the portal URL.
 
 ## Permissions
 

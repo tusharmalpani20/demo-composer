@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: In progress.
+Status: In progress; selected split API/web portal URL slice implemented.
 
 ## Parent Master Plan
 
@@ -271,6 +271,50 @@ Possible work:
 
 ## Implementation Plan
 
+## Implementation Result: 2026-06-23
+
+Completed slice:
+
+- Added optional `portalUrl` extension setting for split API/web deployments.
+- Kept API calls on `instanceUrl`.
+- `Open in portal` and `Finish capture` now build portal links on `portalUrl` when configured.
+- Safe relative redirect-path handling is preserved; unsafe absolute/protocol-relative redirects still fall back to a locally constructed capture-session path.
+- Changing the instance clears the stored portal URL with the rest of auth/project/capture state.
+- README now documents local split-origin setup.
+- Plan `058` now reflects that automatic click capture MVP exists but needs reliability follow-up.
+
+Verification run:
+
+```bash
+rtk pnpm --filter extension test -- src/lib/url.test.ts
+rtk pnpm --filter extension test -- src/lib/settings.test.ts
+rtk pnpm --filter extension test -- src/App.test.tsx
+rtk pnpm --filter extension test
+rtk pnpm --filter extension check-types
+rtk pnpm --filter extension build
+rtk pnpm --filter extension lint
+rtk git diff --check
+```
+
+Results:
+
+- URL helper suite passed with 5 tests.
+- Settings suite passed with 10 tests.
+- Popup App suite passed with 31 tests.
+- Full extension suite passed with 75 tests.
+- Extension typecheck passed.
+- Extension build passed.
+- Extension lint passed.
+- Whitespace check passed.
+
+Missed or deferred work to keep as follow-up candidates:
+
+- Reproduce automatic click capture in a headed/manual browser and determine whether the zero-event dogfood result is automation-specific or product behavior.
+- Add popup-visible diagnostics for automatic click capture failures.
+- Make manual screenshot fallback either upload/record a capture event or surface a clear actionable failure.
+- Add diagnostics around content script to background worker message delivery.
+- Re-run guide/demo generation from extension events after capture produces events and assets.
+
 ### 1. Review Evidence
 
 - [x] Read `docs/v1-dogfood-smoke-suite.md`.
@@ -298,6 +342,8 @@ Minimum updates:
 
 Do not rewrite history as if plan `058` implemented work directly.
 
+Status: completed for this slice.
+
 ### 3. Design The Selected Slice
 
 For the selected slice, write down:
@@ -323,13 +369,13 @@ Selected design:
 
 ### 4. Implement And Test
 
-- [ ] Add failing tests where practical.
-- [ ] Update extension URL/settings/popup code.
-- [ ] Preserve manual screenshot fallback.
-- [ ] Preserve input redaction.
-- [ ] Preserve event ordering guarantees.
-- [ ] Improve user-facing settings copy.
-- [ ] Update README if behavior changes.
+- [x] Add failing tests where practical.
+- [x] Update extension URL/settings/popup code.
+- [x] Preserve manual screenshot fallback.
+- [x] Preserve input redaction.
+- [x] Preserve event ordering guarantees.
+- [x] Improve user-facing settings copy.
+- [x] Update README if behavior changes.
 
 ### 5. Manual Verification
 

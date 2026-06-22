@@ -635,6 +635,28 @@ Suggested child plan:
 docs/plan/076-extension-capture-reliability-v2.md
 ```
 
+Status: in progress; first split API/web portal URL slice implemented by `docs/plan/076-extension-capture-reliability-v2.md`.
+
+### Progress Update
+
+Updated on 2026-06-23 local time.
+
+Completed first slice:
+
+- extension dogfood findings were narrowed to split API/web portal URL handling
+- extension settings now support an optional browser-facing portal URL separate from the API instance URL
+- `Open in portal` and `Finish capture` use the portal URL when configured
+- API calls continue to use the instance URL
+- plan `058` now reflects the current automatic click capture MVP baseline
+
+Carry-forward extension candidates:
+
+- reproduce automatic click capture in a headed/manual browser
+- add popup-visible diagnostics for automatic click capture failures
+- make manual screenshot fallback upload/record an event or surface an actionable error
+- diagnose content-script to background-worker message delivery
+- rerun guide/demo generation from extension events after capture produces events and assets
+
 ### Goal
 
 Move the extension from a working automatic click capture MVP toward reliable real-browser capture.
@@ -660,11 +682,11 @@ Move the extension from a working automatic click capture MVP toward reliable re
 
 ### Todos
 
-- [ ] Review extension dogfood findings.
-- [ ] Update plan `058` with current baseline and next milestone.
+- [x] Review extension dogfood findings.
+- [x] Update plan `058` with current baseline and next milestone.
 - [ ] Trace automatic capture through content script, background worker, screenshot upload, and event creation.
 - [ ] Make manual screenshot fallback produce a capture event or a visible actionable error.
-- [ ] Fix split API/web portal URL handling for `Open in portal` and `Finish capture`.
+- [x] Fix split API/web portal URL handling for `Open in portal` and `Finish capture`.
 - [ ] Decide whether background-owned capture state is the next slice.
 - [ ] Decide how to persist in-flight or failed automatic captures.
 - [ ] Define privacy rules for any new metadata.
@@ -672,7 +694,7 @@ Move the extension from a working automatic click capture MVP toward reliable re
 - [ ] Add tests for navigation and unsupported page handling.
 - [ ] Add user-visible error/recovery states.
 - [ ] Verify manual screenshot fallback still works.
-- [ ] Run extension tests and build.
+- [x] Run extension tests and build.
 
 ### Acceptance Criteria
 
@@ -779,5 +801,5 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 4. Alpha Visual Evidence | Completed with portal-only visual evidence | `docs/plan/073-alpha-product-screenshots.md` |
 | 5. Guide Editor V1 Hardening | Completed with follow-up notes | `docs/plan/074-guide-editor-v1-hardening.md` |
 | 6. Interactive Demo V1 Hardening | Completed with follow-up notes | `docs/plan/075-interactive-demo-v1-hardening.md` |
-| 7. Extension Capture Reliability V2 | Planned | TBD |
+| 7. Extension Capture Reliability V2 | In progress; first slice completed | `docs/plan/076-extension-capture-reliability-v2.md` |
 | 8. Self-Host Production Hardening V2 | Planned | TBD |
