@@ -82,7 +82,7 @@ As of this master plan:
 - The extension has automatic click capture MVP plus manual screenshot fallback.
 - Manual portal dogfood completed with non-blocking limitations in `docs/plan/071-manual-portal-dogfood.md`.
 - Manual extension dogfood completed as a failed/blocked smoke run in `docs/plan/072-manual-extension-dogfood.md`.
-- Product screenshots are still missing from public docs.
+- Portal alpha screenshots are committed in `docs/assets/alpha/`; extension screenshots remain pending until extension capture is fixed or explicitly bounded.
 - `apps/docs` is still starter content.
 - shared packages are mostly placeholders until real cross-app reuse exists.
 - server-local domain modules are acceptable for alpha but remain architecture debt compared with the original domain-package direction.
@@ -409,13 +409,32 @@ Suggested child plan:
 docs/plan/073-alpha-product-screenshots.md
 ```
 
+Status: completed with portal-only visual evidence by `docs/plan/073-alpha-product-screenshots.md`.
+
+### Completion Result
+
+Completed on 2026-06-23 local time, using the 2026-06-22 portal dogfood evidence as the baseline.
+
+Result:
+
+- six real portal/public screenshots were captured from a safe synthetic local alpha run
+- screenshots live under `docs/assets/alpha/`
+- README now includes the screenshot set and links it to the 2026-06-22 dogfood evidence
+- project status, OSS summary, and roadmap no longer say portal screenshots are pending
+- extension screenshots remain pending because Phase 3 extension dogfood failed/blocked
+
+Follow-up note:
+
+- add extension visual evidence only after Phase 7 fixes or explicitly bounds extension capture reliability
+- consider a screenshot refresh cadence after guide/editor and demo hardening changes the UI
+
 ### Goal
 
 Add real, safe visual evidence to the public alpha docs after dogfooding has produced trustworthy screens.
 
 ### Scope
 
-- Capture product screenshots from safe synthetic data only.
+- Capture portal product screenshots from safe synthetic data only.
 - Add images under `docs/assets/`.
 - Update README and status docs with a small number of real screenshots.
 - Decide whether `apps/docs` should stay starter-only, be removed from public positioning, or become a minimal docs landing site.
@@ -429,21 +448,20 @@ Add real, safe visual evidence to the public alpha docs after dogfooding has pro
 - Public guide reader.
 - Interactive demo editor with scene/hotspot.
 - Public interactive demo viewer.
-- Extension popup during active automatic capture.
 
 ### Todos
 
-- [ ] Decide screenshot naming convention under `docs/assets/`.
-- [ ] Create or reuse safe synthetic dogfood project.
-- [ ] Capture screenshots at consistent viewport sizes.
-- [ ] Redact any local URLs, emails, invite tokens, or paths if visible.
-- [ ] Optimize images enough that README remains practical.
-- [ ] Add screenshots to README.
-- [ ] Add a short note that screenshots use synthetic data.
-- [ ] Link to dogfood result log.
-- [ ] If `apps/docs` remains starter content, make sure public docs do not point users there as product documentation.
-- [ ] If `apps/docs` should become real, create a separate child plan rather than mixing that implementation with screenshot capture.
-- [ ] Run `rtk git diff --check`.
+- [x] Decide screenshot naming convention under `docs/assets/`.
+- [x] Create or reuse safe synthetic dogfood project.
+- [x] Capture screenshots at consistent viewport sizes.
+- [x] Redact any local URLs, emails, invite tokens, or paths if visible.
+- [x] Optimize images enough that README remains practical.
+- [x] Add screenshots to README.
+- [x] Add a short note that screenshots use synthetic data.
+- [x] Link to dogfood result log.
+- [x] If `apps/docs` remains starter content, make sure public docs do not point users there as product documentation.
+- [x] If `apps/docs` should become real, create a separate child plan rather than mixing that implementation with screenshot capture.
+- [x] Run `rtk git diff --check`.
 
 ### Acceptance Criteria
 
@@ -451,6 +469,7 @@ Add real, safe visual evidence to the public alpha docs after dogfooding has pro
 - Screenshots do not expose secrets, customer data, private URLs, tokens, or cookies.
 - Screenshots match the current app, not design aspirations.
 - Docs still label the project alpha.
+- Extension screenshots remain pending until extension capture has a passing or explicitly bounded path.
 
 ## Phase 5: Guide Editor V1 Hardening
 

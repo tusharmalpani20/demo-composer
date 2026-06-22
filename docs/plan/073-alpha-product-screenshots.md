@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: In progress.
+Status: Completed with portal-only visual evidence.
 
 ## Parent Master Plan
 
@@ -46,15 +46,21 @@ Reason:
 
 ## Current Baseline
 
-Current README states product screenshots are still pending.
+Before this plan, README stated product screenshots were still pending.
 
-Known current state:
+Known state before implementation:
 
 - no real product screenshots are committed
 - docs use textual product description
 - `apps/docs` remains starter content and is not canonical product docs
 - public docs should not claim screenshots exist until this plan lands
 - extension dogfood is failed/blocked, so portal screenshots can land now while extension visual evidence waits for Phase 7
+
+After this plan:
+
+- README includes six real portal/public screenshots from safe synthetic data.
+- Screenshot assets live under `docs/assets/alpha/`.
+- Extension screenshots remain pending until Phase 7 fixes or explicitly bounds extension capture.
 
 ## Scope
 
@@ -130,6 +136,52 @@ docs/plan/<new-docs-site-follow-up-plan>.md
 ```
 
 Product source files should not change for this plan. If the app needs product changes before screenshots are truthful, stop and create a focused product-hardening plan instead.
+
+## Implementation Notes
+
+Run completed on 2026-06-23 local time against the `testing` `.env-cmdrc` environment, using the 2026-06-22 portal dogfood evidence as the baseline.
+
+Environment:
+
+- API: `http://localhost:4021`.
+- Web portal: `http://localhost:3000` with `VITE_DEMO_COMPOSER_API_URL=http://localhost:4021`.
+- Disposable database label: `test-dc`.
+- Browser automation: `agent-browser` at `1440x900`.
+- Synthetic owner: `owner@example.com`.
+- Synthetic organization: `V1 Smoke Org`.
+- Synthetic project: `V1 Dogfood Project`.
+- Capture session: `Create department workflow`.
+- Guide: `Department setup guide`.
+- Interactive demo: `Create department workflow`.
+
+Committed assets:
+
+```text
+docs/assets/alpha/alpha-project-workspace.png
+docs/assets/alpha/alpha-capture-session-detail.png
+docs/assets/alpha/alpha-guide-editor.png
+docs/assets/alpha/alpha-public-guide-reader.png
+docs/assets/alpha/alpha-demo-editor.png
+docs/assets/alpha/alpha-public-demo-viewer.png
+```
+
+Verification performed:
+
+- seeded safe synthetic portal data through real API calls
+- captured screenshots through the running web portal and public routes
+- confirmed all committed images are `1440x900`
+- visually inspected a contact sheet for blank screens, broken routes, tokens, and private data
+
+Limitations:
+
+- Extension screenshots were intentionally excluded because Phase 3 extension dogfood failed/blocked.
+- The screenshot source data is synthetic and should not be treated as customer evidence.
+
+Missed work to carry forward:
+
+- Add extension visual evidence after Phase 7 fixes or explicitly bounds extension capture.
+- Consider a later screenshot refresh cadence after guide/editor and demo hardening changes the UI.
+- Keep `apps/docs` as starter content for now; create a separate docs-site plan before presenting it as product documentation.
 
 ## Asset Location And Naming
 

@@ -16,6 +16,7 @@ Demo Composer is alpha software. This roadmap describes product direction, not a
 - Guide editor, preview, screenshot management, rectangle annotations, Markdown export, HTML ZIP export, publish controls, password access, and embeds.
 - Storylane-style interactive demo generation from capture sessions.
 - Interactive demo editor, scenes, hotspots, publish controls, password access, public viewer, and embeds.
+- README portal screenshots from safe synthetic dogfood data.
 - Organization invite and member basics.
 - Health/readiness endpoints, production config hardening, and DB-backed v1 smoke coverage.
 
@@ -23,7 +24,7 @@ Demo Composer is alpha software. This roadmap describes product direction, not a
 
 - Address manual portal dogfood findings from the 2026-06-22 smoke run.
 - Address manual Chrome extension dogfood failures from the 2026-06-22 smoke run.
-- Add real alpha screenshots to docs after dogfooding.
+- Keep alpha screenshots current as portal/editor hardening changes the UI.
 - Improve guide editor ergonomics for repeated authoring.
 - Improve interactive demo editor usability and hotspot positioning polish.
 - Improve extension reliability around tab permissions, page changes, and capture failures.

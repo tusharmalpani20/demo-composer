@@ -27,6 +27,7 @@ Workflow captures often contain internal product screens, operational processes,
 - manual portal capture and screenshot upload
 - guide generation, editing, preview, publishing, password access, embeds, Markdown export, and HTML ZIP export
 - interactive demo generation, editing, hotspots, publishing, password access, embeds, and public viewer
+- README portal screenshots from safe synthetic dogfood data
 - organization invites
 - production config hardening basics
 - DB-backed v1 smoke workflow
@@ -35,6 +36,7 @@ Workflow captures often contain internal product screens, operational processes,
 
 - alpha quality
 - manual Chrome extension dogfood is blocked by capture and split-origin portal link failures
+- extension screenshots remain pending until extension capture has a passing or explicitly bounded path
 - no HTML replay
 - no analytics or lead capture
 - no custom branding

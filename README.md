@@ -20,6 +20,19 @@ Demo Composer is an alpha-stage, self-hosted open-source tool for turning browse
 
 The DB-backed v1 smoke workflow now proves the main backend path from first-run setup to published guide/demo and accepted teammate invite. See [V1 dogfood smoke suite](docs/v1-dogfood-smoke-suite.md).
 
+## Alpha Screenshots
+
+These screenshots were captured from a local alpha run with safe synthetic `V1 Dogfood Project` data after the [2026-06-22 portal dogfood smoke](docs/v1-dogfood-smoke-suite.md). They show the portal and public viewer surfaces that currently have trustworthy manual evidence. Extension screenshots remain pending because the 2026-06-22 extension dogfood run is blocked by capture failures.
+
+| Project and capture | Guide authoring |
+| --- | --- |
+| ![Project workspace showing capture, guide, and interactive demo entry points](docs/assets/alpha/alpha-project-workspace.png) | ![Guide editor showing a generated department setup guide with screenshot annotation and publishing controls](docs/assets/alpha/alpha-guide-editor.png) |
+| ![Capture session detail with ordered screenshot-backed events and captured assets](docs/assets/alpha/alpha-capture-session-detail.png) | ![Published public guide reader for the department setup guide](docs/assets/alpha/alpha-public-guide-reader.png) |
+
+| Interactive demo editor | Public demo viewer |
+| --- | --- |
+| ![Interactive demo editor with scenes, hotspot controls, and publishing controls](docs/assets/alpha/alpha-demo-editor.png) | ![Published public interactive demo viewer with a highlighted hotspot](docs/assets/alpha/alpha-public-demo-viewer.png) |
+
 ## Product Shape
 
 ```text
@@ -45,7 +58,7 @@ The product intentionally keeps guides and interactive demos separate. A capture
 - Local file storage is the only storage provider.
 - Rate limiting is in-memory and should be replaced before multi-instance production deployments.
 - Operators are responsible for database and local file storage backup/restore.
-- Product screenshots are still pending; do not treat the README as visual proof yet.
+- Extension screenshots are still pending until extension dogfood has a passing or explicitly bounded capture path.
 
 ## Quick Local Path
 
