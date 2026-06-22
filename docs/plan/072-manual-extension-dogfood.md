@@ -53,6 +53,7 @@ Reason:
 
 - extension evidence should be recorded against a verified backend and portal
 - guide/demo generation from extension events needs the portal to be usable
+- Phase 2 found split API/web local URL friction, so extension dogfood must record both the API instance URL and the browser-facing portal URL
 
 ## Current Baseline
 
@@ -87,10 +88,19 @@ Manual extension smoke is currently pending in:
 docs/v1-dogfood-smoke-suite.md
 ```
 
+Carry-over from completed portal dogfood:
+
+- Manual portal smoke completed with non-blocking limitations in `docs/plan/071-manual-portal-dogfood.md`.
+- Do not assume portal-only findings apply to the extension without extension evidence.
+- If the API and web portal run on different ports, record both origins and verify extension portal-opening behavior after `Open active capture` and `Finish capture`.
+- Keep using safe synthetic data and do not commit screenshots, invite tokens, extension storage, local storage files, or `apps/extension/dist`.
+
 ## Scope
 
 Included:
 
+- start from a disposable, migrated testing database or an explicitly approved development database
+- create or reuse a safe smoke owner/project before extension capture
 - build extension
 - load unpacked extension in Chrome or Chromium
 - configure instance URL
@@ -98,6 +108,7 @@ Included:
 - select project
 - run automatic click capture on a safe test page
 - verify portal capture detail receives ordered screenshot-backed click events
+- verify extension-opened portal routes use a browser-facing URL that actually works in the local split API/web setup
 - verify pause/resume behavior
 - verify manual screenshot fallback
 - finish capture and open portal detail
@@ -174,13 +185,37 @@ Expected pages and surfaces to exercise:
 
 Do not commit `apps/extension/dist`. Product source files should stay untouched unless a tiny smoke-blocking fix is required. Any product fix made during this plan must be called out in the result log and implementation notes.
 
+## Expected Environment
+
+Before starting:
+
+- confirm whether the run uses the `development` or `testing` `.env-cmdrc` environment
+- prefer a disposable clean testing database for browser dogfood
+- do not drop a developer's non-disposable database without an explicit operator decision
+- record the actual DB name or disposable environment label in the result log
+- record the API instance URL used by the extension
+- record the browser-facing portal URL used for portal verification
+- record local storage root and confirm extension-created screenshots land there
+
+Port/origin alignment:
+
+- the extension instance URL is the API origin used for API requests, for example `http://localhost:<server_port>`
+- the web portal may run on a different origin, for example `http://localhost:3000`
+- if API and web portal origins differ, explicitly verify `Open active capture` and `Finish capture` behavior rather than assuming the constructed portal route works
+- if a workaround is needed to open the portal route, record it as a limitation
+
 ## Implementation Plan
 
 ### Manual Checklist
 
 #### Setup
 
-- [ ] Confirm API and web portal are running.
+- [ ] Start or confirm PostgreSQL.
+- [ ] Create or reset a safe disposable database.
+- [ ] Run migrations.
+- [ ] Start API server and record API instance URL.
+- [ ] Start web portal and record browser-facing portal URL.
+- [ ] Complete first-run setup or confirm the smoke owner already exists.
 - [ ] Confirm project exists for extension smoke.
 - [ ] Build extension with `rtk pnpm --filter extension build`.
 - [ ] Open `chrome://extensions`.
@@ -191,7 +226,7 @@ Do not commit `apps/extension/dist`. Product source files should stay untouched 
 #### Connect And Sign In
 
 - [ ] Open extension popup.
-- [ ] Configure instance URL, for example `http://localhost:3002`.
+- [ ] Configure API instance URL, for example `http://localhost:<server_port>`.
 - [ ] Sign in with owner account.
 - [ ] Confirm project list loads.
 - [ ] Select the smoke project.
@@ -218,6 +253,7 @@ Do not commit `apps/extension/dist`. Product source files should stay untouched 
   - device pixel ratio
   - target bounding box
 - [ ] Confirm no raw input value appears in event payload or portal UI.
+- [ ] Confirm DB events remain `input_value_redacted = true`.
 
 #### Pause, Resume, Fallback
 
@@ -229,12 +265,14 @@ Do not commit `apps/extension/dist`. Product source files should stay untouched 
 - [ ] Use manual screenshot fallback.
 - [ ] Confirm fallback creates screenshot-backed `capture` event.
 - [ ] Confirm event ordering remains correct after fallback.
+- [ ] Confirm local file storage contains extension-created screenshots and no storage paths are exposed in public data.
 
 #### Finish And Artifact Creation
 
 - [ ] Finish capture from extension.
 - [ ] Confirm active capture state clears locally.
 - [ ] Confirm portal opens completed capture session detail.
+- [ ] If API and web portal origins differ, confirm whether the extension-opened URL is usable or record the exact workaround.
 - [ ] Generate guide from extension click events.
 - [ ] Generate interactive demo from extension click events.
 - [ ] Confirm guide steps use useful deterministic text.
@@ -247,6 +285,12 @@ Do not commit `apps/extension/dist`. Product source files should stay untouched 
 - [ ] Confirm extension fails gracefully or does not capture.
 - [ ] Try a page where content scripts cannot run if available.
 - [ ] Record exact user-facing error/recovery behavior.
+
+#### Cleanup
+
+- [ ] Remove or ignore generated `apps/extension/dist`.
+- [ ] Remove temporary safe test page artifacts.
+- [ ] Confirm no screenshots, extension storage dumps, cookies, session tokens, or local storage files are staged.
 
 ## Result Recording
 
@@ -264,6 +308,9 @@ Record:
 - browser version
 - extension build path
 - instance URL
+- portal URL
+- database/environment label
+- storage root
 - automated smoke status if rerun
 - manual portal smoke status if already run
 - manual extension smoke status
@@ -292,9 +339,12 @@ Run before the manual browser pass if not already fresh:
 ```bash
 rtk pnpm --filter extension test
 rtk pnpm --filter extension build
-rtk pnpm --filter server test:smoke
+rtk pnpm --filter server run test:db:drop
+rtk pnpm --filter server run test:setup
 rtk git diff --check
 ```
+
+Only run `rtk pnpm --filter server test:smoke` before the manual extension pass if the database has been reset for that suite. Do not run `test:smoke` against the same first-run state intended for manual browser dogfood unless the database is reset afterwards.
 
 Manual browser testing is required for this plan. Unit tests alone do not complete it.
 
@@ -311,6 +361,8 @@ Manual browser testing is required for this plan. Unit tests alone do not comple
 - Unsupported page behavior is recorded.
 - Result is logged in `docs/v1-dogfood-smoke-suite.md`.
 - Meaningful failures have follow-up plans or explicit limitations.
+- API/web split-origin behavior is recorded, including whether extension-opened portal links work.
+- Generated extension build artifacts and screenshots are not committed.
 
 ## Documentation Updates
 
