@@ -2,7 +2,7 @@
 
 Date: 2026-06-22
 
-Status: Planned.
+Status: In progress.
 
 ## Parent Master Plan
 
@@ -59,6 +59,22 @@ Interactive demo capabilities currently include:
 - public demo viewer
 - demo embed route
 
+Manual portal dogfood on 2026-06-22 found the interactive demo workflow broadly usable:
+
+- creating an interactive demo from a manual capture passed
+- metadata and scene editing passed
+- scene reorder passed
+- hotspot create/edit/target-scene behavior passed
+- publish, public viewer, embed route, hotspot navigation, password gate, and unlock passed
+
+Manual extension dogfood did not produce usable extension events or assets, so extension-generated demo quality belongs to Phase 7 rather than this plan.
+
+Carry-over from completed Phase 5 guide editor hardening:
+
+- Do not mix guide-specific leftovers into this demo implementation.
+- The only shared carry-over relevant here is the portal dogfood note that some controls were more reliable through keyboard activation than pointer click in automation; verify demo controls through normal button activation in focused tests and leave broader browser automation investigation for a portal accessibility/event follow-up.
+- Guide-specific follow-ups such as screenshot picker clarity, guide annotations, and guide export messaging should remain separate guide plans.
+
 Likely files:
 
 ```text
@@ -82,12 +98,9 @@ apps/server/src/modules/publish/publish.routes.ts
 Included:
 
 - audit dogfood findings for demo editor and viewer
-- improve scene orientation and editing feedback
-- improve hotspot positioning and validation feedback
-- improve target-scene selection if needed
-- improve public viewer navigation if needed
+- improve public viewer navigation when hotspot target scenes are missing or stale
+- keep editor scene and hotspot workflows stable
 - verify embed route usability
-- improve narrow viewport behavior if dogfood shows issues
 - add focused tests
 - update docs for behavior changes
 
@@ -101,6 +114,8 @@ Included:
 - forms or simulated input validation
 - merging guide and demo models
 - broad visual redesign without dogfood evidence
+- guide editor follow-ups from Phase 5
+- extension capture reliability fixes from Phase 7
 
 ## Discovery Checklist
 
@@ -156,6 +171,27 @@ docs/plan/<new-demo-follow-up-plan>.md
 Do not change guide behavior unless the selected issue proves a shared publish or snapshot bug.
 
 ## Candidate Hardening Areas
+
+### Selected Slice: Public Viewer Target Fallback
+
+Primary issue:
+
+- public demo hotspot navigation can become unclear if a published hotspot references a scene that is missing from the snapshot or stale after edits
+
+Required work:
+
+- add a failing public viewer test for a click hotspot with a missing `target_scene_id`
+- make the viewer fall back to the next linear scene when the target scene cannot be resolved
+- keep info hotspots opening their information panel
+- keep embed mode behavior unchanged
+- do not change backend snapshot shape unless the test proves frontend fallback is insufficient
+
+Out of this slice unless directly required:
+
+- hotspot editor redesign
+- branching demo builder
+- extension-generated demo capture quality
+- guide editor leftovers from Phase 5
 
 ### Scene Orientation
 
@@ -213,16 +249,16 @@ Possible work:
 
 ### 1. Triage Dogfood Findings
 
-- [ ] Read portal and extension dogfood logs.
-- [ ] Extract demo-specific issues.
-- [ ] Separate editor issues from public viewer issues.
-- [ ] Pick a small coherent slice.
-- [ ] Create follow-up plans for unrelated issues.
+- [x] Read portal and extension dogfood logs.
+- [x] Extract demo-specific issues.
+- [x] Separate editor issues from public viewer issues.
+- [x] Pick a small coherent slice: public viewer target-scene fallback.
+- [x] Create follow-up notes for unrelated issues.
 
 ### 2. Add Or Update Tests
 
 - [ ] Add web tests for changed editor behavior.
-- [ ] Add public viewer tests if viewer behavior changes.
+- [ ] Add public viewer tests for stale target-scene fallback.
 - [ ] Add API client tests if request/response handling changes.
 - [ ] Add server tests only if validation or snapshot behavior changes.
 
@@ -320,3 +356,5 @@ Possible follow-ups:
 - custom branding
 - richer hotspot types
 - viewer accessibility pass
+- portal pointer-click/accessibility investigation for controls that were easier through keyboard activation in dogfood
+- extension-generated demo quality after Phase 7 restores automatic capture evidence
