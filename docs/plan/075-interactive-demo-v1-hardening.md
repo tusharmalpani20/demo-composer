@@ -296,7 +296,7 @@ Missed or deferred work to keep as follow-up candidates:
 
 ### 2. Add Or Update Tests
 
-- [ ] Add web tests for changed editor behavior.
+- [x] Add web tests for changed editor behavior. Not needed; the selected slice changed public viewer behavior only.
 - [x] Add public viewer tests for stale target-scene fallback.
 - [x] Add API client tests if request/response handling changes. Not needed; no API change.
 - [x] Add server tests only if validation or snapshot behavior changes. Not needed; no server change.
@@ -318,7 +318,7 @@ Missed or deferred work to keep as follow-up candidates:
 - [ ] Publish demo.
 - [ ] Open public viewer.
 - [ ] Open embed route.
-- [ ] Confirm password gate if publish controls changed.
+- [x] Confirm password gate if publish controls changed. Not needed; publish controls did not change.
 
 ### 5. Docs And Tracking
 
