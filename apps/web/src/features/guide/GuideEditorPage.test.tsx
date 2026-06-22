@@ -795,6 +795,59 @@ describe("GuideEditorPage", () => {
     expect(screen.getByText("Block saved.")).toBeInTheDocument();
   });
 
+  it("adds alert blocks from the visible structural block controls", async () => {
+    const createBlock = vi.fn(async (_projectId, _guideId, data) => ({
+      guide_blocks: [
+        {
+          ...guideDetail.guide_blocks[1]!,
+          block_index: 1,
+        },
+        {
+          id: "block_alert",
+          organization_id: "organization_1",
+          project_id: "project_1",
+          guide_id: "guide_1",
+          source_capture_session_id: null,
+          source_capture_event_id: null,
+          source_capture_asset_id: null,
+          selected_capture_asset_id: null,
+          screenshot_hidden: false,
+          display_capture_asset_id: null,
+          block_type: "alert" as const,
+          content: data.content ?? null,
+          block_index: 2,
+          created_by_id: "org_user_1",
+          updated_by_id: "org_user_1",
+          version: 1,
+          created_at: "2026-06-05T10:03:00.000Z",
+          updated_at: "2026-06-05T10:03:00.000Z",
+          step: null,
+        },
+        {
+          ...guideDetail.guide_blocks[0]!,
+          block_index: 3,
+        },
+      ],
+    }));
+
+    renderPage({ createBlock });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Add alert after block 1" }));
+
+    await waitFor(() => expect(createBlock).toHaveBeenCalledWith("project_1", "guide_1", {
+      block_type: "alert",
+      position: {
+        placement: "after",
+        guide_block_id: "block_1",
+      },
+      content: {
+        body: "Add an important note.",
+      },
+    }));
+    expect(await screen.findByLabelText("Alert body 2")).toHaveValue("Add an important note.");
+  });
+
   it("adds and edits paragraph blocks and adds divider blocks from the editor", async () => {
     const createBlock = vi.fn(async (_projectId, _guideId, data) => ({
       guide_blocks: [
@@ -891,6 +944,100 @@ describe("GuideEditorPage", () => {
     }));
     expect(await screen.findByRole("separator", { name: "Guide section divider 2" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Divider body 2")).not.toBeInTheDocument();
+  });
+
+  it("adds structural blocks with type-specific ordering actions", async () => {
+    const createBlock = vi.fn(async (_projectId, _guideId, data) => ({
+      guide_blocks: [
+        {
+          ...guideDetail.guide_blocks[1]!,
+          block_index: 1,
+        },
+        {
+          id: `block_${data.block_type}`,
+          organization_id: "organization_1",
+          project_id: "project_1",
+          guide_id: "guide_1",
+          source_capture_session_id: null,
+          source_capture_event_id: null,
+          source_capture_asset_id: null,
+          selected_capture_asset_id: null,
+          screenshot_hidden: false,
+          display_capture_asset_id: null,
+          block_type: data.block_type,
+          content: data.content ?? null,
+          block_index: 2,
+          created_by_id: "org_user_1",
+          updated_by_id: "org_user_1",
+          version: 1,
+          created_at: "2026-06-05T10:03:00.000Z",
+          updated_at: "2026-06-05T10:03:00.000Z",
+          step: null,
+        },
+        {
+          ...guideDetail.guide_blocks[0]!,
+          block_index: 3,
+        },
+      ],
+    }));
+    const reorderBlocks = vi.fn(async (_projectId: string, _guideId: string, blockIds: string[]) => ({
+      guide_blocks: blockIds.map((blockId: string, index: number) => {
+        const block = blockId === "block_header"
+          ? {
+            id: "block_header",
+            organization_id: "organization_1",
+            project_id: "project_1",
+            guide_id: "guide_1",
+            source_capture_session_id: null,
+            source_capture_event_id: null,
+            source_capture_asset_id: null,
+            selected_capture_asset_id: null,
+            screenshot_hidden: false,
+            display_capture_asset_id: null,
+            block_type: "header" as const,
+            content: { title: "New section" },
+            block_index: index + 1,
+            created_by_id: "org_user_1",
+            updated_by_id: "org_user_1",
+            version: 1,
+            created_at: "2026-06-05T10:03:00.000Z",
+            updated_at: "2026-06-05T10:03:00.000Z",
+            step: null,
+          }
+          : guideDetail.guide_blocks.find((candidate) => candidate.id === blockId)!;
+
+        return {
+          ...block,
+          block_index: index + 1,
+        };
+      }),
+    }));
+
+    renderPage({ createBlock, reorderBlocks });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Add header after block 1" }));
+
+    await waitFor(() => expect(createBlock).toHaveBeenCalledWith("project_1", "guide_1", {
+      block_type: "header",
+      position: {
+        placement: "after",
+        guide_block_id: "block_1",
+      },
+      content: {
+        title: "New section",
+      },
+    }));
+    expect(await screen.findByLabelText("Header title 2")).toHaveValue("New section");
+
+    fireEvent.click(screen.getByRole("button", { name: "Move header 2 down" }));
+
+    await waitFor(() => expect(reorderBlocks).toHaveBeenCalledWith("project_1", "guide_1", [
+      "block_1",
+      "block_2",
+      "block_header",
+    ]));
+    expect(screen.getByRole("button", { name: "Delete header 3" })).toBeInTheDocument();
   });
 
   it("marks a published guide stale after inserting a block", async () => {
@@ -1433,7 +1580,7 @@ describe("GuideEditorPage", () => {
     expect(await screen.findByText("header")).toBeInTheDocument();
     expect(screen.getByLabelText("Header title 1")).toHaveValue("Setup section");
     expect(screen.getByRole("button", { name: "Save header 1" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Delete block 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete header 1" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Delete step 1" })).not.toBeInTheDocument();
   });
 

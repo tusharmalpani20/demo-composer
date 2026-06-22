@@ -1676,7 +1676,7 @@ const GuideBlockEditor = ({
   onOpenScreenshot: (imageId: string) => void;
 }) => {
   const step = block.step;
-  const actionLabel = step ? "step" : "block";
+  const actionLabel = step ? "step" : labelForBlockType(block.block_type).toLowerCase();
   const actionBusy = busyAction !== null;
   const uploadBusy = busyAction === `upload-screenshot:${block.id}`;
   const annotationsBusy = busyAction === `annotations:${block.id}`;
