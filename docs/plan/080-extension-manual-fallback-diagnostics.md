@@ -12,6 +12,19 @@ docs/plan/master/002-alpha-follow-through-master-plan.md
 
 This is Phase 3 of the alpha follow-through master plan.
 
+## Dependencies
+
+Recommended after or alongside:
+
+```text
+docs/plan/079-extension-automatic-capture-reliability-v3.md
+```
+
+Reason:
+
+- manual fallback diagnostics may share popup, background-worker, auth, upload, and active-capture state with automatic capture
+- if this plan starts before plan `079` is complete, keep the slice strictly manual-fallback focused and do not mix in automatic click fixes
+
 ## Goal
 
 Make manual screenshot fallback reliable and observable.

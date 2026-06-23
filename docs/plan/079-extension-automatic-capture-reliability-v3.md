@@ -12,6 +12,19 @@ docs/plan/master/002-alpha-follow-through-master-plan.md
 
 This is Phase 2 of the alpha follow-through master plan.
 
+## Dependencies
+
+Recommended after:
+
+```text
+docs/plan/078-split-origin-url-hardening.md
+```
+
+Reason:
+
+- split-origin portal-link issues should not obscure automatic capture diagnostics
+- if plan `078` is not complete, explicitly record the API instance URL and portal URL used during extension verification
+
 ## Goal
 
 Diagnose and improve automatic click capture in a headed/manual browser.

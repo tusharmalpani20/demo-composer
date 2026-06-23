@@ -12,6 +12,19 @@ docs/plan/master/002-alpha-follow-through-master-plan.md
 
 This is Phase 7 of the alpha follow-through master plan.
 
+## Dependencies
+
+Recommended after when URL config or deployment docs are touched:
+
+```text
+docs/plan/078-split-origin-url-hardening.md
+```
+
+Reason:
+
+- self-host docs and packaging should use the final API-origin vs portal-origin terminology from split-origin hardening
+- ops slices unrelated to URL config, such as storage inventory dry-run tooling, may start earlier if they stay isolated
+
 ## Goal
 
 Move self-host operations beyond documentation-only guidance where a conservative tool is justified.

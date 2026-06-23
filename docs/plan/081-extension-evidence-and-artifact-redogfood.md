@@ -31,11 +31,16 @@ extension capture creates events/assets
 Should start after:
 
 ```text
+docs/plan/078-split-origin-url-hardening.md
 docs/plan/079-extension-automatic-capture-reliability-v3.md
 docs/plan/080-extension-manual-fallback-diagnostics.md
 ```
 
 If either dependency is incomplete or blocked, this plan should become an evidence run that records the blocker instead of forcing screenshots.
+
+Reason:
+
+- extension evidence needs correct portal URL behavior plus at least one working extension capture or fallback path
 
 ## Current Baseline
 

@@ -12,6 +12,19 @@ docs/plan/master/002-alpha-follow-through-master-plan.md
 
 This is Phase 6 of the alpha follow-through master plan.
 
+## Dependencies
+
+Recommended after:
+
+```text
+docs/plan/082-portal-interaction-accessibility-pass.md
+```
+
+Reason:
+
+- some authoring friction may be caused by pointer/keyboard activation semantics rather than editor-specific behavior
+- if this plan starts first, record whether the selected slice depends on any unresolved portal interaction issue
+
 ## Goal
 
 Reduce remaining guide and demo authoring friction after the first hardening slices.
