@@ -2,15 +2,15 @@
 
 Date: 2026-06-22
 
-Status: Active master plan.
+Status: Completed with follow-up notes.
 
 Master plan number: 001.
 
 ## Purpose
 
-This master plan turns the current alpha standing into the next eight phases of work.
+This master plan turned the alpha standing into eight completed hardening phases.
 
-It is not meant to be implemented directly. Each phase should be picked up by an agent or maintainer, expanded into a focused numbered plan under `docs/plan/`, reviewed against current code, and then implemented in small tested slices.
+It was not meant to be implemented directly. Each phase was picked up through a focused numbered plan under `docs/plan/`, reviewed against current code, and implemented or recorded in small tested slices.
 
 Current product shape:
 
@@ -315,7 +315,7 @@ Missed work to carry forward:
 - Guide structural add-block controls were visible but inert during the dogfood run; carry this into Phase 5 guide editor hardening.
 - Several portal controls were more reliable with keyboard activation than pointer click in automation; investigate during portal/editor hardening.
 - Invite URL construction in split API/web local development omitted the Vite port; clarify or make it portal-origin aware.
-- Manual extension dogfood remains pending and must be handled by Phase 3 with separate extension evidence.
+- Manual extension dogfood was handled by Phase 3 as a separate blocked evidence run; remaining extension capture work belongs in Phase 7 follow-ups and the next master-plan wave.
 
 ### Acceptance Criteria
 
@@ -829,3 +829,21 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 6. Interactive Demo V1 Hardening | Completed with follow-up notes | `docs/plan/075-interactive-demo-v1-hardening.md` |
 | 7. Extension Capture Reliability V2 | Completed with follow-up notes | `docs/plan/076-extension-capture-reliability-v2.md` |
 | 8. Self-Host Production Hardening V2 | Completed with follow-up notes | `docs/plan/077-self-host-production-hardening-v2.md` |
+
+## Closeout Review
+
+Completed on 2026-06-23 local time.
+
+All eight phases covered by this master plan are complete as scoped. Some phases were intentionally evidence-gathering or narrow implementation slices, so completion does not mean every product risk is resolved.
+
+Open follow-up areas for the next master-plan wave:
+
+- browser-facing invite URL construction for split API/web deployments
+- extension automatic click capture reliability in a headed/manual browser
+- extension manual screenshot fallback upload/event behavior and user-visible diagnostics
+- extension visual evidence after capture reliability is proven or explicitly bounded
+- portal pointer-click/accessibility investigation for controls that were more reliable through keyboard activation in dogfood automation
+- remaining guide editor hardening: screenshot picker clarity, annotation affordances, publish stale-state clarity, export errors, and save/error/retry behavior
+- remaining interactive demo hardening: editor affordances, scene list/reorder feedback, embed/narrow viewport QA, and final-scene stale-target behavior
+- self-host production hardening: storage inventory/dry-run cleanup tooling, Docker image or one-command packaging, shared rate-limit backend, object storage support, production env report, and actual backup/restore rehearsal
+- docs-site work for `apps/docs`, which remains starter content

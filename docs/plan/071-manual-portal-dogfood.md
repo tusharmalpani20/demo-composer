@@ -336,7 +336,7 @@ Do not reopen this completed dogfood phase for these items. Carry them into the 
 - Phase 5 guide hardening should start with the inert add-block controls and missing guide block reorder coverage.
 - Portal/editor hardening should verify whether pointer-click activation issues reproduce outside `agent-browser`; if they reproduce, add focused accessibility/event tests.
 - Phase 8 self-host hardening should clarify browser-facing public URL generation for split API/web development setups.
-- Phase 3 extension dogfood remains pending and should not inherit portal-only assumptions; it needs its own browser extension evidence.
+- Phase 3 extension dogfood later completed as a blocked evidence run; remaining extension capture work should not inherit portal-only assumptions and needs its own reliability follow-up evidence.
 
 ## Result Recording
 
