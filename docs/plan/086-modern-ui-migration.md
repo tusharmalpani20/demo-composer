@@ -153,10 +153,10 @@ Design-system constraints:
 ### 6. Interactive Demo Screens
 
 - [x] Modernize `ProjectInteractiveDemoListPage`.
-- [ ] Modernize `InteractiveDemoEditorPage`.
+- [x] Modernize `InteractiveDemoEditorPage`.
 - [x] Modernize `PublicInteractiveDemoViewerPage` and embed mode.
-- [ ] Preserve scene editing, hotspot editing, publish controls, password access, and viewer navigation.
-- [ ] Commit interactive-demo slice.
+- [x] Preserve scene editing, hotspot editing, publish controls, password access, and viewer navigation.
+- [x] Commit interactive-demo slice.
 
 ### 7. Chrome Extension Popup
 
@@ -329,6 +329,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: Guide editor verification passed: pre-change characterization `rtk pnpm --filter web test -- GuideEditorPage`; post-change `GuideEditorPage`, `rtk pnpm --filter web test -- Guide`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 - 2026-06-30: Modernized `ProjectInteractiveDemoListPage` and `PublicInteractiveDemoViewerPage` with shared retry/actions, cards, badges, password field, navigation controls, and dismiss action while keeping hotspot overlay buttons custom.
 - 2026-06-30: Interactive demo list/viewer verification passed: pre-change and post-change `rtk pnpm --filter web test -- ProjectInteractiveDemoListPage PublicInteractiveDemoViewerPage`, plus `check-types`, `lint`, `build`, and `rtk git diff --check`.
+- 2026-06-30: Added shared `Select` primitive and modernized `InteractiveDemoEditorPage` metadata, publishing, scene, and hotspot editors with shared form/button/badge primitives while keeping hotspot overlay buttons custom.
+- 2026-06-30: Interactive demo editor verification passed: pre-change `rtk pnpm --filter web test -- InteractiveDemoEditorPage`; post-change `rtk pnpm --filter @repo/ui test`, `check-types`, `lint`, `rtk pnpm --filter web test -- InteractiveDemoEditorPage`, `rtk pnpm --filter web test -- InteractiveDemo`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 
 ## Final Gap Review
 

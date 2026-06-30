@@ -6,6 +6,7 @@ import { Badge } from "./badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./card";
 import { Input } from "./input";
 import { Label } from "./label";
+import { Select } from "./select";
 import { Separator } from "./separator";
 import { Textarea } from "./textarea";
 
@@ -17,11 +18,17 @@ describe("shared UI primitives", () => {
         <Input className="name-input" id="name" defaultValue="Launch demo" />
         <Label htmlFor="notes">Notes</Label>
         <Textarea id="notes" defaultValue="Internal walkthrough" />
+        <Label htmlFor="status">Status</Label>
+        <Select id="status" defaultValue="draft">
+          <option value="draft">Draft</option>
+          <option value="archived">Archived</option>
+        </Select>
       </form>
     );
 
     expect(screen.getByLabelText("Project name")).toHaveClass("name-input");
     expect(screen.getByLabelText("Notes")).toHaveValue("Internal walkthrough");
+    expect(screen.getByLabelText("Status")).toHaveValue("draft");
   });
 
   it("renders content primitives without hiding semantic content", () => {
