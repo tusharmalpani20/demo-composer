@@ -133,6 +133,7 @@ DB checks require a real PostgreSQL testing database configured through `apps/se
 apps/server     Fastify REST API, PostgreSQL, local file storage
 apps/web        React/Vite portal plus public guide/demo readers
 apps/extension  React/Vite Chrome extension popup and capture worker
+apps/docs       Compact alpha docs hub for overview, source-doc links, and screenshot evidence
 packages/*      Shared repo tooling placeholders; product contracts stay near owners for now
 ```
 
