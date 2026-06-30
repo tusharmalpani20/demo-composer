@@ -100,6 +100,12 @@ Post-completion recheck:
 - the report now avoids leaking accidental URL userinfo, paths, query strings, or hashes from an over-specified `API_URL`
 - no additional product bug was found in this slice after the API URL sanitization fix
 
+Final closeout review:
+
+- acceptance criteria are met for the selected production environment report slice
+- no additional product bug was found in this implementation during the closeout review
+- remaining self-host operations items below are still open and should become a future ops-focused plan, not part of the docs-site phase unless Phase 8 only documents current alpha limitations
+
 Verification run:
 
 ```bash
@@ -243,3 +249,5 @@ rtk pnpm --filter server test:smoke
 ## Follow-Up Notes
 
 If this plan selects only one operational slice, keep the other candidate slices in the missed/deferred section for the next ops plan.
+
+The next master phase is docs-site work. The ops leftovers recorded above should stay available for a later self-host operations plan unless the docs site needs to describe current alpha limitations.

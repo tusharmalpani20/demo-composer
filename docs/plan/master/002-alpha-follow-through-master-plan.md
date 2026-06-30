@@ -519,6 +519,11 @@ Post-completion recheck:
 - the report now avoids leaking accidental URL userinfo, paths, query strings, or hashes from an over-specified `API_URL`
 - no additional product bug was found in this slice after the API URL sanitization fix
 
+Final closeout review:
+
+- acceptance criteria are met for the selected production environment report slice
+- remaining self-host operations candidates should become a later ops-focused plan rather than being folded into Phase 8 docs-site work, except as documented alpha limitations
+
 Carry-forward ops candidates:
 
 - storage reference inventory and dry-run cleanup reporting
