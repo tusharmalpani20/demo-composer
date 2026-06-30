@@ -133,7 +133,7 @@ Design-system constraints:
 
 ### 4. Capture Session Screens
 
-- [ ] Modernize `ProjectCaptureSessionListPage`.
+- [x] Modernize `ProjectCaptureSessionListPage`.
 - [ ] Modernize `CaptureSessionDetailPage`.
 - [ ] Preserve upload, event ordering, event editing, create guide, and create demo behavior.
 - [ ] Keep complex screenshot/event layout CSS where it is still useful.
@@ -307,6 +307,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: Portal foundation verification passed: `rtk pnpm --filter web test -- LoginPage`, `FirstRunSetupPage`, `ProjectListPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 - 2026-06-30: Modernized `ProjectWorkspacePage`, `ProjectSettingsPage`, `OrganizationMembersPage`, and `InviteAcceptPage` with shared primitives while preserving project and organization workflows.
 - 2026-06-30: Remaining portal foundation verification passed: `rtk pnpm --filter web test -- ProjectWorkspacePage`, `ProjectSettingsPage`, `OrganizationMembersPage`, `InviteAcceptPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
+- 2026-06-30: Modernized `ProjectCaptureSessionListPage` with shared create-form, button, badge, card, alert, and field primitives. `CaptureSessionDetailPage` remains pending as its own safer slice because it owns upload, event editing, asset display, and artifact creation controls.
+- 2026-06-30: Capture list verification passed: `rtk pnpm --filter web test -- ProjectCaptureSessionListPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 
 ## Final Gap Review
 
