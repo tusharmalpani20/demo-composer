@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { Badge } from "@repo/ui/badge";
+import { Button } from "@repo/ui/button";
+import { Card } from "@repo/ui/card";
 import {
   ApiClientError,
   getGuidePublishStatus,
@@ -185,9 +188,9 @@ export const ProjectGuideListPage = ({
       <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load guides.</div>
-          <button className={styles.secondaryButton} type="button" onClick={() => setReloadKey((key) => key + 1)}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => setReloadKey((key) => key + 1)}>
             Retry
-          </button>
+          </Button>
         </div>
       </PortalShell>
     );
@@ -206,7 +209,7 @@ export const ProjectGuideListPage = ({
       <section className={styles.content} aria-labelledby="guides-heading">
         <h2 className={styles.sectionTitle} id="guides-heading">Project guides</h2>
         {state.guides.length === 0 ? (
-          <div className={styles.empty}>No guides yet.</div>
+          <Card className={styles.empty}>No guides yet.</Card>
         ) : (
           <div className={styles.list}>
             {state.guides.map((guide) => (
@@ -254,7 +257,7 @@ const GuideRow = ({
     <div className={styles.guideBody}>
       <div className={styles.guideHeader}>
         <h3 className={styles.guideTitle}>{guide.title}</h3>
-        <span className={styles.badge}>{guide.status}</span>
+        <Badge variant={guide.status === "draft" ? "success" : "default"}>{guide.status}</Badge>
       </div>
       {guide.description ? <p className={styles.guideDescription}>{guide.description}</p> : null}
       <div className={styles.meta}>

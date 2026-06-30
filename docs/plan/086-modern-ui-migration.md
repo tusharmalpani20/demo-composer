@@ -142,7 +142,7 @@ Design-system constraints:
 
 ### 5. Guide Screens
 
-- [ ] Modernize `ProjectGuideListPage`.
+- [x] Modernize `ProjectGuideListPage`.
 - [ ] Modernize `GuideEditorPage`.
 - [ ] Modernize `GuidePreviewPage`.
 - [ ] Modernize `GuideScreenshotViewer`.
@@ -321,6 +321,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: Added README and screenshot refresh as an explicit final deliverable after the user's follow-up request.
 - 2026-06-30: Modernized `CaptureSessionDetailPage` header actions, upload panel, reorder/edit controls, badges, alerts, and form fields with shared primitives while keeping native file input and complex event/asset layout CSS.
 - 2026-06-30: Capture detail verification passed: `rtk pnpm --filter web test -- CaptureSessionDetailPage`, `check-types`, `lint`, `build`, `rtk git diff --check`, and `rg` found no remaining `primaryButton`, `secondaryButton`, `eventMoveButton`, `formError`, raw `<button>`, or raw `<textarea>` in the detail page.
+- 2026-06-30: Modernized `ProjectGuideListPage` with shared retry button, badges, and empty-state card while preserving real `<article>` rows required by behavior tests.
+- 2026-06-30: Guide list verification passed: `rtk pnpm --filter web test -- ProjectGuideListPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 
 ## Final Gap Review
 
