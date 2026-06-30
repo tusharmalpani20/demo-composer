@@ -74,6 +74,8 @@ Implementation result:
 - surfaced the plan `084` self-host operations leftovers as limitations only
 - updated docs app metadata, docs app README, root README, contributor guide, project status, and roadmap to stop describing `apps/docs` as parked starter content
 - added focused docs content tests
+- added focused docs page component tests for hero image loading and duplicate evidence-image rendering
+- added a focused docs page style test to guard against viewport-scaled text and non-neutral letter spacing
 
 Verification run:
 
@@ -83,15 +85,22 @@ rtk pnpm --filter docs check-types
 rtk pnpm --filter docs lint
 rtk pnpm --filter docs build
 rtk git diff --check
+rtk agent-browser --session docs-085-final open http://localhost:3001
+rtk agent-browser --session docs-085-final snapshot -i -u
+rtk agent-browser --session docs-085-final console
+rtk agent-browser --session docs-085-final errors
 ```
 
 Results:
 
 - docs content suite passed with 4 tests
+- docs page component suite passed with 2 tests
+- docs page style suite passed with 2 tests
 - docs typecheck passed
 - docs lint passed
 - docs production build passed
 - whitespace check passed
+- browser smoke showed the main docs regions and links, no browser errors, and no LCP image warning after the duplicate lazy hero screenshot was removed from the evidence grid
 
 Missed or deferred work to keep as follow-up candidates:
 
@@ -101,6 +110,8 @@ Missed or deferred work to keep as follow-up candidates:
 - deployment and canonical URL decision for `apps/docs`
 - automatic ingestion of markdown docs instead of curated links
 - deeper docs IA and content ownership model
+- future visual refreshes should keep text sizing breakpoint-based rather than viewport-scaled
+- future screenshot additions should avoid reusing the above-the-fold hero screenshot as a lazy below-the-fold image
 
 ## Explicit Non-Goals
 

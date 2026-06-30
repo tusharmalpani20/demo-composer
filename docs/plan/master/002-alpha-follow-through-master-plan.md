@@ -2,7 +2,7 @@
 
 Date: 2026-06-23
 
-Status: Active master plan.
+Status: Completed with follow-up notes.
 
 Master plan number: 002.
 
@@ -50,7 +50,7 @@ Future child-plan authors should read:
 - `apps/extension/README.md`
 - relevant implementation files for the selected phase
 
-## Current Standing Snapshot
+## Opening Standing Snapshot
 
 At the start of this master plan:
 
@@ -599,6 +599,8 @@ Carry-forward docs-site candidates:
 - deployment and canonical URL decision for `apps/docs`
 - automatic ingestion of markdown docs instead of curated links
 - deeper docs IA and content ownership model
+- keep the docs hub typography guardrails covered if future visual work changes the page styles
+- keep the hero screenshot eager and avoid rendering the same screenshot later as a lazy image
 
 ### Goal
 
@@ -676,3 +678,11 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 6. Authoring Polish V2 | Completed with follow-up notes | `docs/plan/083-authoring-polish-v2.md` |
 | 7. Self-Host Ops Tooling V3 | Completed with follow-up notes | `docs/plan/084-self-host-ops-tooling-v3.md` |
 | 8. Docs Site V1 | Completed with follow-up notes | `docs/plan/085-docs-site-v1.md` |
+
+## Completion Standing Snapshot
+
+Updated on 2026-06-30 local time.
+
+- All eight alpha follow-through phases have completed child plans with follow-up notes.
+- `apps/docs` is now a compact alpha docs hub; markdown docs remain the source-of-truth deep dives.
+- Remaining candidates should start from the carry-forward notes in the relevant child plan rather than reopening this master plan.
