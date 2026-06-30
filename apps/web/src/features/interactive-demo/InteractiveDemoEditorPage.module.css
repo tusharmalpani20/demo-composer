@@ -46,19 +46,6 @@
   line-height: 1.55;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #334155;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .meta {
   display: flex;
   flex-wrap: wrap;
@@ -111,60 +98,9 @@
   font-weight: 700;
 }
 
-.field input,
-.field textarea,
-.field select {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #111827;
-  font: inherit;
-}
-
-.field input,
-.field select {
-  min-height: 38px;
-  padding: 0 10px;
-}
-
 .field textarea {
   resize: vertical;
   min-height: 88px;
-  padding: 10px;
-  line-height: 1.45;
-}
-
-.primaryButton,
-.secondaryButton,
-.dangerButton {
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid #b8c3cf;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #1c2430;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.primaryButton {
-  border-color: #1f4f82;
-  background: #1f4f82;
-  color: #ffffff;
-}
-
-.dangerButton {
-  border-color: #e6b3b3;
-  color: #8f1d1d;
-}
-
-.primaryButton:disabled,
-.secondaryButton:disabled,
-.dangerButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .sceneList {

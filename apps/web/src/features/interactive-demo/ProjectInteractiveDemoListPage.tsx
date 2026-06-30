@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { Badge } from "@repo/ui/badge";
+import { Button, buttonVariants } from "@repo/ui/button";
+import { Card } from "@repo/ui/card";
 import {
   ApiClientError,
   listProjectInteractiveDemos,
@@ -114,9 +117,9 @@ export const ProjectInteractiveDemoListPage = ({
       <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load interactive demos.</div>
-          <button className={styles.secondaryButton} type="button" onClick={() => setReloadKey((key) => key + 1)}>
+          <Button variant="secondary" onClick={() => setReloadKey((key) => key + 1)}>
             Retry
-          </button>
+          </Button>
         </div>
       </PortalShell>
     );
@@ -135,10 +138,10 @@ export const ProjectInteractiveDemoListPage = ({
       <section className={styles.content} aria-labelledby="interactive-demos-heading">
         <h2 className={styles.sectionTitle} id="interactive-demos-heading">Project interactive demos</h2>
         {state.demos.length === 0 ? (
-          <div className={styles.empty}>
+          <Card className={styles.empty}>
             <div>No interactive demos yet.</div>
             <a className={styles.stateLink} href={captureSessionsUrl(projectId)}>Open capture sessions</a>
-          </div>
+          </Card>
         ) : (
           <div className={styles.list}>
             {state.demos.map((demo) => (
@@ -179,7 +182,7 @@ const DemoRow = ({
     <div className={styles.demoBody}>
       <div className={styles.demoHeader}>
         <h3 className={styles.demoTitle}>{demo.title}</h3>
-        <span className={styles.badge}>{demo.status}</span>
+        <Badge variant={demo.status === "draft" ? "warning" : "success"}>{demo.status}</Badge>
       </div>
       {demo.description ? <p className={styles.demoDescription}>{demo.description}</p> : null}
       <div className={styles.meta}>
@@ -188,7 +191,7 @@ const DemoRow = ({
         <span>Created {formatDateTime(demo.created_at)}</span>
       </div>
     </div>
-    <a className={styles.openLink} href={demoUrl(projectId, demo.id)}>
+    <a className={`${buttonVariants({ variant: "secondary" })} ${styles.openLink}`} href={demoUrl(projectId, demo.id)}>
       Open demo {demo.title}
     </a>
   </article>

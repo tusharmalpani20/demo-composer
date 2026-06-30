@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { Badge } from "@repo/ui/badge";
+import { Button, buttonVariants } from "@repo/ui/button";
 import {
   ApiClientError,
   exportGuideMarkdown,
@@ -273,28 +275,26 @@ const GuidePreviewView = ({
           <div className={styles.eyebrow}>Guide preview</div>
           <h1 className={styles.title}>{detail.guide.title}</h1>
           {detail.guide.description ? <p className={styles.description}>{detail.guide.description}</p> : null}
-          <span className={styles.badge}>{detail.guide.status}</span>
+          <Badge variant={detail.guide.status === "draft" ? "warning" : "success"}>{detail.guide.status}</Badge>
           {notice ? <div className={styles.notice}>{notice}</div> : null}
         </div>
         <div className={styles.actions}>
-          <button
-            className={styles.secondaryLink}
-            type="button"
+          <Button
+            variant="secondary"
             disabled={busyAction !== null}
             onClick={copyMarkdown}
           >
             {busyAction === "copy-markdown" ? "Copying Markdown..." : "Copy Markdown"}
-          </button>
-          <button
-            className={styles.secondaryLink}
-            type="button"
+          </Button>
+          <Button
+            variant="secondary"
             disabled={busyAction !== null}
             onClick={downloadMarkdown}
           >
             {busyAction === "download-markdown" ? "Downloading Markdown..." : "Download Markdown"}
-          </button>
-          <a className={styles.secondaryLink} href={guidePreviewListUrl(projectId)}>Back to guides</a>
-          <a className={styles.primaryLink} href={guideUrl(projectId, guideId)}>Edit guide</a>
+          </Button>
+          <a className={`${buttonVariants({ variant: "secondary" })} ${styles.actionLink}`} href={guidePreviewListUrl(projectId)}>Back to guides</a>
+          <a className={`${buttonVariants({ variant: "primary" })} ${styles.actionLink}`} href={guideUrl(projectId, guideId)}>Edit guide</a>
         </div>
       </section>
 

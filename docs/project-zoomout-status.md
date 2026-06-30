@@ -41,7 +41,7 @@ The automated DB-backed smoke test for that workflow lives in `apps/server/src/s
 rtk pnpm --filter server test:smoke
 ```
 
-Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-22 and is recorded in `docs/v1-dogfood-smoke-suite.md`. Portal alpha screenshots from safe synthetic data are now committed under `docs/assets/alpha/` and linked from `README.md`. Chrome extension dogfood smoke ran on 2026-06-22 and is currently blocked by capture failures, so extension screenshots remain pending.
+Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-22 and is recorded in `docs/v1-dogfood-smoke-suite.md`. Portal alpha screenshots from safe synthetic data are committed under `docs/assets/alpha/` and linked from `README.md`. Public guide/demo screenshots and the extension setup popup screenshot were refreshed on 2026-06-30 during the modern UI browser QA pass. Chrome extension capture dogfood remains blocked by capture failures, so captured-workflow extension screenshots remain pending.
 
 ## Built So Far
 
@@ -105,7 +105,7 @@ Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-2
 
 - Manual portal dogfood found non-blocking guide editor and local dev URL friction that should feed the next hardening phases.
 - Manual Chrome extension dogfood smoke is blocked by automatic capture and manual fallback failures.
-- Extension screenshots are pending until extension dogfood has a passing or explicitly bounded capture path.
+- Captured-workflow extension screenshots are pending until extension dogfood has a passing or explicitly bounded capture path.
 - HTML capture/replay is deferred.
 - AI/BYO-key authoring is deferred.
 - Analytics, lead capture, sales tracking, and custom branding are deferred.

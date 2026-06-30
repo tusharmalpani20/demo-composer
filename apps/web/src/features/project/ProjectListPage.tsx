@@ -1,4 +1,11 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { Alert } from "@repo/ui/alert";
+import { Badge } from "@repo/ui/badge";
+import { Button } from "@repo/ui/button";
+import { Card, CardContent, CardHeader } from "@repo/ui/card";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
+import { Textarea } from "@repo/ui/textarea";
 import {
   ApiClientError,
   createProject,
@@ -207,9 +214,9 @@ export const ProjectListPage = ({
       <PortalShell performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load projects.</div>
-          <button className={styles.secondaryButton} type="button" onClick={() => setReloadKey((key) => key + 1)}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => setReloadKey((key) => key + 1)}>
             Retry
-          </button>
+          </Button>
         </div>
       </PortalShell>
     );
@@ -222,55 +229,59 @@ export const ProjectListPage = ({
           <div className={styles.eyebrow}>Portal home</div>
           <h1 className={styles.title}>Projects</h1>
         </div>
-        <button className={styles.primaryButton} type="button" onClick={openCreateForm}>
+        <Button type="button" onClick={openCreateForm}>
           New Project
-        </button>
+        </Button>
       </section>
 
       {showCreateForm ? (
-        <section className={styles.createPanel} aria-labelledby="create-project-heading">
-          <h2 className={styles.formTitle} id="create-project-heading">Create project</h2>
-          <form className={styles.form} onSubmit={submitCreateProject}>
-            {createError ? <div className={styles.formError}>{createError}</div> : null}
-            <label className={styles.field}>
-              <span>Project name</span>
-              <input
-                ref={createNameInputRef}
-                value={createForm.name}
-                onChange={(event) => updateCreateField("name", event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Slug</span>
-              <input
-                value={createForm.slug}
-                onChange={(event) => updateCreateField("slug", event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Description</span>
-              <textarea
-                rows={4}
-                value={createForm.description}
-                onChange={(event) => updateCreateField("description", event.target.value)}
-              />
-            </label>
-            <div className={styles.formActions}>
-              <button className={styles.primaryButton} type="submit" disabled={isCreating}>
-                {isCreating ? "Creating Project..." : "Create Project"}
-              </button>
-              <button className={styles.secondaryButton} type="button" disabled={isCreating} onClick={closeCreateForm}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        </section>
+        <Card className={styles.createPanel} aria-labelledby="create-project-heading">
+          <CardHeader>
+            <h2 className={styles.formTitle} id="create-project-heading">Create project</h2>
+          </CardHeader>
+          <CardContent>
+            <form className={styles.form} onSubmit={submitCreateProject}>
+              {createError ? <Alert variant="destructive">{createError}</Alert> : null}
+              <Label className={styles.field}>
+                <span>Project name</span>
+                <Input
+                  ref={createNameInputRef}
+                  value={createForm.name}
+                  onChange={(event) => updateCreateField("name", event.target.value)}
+                />
+              </Label>
+              <Label className={styles.field}>
+                <span>Slug</span>
+                <Input
+                  value={createForm.slug}
+                  onChange={(event) => updateCreateField("slug", event.target.value)}
+                />
+              </Label>
+              <Label className={styles.field}>
+                <span>Description</span>
+                <Textarea
+                  rows={4}
+                  value={createForm.description}
+                  onChange={(event) => updateCreateField("description", event.target.value)}
+                />
+              </Label>
+              <div className={styles.formActions}>
+                <Button type="submit" disabled={isCreating}>
+                  {isCreating ? "Creating Project..." : "Create Project"}
+                </Button>
+                <Button variant="secondary" type="button" disabled={isCreating} onClick={closeCreateForm}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       ) : null}
 
       <section className={styles.content} aria-labelledby="projects-heading">
         <h2 className={styles.sectionTitle} id="projects-heading">All projects</h2>
         {state.projects.length === 0 ? (
-          <div className={styles.empty}>No projects yet.</div>
+          <Card className={styles.empty}>No projects yet.</Card>
         ) : (
           <div className={styles.projects}>
             {state.projects.map((project) => (
@@ -303,7 +314,7 @@ const ProjectCard = ({ project }: { project: Project }) => (
     <div className={styles.projectBody}>
       <div className={styles.titleRow}>
         <h3 className={styles.projectTitle}>{project.name}</h3>
-        <span className={styles.badge}>{project.status}</span>
+        <Badge variant={project.status === "active" ? "success" : "default"}>{project.status}</Badge>
       </div>
       {project.description ? (
         <p className={styles.description}>{project.description}</p>

@@ -1,4 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { Badge } from "@repo/ui/badge";
+import { Button } from "@repo/ui/button";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
+import { Select } from "@repo/ui/select";
+import { Textarea } from "@repo/ui/textarea";
 import {
   ApiClientError,
   createInteractiveDemoHotspot,
@@ -401,9 +407,9 @@ export const InteractiveDemoEditorPage = ({
       <PortalShell projectId={projectId} interactiveDemoId={interactiveDemoId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load interactive demo.</div>
-          <button className={styles.secondaryButton} type="button" onClick={() => setReloadKey((key) => key + 1)}>
+          <Button variant="secondary" onClick={() => setReloadKey((key) => key + 1)}>
             Retry
-          </button>
+          </Button>
         </div>
       </PortalShell>
     );
@@ -904,7 +910,7 @@ const InteractiveDemoEditorLoaded = ({
               ) : null}
             </div>
           </div>
-          <span className={styles.badge}>{demo.status}</span>
+          <Badge variant={demo.status === "draft" ? "warning" : "success"}>{demo.status}</Badge>
         </div>
       </section>
 
@@ -912,33 +918,33 @@ const InteractiveDemoEditorLoaded = ({
         <div className={styles.sidePanelStack}>
           <section className={styles.panel} aria-labelledby="demo-metadata-heading">
             <h2 className={styles.sectionTitle} id="demo-metadata-heading">Demo metadata</h2>
-            <label className={styles.field}>
+            <Label className={styles.field}>
               Demo title
-              <input
+              <Input
                 value={demoDraft.title}
                 onChange={(event) => updateDemoDraft("title", event.target.value)}
               />
-            </label>
-            <label className={styles.field}>
+            </Label>
+            <Label className={styles.field}>
               Demo description
-              <textarea
+              <Textarea
                 value={demoDraft.description}
                 onChange={(event) => updateDemoDraft("description", event.target.value)}
               />
-            </label>
-            <label className={styles.field}>
+            </Label>
+            <Label className={styles.field}>
               Demo status
-              <select
+              <Select
                 value={demoDraft.status}
                 onChange={(event) => updateDemoDraft("status", event.target.value)}
               >
                 <option value="draft">draft</option>
                 <option value="archived">archived</option>
-              </select>
-            </label>
-            <button className={styles.primaryButton} type="button" disabled={pendingAction === "demo"} onClick={handleSaveDemo}>
+              </Select>
+            </Label>
+            <Button disabled={pendingAction === "demo"} onClick={handleSaveDemo}>
               {pendingAction === "demo" ? "Saving demo..." : "Save demo"}
-            </button>
+            </Button>
             {message ? <div className={styles.message}>{message}</div> : null}
           </section>
 
@@ -947,10 +953,10 @@ const InteractiveDemoEditorLoaded = ({
             <div className={styles.publishStack}>
               {activePublishLink ? (
                 <>
-                  <label className={styles.field}>
+                  <Label className={styles.field}>
                     Public demo URL
-                    <input readOnly value={publicDemoUrl} />
-                  </label>
+                    <Input readOnly value={publicDemoUrl} />
+                  </Label>
                   <a
                     className={styles.sourceLink}
                     href={publicDemoUrl}
@@ -959,98 +965,91 @@ const InteractiveDemoEditorLoaded = ({
                   >
                     Open public demo
                   </a>
-                  <button
-                    className={styles.secondaryButton}
-                    type="button"
+                  <Button
+                    variant="secondary"
                     disabled={pendingAction === "publish:copy"}
                     onClick={() => void handleCopyText(publicDemoUrl, "Public demo URL copied.")}
                   >
                     Copy public demo URL
-                  </button>
-                  <label className={styles.field}>
+                  </Button>
+                  <Label className={styles.field}>
                     Embed demo URL
-                    <input readOnly value={embedDemoUrl} />
-                  </label>
-                  <label className={styles.field}>
+                    <Input readOnly value={embedDemoUrl} />
+                  </Label>
+                  <Label className={styles.field}>
                     Embed iframe code
-                    <textarea
+                    <Textarea
                       readOnly
                       value={embedCode}
                     />
-                  </label>
-                  <button
-                    className={styles.secondaryButton}
-                    type="button"
+                  </Label>
+                  <Button
+                    variant="secondary"
                     disabled={pendingAction === "publish:copy"}
                     onClick={() => void handleCopyText(embedCode, "Embed iframe code copied.")}
                   >
                     Copy embed iframe code
-                  </button>
-                  <label className={styles.field}>
+                  </Button>
+                  <Label className={styles.field}>
                     Publish visibility
-                    <select
+                    <Select
                       value={publishDraft.visibility}
                       onChange={(event) => updatePublishDraft("visibility", event.target.value as PublishDraft["visibility"])}
                     >
                       <option value="public">public</option>
                       <option value="restricted">restricted</option>
-                    </select>
-                  </label>
-                  <label className={styles.field}>
+                    </Select>
+                  </Label>
+                  <Label className={styles.field}>
                     Publish expiry
-                    <input
+                    <Input
                       type="datetime-local"
                       value={publishDraft.expires_at}
                       onChange={(event) => updatePublishDraft("expires_at", event.target.value)}
                     />
-                  </label>
-                  <label className={styles.field}>
+                  </Label>
+                  <Label className={styles.field}>
                     Publish password
-                    <input
+                    <Input
                       type="password"
                       value={publishDraft.password}
                       placeholder={activePublishLink.password_protected ? "Password is set" : "No password set"}
                       onChange={(event) => updatePublishDraft("password", event.target.value)}
                     />
-                  </label>
+                  </Label>
                   <div className={styles.publishActions}>
-                    <button
-                      className={styles.secondaryButton}
-                      type="button"
+                    <Button
+                      variant="secondary"
                       disabled={pendingAction === "publish:access"}
                       onClick={() => void handleSavePublishAccess()}
                     >
                       Save publish access
-                    </button>
-                    <button
-                      className={styles.secondaryButton}
-                      type="button"
+                    </Button>
+                    <Button
+                      variant="secondary"
                       disabled={pendingAction === "publish:password"}
                       onClick={() => void handleSavePublishPassword()}
                     >
                       Save publish password
-                    </button>
-                    <button
-                      className={styles.dangerButton}
-                      type="button"
+                    </Button>
+                    <Button
+                      variant="destructive"
                       disabled={pendingAction === "publish:revoke"}
                       onClick={() => void handleRevokePublishLink()}
                     >
                       Revoke demo link
-                    </button>
+                    </Button>
                   </div>
                 </>
               ) : (
                 <p className={styles.publishNote}>This demo has not been published yet.</p>
               )}
-              <button
-                className={styles.primaryButton}
-                type="button"
+              <Button
                 disabled={pendingAction === "publish"}
                 onClick={() => void handlePublishDemo()}
               >
                 Publish demo
-              </button>
+              </Button>
             </div>
           </section>
         </div>
@@ -1146,15 +1145,15 @@ const SceneEditor = ({
       <div className={styles.sceneHeader}>
         <h3 className={styles.sceneTitle}>{scene.title ?? `Scene ${sceneNumber}`}</h3>
         <div className={styles.sceneActions}>
-          <button className={styles.secondaryButton} type="button" disabled={pending || isFirst} onClick={() => void moveScene(-1)}>
+          <Button variant="secondary" size="sm" disabled={pending || isFirst} onClick={() => void moveScene(-1)}>
             Move scene {sceneNumber} up
-          </button>
-          <button className={styles.secondaryButton} type="button" disabled={pending || isLast} onClick={() => void moveScene(1)}>
+          </Button>
+          <Button variant="secondary" size="sm" disabled={pending || isLast} onClick={() => void moveScene(1)}>
             Move scene {sceneNumber} down
-          </button>
-          <button className={styles.dangerButton} type="button" disabled={pending} onClick={() => void deleteCurrentScene(scene)}>
+          </Button>
+          <Button variant="destructive" size="sm" disabled={pending} onClick={() => void deleteCurrentScene(scene)}>
             Delete scene {sceneNumber}
-          </button>
+          </Button>
         </div>
       </div>
       <div className={styles.screenshotFrame}>
@@ -1184,39 +1183,37 @@ const SceneEditor = ({
           <div className={styles.placeholder}>No screenshot attached.</div>
         )}
       </div>
-      <label className={styles.field}>
+      <Label className={styles.field}>
         Scene {sceneNumber} title
-        <input
+        <Input
           value={draft.title}
           onChange={(event) => updateDraft(scene.id, "title", event.target.value)}
         />
-      </label>
-      <label className={styles.field}>
+      </Label>
+      <Label className={styles.field}>
         Scene {sceneNumber} description
-        <textarea
+        <Textarea
           value={draft.description}
           onChange={(event) => updateDraft(scene.id, "description", event.target.value)}
         />
-      </label>
-      <button
-        className={styles.primaryButton}
-        type="button"
+      </Label>
+      <Button
         disabled={pendingAction === `scene:${scene.id}`}
         onClick={() => void saveCurrentScene(scene)}
       >
         {pendingAction === `scene:${scene.id}` ? `Saving scene ${sceneNumber}...` : `Save scene ${sceneNumber}`}
-      </button>
+      </Button>
       <section className={styles.hotspotSection} aria-label={`Scene ${sceneNumber} hotspots`}>
         <div className={styles.hotspotHeader}>
           <h4 className={styles.hotspotTitle}>Hotspots</h4>
-          <button
-            className={styles.secondaryButton}
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={pending}
             onClick={() => void createCurrentHotspot(scene)}
           >
             Add hotspot to scene {sceneNumber}
-          </button>
+          </Button>
         </div>
         {hotspots.length === 0 ? (
           <div className={styles.emptyInline}>No hotspots yet.</div>
@@ -1231,53 +1228,53 @@ const SceneEditor = ({
                   <div className={styles.hotspotEditorHeader}>
                     <strong>Hotspot {hotspotNumber}</strong>
                     <div className={styles.sceneActions}>
-                      <button
-                        className={styles.secondaryButton}
-                        type="button"
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         disabled={pending || hotspotIndex === 0}
                         onClick={() => void moveHotspot(hotspotIndex, -1)}
                       >
                         Move hotspot {hotspotNumber} up
-                      </button>
-                      <button
-                        className={styles.secondaryButton}
-                        type="button"
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         disabled={pending || hotspotIndex === hotspots.length - 1}
                         onClick={() => void moveHotspot(hotspotIndex, 1)}
                       >
                         Move hotspot {hotspotNumber} down
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                  <label className={styles.field}>
+                  <Label className={styles.field}>
                     Hotspot {hotspotNumber} type
-                    <select
+                    <Select
                       value={hotspotDraft.hotspot_type}
                       onChange={(event) => updateHotspotDraft(hotspot.id, "hotspot_type", event.target.value as DemoHotspotType)}
                     >
                       <option value="click">click</option>
                       <option value="info">info</option>
                       <option value="next">next</option>
-                    </select>
-                  </label>
-                  <label className={styles.field}>
+                    </Select>
+                  </Label>
+                  <Label className={styles.field}>
                     Hotspot {hotspotNumber} label
-                    <input
+                    <Input
                       value={hotspotDraft.label}
                       onChange={(event) => updateHotspotDraft(hotspot.id, "label", event.target.value)}
                     />
-                  </label>
-                  <label className={styles.field}>
+                  </Label>
+                  <Label className={styles.field}>
                     Hotspot {hotspotNumber} content
-                    <textarea
+                    <Textarea
                       value={hotspotDraft.content}
                       onChange={(event) => updateHotspotDraft(hotspot.id, "content", event.target.value)}
                     />
-                  </label>
+                  </Label>
                   <div className={styles.coordinateGrid}>
-                    <label className={styles.field}>
+                    <Label className={styles.field}>
                       Hotspot {hotspotNumber} x
-                      <input
+                      <Input
                         type="number"
                         step="0.01"
                         min="0"
@@ -1285,10 +1282,10 @@ const SceneEditor = ({
                         value={hotspotDraft.x}
                         onChange={(event) => updateHotspotDraft(hotspot.id, "x", event.target.value)}
                       />
-                    </label>
-                    <label className={styles.field}>
+                    </Label>
+                    <Label className={styles.field}>
                       Hotspot {hotspotNumber} y
-                      <input
+                      <Input
                         type="number"
                         step="0.01"
                         min="0"
@@ -1296,10 +1293,10 @@ const SceneEditor = ({
                         value={hotspotDraft.y}
                         onChange={(event) => updateHotspotDraft(hotspot.id, "y", event.target.value)}
                       />
-                    </label>
-                    <label className={styles.field}>
+                    </Label>
+                    <Label className={styles.field}>
                       Hotspot {hotspotNumber} width
-                      <input
+                      <Input
                         type="number"
                         step="0.01"
                         min="0.01"
@@ -1307,10 +1304,10 @@ const SceneEditor = ({
                         value={hotspotDraft.width}
                         onChange={(event) => updateHotspotDraft(hotspot.id, "width", event.target.value)}
                       />
-                    </label>
-                    <label className={styles.field}>
+                    </Label>
+                    <Label className={styles.field}>
                       Hotspot {hotspotNumber} height
-                      <input
+                      <Input
                         type="number"
                         step="0.01"
                         min="0.01"
@@ -1318,11 +1315,11 @@ const SceneEditor = ({
                         value={hotspotDraft.height}
                         onChange={(event) => updateHotspotDraft(hotspot.id, "height", event.target.value)}
                       />
-                    </label>
+                    </Label>
                   </div>
-                  <label className={styles.field}>
+                  <Label className={styles.field}>
                     Hotspot {hotspotNumber} target scene
-                    <select
+                    <Select
                       value={hotspotDraft.target_scene_id}
                       onChange={(event) => updateHotspotDraft(hotspot.id, "target_scene_id", event.target.value)}
                     >
@@ -1332,25 +1329,24 @@ const SceneEditor = ({
                           Scene {candidate.scene_index}: {candidate.title ?? "Untitled scene"}
                         </option>
                       ))}
-                    </select>
-                  </label>
+                    </Select>
+                  </Label>
                   <div className={styles.sceneActions}>
-                    <button
-                      className={styles.primaryButton}
-                      type="button"
+                    <Button
+                      size="sm"
                       disabled={pendingAction === `hotspot:save:${hotspot.id}`}
                       onClick={() => void saveCurrentHotspot(scene, hotspot)}
                     >
                       {pendingAction === `hotspot:save:${hotspot.id}` ? `Saving hotspot ${hotspotNumber}...` : `Save hotspot ${hotspotNumber}`}
-                    </button>
-                    <button
-                      className={styles.dangerButton}
-                      type="button"
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
                       disabled={pendingAction === `hotspot:delete:${hotspot.id}`}
                       onClick={() => void deleteCurrentHotspot(scene, hotspot)}
                     >
                       Delete hotspot {hotspotNumber}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );

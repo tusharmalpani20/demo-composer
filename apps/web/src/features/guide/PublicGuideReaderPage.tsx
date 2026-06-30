@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { Button } from "@repo/ui/button";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
 import {
   ApiClientError,
   createPublicPublishViewerSession,
@@ -383,23 +386,22 @@ const PublicPasswordGate = ({
           <h1 className={styles.passwordTitle}>
             {compact ? "Password required" : "This guide is password protected."}
           </h1>
-          <label className={styles.passwordField}>
+          <Label className={styles.passwordField}>
             <span>Password</span>
-            <input
+            <Input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
-          </label>
+          </Label>
           {error ? <div className={styles.passwordError}>{error}</div> : null}
-          <button
+          <Button
             className={styles.unlockButton}
-            type="button"
             disabled={busy || password.length === 0}
             onClick={unlock}
           >
             {busy ? "Unlocking..." : compact ? "Unlock" : "Unlock guide"}
-          </button>
+          </Button>
         </section>
       </main>
     </div>

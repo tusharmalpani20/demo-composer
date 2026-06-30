@@ -1,4 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
+import { Alert } from "@repo/ui/alert";
+import { Button } from "@repo/ui/button";
+import { Card, CardContent, CardHeader } from "@repo/ui/card";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
 import {
   ApiClientError,
   completeFirstRunSetup,
@@ -42,10 +47,12 @@ const setupErrorMessage = (error: unknown) => {
 const Shell = ({ children }: { children: React.ReactNode }) => (
   <div className={styles.page}>
     <header className={styles.topbar}>
-      <div className={styles.brand}>Demo Composer</div>
+      <a className={styles.brand} href="/projects">Demo Composer</a>
     </header>
     <main className={styles.main}>
-      <section className={styles.panel}>{children}</section>
+      <Card className={styles.panel}>
+        {children}
+      </Card>
     </main>
   </div>
 );
@@ -125,7 +132,9 @@ export const FirstRunSetupPage = ({
   if (pageState.status === "loading") {
     return (
       <Shell>
-        <h1 className={styles.title}>Loading setup...</h1>
+        <CardHeader>
+          <h1 className={styles.title}>Loading setup...</h1>
+        </CardHeader>
       </Shell>
     );
   }
@@ -133,9 +142,13 @@ export const FirstRunSetupPage = ({
   if (pageState.status === "complete") {
     return (
       <Shell>
-        <h1 className={styles.title}>This instance is already set up.</h1>
-        <p className={styles.copy}>Sign in with an existing owner account to continue.</p>
-        <a className={styles.link} href="/login">Go to sign in</a>
+        <CardHeader>
+          <h1 className={styles.title}>This instance is already set up.</h1>
+          <p className={styles.copy}>Sign in with an existing owner account to continue.</p>
+        </CardHeader>
+        <CardContent>
+          <a className={styles.link} href="/login">Go to sign in</a>
+        </CardContent>
       </Shell>
     );
   }
@@ -143,8 +156,10 @@ export const FirstRunSetupPage = ({
   if (pageState.status === "unavailable") {
     return (
       <Shell>
-        <h1 className={styles.title}>First-run setup is not available for this instance.</h1>
-        <p className={styles.copy}>Use the configured onboarding flow for this deployment.</p>
+        <CardHeader>
+          <h1 className={styles.title}>First-run setup is not available for this instance.</h1>
+          <p className={styles.copy}>Use the configured onboarding flow for this deployment.</p>
+        </CardHeader>
       </Shell>
     );
   }
@@ -152,74 +167,83 @@ export const FirstRunSetupPage = ({
   if (pageState.status === "error") {
     return (
       <Shell>
-        <h1 className={styles.title}>Setup unavailable</h1>
-        <div className={styles.error}>{pageState.message}</div>
+        <CardHeader>
+          <h1 className={styles.title}>Setup unavailable</h1>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">{pageState.message}</Alert>
+        </CardContent>
       </Shell>
     );
   }
 
   return (
     <Shell>
-      <h1 className={styles.title}>Set up Demo Composer</h1>
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <label className={styles.field}>
-          <span>Owner email</span>
-          <input
-            type="email"
-            value={ownerEmail}
-            required
-            autoComplete="email"
-            disabled={submitting}
-            onChange={(event) => setOwnerEmail(event.target.value)}
-          />
-        </label>
-        <label className={styles.field}>
-          <span>First name</span>
-          <input
-            type="text"
-            value={firstName}
-            autoComplete="given-name"
-            disabled={submitting}
-            onChange={(event) => setFirstName(event.target.value)}
-          />
-        </label>
-        <label className={styles.field}>
-          <span>Last name</span>
-          <input
-            type="text"
-            value={lastName}
-            autoComplete="family-name"
-            disabled={submitting}
-            onChange={(event) => setLastName(event.target.value)}
-          />
-        </label>
-        <label className={styles.field}>
-          <span>Organization name</span>
-          <input
-            type="text"
-            value={organizationName}
-            required
-            autoComplete="organization"
-            disabled={submitting}
-            onChange={(event) => setOrganizationName(event.target.value)}
-          />
-        </label>
-        <label className={styles.field}>
-          <span>Password</span>
-          <input
-            type="password"
-            value={password}
-            required
-            autoComplete="new-password"
-            disabled={submitting}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
-        {submitError ? <div className={styles.error}>{submitError}</div> : null}
-        <button className={styles.primaryButton} type="submit" disabled={submitting}>
-          {submitting ? "Creating owner account..." : "Create owner account"}
-        </button>
-      </form>
+      <CardHeader>
+        <h1 className={styles.title}>Set up Demo Composer</h1>
+        <p className={styles.copy}>Create the owner account and organization for this instance.</p>
+      </CardHeader>
+      <CardContent>
+        <form className={styles.form} onSubmit={handleSubmit}>
+          <Label className={styles.field}>
+            <span>Owner email</span>
+            <Input
+              type="email"
+              value={ownerEmail}
+              required
+              autoComplete="email"
+              disabled={submitting}
+              onChange={(event) => setOwnerEmail(event.target.value)}
+            />
+          </Label>
+          <Label className={styles.field}>
+            <span>First name</span>
+            <Input
+              type="text"
+              value={firstName}
+              autoComplete="given-name"
+              disabled={submitting}
+              onChange={(event) => setFirstName(event.target.value)}
+            />
+          </Label>
+          <Label className={styles.field}>
+            <span>Last name</span>
+            <Input
+              type="text"
+              value={lastName}
+              autoComplete="family-name"
+              disabled={submitting}
+              onChange={(event) => setLastName(event.target.value)}
+            />
+          </Label>
+          <Label className={styles.field}>
+            <span>Organization name</span>
+            <Input
+              type="text"
+              value={organizationName}
+              required
+              autoComplete="organization"
+              disabled={submitting}
+              onChange={(event) => setOrganizationName(event.target.value)}
+            />
+          </Label>
+          <Label className={styles.field}>
+            <span>Password</span>
+            <Input
+              type="password"
+              value={password}
+              required
+              autoComplete="new-password"
+              disabled={submitting}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </Label>
+          {submitError ? <Alert variant="destructive">{submitError}</Alert> : null}
+          <Button type="submit" disabled={submitting}>
+            {submitting ? "Creating owner account..." : "Create owner account"}
+          </Button>
+        </form>
+      </CardContent>
     </Shell>
   );
 };

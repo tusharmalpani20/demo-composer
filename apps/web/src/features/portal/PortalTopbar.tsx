@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "@repo/ui/button";
 import { logout } from "../../lib/api";
 import styles from "./PortalTopbar.module.css";
 
@@ -33,14 +34,14 @@ export const PortalTopbar = ({
   return (
     <header className={styles.topbar}>
       <div>
-        <div className={styles.brand}>Demo Composer</div>
+        <a className={styles.brand} href="/projects">Demo Composer</a>
         <div className={styles.context}>{context}</div>
       </div>
       <div className={styles.actions}>
         {error ? <div className={styles.error}>{error}</div> : null}
-        <button className={styles.signOutButton} type="button" disabled={signingOut} onClick={handleSignOut}>
+        <Button variant="secondary" size="sm" type="button" disabled={signingOut} onClick={handleSignOut}>
           {signingOut ? "Signing out..." : "Sign out"}
-        </button>
+        </Button>
       </div>
     </header>
   );

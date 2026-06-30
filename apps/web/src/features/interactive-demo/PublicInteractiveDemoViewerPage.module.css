@@ -86,9 +86,7 @@
   gap: 8px;
 }
 
-.nav button,
-.hotspot,
-.dismiss {
+.hotspot {
   min-height: 34px;
   border: 1px solid #b8c3cf;
   border-radius: 6px;
@@ -96,15 +94,6 @@
   color: #1c2430;
   cursor: pointer;
   font-weight: 700;
-}
-
-.nav button {
-  padding: 0 12px;
-}
-
-.nav button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .screenshotFrame {
@@ -145,5 +134,11 @@
 
 .dismiss {
   margin-top: 10px;
-  padding: 0 12px;
+}
+
+.passwordField {
+  display: grid;
+  gap: 7px;
+  max-width: 360px;
+  margin: 12px 0;
 }

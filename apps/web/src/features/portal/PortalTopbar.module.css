@@ -2,21 +2,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 56px;
-  padding: 0 24px;
-  border-bottom: 1px solid #d9e0e7;
-  background: #ffffff;
+  min-height: 64px;
+  padding: 0 28px;
+  border-bottom: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
 }
 
 .brand {
-  font-size: 15px;
-  font-weight: 700;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.brand:hover {
+  color: #334155;
 }
 
 .context {
-  margin-top: 2px;
-  color: #637083;
+  margin-top: 3px;
+  color: #64748b;
   font-size: 13px;
+  font-weight: 600;
 }
 
 .actions {
@@ -28,22 +36,6 @@
 .error {
   color: #991b1b;
   font-size: 13px;
-}
-
-.signOutButton {
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid #b8c3cf;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #1c2430;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.signOutButton:disabled {
-  cursor: wait;
-  opacity: 0.72;
 }
 
 @media (max-width: 760px) {

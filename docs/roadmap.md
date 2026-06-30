@@ -25,7 +25,7 @@ Demo Composer is alpha software. This roadmap describes product direction, not a
 
 - Address manual portal dogfood findings from the 2026-06-22 smoke run.
 - Address manual Chrome extension dogfood failures from the 2026-06-22 smoke run.
-- Keep alpha screenshots current as portal/editor hardening changes the UI.
+- Keep alpha screenshots current as portal/editor/extension UI hardening changes the product.
 - Improve guide editor ergonomics for repeated authoring.
 - Improve interactive demo editor usability and hotspot positioning polish.
 - Improve extension reliability around tab permissions, page changes, and capture failures.

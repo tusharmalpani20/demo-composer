@@ -87,19 +87,6 @@
   line-height: 1.45;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 0 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #334155;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .meta {
   display: flex;
   flex-wrap: wrap;
@@ -109,29 +96,8 @@
   font-size: 13px;
 }
 
-.openLink,
-.secondaryButton {
-  border: 1px solid #b8c3cf;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #1c2430;
-  cursor: pointer;
-  font-weight: 700;
-}
-
 .openLink {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  padding: 0 14px;
   text-decoration: none;
-}
-
-.secondaryButton {
-  min-height: 36px;
-  margin-top: 14px;
-  padding: 0 14px;
 }
 
 .empty,

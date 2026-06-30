@@ -66,19 +66,6 @@
   line-height: 1.55;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #334155;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .headerActions {
   display: flex;
   flex-wrap: wrap;
@@ -88,16 +75,6 @@
 }
 
 .previewLink {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  padding: 0 12px;
-  border: 1px solid #b8c3cf;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #1c2430;
-  font-weight: 700;
   text-decoration: none;
 }
 
@@ -144,79 +121,9 @@
   font-weight: 700;
 }
 
-.field input,
-.field textarea {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #111827;
-  font: inherit;
-}
-
-.field input {
-  min-height: 38px;
-  padding: 0 10px;
-}
-
 .field textarea {
   resize: vertical;
   min-height: 96px;
-  padding: 10px;
-  line-height: 1.45;
-}
-
-.field input:disabled,
-.field textarea:disabled {
-  background: #eef2f6;
-  color: #637083;
-}
-
-.primaryButton,
-.secondaryButton,
-.dangerButton,
-.iconButton {
-  border: 1px solid #b8c3cf;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #1c2430;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.primaryButton,
-.secondaryButton,
-.dangerButton {
-  min-height: 36px;
-  padding: 0 14px;
-}
-
-.primaryButton {
-  border-color: #1f4f82;
-  background: #1f4f82;
-  color: #ffffff;
-}
-
-.dangerButton {
-  border-color: #e6b3b3;
-  color: #8f1d1d;
-}
-
-.iconButton {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-}
-
-.primaryButton:disabled,
-.secondaryButton:disabled,
-.dangerButton:disabled,
-.iconButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .publishStack {
@@ -273,18 +180,6 @@
   color: #334155;
   font-size: 12px;
   font-weight: 700;
-}
-
-.compactField input {
-  min-width: 0;
-  height: 34px;
-  padding: 0 9px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #111827;
-  font: inherit;
-  font-weight: 500;
 }
 
 .publishActions {
@@ -369,23 +264,6 @@
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid #edf1f5;
-}
-
-.insertButton {
-  min-height: 30px;
-  padding: 0 10px;
-  border: 1px solid #c9d3df;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #243244;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.insertButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .media {
