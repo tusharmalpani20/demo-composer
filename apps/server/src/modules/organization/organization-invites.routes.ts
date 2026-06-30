@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
 import { z } from "zod";
+import { get_public_web_url } from "../../config/public-web-url.config";
 import { set_web_session_cookie } from "../authentication/session-cookie";
 import { session_token_from_request } from "../authentication/request-session-token";
 import {
@@ -89,7 +90,7 @@ const invite_auth_context = (auth: AuthContext): OrganizationInviteAuth => ({
 });
 
 const invite_url = (request: { protocol: string; hostname: string }, token: string) => (
-  `${request.protocol}://${request.hostname}/invites/${encodeURIComponent(token)}`
+  `${get_public_web_url() ?? `${request.protocol}://${request.hostname}`}/invites/${encodeURIComponent(token)}`
 );
 
 export const build_organization_invites_routes = (

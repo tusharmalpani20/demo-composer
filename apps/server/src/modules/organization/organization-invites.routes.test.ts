@@ -1,7 +1,7 @@
 import cookie from "@fastify/cookie";
 import fastify from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { UnauthenticatedSessionError, type AuthContext } from "../authentication/session.service";
 import {
   DuplicateActiveInviteError,
@@ -104,6 +104,12 @@ const build_test_app = async (
 };
 
 describe("organization invites routes", () => {
+  const original_env = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...original_env };
+  });
+
   it("lists members and pending invites with auth-derived organization scope", async () => {
     const seen_inputs: unknown[] = [];
     const app = await build_test_app({
@@ -195,6 +201,37 @@ describe("organization invites routes", () => {
         invite_id: "invite_1",
       },
     ]);
+
+    await app.close();
+  });
+
+  it("builds invite URLs from the configured browser-facing portal origin", async () => {
+    process.env.DEMO_COMPOSER_PUBLIC_WEB_URL = "https://portal.example.com/";
+    const app = await build_test_app({
+      organization_invites_service: {
+        create_invite: async () => ({
+          invite,
+          invite_token: "token with spaces/and/slashes",
+        }),
+      },
+    });
+
+    const create_response = await app.inject({
+      method: "POST",
+      url: "/api/v1/organization/invites",
+      headers: {
+        host: "api.example.com",
+      },
+      payload: {
+        email: "teammate@example.com",
+        role: "member",
+      },
+    });
+
+    expect(create_response.statusCode).toBe(201);
+    expect(create_response.json().invite_url).toBe(
+      "https://portal.example.com/invites/token%20with%20spaces%2Fand%2Fslashes"
+    );
 
     await app.close();
   });

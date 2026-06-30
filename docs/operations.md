@@ -110,11 +110,12 @@ Configure the reverse proxy to:
 For split API/web deployments:
 
 - set server `API_URL` to the externally reachable API origin
+- set server `DEMO_COMPOSER_PUBLIC_WEB_URL` to the browser-facing portal origin, without a path, query, or hash
 - set the portal build `VITE_DEMO_COMPOSER_API_URL` to that API origin when the portal is not same-origin proxied
 - configure the extension instance URL as the API origin
 - configure the extension portal URL as the browser-facing portal origin
 
-Server startup validates the API-side production settings it can inspect. It cannot validate the deployed portal build, reverse proxy, TLS certificate, backup jobs, or extension origin until those are exercised in the target environment.
+Server startup validates the API-side production settings and the configured public web origin format. It cannot validate the deployed portal build, reverse proxy, TLS certificate, backup jobs, or extension origin until those are exercised in the target environment.
 
 ## Secret And Token Rotation
 

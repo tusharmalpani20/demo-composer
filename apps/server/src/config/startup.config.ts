@@ -6,6 +6,7 @@ import {
     get_max_screenshot_upload_bytes,
     get_rate_limit_config,
 } from "./production-hardening.config";
+import { assert_public_web_url_config } from "./public-web-url.config";
 import { is_production_runtime } from "./runtime.config";
 
 const required_database_env = [
@@ -111,6 +112,7 @@ export const validate_server_startup_config = () => {
 
     get_cookie_config();
     get_cors_config();
+    assert_public_web_url_config();
 
     if (is_production_runtime()) {
         validate_production_startup_config();

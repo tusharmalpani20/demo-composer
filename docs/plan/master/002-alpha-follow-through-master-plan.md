@@ -120,6 +120,27 @@ Suggested child plan:
 docs/plan/078-split-origin-url-hardening.md
 ```
 
+Status: completed with follow-up notes by `docs/plan/078-split-origin-url-hardening.md`.
+
+### Progress Update
+
+Updated on 2026-06-30 local time.
+
+Completion result:
+
+- server-generated organization invite URLs now use optional `DEMO_COMPOSER_PUBLIC_WEB_URL` for browser-facing portal links
+- same-origin deployments keep request-host fallback behavior
+- startup validation rejects malformed or path-bearing `DEMO_COMPOSER_PUBLIC_WEB_URL` values when set
+- `.env-cmdrc.example`, Turbo env configuration, self-hosting docs, development setup, operations docs, and production readiness docs now describe the public web origin
+- public guide/demo copy links, embed links, auth redirects, guide exports, and extension portal links were audited and left unchanged for documented reasons
+
+Carry-forward split-origin candidates:
+
+- manual browser verification of copied invite links in a split API/web deployment
+- decide later whether `AUTH_REDIRECT_URL` should be renamed or folded into broader public-web-origin terminology
+- make future server-generated browser links use `DEMO_COMPOSER_PUBLIC_WEB_URL` rather than `API_URL`
+- keep `DEMO_COMPOSER_PUBLIC_WEB_URL` origin-only unless portal subpath deployments become an explicit product requirement
+
 ### Goal
 
 Make browser-facing links and redirects correct when the API and web portal run on different origins.
@@ -443,7 +464,7 @@ DB-backed checks require the configured PostgreSQL testing database.
 
 | Phase | Status | Result Link |
 | --- | --- | --- |
-| 1. Split-Origin URL Hardening | Planned | TBD |
+| 1. Split-Origin URL Hardening | Completed with follow-up notes | `docs/plan/078-split-origin-url-hardening.md` |
 | 2. Extension Automatic Capture Reliability V3 | Planned | TBD |
 | 3. Extension Manual Fallback And Diagnostics | Planned | TBD |
 | 4. Extension Evidence And Artifact Re-Dogfood | Planned | TBD |

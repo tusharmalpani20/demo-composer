@@ -52,6 +52,7 @@ DEMO_COMPOSER_ONBOARDING_MODE
 DEMO_COMPOSER_LOCAL_STORAGE_ROOT
 DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES
 API_URL
+DEMO_COMPOSER_PUBLIC_WEB_URL
 ```
 
 `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS` is required in production and accepts comma-separated browser origins, including Chrome extension origins when needed:
@@ -61,6 +62,8 @@ https://portal.example.com,chrome-extension://<extension-id>
 ```
 
 Development and test mode remain permissive for local browser/extension work, but keeping local origins in `.env-cmdrc` makes production parity easier.
+
+`API_URL` is the externally reachable API origin used for API-facing generated URLs. `DEMO_COMPOSER_PUBLIC_WEB_URL` is the browser-facing portal origin used for generated portal links such as organization invite URLs; set it to an origin only, without a path, query, or hash. In same-origin deployments it can be omitted; in split API/web development it should usually be `http://localhost:3000`.
 
 Common web variable:
 

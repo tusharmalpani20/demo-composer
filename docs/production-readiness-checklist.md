@@ -25,12 +25,14 @@ These settings are validated at server startup in production:
 - [ ] Set `DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS`.
 - [ ] Set `DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS`.
 - [ ] Set `API_URL` to the externally reachable API origin.
+- [ ] Set `DEMO_COMPOSER_PUBLIC_WEB_URL` to the browser-facing portal origin when the API and portal origins differ.
 
 These settings still require operator verification:
 
 - [ ] Set `COOKIE_DOMAIN` for the deployed portal domain if your cookie scope needs it.
 - [ ] Set `VITE_DEMO_COMPOSER_API_URL` for the portal build.
 - [ ] For split API/web deployments, confirm the extension instance URL is the API origin and the extension portal URL is the browser-facing portal origin.
+- [ ] For split API/web deployments, create a teammate invite and confirm the copied invite link uses the browser-facing portal origin.
 - [ ] Confirm `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` is on durable storage with backup coverage.
 
 ## Database

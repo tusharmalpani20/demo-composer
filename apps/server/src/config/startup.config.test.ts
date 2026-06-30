@@ -30,6 +30,18 @@ describe("startup config", () => {
     expect(() => validate_server_startup_config()).not.toThrow();
   });
 
+  it("rejects malformed public web URLs in every runtime mode", () => {
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      DEMO_COMPOSER_PUBLIC_WEB_URL: "https://portal.example.com/app",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_PUBLIC_WEB_URL must be an origin without a path, query, or hash"
+    );
+  });
+
   it("rejects missing database startup config", () => {
     process.env = {
       ...original_env,
@@ -114,6 +126,7 @@ describe("startup config", () => {
       DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
       DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
       API_URL: "https://api.example.com",
+      DEMO_COMPOSER_PUBLIC_WEB_URL: "https://portal.example.com",
     };
 
     expect(() => validate_server_startup_config()).not.toThrow();
@@ -240,6 +253,62 @@ describe("startup config", () => {
 
     expect(() => validate_server_startup_config()).toThrow(
       "API_URL must be an absolute http(s) URL in production"
+    );
+  });
+
+  it("rejects malformed production public web URLs", () => {
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      NODE_ENV: "production",
+      DEV_TYPE: "production",
+      COOKIE_SECRET: "a-very-strong-cookie-secret",
+      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
+      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
+      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      API_URL: "https://api.example.com",
+      DEMO_COMPOSER_PUBLIC_WEB_URL: "/portal",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_PUBLIC_WEB_URL must be an absolute http(s) URL when set"
+    );
+
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      NODE_ENV: "production",
+      DEV_TYPE: "production",
+      COOKIE_SECRET: "a-very-strong-cookie-secret",
+      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
+      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
+      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      API_URL: "https://api.example.com",
+      DEMO_COMPOSER_PUBLIC_WEB_URL: "ftp://portal.example.com",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_PUBLIC_WEB_URL must be an absolute http(s) URL when set"
+    );
+
+    process.env = {
+      ...original_env,
+      ...valid_required_env,
+      NODE_ENV: "production",
+      DEV_TYPE: "production",
+      COOKIE_SECRET: "a-very-strong-cookie-secret",
+      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
+      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
+      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      API_URL: "https://api.example.com",
+      DEMO_COMPOSER_PUBLIC_WEB_URL: "https://portal.example.com/app",
+    };
+
+    expect(() => validate_server_startup_config()).toThrow(
+      "DEMO_COMPOSER_PUBLIC_WEB_URL must be an origin without a path, query, or hash"
     );
   });
 
