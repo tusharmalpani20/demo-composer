@@ -104,10 +104,10 @@ Design-system constraints:
 
 ### 1. Foundation
 
-- [ ] Install/configure Tailwind and supporting utilities.
-- [ ] Add shared UI primitives in `packages/ui`.
-- [ ] Replace placeholder shared `Button` behavior with a real reusable component.
-- [ ] Add tests for shared UI behavior and accessibility where meaningful.
+- [x] Install/configure Tailwind and supporting utilities.
+- [x] Add shared UI primitives in `packages/ui`.
+- [x] Replace placeholder shared `Button` behavior with a real reusable component.
+- [x] Add tests for shared UI behavior and accessibility where meaningful.
 - [ ] Commit foundation slice.
 
 ### 2. App Shell And Portal Navigation
@@ -299,6 +299,8 @@ Carry-forward handling in this plan:
 ## Implementation Log
 
 - 2026-06-30: Created plan `086` after checking branch, repo root, `docs`, `docs/plan`, existing plan numbers, and previous follow-up notes.
+- 2026-06-30: Completed the foundation slice with Tailwind Vite integration for `apps/web` and `apps/extension`, shared `cn`, `Button`, form/content primitives, and UI package tests.
+- 2026-06-30: Foundation verification passed: `rtk pnpm --filter @repo/ui test`, `check-types`, `lint`, `rtk pnpm --filter web build`, and `rtk pnpm --filter extension build`.
 
 ## Final Gap Review
 
