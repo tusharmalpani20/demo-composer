@@ -71,6 +71,14 @@ const number_from_env = (name: string) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+const origin_from_env_url = (value: string | undefined) => {
+  if (!value) {
+    return null;
+  }
+
+  return new URL(value).origin;
+};
+
 export const build_production_env_report = (): ProductionEnvReport => {
   validate_server_startup_config();
 
@@ -105,7 +113,7 @@ export const build_production_env_report = (): ProductionEnvReport => {
       allowed_origins: parse_origins(process.env.DEMO_COMPOSER_CORS_ALLOWED_ORIGINS),
     },
     urls: {
-      api_url: process.env.API_URL || null,
+      api_url: origin_from_env_url(process.env.API_URL),
       public_web_url: get_public_web_url(),
     },
     local_storage: {

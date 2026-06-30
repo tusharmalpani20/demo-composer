@@ -109,4 +109,21 @@ describe("production env report", () => {
 
     expect(() => build_production_env_report()).toThrow("COOKIE_SECRET must be defined in production");
   });
+
+  it("reports only the public API origin when API_URL contains extra URL parts", () => {
+    process.env = {
+      ...original_env,
+      ...valid_production_env,
+      API_URL: "https://api-user:api-password@api.example.com/internal?token=secret-token",
+    };
+
+    const report = build_production_env_report();
+    const serialized = JSON.stringify(report);
+
+    expect(report.urls.api_url).toBe("https://api.example.com");
+    expect(serialized).not.toContain("api-user");
+    expect(serialized).not.toContain("api-password");
+    expect(serialized).not.toContain("secret-token");
+    expect(serialized).not.toContain("/internal");
+  });
 });
