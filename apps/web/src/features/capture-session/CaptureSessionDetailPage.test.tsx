@@ -376,7 +376,7 @@ describe("CaptureSessionDetailPage", () => {
   });
 
   it("renders empty states", async () => {
-    renderPage({
+    const { createGuide, createInteractiveDemo } = renderPage({
       loadDetail: async () => ({
         ...detail,
         capture_events: [],
@@ -386,6 +386,20 @@ describe("CaptureSessionDetailPage", () => {
 
     expect(await screen.findByText("No capture events yet.")).toBeInTheDocument();
     expect(screen.getByText("No capture assets yet.")).toBeInTheDocument();
+    expect(screen.getByText("Add at least one capture event before creating guide or demo artifacts.")).toBeInTheDocument();
+
+    const createGuideButton = screen.getByRole("button", { name: "Create guide" });
+    const createDemoButton = screen.getByRole("button", { name: "Create interactive demo" });
+    expect(createGuideButton).toBeDisabled();
+    expect(createDemoButton).toBeDisabled();
+    expect(createGuideButton).toHaveAccessibleDescription("Add at least one capture event before creating guide or demo artifacts.");
+    expect(createDemoButton).toHaveAccessibleDescription("Add at least one capture event before creating guide or demo artifacts.");
+
+    fireEvent.click(createGuideButton);
+    fireEvent.click(createDemoButton);
+
+    expect(createGuide).not.toHaveBeenCalled();
+    expect(createInteractiveDemo).not.toHaveBeenCalled();
   });
 
   it("renders screenshot upload controls for manual capture sessions only", async () => {
