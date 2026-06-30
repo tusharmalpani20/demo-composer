@@ -139,6 +139,28 @@ const assetAltText = (asset: GuideSourceCaptureAsset, stepNumber: number) => (
   asset.page_title ?? asset.file.original_name ?? `Step ${stepNumber} screenshot`
 );
 
+const assetDisplayName = (asset: GuideSourceCaptureAsset) => (
+  asset.page_title ?? asset.file.original_name ?? "Untitled screenshot"
+);
+
+const formatCapturedAt = (value: string) => {
+  const date = new Date(value);
+
+  if (!Number.isFinite(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC",
+    timeZoneName: "short",
+  }).format(date);
+};
+
 const screenshotViewerImageId = (block: GuideBlock, asset: GuideSourceCaptureAsset) => (
   `${block.id}:${asset.id}`
 );
@@ -373,6 +395,7 @@ export const GuideEditorPage = ({
   const [publishBusyAction, setPublishBusyAction] = useState<string | null>(null);
   const [locallyStalePublish, setLocallyStalePublish] = useState(false);
   const [screenshotAssets, setScreenshotAssets] = useState<GuideSourceCaptureAsset[]>([]);
+  const [screenshotAssetsError, setScreenshotAssetsError] = useState(false);
   const [activeScreenshotPickerBlockId, setActiveScreenshotPickerBlockId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -764,11 +787,13 @@ export const GuideEditorPage = ({
 
     setBusyAction(`screenshots:${block.id}`);
     setNotice(null);
+    setScreenshotAssetsError(false);
 
     try {
       const response = await loadScreenshotAssets(projectId);
       setScreenshotAssets(response.capture_assets);
     } catch {
+      setScreenshotAssetsError(true);
       setNotice("Could not load screenshots.");
     } finally {
       setBusyAction(null);
@@ -822,6 +847,7 @@ export const GuideEditorPage = ({
           ? current
           : [...current, response.capture_asset]
       ));
+      setScreenshotAssetsError(false);
       setActiveScreenshotPickerBlockId(null);
       markPublishedDraftStale();
       setNotice("Screenshot uploaded.");
@@ -989,6 +1015,7 @@ export const GuideEditorPage = ({
       onSaveStep={saveStepDraft}
       onSaveBlock={saveBlockDraft}
       screenshotAssets={screenshotAssets}
+      screenshotAssetsError={screenshotAssetsError}
       activeScreenshotPickerBlockId={activeScreenshotPickerBlockId}
       onOpenScreenshotPicker={openScreenshotPicker}
       onCloseScreenshotPicker={() => setActiveScreenshotPickerBlockId(null)}
@@ -1054,6 +1081,7 @@ const GuideEditorView = ({
   onSaveStep,
   onSaveBlock,
   screenshotAssets,
+  screenshotAssetsError,
   activeScreenshotPickerBlockId,
   onOpenScreenshotPicker,
   onCloseScreenshotPicker,
@@ -1096,6 +1124,7 @@ const GuideEditorView = ({
   onSaveStep: (step: GuideStep) => void;
   onSaveBlock: (block: GuideBlock) => void;
   screenshotAssets: GuideSourceCaptureAsset[];
+  screenshotAssetsError: boolean;
   activeScreenshotPickerBlockId: string | null;
   onOpenScreenshotPicker: (block: GuideBlock) => void;
   onCloseScreenshotPicker: () => void;
@@ -1253,6 +1282,7 @@ const GuideEditorView = ({
                   contentDraft={blockContentDrafts[block.id]}
                   sourceAsset={assetForBlock(block, assetsById)}
                   screenshotAssets={screenshotAssets}
+                  screenshotAssetsError={screenshotAssetsError}
                   screenshotPickerOpen={activeScreenshotPickerBlockId === block.id}
                   onDraftChange={onStepDraftChange}
                   onContentDraftChange={onBlockContentDraftChange}
@@ -1633,6 +1663,7 @@ const GuideBlockEditor = ({
   contentDraft,
   sourceAsset,
   screenshotAssets,
+  screenshotAssetsError,
   screenshotPickerOpen,
   onDraftChange,
   onContentDraftChange,
@@ -1659,6 +1690,7 @@ const GuideBlockEditor = ({
   contentDraft?: BlockContentDraft;
   sourceAsset?: GuideSourceCaptureAsset;
   screenshotAssets: GuideSourceCaptureAsset[];
+  screenshotAssetsError: boolean;
   screenshotPickerOpen: boolean;
   onDraftChange: (stepId: string, draft: StepDraft) => void;
   onContentDraftChange: (blockId: string, draft: BlockContentDraft) => void;
@@ -1679,6 +1711,7 @@ const GuideBlockEditor = ({
   const actionLabel = step ? "step" : labelForBlockType(block.block_type).toLowerCase();
   const actionBusy = busyAction !== null;
   const uploadBusy = busyAction === `upload-screenshot:${block.id}`;
+  const pickerLoading = busyAction === `screenshots:${block.id}`;
   const annotationsBusy = busyAction === `annotations:${block.id}`;
   const annotations = annotationsFromBlock(block);
   const editableContentBlock = block.block_type === "header" || block.block_type === "paragraph" || block.block_type === "tip" || block.block_type === "alert";
@@ -1852,26 +1885,56 @@ const GuideBlockEditor = ({
                 </button>
               </div>
               {screenshotAssets.length === 0 ? (
-                <div className={styles.empty}>No screenshots available.</div>
+                screenshotAssetsError ? (
+                  <div className={styles.pickerState} role="status">
+                    <span>Could not load screenshots.</span>
+                    <button
+                      className={styles.secondaryButton}
+                      type="button"
+                      disabled={readOnly || actionBusy}
+                      onClick={() => onOpenScreenshotPicker(block)}
+                    >
+                      Retry loading screenshots for step {blockNumber}
+                    </button>
+                  </div>
+                ) : pickerLoading ? (
+                  <div className={styles.pickerState} role="status">Loading screenshots...</div>
+                ) : (
+                  <div className={styles.empty}>No screenshots available.</div>
+                )
               ) : (
                 <div className={styles.screenshotChoices}>
-                  {screenshotAssets.map((asset) => (
-                    <button
-                      className={styles.screenshotChoice}
-                      type="button"
-                      key={asset.id}
-                      aria-label={`Select screenshot ${asset.page_title ?? asset.file.original_name ?? asset.id} for step ${blockNumber}`}
-                      disabled={readOnly || actionBusy || asset.id === block.display_capture_asset_id}
-                      onClick={() => onSaveScreenshot(block, asset.id)}
-                    >
-                      <img
-                        src={resolveApiAssetUrl(asset.file_url)}
-                        alt=""
-                        aria-hidden="true"
-                      />
-                      <span>{asset.page_title ?? asset.file.original_name ?? "Untitled screenshot"}</span>
-                    </button>
-                  ))}
+                  {screenshotAssets.map((asset) => {
+                    const displayName = assetDisplayName(asset);
+                    const capturedAt = formatCapturedAt(asset.captured_at);
+                    const current = asset.id === block.display_capture_asset_id;
+                    const fileName = asset.file.original_name && asset.file.original_name !== displayName
+                      ? asset.file.original_name
+                      : null;
+
+                    return (
+                      <button
+                        className={styles.screenshotChoice}
+                        type="button"
+                        key={asset.id}
+                        aria-label={`${current ? "Current screenshot" : "Select screenshot"} ${displayName} for step ${blockNumber}`}
+                        disabled={readOnly || actionBusy || current}
+                        onClick={() => onSaveScreenshot(block, asset.id)}
+                      >
+                        <img
+                          src={resolveApiAssetUrl(asset.file_url)}
+                          alt=""
+                          aria-hidden="true"
+                        />
+                        <span className={styles.screenshotChoiceTitle}>{displayName}</span>
+                        {fileName ? <span className={styles.screenshotChoiceMeta}>{fileName}</span> : null}
+                        {capturedAt ? (
+                          <span className={styles.screenshotChoiceMeta}>Captured {capturedAt}</span>
+                        ) : null}
+                        {current ? <span className={styles.currentBadge}>Current screenshot</span> : null}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

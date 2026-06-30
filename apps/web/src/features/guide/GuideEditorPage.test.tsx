@@ -1168,6 +1168,47 @@ describe("GuideEditorPage", () => {
     expect(screen.getByRole("button", { name: "Attach screenshot for step 1" })).toBeInTheDocument();
   });
 
+  it("keeps screenshot picker open with an inline retry when choices fail to load", async () => {
+    const loadScreenshotAssets = vi.fn()
+      .mockRejectedValueOnce(new Error("network down"))
+      .mockResolvedValueOnce({
+        capture_assets: guideDetail.source_capture_assets as GuideSourceCaptureAsset[],
+      });
+
+    renderPage({ loadScreenshotAssets });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Change screenshot for step 1" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Could not load screenshots.");
+    expect(screen.getByRole("button", { name: "Retry loading screenshots for step 1" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry loading screenshots for step 1" }));
+
+    expect(await screen.findByRole("button", { name: "Select screenshot Review Department for step 1" })).toBeInTheDocument();
+    expect(loadScreenshotAssets).toHaveBeenCalledTimes(2);
+  });
+
+  it("labels screenshot choices with current state and human-readable details", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Change screenshot for step 1" }));
+
+    const currentChoice = await screen.findByRole("button", { name: "Current screenshot Department List for step 1" });
+    expect(currentChoice).toBeDisabled();
+    expect(within(currentChoice).getByText("Current screenshot")).toBeInTheDocument();
+    expect(within(currentChoice).getByText("departments.png")).toBeInTheDocument();
+    expect(within(currentChoice).getByText("Captured Jun 5, 2026, 10:01 AM UTC")).toBeInTheDocument();
+
+    const alternateChoice = screen.getByRole("button", { name: "Select screenshot Review Department for step 1" });
+    expect(alternateChoice).toBeEnabled();
+    expect(within(alternateChoice).getByText("review-department.png")).toBeInTheDocument();
+    expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
+  });
+
   it("renders adds and removes screenshot highlights from the editor", async () => {
     const detail: GuideDetail = {
       ...guideDetail,
