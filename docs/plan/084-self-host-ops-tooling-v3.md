@@ -2,7 +2,7 @@
 
 Date: 2026-06-23
 
-Status: Planned.
+Status: Planned; rechecked and narrowed for implementation.
 
 ## Parent Master Plan
 
@@ -29,6 +29,8 @@ Reason:
 
 Move self-host operations beyond documentation-only guidance where a conservative tool is justified.
 
+This implementation pass is narrowed to a production environment report that validates the same startup configuration and prints only non-secret summaries.
+
 ## Current Baseline
 
 Plan `077` improved production startup validation and docs. Remaining self-host gaps:
@@ -44,6 +46,19 @@ Plan `077` improved production startup validation and docs. Remaining self-host 
 
 This phase must choose one focused operational slice before implementation.
 
+Selected operational slice:
+
+- add a server-side production env report command
+- reuse startup validation instead of creating a competing production-config rule set
+- print safe summaries such as runtime mode, configured origins, storage path classification, numeric limits, and known operational limitations
+- never print secret values such as `COOKIE_SECRET`, `DB_PASSWORD`, cookies, tokens, or raw credentials
+- exit non-zero when startup validation fails
+
+Carry-forward from plan `083`:
+
+- no authoring leftovers belong in this self-host ops implementation
+- manual browser smoke of the guide screenshot picker, guide editor polish, and demo editor polish should remain future authoring-focused work unless Phase 8 docs need to describe current alpha limitations
+
 Candidate slices:
 
 - storage reference inventory and dry-run cleanup reporting
@@ -53,6 +68,16 @@ Candidate slices:
 - shared rate-limit backend plan or implementation
 - object storage provider plan or implementation
 - dependency audit process and accepted-risk recording
+
+Deferred from this implementation:
+
+- storage reference inventory and dry-run cleanup reporting
+- destructive storage cleanup
+- real backup/restore rehearsal
+- Docker image or one-command packaging
+- shared rate-limit backend
+- object storage provider
+- dependency audit acceptance workflow beyond existing docs
 
 ## Explicit Non-Goals
 
@@ -88,12 +113,12 @@ docker-compose.yml
 
 ### 1. Select One Operational Risk
 
-- [ ] Review plan `077`.
-- [ ] Review current operations docs.
-- [ ] Review local storage provider and DB schema if storage tooling is considered.
-- [ ] Review rate-limit code if shared rate limiting is considered.
-- [ ] Pick one slice and write it down before implementation.
-- [ ] Move unrelated ops items to follow-up notes.
+- [x] Review plan `077`.
+- [x] Review current operations docs.
+- [x] Review local storage provider and DB schema if storage tooling is considered. Not selected for this pass.
+- [x] Review rate-limit code if shared rate limiting is considered. Not selected for this pass.
+- [x] Pick one slice and write it down before implementation: production env report without secrets.
+- [x] Move unrelated ops items to follow-up notes.
 
 ### 2. Design Conservative Behavior
 
@@ -101,7 +126,7 @@ For tooling:
 
 - [ ] Default to read-only or dry-run.
 - [ ] Print summaries without secrets.
-- [ ] Require explicit confirmation before destructive behavior.
+- [ ] Require explicit confirmation before destructive behavior. Not applicable; selected command is read-only.
 - [ ] Define exit codes.
 - [ ] Define test fixtures.
 
