@@ -21,6 +21,7 @@ The migration covers:
 - public guide and public interactive demo reader/embed surfaces
 - loading, empty, success, error, disabled, and pending states
 - `apps/extension` Chrome extension popup UI
+- README and documentation screenshot references after visual QA produces current product evidence
 - shared components in `packages/ui`
 - removal of repeated manually styled button/input/card/dialog/form patterns where practical
 
@@ -246,6 +247,13 @@ Minimum visual checks:
 
 If backend/auth/fixture setup blocks browser inspection of a route, record the blocker and use isolated tests, fixture states, or mock-backed page routes where practical.
 
+README and screenshot refresh:
+
+- capture fresh screenshots after the modernized UI is browser-verified
+- update `README.md` screenshot references and surrounding copy so they describe the current UI truthfully
+- update related status/docs files if they reference old visual evidence, current limitations, or pending extension screenshots
+- keep screenshot evidence safe and synthetic, matching the existing `docs/assets/alpha/` convention unless a better docs path is chosen during final QA
+
 ## Leftovers Carried Forward
 
 From recent plans and master closeout notes:
@@ -289,6 +297,7 @@ Carry-forward handling in this plan:
 - [ ] Web portal UI modernized.
 - [ ] Public guide/demo UI modernized.
 - [ ] Chrome extension popup UI modernized.
+- [ ] README and related screenshot/status docs updated with current visual evidence after browser QA.
 - [ ] Repeated manual control classes removed or documented if intentionally retained.
 - [ ] `$tdd` workflow followed for behavior-affecting slices.
 - [ ] `$agent-browser` visual QA performed and recorded.
@@ -309,6 +318,7 @@ Carry-forward handling in this plan:
 - 2026-06-30: Remaining portal foundation verification passed: `rtk pnpm --filter web test -- ProjectWorkspacePage`, `ProjectSettingsPage`, `OrganizationMembersPage`, `InviteAcceptPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 - 2026-06-30: Modernized `ProjectCaptureSessionListPage` with shared create-form, button, badge, card, alert, and field primitives. `CaptureSessionDetailPage` remains pending as its own safer slice because it owns upload, event editing, asset display, and artifact creation controls.
 - 2026-06-30: Capture list verification passed: `rtk pnpm --filter web test -- ProjectCaptureSessionListPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
+- 2026-06-30: Added README and screenshot refresh as an explicit final deliverable after the user's follow-up request.
 
 ## Final Gap Review
 
