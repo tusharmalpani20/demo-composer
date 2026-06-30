@@ -368,6 +368,27 @@ Suggested child plan:
 docs/plan/082-portal-interaction-accessibility-pass.md
 ```
 
+Status: completed with follow-up notes by `docs/plan/082-portal-interaction-accessibility-pass.md`.
+
+### Progress Update
+
+Updated on 2026-06-30 local time.
+
+Completion result:
+
+- audited the plan `071` pointer/keyboard activation concerns against current portal components
+- confirmed the affected controls use native button/link semantics and have focused click/route coverage in existing tests
+- kept extension screenshot permission/manual-popup reliability from plan `081` out of this portal accessibility phase
+- folded in the portal-facing carry-forward from plan `081` by disabling guide/demo artifact creation for captures with zero events
+- added accessible explanatory copy for disabled empty-capture artifact actions
+- verified the focused capture detail behavior plus full web test, typecheck, lint, and build
+
+Carry-forward portal accessibility candidates:
+
+- reproduce pointer-vs-keyboard automation issues in a headed browser only if they reappear in manual QA
+- keep deeper guide/demo authoring workflow polish in Phase 6
+- keep extension capture permission work in a separate extension reliability plan
+
 ### Goal
 
 Determine whether pointer-click vs keyboard activation issues from dogfood automation are product bugs, test-tool limitations, or accessibility gaps.
@@ -545,7 +566,7 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 2. Extension Automatic Capture Reliability V3 | Completed with follow-up notes | `docs/plan/079-extension-automatic-capture-reliability-v3.md` |
 | 3. Extension Manual Fallback And Diagnostics | Completed with follow-up notes | `docs/plan/080-extension-manual-fallback-diagnostics.md` |
 | 4. Extension Evidence And Artifact Re-Dogfood | Completed with follow-up notes | `docs/plan/081-extension-evidence-and-artifact-redogfood.md` |
-| 5. Portal Interaction Accessibility Pass | Planned | TBD |
+| 5. Portal Interaction Accessibility Pass | Completed with follow-up notes | `docs/plan/082-portal-interaction-accessibility-pass.md` |
 | 6. Authoring Polish V2 | Planned | TBD |
 | 7. Self-Host Ops Tooling V3 | Planned | TBD |
 | 8. Docs Site V1 | Planned | TBD |

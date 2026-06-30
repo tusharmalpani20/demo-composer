@@ -2,7 +2,7 @@
 
 Date: 2026-06-23
 
-Status: Planned.
+Status: Completed with follow-up notes.
 
 ## Parent Master Plan
 
@@ -73,6 +73,37 @@ docs/project-zoomout-status.md
 
 ## Implementation Plan
 
+## Implementation Notes
+
+Completed on 2026-06-30 local time.
+
+This phase was implemented as a focused portal accessibility/product-state pass. The original pointer/keyboard dogfood concerns were audited against current components and tests; the only product change made in this slice was the concrete empty-capture artifact action guard carried forward from plan `081`.
+
+Implementation result:
+
+- first-run submit, project settings save/archive, manual event edit, guide preview, and project workspace/settings navigation all use native `button`/`a` semantics in the current code
+- existing focused tests already cover the main click/route behavior for those controls
+- plan `074` already handled the inert guide add-block issue from plan `071`
+- capture detail now disables `Create guide` and `Create interactive demo` when a capture session has zero events
+- the disabled artifact buttons are described by explanatory text: `Add at least one capture event before creating guide or demo artifacts.`
+- empty extension captures no longer present enabled artifact creation actions that can only produce empty/no-op output
+
+Verification run:
+
+- `rtk pnpm --filter web test -- src/features/capture-session/CaptureSessionDetailPage.test.tsx`
+- `rtk pnpm --filter web check-types`
+- `rtk pnpm --filter web test`
+- `rtk pnpm --filter web lint`
+- `rtk pnpm --filter web build`
+- `rtk git diff --check`
+
+Missed or deferred work to keep as follow-up candidates:
+
+- true headed-browser reproduction of the original pointer-vs-keyboard automation limitations remains useful if those issues reappear in manual QA
+- extension screenshot permission/manual-popup reliability from plan `081` remains out of scope and should get a focused extension plan
+- deeper guide/demo authoring workflow polish should stay in plan `083`
+- if future UX wants artifact creation from empty captures for draft scaffolding, that should be a deliberate product decision with explicit empty-artifact copy
+
 ### 1. Audit Dogfood Evidence
 
 - [x] Read plan `071`.
@@ -92,28 +123,28 @@ Audit notes:
 
 ### 2. Verify Current Behavior
 
-- [ ] Add or run focused tests for accessible names.
-- [ ] Add or run focused tests for keyboard activation.
-- [ ] Add or run focused tests for pointer activation where practical.
-- [ ] Add focused tests for empty-capture artifact action disabled state and explanatory copy.
-- [ ] Manually inspect browser behavior if tests are inconclusive.
-- [ ] Separate product bugs from automation-only issues.
+- [x] Add or run focused tests for accessible names.
+- [x] Add or run focused tests for keyboard activation. Covered by native `button`/`a` semantics audit; no custom keyboard handler path changed.
+- [x] Add or run focused tests for pointer activation where practical.
+- [x] Add focused tests for empty-capture artifact action disabled state and explanatory copy.
+- [x] Manually inspect browser behavior if tests are inconclusive. Not needed for this slice; semantic controls and focused tests were conclusive enough.
+- [x] Separate product bugs from automation-only issues.
 
 ### 3. Fix Product Issues
 
-- [ ] Use semantic `button` or `a` behavior where appropriate.
-- [ ] Avoid nested interactive elements.
-- [ ] Ensure disabled/loading states remain accessible.
-- [ ] Ensure click handlers and submit handlers are not competing.
-- [ ] Ensure empty captures do not expose enabled guide/demo creation actions.
-- [ ] Preserve existing route and API behavior.
+- [x] Use semantic `button` or `a` behavior where appropriate.
+- [x] Avoid nested interactive elements.
+- [x] Ensure disabled/loading states remain accessible.
+- [x] Ensure click handlers and submit handlers are not competing.
+- [x] Ensure empty captures do not expose enabled guide/demo creation actions.
+- [x] Preserve existing route and API behavior.
 
 ### 4. Document Remaining Limits
 
-- [ ] Record automation-only limitations.
-- [ ] Record any controls intentionally deferred to authoring polish.
-- [ ] Update dogfood notes or this plan with evidence.
-- [ ] Update master plan phase tracking after implementation.
+- [x] Record automation-only limitations.
+- [x] Record any controls intentionally deferred to authoring polish.
+- [x] Update dogfood notes or this plan with evidence.
+- [x] Update master plan phase tracking after implementation.
 
 ## Testing Plan
 
