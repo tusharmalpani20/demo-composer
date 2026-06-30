@@ -252,6 +252,27 @@ Suggested child plan:
 docs/plan/080-extension-manual-fallback-diagnostics.md
 ```
 
+Status: completed with follow-up notes by `docs/plan/080-extension-manual-fallback-diagnostics.md`.
+
+### Progress Update
+
+Updated on 2026-06-30 local time.
+
+Completion result:
+
+- manual screenshot diagnostics are now persisted separately from automatic capture diagnostics
+- manual screenshot success records event index and timestamp
+- screenshot capture, upload, and event-recording failures record retryable diagnostics while preserving active capture state
+- manual diagnostic persistence is best-effort and does not hide the original screenshot/upload/event error
+- active-capture popup shows the latest manual screenshot failure after reopening
+- diagnostics avoid raw input values, page URLs, screenshot bytes, tokens, cookies, and page HTML
+
+Carry-forward manual fallback candidates:
+
+- run a headed browser manual screenshot fallback happy path and verify the portal capture detail
+- run one practical headed-browser failure path and record the popup diagnostic
+- if no manual diagnostic appears in a headed run, investigate popup lifecycle and browser screenshot permissions
+
 ### Goal
 
 Make manual screenshot fallback reliable and observable.
@@ -490,7 +511,7 @@ DB-backed checks require the configured PostgreSQL testing database.
 | --- | --- | --- |
 | 1. Split-Origin URL Hardening | Completed with follow-up notes | `docs/plan/078-split-origin-url-hardening.md` |
 | 2. Extension Automatic Capture Reliability V3 | Completed with follow-up notes | `docs/plan/079-extension-automatic-capture-reliability-v3.md` |
-| 3. Extension Manual Fallback And Diagnostics | Planned | TBD |
+| 3. Extension Manual Fallback And Diagnostics | Completed with follow-up notes | `docs/plan/080-extension-manual-fallback-diagnostics.md` |
 | 4. Extension Evidence And Artifact Re-Dogfood | Planned | TBD |
 | 5. Portal Interaction Accessibility Pass | Planned | TBD |
 | 6. Authoring Polish V2 | Planned | TBD |

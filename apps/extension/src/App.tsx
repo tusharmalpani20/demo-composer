@@ -34,11 +34,13 @@ import {
   saveActiveCaptureEventIndex,
   saveActiveCaptureMode,
   saveInstanceUrl,
+  saveManualCaptureDiagnostic,
   savePortalUrl,
   saveSelectedProjectId,
   saveSessionToken,
   type ExtensionSettings,
   type ExtensionStorageArea,
+  type ManualCaptureDiagnostic,
 } from "./lib/settings";
 import { buildPortalCaptureSessionUrl, normalizeInstanceUrl } from "./lib/url";
 import "./index.css";
@@ -57,6 +59,7 @@ type Dependencies = {
   }) => Promise<void>;
   saveActiveCaptureMode: (input: { mode: "manual" | "automatic"; paused: boolean }) => Promise<void>;
   saveActiveCaptureEventIndex: (eventIndex: number) => Promise<void>;
+  saveManualCaptureDiagnostic: (diagnostic: ManualCaptureDiagnostic | null) => Promise<void>;
   clearActiveCapture: () => Promise<void>;
   clearSettings: () => Promise<void>;
   getCurrentAuth: (instanceUrl: string, sessionToken: string) => Promise<AuthResponse>;
@@ -122,6 +125,7 @@ const buildDefaultDependencies = (): Dependencies => {
     saveActiveCapture: (input) => saveActiveCapture(storage, input),
     saveActiveCaptureMode: (input) => saveActiveCaptureMode(storage, input),
     saveActiveCaptureEventIndex: (eventIndex) => saveActiveCaptureEventIndex(storage, eventIndex),
+    saveManualCaptureDiagnostic: (diagnostic) => saveManualCaptureDiagnostic(storage, diagnostic),
     clearActiveCapture: () => clearActiveCapture(storage),
     clearSettings: () => clearSettings(storage),
     getCurrentAuth,
@@ -141,6 +145,17 @@ const buildDefaultDependencies = (): Dependencies => {
 const errorMessage = (error: unknown, fallback: string) => (
   error instanceof ApiClientError ? error.message : fallback
 );
+
+const persistManualCaptureDiagnostic = async (
+  saveManualCaptureDiagnostic: Dependencies["saveManualCaptureDiagnostic"],
+  diagnostic: ManualCaptureDiagnostic
+) => {
+  try {
+    await saveManualCaptureDiagnostic(diagnostic);
+  } catch {
+    // Manual capture success/failure should not be hidden by diagnostic persistence failure.
+  }
+};
 
 export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
   const dependencies = useMemo<Dependencies>(() => ({
@@ -341,6 +356,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
         activeCaptureMode={state.settings.activeCaptureMode}
         activeCapturePaused={state.settings.activeCapturePaused}
         automaticCaptureDiagnostic={state.settings.automaticCaptureDiagnostic ?? null}
+        manualCaptureDiagnostic={state.settings.manualCaptureDiagnostic ?? null}
         onSelect={async (projectId) => {
           await dependencies.saveSelectedProjectId(projectId);
           setState({
@@ -407,60 +423,82 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
           });
         }}
         onCaptureScreenshot={async (input) => {
-          const [screenshot, tab] = await Promise.all([
-            dependencies.captureVisibleTabScreenshot(),
-            dependencies.getCurrentTabSnapshot(),
-          ]);
-          const captureAssetResult = await dependencies.uploadCaptureAsset(
-            state.settings.instanceUrl,
-            state.settings.sessionToken,
-            input.projectId,
-            input.captureSessionId,
-            {
-              file: screenshot.blob,
-              fileName: screenshotFileName(screenshot.capturedAt),
-              width: screenshot.width,
-              height: screenshot.height,
-              devicePixelRatio: screenshot.devicePixelRatio,
-              pageUrl: tab.url,
-              pageTitle: tab.title,
-              capturedAt: screenshot.capturedAt,
-              metadata: {
-                extension_version: "0.1.0",
-                capture_source: "extension_popup",
+          try {
+            const [screenshot, tab] = await Promise.all([
+              dependencies.captureVisibleTabScreenshot(),
+              dependencies.getCurrentTabSnapshot(),
+            ]);
+            const captureAssetResult = await dependencies.uploadCaptureAsset(
+              state.settings.instanceUrl,
+              state.settings.sessionToken,
+              input.projectId,
+              input.captureSessionId,
+              {
+                file: screenshot.blob,
+                fileName: screenshotFileName(screenshot.capturedAt),
+                width: screenshot.width,
+                height: screenshot.height,
+                devicePixelRatio: screenshot.devicePixelRatio,
+                pageUrl: tab.url,
+                pageTitle: tab.title,
+                capturedAt: screenshot.capturedAt,
+                metadata: {
+                  extension_version: "0.1.0",
+                  capture_source: "extension_popup",
+                },
+              }
+            );
+            const result = await dependencies.createCaptureEvent(
+              state.settings.instanceUrl,
+              state.settings.sessionToken,
+              input.projectId,
+              input.captureSessionId,
+              {
+                event_type: "capture",
+                event_index: input.eventIndex,
+                capture_asset_id: captureAssetResult.capture_asset.id,
+                occurred_at: screenshot.capturedAt,
+                page_url: tab.url,
+                page_title: tab.title,
+                input_value_redacted: true,
+                metadata: {
+                  extension_version: "0.1.0",
+                  capture_source: "extension_popup",
+                  asset_type: "screenshot",
+                },
+              }
+            );
+            await dependencies.saveActiveCaptureEventIndex(input.eventIndex);
+            await persistManualCaptureDiagnostic(dependencies.saveManualCaptureDiagnostic, {
+              status: "success",
+              message: null,
+              eventIndex: result.capture_event.event_index,
+              occurredAt: screenshot.capturedAt,
+            });
+            setState({
+              ...state,
+              settings: {
+                ...state.settings,
+                activeCaptureEventIndex: input.eventIndex,
+                manualCaptureDiagnostic: {
+                  status: "success",
+                  message: null,
+                  eventIndex: result.capture_event.event_index,
+                  occurredAt: screenshot.capturedAt,
+                },
               },
-            }
-          );
-          const result = await dependencies.createCaptureEvent(
-            state.settings.instanceUrl,
-            state.settings.sessionToken,
-            input.projectId,
-            input.captureSessionId,
-            {
-              event_type: "capture",
-              event_index: input.eventIndex,
-              capture_asset_id: captureAssetResult.capture_asset.id,
-              occurred_at: screenshot.capturedAt,
-              page_url: tab.url,
-              page_title: tab.title,
-              input_value_redacted: true,
-              metadata: {
-                extension_version: "0.1.0",
-                capture_source: "extension_popup",
-                asset_type: "screenshot",
-              },
-            }
-          );
-          await dependencies.saveActiveCaptureEventIndex(input.eventIndex);
-          setState({
-            ...state,
-            settings: {
-              ...state.settings,
-              activeCaptureEventIndex: input.eventIndex,
-            },
-          });
+            });
 
-          return result;
+            return result;
+          } catch (error: unknown) {
+            await persistManualCaptureDiagnostic(dependencies.saveManualCaptureDiagnostic, {
+              status: "failed",
+              message: errorMessage(error, "Could not capture screenshot."),
+              eventIndex: null,
+              occurredAt: new Date().toISOString(),
+            });
+            throw error;
+          }
         }}
         onFinishCapture={async (input) => {
           const result = await dependencies.completeCaptureSession(
@@ -747,6 +785,7 @@ const ProjectPicker = ({
   activeCaptureMode,
   activeCapturePaused,
   automaticCaptureDiagnostic,
+  manualCaptureDiagnostic,
   onSelect,
   onStartCapture,
   onSetActiveCaptureMode,
@@ -766,6 +805,7 @@ const ProjectPicker = ({
   activeCaptureMode: "manual" | "automatic" | null;
   activeCapturePaused: boolean;
   automaticCaptureDiagnostic: ExtensionSettings["automaticCaptureDiagnostic"];
+  manualCaptureDiagnostic: ExtensionSettings["manualCaptureDiagnostic"];
   onSelect: (projectId: string) => Promise<void>;
   onStartCapture: (projectId: string) => Promise<void>;
   onSetActiveCaptureMode: (input: { mode: "manual" | "automatic"; paused: boolean }) => Promise<void>;
@@ -811,6 +851,12 @@ const ProjectPicker = ({
     : null;
   const automaticCaptureSuccessMessage = automaticCaptureDiagnostic?.status === "success" && automaticCaptureDiagnostic.eventIndex
     ? `Automatic capture event recorded: step ${automaticCaptureDiagnostic.eventIndex}`
+    : null;
+  const manualCaptureDiagnosticMessage = manualCaptureDiagnostic?.status === "failed"
+    ? `Manual screenshot failed: ${manualCaptureDiagnostic.message ?? "Could not capture screenshot."}`
+    : null;
+  const manualCaptureSuccessMessage = manualCaptureDiagnostic?.status === "success" && manualCaptureDiagnostic.eventIndex
+    ? `Manual screenshot recorded: step ${manualCaptureDiagnostic.eventIndex}`
     : null;
 
   const heading = hasActiveCapture
@@ -962,9 +1008,11 @@ const ProjectPicker = ({
           <p className="captureSession">Session {activeCaptureSessionId}</p>
           {screenshotError ? <div className="error">{screenshotError}</div> : null}
           {automaticCaptureDiagnosticMessage ? <div className="error">{automaticCaptureDiagnosticMessage}</div> : null}
+          {manualCaptureDiagnosticMessage ? <div className="error">{manualCaptureDiagnosticMessage}</div> : null}
           {finishError ? <div className="error">{finishError}</div> : null}
           {portalOpenError ? <div className="error">{portalOpenError}</div> : null}
           {automaticCaptureSuccessMessage ? <p className="success">{automaticCaptureSuccessMessage}</p> : null}
+          {manualCaptureSuccessMessage && !lastCaptureEventIndex ? <p className="success">{manualCaptureSuccessMessage}</p> : null}
           {lastCaptureEventIndex ? <p className="success">Capture event recorded: step {lastCaptureEventIndex}</p> : null}
           <div className="actions">
             {isAutomaticCapture ? (

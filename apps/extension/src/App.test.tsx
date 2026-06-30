@@ -70,6 +70,7 @@ const defaultSettings: ExtensionSettings = {
   activeCaptureMode: null,
   activeCapturePaused: false,
   automaticCaptureDiagnostic: null,
+  manualCaptureDiagnostic: null,
 };
 
 const captureSessionResponse = {
@@ -212,6 +213,12 @@ const renderApp = (overrides: {
   }) => Promise<void>;
   saveActiveCaptureMode?: (input: { mode: "manual" | "automatic"; paused: boolean }) => Promise<void>;
   saveActiveCaptureEventIndex?: (eventIndex: number) => Promise<void>;
+  saveManualCaptureDiagnostic?: (diagnostic: {
+    status: "success" | "failed";
+    message: string | null;
+    eventIndex: number | null;
+    occurredAt: string;
+  } | null) => Promise<void>;
   clearActiveCapture?: () => Promise<void>;
   clearSettings?: () => Promise<void>;
   logout?: (instanceUrl: string, sessionToken: string) => Promise<void>;
@@ -239,6 +246,7 @@ const renderApp = (overrides: {
     saveActiveCapture: vi.fn(overrides.saveActiveCapture ?? (async () => {})),
     saveActiveCaptureMode: vi.fn(overrides.saveActiveCaptureMode ?? (async () => {})),
     saveActiveCaptureEventIndex: vi.fn(overrides.saveActiveCaptureEventIndex ?? (async () => {})),
+    saveManualCaptureDiagnostic: vi.fn(overrides.saveManualCaptureDiagnostic ?? (async () => {})),
     clearActiveCapture: vi.fn(overrides.clearActiveCapture ?? (async () => {})),
     logout: vi.fn(overrides.logout ?? (async () => {})),
   };
@@ -568,6 +576,32 @@ describe("extension popup App", () => {
     expect(screen.getByRole("button", { name: "Pause automatic capture" })).toBeInTheDocument();
   });
 
+  it("shows the latest manual screenshot failure diagnostic with retry available", async () => {
+    renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 0,
+        activeCaptureMode: "automatic",
+        activeCapturePaused: false,
+        automaticCaptureDiagnostic: null,
+        manualCaptureDiagnostic: {
+          status: "failed",
+          message: "Capture asset upload is too large",
+          eventIndex: null,
+          occurredAt: "2026-06-30T10:05:00.000Z",
+        },
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    expect(screen.getByText("Manual screenshot failed: Capture asset upload is too large")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Capture screenshot" })).toBeInTheDocument();
+  });
+
   it("pauses and resumes automatic capture without clearing active capture state", async () => {
     const dependencies = renderApp({
       settings: {
@@ -777,6 +811,12 @@ describe("extension popup App", () => {
       }
     ));
     await waitFor(() => expect(dependencies.saveActiveCaptureEventIndex).toHaveBeenCalledWith(1));
+    await waitFor(() => expect(dependencies.saveManualCaptureDiagnostic).toHaveBeenCalledWith({
+      status: "success",
+      message: null,
+      eventIndex: 1,
+      occurredAt: "2026-06-05T10:00:00.000Z",
+    }));
     expect(await screen.findByText("Capture event recorded: step 1")).toBeInTheDocument();
   });
 
@@ -838,6 +878,43 @@ describe("extension popup App", () => {
     expect(screen.getByRole("heading", { name: "Capture active" })).toBeInTheDocument();
     expect(dependencies.createCaptureEvent).not.toHaveBeenCalled();
     expect(dependencies.saveActiveCaptureEventIndex).not.toHaveBeenCalled();
+    expect(dependencies.saveManualCaptureDiagnostic).toHaveBeenCalledWith({
+      status: "failed",
+      message: "Capture asset upload is too large",
+      eventIndex: null,
+      occurredAt: expect.any(String),
+    });
+    expect(dependencies.clearActiveCapture).not.toHaveBeenCalled();
+  });
+
+  it("does not hide manual screenshot upload errors when diagnostic persistence fails", async () => {
+    const dependencies = renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 0,
+        activeCaptureMode: null,
+        activeCapturePaused: false,
+      },
+      uploadCaptureAsset: async () => {
+        throw new ApiClientError({
+          status: 413,
+          type: "capture_asset_too_large",
+          message: "Capture asset upload is too large",
+        });
+      },
+      saveManualCaptureDiagnostic: async () => {
+        throw new Error("storage unavailable");
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Capture screenshot" }));
+
+    expect(await screen.findByText("Capture asset upload is too large")).toBeInTheDocument();
     expect(dependencies.clearActiveCapture).not.toHaveBeenCalled();
   });
 
@@ -868,6 +945,12 @@ describe("extension popup App", () => {
     expect(await screen.findByText("A capture event with this index already exists")).toBeInTheDocument();
     expect(dependencies.uploadCaptureAsset).toHaveBeenCalled();
     expect(dependencies.saveActiveCaptureEventIndex).not.toHaveBeenCalled();
+    expect(dependencies.saveManualCaptureDiagnostic).toHaveBeenCalledWith({
+      status: "failed",
+      message: "A capture event with this index already exists",
+      eventIndex: null,
+      occurredAt: expect.any(String),
+    });
     expect(dependencies.clearActiveCapture).not.toHaveBeenCalled();
   });
 

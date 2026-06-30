@@ -182,6 +182,21 @@ Do not use production accounts, customer systems, private URLs, or private scree
   - verify screenshot-backed click events or capture the exact popup diagnostic
   - verify unsupported/restricted page behavior
 
+### 2026-06-30 Manual Fallback Diagnostic Slice
+
+- Plan: `docs/plan/080-extension-manual-fallback-diagnostics.md`
+- Implementation evidence: focused extension tests now cover persisted manual screenshot diagnostics for success, upload failure, event-recording failure, and popup rendering.
+- Behavior changed:
+  - manual screenshot success/failure diagnostics are stored separately from automatic capture diagnostics
+  - popup active-capture state shows the latest manual screenshot failure after reopening
+  - recoverable manual screenshot failures preserve active capture state and event index
+  - manual diagnostics stay minimized to status, optional message, optional event index, and timestamp
+- Manual browser evidence still needed:
+  - reload the built extension in a headed browser
+  - run one manual screenshot happy path
+  - confirm the portal capture detail shows a screenshot-backed fallback event
+  - run one practical failure path, such as a restricted tab or oversized/blocked upload, and record the popup error
+
 ### 2026-06-22 Manual Portal Dogfood
 
 - Commit: `51d6b20`

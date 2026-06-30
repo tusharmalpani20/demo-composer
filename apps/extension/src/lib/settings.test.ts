@@ -6,6 +6,7 @@ import {
   saveActiveCapture,
   saveActiveCaptureEventIndex,
   saveAutomaticCaptureDiagnostic,
+  saveManualCaptureDiagnostic,
   saveInstanceUrl,
   savePortalUrl,
   saveSelectedProjectId,
@@ -56,6 +57,7 @@ describe("extension settings", () => {
       activeCaptureMode: null,
       activeCapturePaused: false,
       automaticCaptureDiagnostic: null,
+      manualCaptureDiagnostic: null,
     });
   });
 
@@ -82,6 +84,7 @@ describe("extension settings", () => {
       activeCaptureMode: "automatic",
       activeCapturePaused: false,
       automaticCaptureDiagnostic: null,
+      manualCaptureDiagnostic: null,
     });
   });
 
@@ -119,6 +122,45 @@ describe("extension settings", () => {
         eventIndex: null,
         occurredAt: "2026-06-30T10:00:00.000Z",
       },
+      manualCaptureDiagnostic: null,
+    });
+  });
+
+  it("saves manual capture diagnostics without clearing split-origin or active capture state", async () => {
+    await saveInstanceUrl(storage, "http://localhost:4021");
+    await savePortalUrl(storage, "http://localhost:3000");
+    await saveSessionToken(storage, "session-token");
+    await saveSelectedProjectId(storage, "project_1");
+    await saveActiveCapture(storage, {
+      captureSessionId: "capture_session_1",
+      projectId: "project_1",
+      mode: "automatic",
+    });
+
+    await saveManualCaptureDiagnostic(storage, {
+      status: "failed",
+      message: "Capture asset upload is too large",
+      eventIndex: null,
+      occurredAt: "2026-06-30T10:05:00.000Z",
+    });
+
+    await expect(getSettings(storage)).resolves.toEqual({
+      instanceUrl: "http://localhost:4021",
+      portalUrl: "http://localhost:3000",
+      sessionToken: "session-token",
+      selectedProjectId: "project_1",
+      activeCaptureSessionId: "capture_session_1",
+      activeCaptureProjectId: "project_1",
+      activeCaptureEventIndex: 0,
+      activeCaptureMode: "automatic",
+      activeCapturePaused: false,
+      automaticCaptureDiagnostic: null,
+      manualCaptureDiagnostic: {
+        status: "failed",
+        message: "Capture asset upload is too large",
+        eventIndex: null,
+        occurredAt: "2026-06-30T10:05:00.000Z",
+      },
     });
   });
 
@@ -144,6 +186,7 @@ describe("extension settings", () => {
       activeCaptureMode: null,
       activeCapturePaused: false,
       automaticCaptureDiagnostic: null,
+      manualCaptureDiagnostic: null,
     });
   });
 
@@ -169,6 +212,7 @@ describe("extension settings", () => {
       activeCaptureMode: null,
       activeCapturePaused: false,
       automaticCaptureDiagnostic: null,
+      manualCaptureDiagnostic: null,
     });
   });
 
@@ -193,6 +237,7 @@ describe("extension settings", () => {
       activeCaptureMode: "automatic",
       activeCapturePaused: false,
       automaticCaptureDiagnostic: null,
+      manualCaptureDiagnostic: null,
     });
 
     await saveActiveCaptureMode(storage, {
@@ -213,6 +258,7 @@ describe("extension settings", () => {
       activeCaptureMode: "automatic",
       activeCapturePaused: true,
       automaticCaptureDiagnostic: null,
+      manualCaptureDiagnostic: null,
     });
 
     await clearActiveCapture(storage);
@@ -228,6 +274,7 @@ describe("extension settings", () => {
       activeCaptureMode: null,
       activeCapturePaused: false,
       automaticCaptureDiagnostic: null,
+      manualCaptureDiagnostic: null,
     });
   });
 
@@ -253,6 +300,7 @@ describe("extension settings", () => {
       activeCaptureMode: null,
       activeCapturePaused: false,
       automaticCaptureDiagnostic: null,
+      manualCaptureDiagnostic: null,
     });
   });
 
@@ -270,6 +318,7 @@ describe("extension settings", () => {
       activeCaptureMode: null,
       activeCapturePaused: false,
       automaticCaptureDiagnostic: null,
+      manualCaptureDiagnostic: null,
     });
   });
 

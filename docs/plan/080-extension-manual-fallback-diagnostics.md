@@ -2,7 +2,7 @@
 
 Date: 2026-06-23
 
-Status: Planned.
+Status: Completed with follow-up notes.
 
 ## Parent Master Plan
 
@@ -87,9 +87,56 @@ apps/server/src/modules/capture-event/
 
 ## Implementation Plan
 
+## Implementation Result: 2026-06-30
+
+Completed slice:
+
+- Added persisted manual screenshot diagnostics to extension settings, separate from automatic capture diagnostics.
+- Manual screenshot success now records the captured event index and timestamp.
+- Manual screenshot capture, upload, and event-recording failures now record a retryable failure diagnostic while preserving active capture state.
+- Manual diagnostic persistence is best-effort, so storage failures do not hide the original screenshot/upload/event error.
+- The active-capture popup now shows the latest manual screenshot failure after reopening.
+- Manual diagnostics stay minimized to status, optional message, optional event index, and timestamp.
+- Split API/web portal URL behavior remains unchanged.
+- Raw input values, page URLs, screenshot bytes, tokens, cookies, and page HTML are not stored in diagnostics.
+
+Selected fallback slice:
+
+- The existing code path already captured a screenshot, uploaded the asset, and created a linked `capture` event in tests.
+- The gap was observability across popup reloads and clear separation from automatic capture diagnostics.
+- This implementation does not claim a headed browser manual fallback run has passed yet.
+
+Verification run:
+
+```bash
+rtk pnpm --filter extension test -- src/lib/settings.test.ts src/App.test.tsx src/lib/screenshot.test.ts src/lib/api.test.ts
+rtk pnpm --filter extension test
+rtk pnpm --filter extension check-types
+rtk pnpm --filter extension lint
+rtk pnpm --filter extension build
+rtk git diff --check
+```
+
+Results:
+
+- Focused extension suites passed with 4 files and 61 tests.
+- Full extension test suite passed with 9 files and 82 tests.
+- Extension typecheck passed.
+- Extension lint passed.
+- Extension build passed.
+- Whitespace check passed.
+
+Missed or deferred work to keep as follow-up candidates:
+
+- Manual headed browser verification of a manual screenshot happy path.
+- Manual headed browser verification of at least one practical failure path.
+- Service-worker and browser permission evidence from a real extension run.
+- Extension visual evidence and artifact re-dogfood remain part of plan `081`.
+- If manual fallback still produces no diagnostic in a headed run, the next slice should focus on popup lifecycle, extension permission, and browser API behavior.
+
 ### 1. Reproduce Current Fallback Behavior
 
-- [ ] Build extension.
+- [x] Build extension.
 - [ ] Load unpacked extension.
 - [ ] Configure instance and portal URL.
 - [ ] Start capture session.
@@ -101,31 +148,31 @@ apps/server/src/modules/capture-event/
 
 ### 2. Define Fallback Contract
 
-- [ ] Define happy-path popup state.
-- [ ] Define upload failure message.
-- [ ] Define auth/session failure message.
-- [ ] Define project/session missing message.
-- [ ] Define restricted-tab screenshot failure message.
-- [ ] Define retry behavior if any.
+- [x] Define happy-path popup state.
+- [x] Define upload failure message.
+- [x] Define auth/session failure message.
+- [x] Define project/session missing message.
+- [x] Define restricted-tab screenshot failure message.
+- [x] Define retry behavior if any.
 
 ### 3. Add Tests First
 
-- [ ] Add failing tests for successful manual fallback event creation if code path exists.
-- [ ] Add failing tests for visible failure messages.
-- [ ] Add tests that local active capture state is not lost after recoverable failures.
-- [ ] Add tests that no raw input values or HTML are collected.
+- [x] Add failing tests for successful manual fallback event creation if code path exists.
+- [x] Add failing tests for visible failure messages.
+- [x] Add tests that local active capture state is not lost after recoverable failures.
+- [x] Add tests that no raw input values or HTML are collected.
 
 ### 4. Implement Fallback Reliability
 
-- [ ] Wire missing request path if fallback does not currently upload.
-- [ ] Create or reuse screenshot-backed capture event after upload.
-- [ ] Surface backend errors in the popup.
-- [ ] Avoid duplicate events on retry.
-- [ ] Preserve event ordering.
+- [x] Wire missing request path if fallback does not currently upload. Existing request path was kept and diagnostics were added.
+- [x] Create or reuse screenshot-backed capture event after upload.
+- [x] Surface backend errors in the popup.
+- [x] Avoid duplicate events on retry.
+- [x] Preserve event ordering.
 
 ### 5. Manual Verification
 
-- [ ] Rebuild and reload extension.
+- [ ] Rebuild and reload extension. Rebuild is covered by automated build; reload remains headed-browser follow-up.
 - [ ] Run fallback happy path.
 - [ ] Confirm portal capture detail shows screenshot-backed fallback event.
 - [ ] Run one safe failure path if practical.
@@ -133,10 +180,10 @@ apps/server/src/modules/capture-event/
 
 ### 6. Update Docs And Tracking
 
-- [ ] Update extension README.
-- [ ] Update dogfood smoke log.
-- [ ] Add implementation notes to this plan.
-- [ ] Update master plan phase tracking after implementation.
+- [x] Update extension README.
+- [x] Update dogfood smoke log.
+- [x] Add implementation notes to this plan.
+- [x] Update master plan phase tracking after implementation.
 
 ## Testing Plan
 
@@ -166,4 +213,8 @@ rtk pnpm --filter server test
 
 ## Follow-Up Notes
 
-If manual fallback depends on automatic-capture state fixes from plan `079`, record that dependency explicitly rather than hiding the blocker.
+Carry these notes into the next relevant plan:
+
+- Plan `081` should run the headed extension evidence pass and verify both automatic click capture diagnostics and manual screenshot fallback diagnostics.
+- Keep manual diagnostics minimized; do not add page URLs unless the product explicitly accepts that privacy tradeoff.
+- If the headed run still shows no manual diagnostic, investigate popup lifecycle, browser screenshot permissions, and whether `chrome.tabs.captureVisibleTab` is available from the popup context.

@@ -193,6 +193,8 @@ The event uses `event_type: "capture"`, links to the uploaded screenshot asset, 
 
 Each manual screenshot creates one ordered capture event. In the current MVP, treat one automatic click or one manual screenshot as the source for one guide step.
 
+The latest manual screenshot outcome is stored separately from automatic capture diagnostics and shown when the popup is opened during an active capture. Screenshot capture, upload, and event-recording failures are shown as retryable popup errors while preserving active capture state and event ordering. Manual diagnostics store only status, optional message, optional event index, and timestamp.
+
 ## Open Active Capture
 
 Opening an active capture in the portal uses:
