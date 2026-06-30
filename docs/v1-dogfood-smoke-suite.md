@@ -138,7 +138,7 @@ Do not use production accounts, customer systems, private URLs, or private scree
 
 - Plan: `docs/plan/081-extension-evidence-and-artifact-redogfood.md`
 - Commit before evidence-doc update: `7faa0da`
-- Environment: development DB `dev-dc`; API `http://localhost:4021`; web `http://localhost:3000`; safe test page `http://127.0.0.1:4179/tmp-extension-dogfood-page.html`; extension build path `apps/extension/dist`; local storage root `apps/server/storage`
+- Environment: development DB `dev-dc`; API `http://localhost:4021`; web `http://localhost:3000`; temporary safe test page served at `http://127.0.0.1:4179/tmp-extension-dogfood-page.html`; extension build path `apps/extension/dist`; local storage root `apps/server/storage`
 - Browser: Chrome `149.0.0.0` via `agent-browser`; unpacked extension id `cohepadogfeidambknedbdflmcjepaam`; extension version `0.1.0`
 - Capture: project `01KWCF7MTZXVDBP0H564E1HDYQ`; capture session `01KWCFBS480QYXSCY8005F5EZ1`
 - Automated evidence:

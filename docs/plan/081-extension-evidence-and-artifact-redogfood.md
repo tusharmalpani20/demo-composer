@@ -112,12 +112,21 @@ Run metadata:
 - commit before the evidence-doc update: `7faa0da`
 - API origin: `http://localhost:4021`
 - portal origin: `http://localhost:3000`
-- safe test page: `http://127.0.0.1:4179/tmp-extension-dogfood-page.html`
+- safe test page: temporary local page served at `http://127.0.0.1:4179/tmp-extension-dogfood-page.html`
+- local storage root: `apps/server/storage`
 - extension build path: `apps/extension/dist`
 - extension id/version: `cohepadogfeidambknedbdflmcjepaam` / `0.1.0`
 - browser: Chrome `149.0.0.0` through `agent-browser`
 - project: `01KWCF7MTZXVDBP0H564E1HDYQ`
 - capture session: `01KWCFBS480QYXSCY8005F5EZ1`
+
+Verification run:
+
+- `rtk pnpm --filter extension test`
+- `rtk pnpm --filter extension check-types`
+- `rtk pnpm --filter extension build`
+- `rtk pnpm --filter server test:smoke`
+- `rtk git diff --check`
 
 What passed:
 
@@ -217,6 +226,16 @@ Expected:
 
 ```bash
 rtk pnpm --filter extension build
+rtk git diff --check
+```
+
+Completed verification:
+
+```bash
+rtk pnpm --filter extension test
+rtk pnpm --filter extension check-types
+rtk pnpm --filter extension build
+rtk pnpm --filter server test:smoke
 rtk git diff --check
 ```
 
