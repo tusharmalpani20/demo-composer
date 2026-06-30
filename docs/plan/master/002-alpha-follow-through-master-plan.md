@@ -590,6 +590,8 @@ Completion result:
 - surfaced Phase 7 self-host operations leftovers as limitations only
 - updated docs app metadata, docs app README, root README, contributor guide, project status, and roadmap to stop describing `apps/docs` as parked starter content
 - added focused docs content tests
+- added focused docs page component and style tests for hero image loading, duplicate evidence-image rendering, viewport-scaled text, and letter spacing
+- completed a browser smoke pass with visible docs regions/links, no browser errors, and no LCP image warning in a fresh session
 
 Carry-forward docs-site candidates:
 

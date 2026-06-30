@@ -205,4 +205,6 @@ If package scripts differ, inspect `apps/docs/package.json` and use the availabl
 
 ## Follow-Up Notes
 
-If a real docs site is built, consider a later plan for navigation structure, search, versioning, and deployment. Do not mix that into this first docs-site cleanup.
+If a real docs site is built, consider a later plan for navigation structure, search, versioning, deployment, markdown ingestion, and docs ownership. Do not mix that into this first docs-site cleanup.
+
+The completed docs hub should also keep its current visual guardrails in future edits: avoid viewport-scaled text, keep letter spacing neutral, keep the above-the-fold hero screenshot eager, and avoid reusing that same screenshot as a lazy below-the-fold image.

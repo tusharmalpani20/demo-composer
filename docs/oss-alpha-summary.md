@@ -28,6 +28,7 @@ Workflow captures often contain internal product screens, operational processes,
 - guide generation, editing, preview, publishing, password access, embeds, Markdown export, and HTML ZIP export
 - interactive demo generation, editing, hotspots, publishing, password access, embeds, and public viewer
 - README portal screenshots from safe synthetic dogfood data
+- compact `apps/docs` alpha docs hub linking to source markdown docs and safe screenshot evidence
 - organization invites
 - production config hardening basics
 - DB-backed v1 smoke workflow
