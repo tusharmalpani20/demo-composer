@@ -272,6 +272,8 @@ Carry-forward manual fallback candidates:
 - run a headed browser manual screenshot fallback happy path and verify the portal capture detail
 - run one practical headed-browser failure path and record the popup diagnostic
 - if no manual diagnostic appears in a headed run, investigate popup lifecycle and browser screenshot permissions
+- plan `081` should record the exact API origin, portal origin, extension build/version, browser, and capture session used for the run
+- tie manual fallback evidence to artifact evidence by confirming the screenshot-backed capture can feed guide/demo work
 
 ### Goal
 

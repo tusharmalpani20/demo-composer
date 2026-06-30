@@ -126,6 +126,11 @@ Results:
 - Extension build passed.
 - Whitespace check passed.
 
+Post-implementation recheck:
+
+- Re-ran the full extension verification suite after implementation; no additional code changes were needed.
+- Confirmed the remaining gaps are headed-browser evidence gaps, not known unit-tested request-path gaps.
+
 Missed or deferred work to keep as follow-up candidates:
 
 - Manual headed browser verification of a manual screenshot happy path.
@@ -133,6 +138,7 @@ Missed or deferred work to keep as follow-up candidates:
 - Service-worker and browser permission evidence from a real extension run.
 - Extension visual evidence and artifact re-dogfood remain part of plan `081`.
 - If manual fallback still produces no diagnostic in a headed run, the next slice should focus on popup lifecycle, extension permission, and browser API behavior.
+- Plan `081` should record the exact API origin, portal origin, extension version/build, browser, and active capture session used for the manual fallback run.
 
 ### 1. Reproduce Current Fallback Behavior
 
@@ -218,3 +224,4 @@ Carry these notes into the next relevant plan:
 - Plan `081` should run the headed extension evidence pass and verify both automatic click capture diagnostics and manual screenshot fallback diagnostics.
 - Keep manual diagnostics minimized; do not add page URLs unless the product explicitly accepts that privacy tradeoff.
 - If the headed run still shows no manual diagnostic, investigate popup lifecycle, browser screenshot permissions, and whether `chrome.tabs.captureVisibleTab` is available from the popup context.
+- Keep the manual fallback happy path tied to portal artifact evidence: after a screenshot-backed event is created, verify the capture detail can feed guide/demo artifact work.
