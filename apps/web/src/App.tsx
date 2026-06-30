@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/card";
 import { CaptureSessionDetailPage } from "./features/capture-session/CaptureSessionDetailPage";
 import { ProjectCaptureSessionListPage } from "./features/capture-session/ProjectCaptureSessionListPage";
 import { LoginPage } from "./features/auth/LoginPage";
@@ -135,12 +136,17 @@ export default function App() {
     return (
       <div className={styles.page}>
         <header className={styles.topbar}>
-          <div className={styles.brand}>Demo Composer</div>
+          <a className={styles.brand} href="/projects">Demo Composer</a>
         </header>
         <main className={styles.main}>
-          <section className={styles.emptyState}>
-            <h1 className={styles.title}>Loading portal...</h1>
-          </section>
+          <Card className={styles.emptyState}>
+            <CardHeader>
+              <CardTitle className={styles.title}>Loading portal...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Checking workspace readiness.</p>
+            </CardContent>
+          </Card>
         </main>
       </div>
     );
@@ -150,13 +156,17 @@ export default function App() {
     return (
       <div className={styles.page}>
         <header className={styles.topbar}>
-          <div className={styles.brand}>Demo Composer</div>
+          <a className={styles.brand} href="/projects">Demo Composer</a>
         </header>
         <main className={styles.main}>
-          <section className={styles.emptyState}>
-            <h1 className={styles.title}>Setup status unavailable</h1>
-            <p>Could not load instance setup status.</p>
-          </section>
+          <Card className={styles.emptyState}>
+            <CardHeader>
+              <CardTitle className={styles.title}>Setup status unavailable</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Could not load instance setup status.</p>
+            </CardContent>
+          </Card>
         </main>
       </div>
     );
@@ -262,13 +272,17 @@ export default function App() {
   return (
     <div className={styles.page}>
       <header className={styles.topbar}>
-        <div className={styles.brand}>Demo Composer</div>
+        <a className={styles.brand} href="/projects">Demo Composer</a>
       </header>
       <main className={styles.main}>
-        <section className={styles.emptyState}>
-          <h1 className={styles.title}>Demo Composer portal</h1>
+        <Card className={styles.emptyState}>
+          <CardHeader>
+            <CardTitle className={styles.title}>Demo Composer portal</CardTitle>
+          </CardHeader>
+          <CardContent>
           <p>Open the project list, a project workspace, capture session list, capture session, guide list, guide link, or interactive demo link to continue.</p>
-        </section>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

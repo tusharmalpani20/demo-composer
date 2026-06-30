@@ -108,13 +108,13 @@ Design-system constraints:
 - [x] Add shared UI primitives in `packages/ui`.
 - [x] Replace placeholder shared `Button` behavior with a real reusable component.
 - [x] Add tests for shared UI behavior and accessibility where meaningful.
-- [ ] Commit foundation slice.
+- [x] Commit foundation slice.
 
 ### 2. App Shell And Portal Navigation
 
-- [ ] Modernize global tokens and base styles.
-- [ ] Modernize `App` loading/error shells.
-- [ ] Modernize `PortalTopbar`.
+- [x] Modernize global tokens and base styles.
+- [x] Modernize `App` loading/error shells.
+- [x] Modernize `PortalTopbar`.
 - [ ] Introduce reusable page shell/page header patterns if they reduce duplication.
 - [ ] Preserve route behavior and setup/auth gating.
 - [ ] Commit app-shell slice.
@@ -301,6 +301,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: Created plan `086` after checking branch, repo root, `docs`, `docs/plan`, existing plan numbers, and previous follow-up notes.
 - 2026-06-30: Completed the foundation slice with Tailwind Vite integration for `apps/web` and `apps/extension`, shared `cn`, `Button`, form/content primitives, and UI package tests.
 - 2026-06-30: Foundation verification passed: `rtk pnpm --filter @repo/ui test`, `check-types`, `lint`, `rtk pnpm --filter web build`, and `rtk pnpm --filter extension build`.
+- 2026-06-30: Modernized the App fallback shell and `PortalTopbar`, added focused topbar coverage, and preserved route/setup behavior under focused App tests.
+- 2026-06-30: App-shell verification passed: `rtk pnpm --filter web test -- App`, `rtk pnpm --filter web test -- PortalTopbar`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 
 ## Final Gap Review
 
