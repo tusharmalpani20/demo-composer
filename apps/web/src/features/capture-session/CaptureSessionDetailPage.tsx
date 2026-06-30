@@ -479,6 +479,12 @@ const CaptureSessionDetailView = ({
   const hasCaptureEvents = detail.capture_events.length > 0;
   const canCreateGuide = guideTitle.length > 0 && hasCaptureEvents && createState !== "creating";
   const canCreateInteractiveDemo = guideTitle.length > 0 && hasCaptureEvents && createDemoState !== "creating";
+  const missingTitleMessageId = "capture-session-artifact-title-message";
+  const emptyCaptureMessageId = "capture-session-artifact-action-message";
+  const artifactActionDescription = [
+    guideTitle.length === 0 ? missingTitleMessageId : null,
+    !hasCaptureEvents ? emptyCaptureMessageId : null,
+  ].filter(Boolean).join(" ") || undefined;
   const canUploadScreenshot = session.source_type === "manual";
   const isUploading = uploadState === "uploading";
   const uploadButtonText = isUploading
@@ -747,7 +753,7 @@ const CaptureSessionDetailView = ({
             className={styles.primaryButton}
             type="button"
             disabled={!canCreateGuide}
-            aria-describedby={!hasCaptureEvents ? "capture-session-artifact-action-message" : undefined}
+            aria-describedby={artifactActionDescription}
             onClick={handleCreateGuide}
           >
             {createState === "creating" ? "Creating guide..." : "Create guide"}
@@ -756,16 +762,18 @@ const CaptureSessionDetailView = ({
             className={styles.secondaryButton}
             type="button"
             disabled={!canCreateInteractiveDemo}
-            aria-describedby={!hasCaptureEvents ? "capture-session-artifact-action-message" : undefined}
+            aria-describedby={artifactActionDescription}
             onClick={handleCreateInteractiveDemo}
           >
             {createDemoState === "creating" ? "Creating interactive demo..." : "Create interactive demo"}
           </button>
           {guideTitle.length === 0 ? (
-            <div className={styles.actionMessage}>Capture session needs a name before creating a guide.</div>
+            <div className={styles.actionMessage} id={missingTitleMessageId}>
+              Capture session needs a name before creating guide or demo artifacts.
+            </div>
           ) : null}
           {!hasCaptureEvents ? (
-            <div className={styles.actionMessage} id="capture-session-artifact-action-message">
+            <div className={styles.actionMessage} id={emptyCaptureMessageId}>
               Add at least one capture event before creating guide or demo artifacts.
             </div>
           ) : null}

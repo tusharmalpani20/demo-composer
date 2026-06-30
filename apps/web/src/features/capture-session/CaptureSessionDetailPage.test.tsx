@@ -1119,8 +1119,14 @@ describe("CaptureSessionDetailPage", () => {
       }),
     });
 
-    expect(await screen.findByText("Capture session needs a name before creating a guide.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Create guide" })).toBeDisabled();
+    expect(await screen.findByText("Capture session needs a name before creating guide or demo artifacts.")).toBeInTheDocument();
+
+    const createGuideButton = screen.getByRole("button", { name: "Create guide" });
+    const createDemoButton = screen.getByRole("button", { name: "Create interactive demo" });
+    expect(createGuideButton).toBeDisabled();
+    expect(createDemoButton).toBeDisabled();
+    expect(createGuideButton).toHaveAccessibleDescription("Capture session needs a name before creating guide or demo artifacts.");
+    expect(createDemoButton).toHaveAccessibleDescription("Capture session needs a name before creating guide or demo artifacts.");
   });
 
   it("renders unauthenticated and not-found states", async () => {
