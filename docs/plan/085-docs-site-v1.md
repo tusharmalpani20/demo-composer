@@ -2,7 +2,7 @@
 
 Date: 2026-06-23
 
-Status: Planned.
+Status: Planned; rechecked and narrowed for implementation.
 
 ## Parent Master Plan
 
@@ -29,6 +29,8 @@ new contributor or self-host evaluator opens docs surface
 
 `apps/docs` remains starter content. Master plan `001` intentionally left it parked while README and markdown docs carried the real alpha documentation.
 
+Plan `084` completed a production environment report and left broader self-host operations work open. Those ops leftovers should appear here only as current alpha limitations or links back to operations docs; they should not become new tooling in this docs-site phase.
+
 ## Scope
 
 Decide and implement one path:
@@ -45,6 +47,18 @@ If building the docs site, initial content should cover:
 - screenshots and dogfood evidence
 - roadmap and known limitations
 - contributing links
+
+Selected path:
+
+- build a real, small docs/product hub in `apps/docs`
+- keep markdown files such as `README.md`, `docs/self-hosting.md`, `docs/operations.md`, and `docs/production-readiness-checklist.md` as source-of-truth deep dives
+- surface current alpha limitations, including the self-host ops carry-forward from plan `084`
+- avoid inventing hosted SaaS positioning or broad documentation IA
+
+Carry-forward from plan `084`:
+
+- storage inventory/cleanup, backup rehearsal, packaging, shared rate limiting, object storage, and dependency audit accepted-risk workflow remain future ops work
+- this docs-site pass may describe those limitations but must not implement ops tooling
 
 ## Explicit Non-Goals
 
@@ -80,10 +94,10 @@ docs/assets/alpha/
 
 ### 1. Decide Docs Site Direction
 
-- [ ] Audit `apps/docs`.
-- [ ] Check README and status docs for references to docs surfaces.
-- [ ] Decide build, park, or remove from positioning.
-- [ ] Record rationale in this plan before implementation.
+- [x] Audit `apps/docs`.
+- [x] Check README and status docs for references to docs surfaces.
+- [x] Decide build, park, or remove from positioning: build a small docs/product hub.
+- [x] Record rationale in this plan before implementation.
 
 ### 2. If Building A Real Site
 
