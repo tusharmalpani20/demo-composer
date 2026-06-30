@@ -1,102 +1,101 @@
-import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
+import Image from "next/image";
+import {
+  docsLinks,
+  evidenceItems,
+  knownLimitations,
+  productCapabilities,
+  siteSummary,
+} from "./docs-content";
 import styles from "./page.module.css";
-
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
-
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
-
-  return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
 
 export default function Home() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>apps/docs/app/page.tsx</code>
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new/clone?demo-description=Learn+to+implement+a+monorepo+with+a+two+Next.js+sites+that+has+installed+three+local+packages.&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F4K8ZISWAzJ8X1504ca0zmC%2F0b21a1c6246add355e55816278ef54bc%2FBasic.png&demo-title=Monorepo+with+Turborepo&demo-url=https%3A%2F%2Fexamples-basic-web.vercel.sh%2F&from=templates&project-name=Monorepo+with+Turborepo&repository-name=monorepo-turborepo&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fturborepo%2Ftree%2Fmain%2Fexamples%2Fbasic&root-directory=apps%2Fdocs&skippable-integrations=1&teamSlug=vercel&utm_source=create-turbo"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://turborepo.dev/docs?utm_source"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+    <main className={styles.page}>
+      <section className={styles.hero} aria-labelledby="page-title">
+        <div className={styles.heroText}>
+          <p className={styles.eyebrow}>Alpha documentation hub</p>
+          <h1 id="page-title">{siteSummary.name}</h1>
+          <p className={styles.status}>{siteSummary.status}</p>
+          <p className={styles.lede}>{siteSummary.positioning}</p>
+          <div className={styles.heroActions}>
+            <a className={styles.primaryLink} href={siteSummary.readmeHref}>Start with README</a>
+            <a className={styles.secondaryLink} href={siteSummary.selfHostingHref}>Self-hosting quickstart</a>
+          </div>
         </div>
-        <Button appName="docs" className={styles.secondary}>
-          Open alert
-        </Button>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <div className={styles.heroPreview} aria-label="Current alpha evidence">
           <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+            src={evidenceItems[0]!.src}
+            alt="Project workspace showing capture, guide, and interactive demo entry points."
+            width={960}
+            height={600}
+            priority
           />
-          Examples
-        </a>
-        <a
-          href="https://turborepo.dev?utm_source=create-turbo"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to turborepo.dev →
-        </a>
-      </footer>
-    </div>
+        </div>
+      </section>
+
+      <section className={styles.section} aria-labelledby="capabilities-heading">
+        <div className={styles.sectionHeader}>
+          <p className={styles.eyebrow}>Current alpha</p>
+          <h2 id="capabilities-heading">What Works Today</h2>
+        </div>
+        <div className={styles.capabilityGrid}>
+          {productCapabilities.map((capability) => (
+            <article className={styles.panel} key={capability}>
+              <p>{capability}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.section} aria-labelledby="docs-heading">
+        <div className={styles.sectionHeader}>
+          <p className={styles.eyebrow}>Source docs</p>
+          <h2 id="docs-heading">Use Markdown Docs For Deep Dives</h2>
+          <p>
+            This site is a compact navigation surface. The linked markdown files remain the
+            source of truth for setup, operations, roadmap, dogfood evidence, and contribution flow.
+          </p>
+        </div>
+        <div className={styles.linkGrid}>
+          {docsLinks.map((link) => (
+            <a className={styles.docLink} href={link.href} key={link.href}>
+              <span>{link.label}</span>
+              <p>{link.description}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.section} aria-labelledby="evidence-heading">
+        <div className={styles.sectionHeader}>
+          <p className={styles.eyebrow}>Dogfood evidence</p>
+          <h2 id="evidence-heading">Safe Alpha Screenshots</h2>
+          <p>
+            Screenshots use synthetic dogfood data and show the portal surfaces that currently
+            have trustworthy visual evidence.
+          </p>
+        </div>
+        <div className={styles.evidenceGrid}>
+          {evidenceItems.map((item) => (
+            <figure className={styles.evidenceCard} key={item.src}>
+              <Image src={item.src} alt={item.alt} width={960} height={600} />
+              <figcaption>{item.title}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.section} aria-labelledby="limitations-heading">
+        <div className={styles.sectionHeader}>
+          <p className={styles.eyebrow}>Still open</p>
+          <h2 id="limitations-heading">Alpha Limitations</h2>
+        </div>
+        <ul className={styles.limitations}>
+          {knownLimitations.map((limitation) => (
+            <li key={limitation}>{limitation}</li>
+          ))}
+        </ul>
+      </section>
+    </main>
   );
 }

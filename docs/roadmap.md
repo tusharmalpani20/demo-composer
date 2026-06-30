@@ -17,6 +17,7 @@ Demo Composer is alpha software. This roadmap describes product direction, not a
 - Storylane-style interactive demo generation from capture sessions.
 - Interactive demo editor, scenes, hotspots, publish controls, password access, public viewer, and embeds.
 - README portal screenshots from safe synthetic dogfood data.
+- Compact `apps/docs` alpha docs hub linking to source markdown docs and safe screenshot evidence.
 - Organization invite and member basics.
 - Health/readiness endpoints, production config hardening, and DB-backed v1 smoke coverage.
 

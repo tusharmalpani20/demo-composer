@@ -140,6 +140,7 @@ The backend is organized as domain modules under `apps/server/src/modules/*` wit
 
 ## Documentation
 
+- [Docs app overview](apps/docs/README.md)
 - [Project status](docs/project-zoomout-status.md)
 - [Roadmap](docs/roadmap.md)
 - [Self-hosting](docs/self-hosting.md)

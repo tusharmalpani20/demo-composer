@@ -51,7 +51,7 @@ Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-2
 - System writing pattern in `docs/system-design-pattern.md`.
 - Grill sessions in `docs/grill/`.
 - ADRs for major design decisions in `docs/adr/`.
-- Development, self-hosting, operations, production readiness, route inventory, roadmap, contributor guide, OSS summary, and smoke suite docs.
+- Compact `apps/docs` alpha docs hub plus development, self-hosting, operations, production readiness, route inventory, roadmap, contributor guide, OSS summary, and smoke suite docs.
 - AGPL-3.0-only license, security policy, contribution guide, CI workflow, PR template, and GitHub issue templates.
 
 ### Backend

@@ -8,7 +8,7 @@ Demo Composer is organized as a product monorepo. The project is alpha, so clear
 apps/server     Fastify REST API, PostgreSQL migrations, domain modules
 apps/web        React/Vite portal and public readers
 apps/extension  Chrome extension popup and capture behavior
-apps/docs       Starter docs app, parked for alpha; canonical docs live under docs/
+apps/docs       Compact alpha docs hub; canonical deep-dive docs live under docs/
 docs/           product decisions, plans, ADRs, operations, and roadmap
 packages/       shared tooling placeholders
 ```
