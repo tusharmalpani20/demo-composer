@@ -2,7 +2,7 @@
 
 Date: 2026-06-23
 
-Status: Planned; rechecked and narrowed for implementation.
+Status: Completed with follow-up notes.
 
 ## Parent Master Plan
 
@@ -88,6 +88,57 @@ Deferred from this implementation:
 - public demo final-scene stale-target behavior
 - extension-generated guide/demo quality until extension-created screenshot-backed events exist
 
+## Implementation Result
+
+Completed on 2026-06-30 local time.
+
+This phase was implemented as the selected guide screenshot picker clarity and recovery slice.
+
+Implementation result:
+
+- guide screenshot picker failures now keep an inline picker state open with a retry action
+- screenshot choices now show human-readable title, file name, and UTC captured time when available
+- the currently attached screenshot is labeled as the current screenshot and remains disabled in the picker
+- screenshot choice accessible names no longer need raw asset IDs as the fallback for normal titled/file-backed assets
+- direct screenshot upload behavior remains unchanged and still clears the file input after each attempt
+- no server/API contract changes were required
+- README screenshots do not need refresh from this slice because the layout changed only inside an existing editor control
+
+Verification run:
+
+```bash
+rtk pnpm --filter web test -- GuideEditorPage
+rtk pnpm --filter web test
+rtk pnpm --filter web check-types
+rtk pnpm --filter web lint
+rtk pnpm --filter web build
+rtk git diff --check
+```
+
+Results:
+
+- focused guide editor suite passed with 38 tests
+- full web suite passed with 295 tests
+- web typecheck passed
+- web lint passed
+- web production build passed
+- whitespace check passed
+
+Missed or deferred work to keep as follow-up candidates:
+
+- manual browser smoke of the screenshot picker against a running app
+- direct screenshot upload failure copy beyond the existing recoverable page notice
+- guide annotation editing affordances
+- guide publish stale-state clarity
+- guide export error messaging
+- guide metadata and step save/error/retry behavior
+- empty and partial-data guide editor states
+- demo scene list and reorder feedback
+- demo hotspot editor affordances
+- demo embed and narrow viewport QA
+- public demo final-scene stale-target behavior
+- extension-generated guide/demo quality after extension-created screenshot-backed events exist
+
 ## Explicit Non-Goals
 
 - HTML replay
@@ -136,31 +187,31 @@ docs/plan/master/002-alpha-follow-through-master-plan.md
 
 ### 2. Add Focused Tests
 
-- [ ] Add failing tests for screenshot picker clarity and load recovery.
-- [ ] Prefer user-visible behavior over private implementation details.
-- [ ] Add server tests only if API contracts or validation change.
-- [ ] Cover error states if the slice changes recovery behavior.
+- [x] Add failing tests for screenshot picker clarity and load recovery.
+- [x] Prefer user-visible behavior over private implementation details.
+- [x] Add server tests only if API contracts or validation change. Not needed; no API contract changed.
+- [x] Cover error states if the slice changes recovery behavior.
 
 ### 3. Implement Minimal Product Change
 
-- [ ] Preserve capture source immutability.
-- [ ] Preserve guide blocks and demo hotspots as separate concepts.
-- [ ] Preserve public snapshot safety.
-- [ ] Keep UI consistent with existing portal patterns.
-- [ ] Avoid unrelated refactors.
+- [x] Preserve capture source immutability.
+- [x] Preserve guide blocks and demo hotspots as separate concepts.
+- [x] Preserve public snapshot safety.
+- [x] Keep UI consistent with existing portal patterns.
+- [x] Avoid unrelated refactors.
 
 ### 4. Verify User Workflow
 
-- [ ] Run focused tests.
-- [ ] Run relevant broader web tests.
-- [ ] Manually smoke the affected authoring workflow if practical.
-- [ ] Decide whether README screenshots need refresh.
+- [x] Run focused tests.
+- [x] Run relevant broader web tests.
+- [ ] Manually smoke the affected authoring workflow if practical. Deferred to a browser dogfood pass.
+- [x] Decide whether README screenshots need refresh. Not needed for this slice.
 
 ### 5. Update Tracking
 
-- [ ] Add implementation notes to this plan.
-- [ ] Record missed/deferred authoring items.
-- [ ] Update master plan phase tracking after implementation.
+- [x] Add implementation notes to this plan.
+- [x] Record missed/deferred authoring items.
+- [x] Update master plan phase tracking after implementation.
 
 ## Testing Plan
 

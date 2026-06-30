@@ -420,6 +420,36 @@ Suggested child plan:
 docs/plan/083-authoring-polish-v2.md
 ```
 
+Status: completed with follow-up notes by `docs/plan/083-authoring-polish-v2.md`.
+
+### Progress Update
+
+Updated on 2026-06-30 local time.
+
+Completion result:
+
+- Phase 6 was narrowed to a guide screenshot picker clarity and recovery slice
+- guide screenshot picker load failures now keep an inline retry action inside the picker
+- guide screenshot choices now show human-readable title, file name, captured time, and current-screenshot state
+- screenshot choice labels avoid exposing raw asset IDs for normal titled/file-backed assets
+- direct screenshot upload behavior remains recoverable through the existing file input and page notice
+- no server/API contract changes were required
+
+Carry-forward authoring candidates:
+
+- manual browser smoke of the guide screenshot picker
+- direct screenshot upload failure copy beyond the existing recoverable page notice
+- guide annotation editing affordances
+- guide publish stale-state clarity
+- guide export error messaging
+- guide metadata and step save/error/retry behavior
+- empty and partial-data guide editor states
+- demo scene list and reorder feedback
+- demo hotspot editor affordances
+- demo embed and narrow viewport QA
+- public demo final-scene stale-target behavior
+- extension-generated guide/demo quality after extension-created screenshot-backed events exist
+
 ### Goal
 
 Reduce remaining guide and demo authoring friction after the first hardening slices.
@@ -568,6 +598,6 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 3. Extension Manual Fallback And Diagnostics | Completed with follow-up notes | `docs/plan/080-extension-manual-fallback-diagnostics.md` |
 | 4. Extension Evidence And Artifact Re-Dogfood | Completed with follow-up notes | `docs/plan/081-extension-evidence-and-artifact-redogfood.md` |
 | 5. Portal Interaction Accessibility Pass | Completed with follow-up notes | `docs/plan/082-portal-interaction-accessibility-pass.md` |
-| 6. Authoring Polish V2 | Planned | TBD |
+| 6. Authoring Polish V2 | Completed with follow-up notes | `docs/plan/083-authoring-polish-v2.md` |
 | 7. Self-Host Ops Tooling V3 | Planned | TBD |
 | 8. Docs Site V1 | Planned | TBD |
