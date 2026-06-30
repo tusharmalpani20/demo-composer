@@ -303,7 +303,7 @@ Carry-forward handling in this plan:
 - [x] `$agent-browser` visual QA performed and recorded.
 - [x] Relevant tests, typechecks, lint, and builds pass or are documented with blockers.
 - [x] Small logical commits created for coherent slices.
-- [ ] Final gap review completed.
+- [x] Final gap review completed.
 
 ## Implementation Log
 
@@ -341,4 +341,12 @@ Carry-forward handling in this plan:
 
 ## Final Gap Review
 
-Not started.
+Completed on 2026-06-30.
+
+- Branch confirmed as `feature/modern-ui-migration`.
+- Plan numbering was rechecked with `rtk ls -la`, `rtk ls -la docs`, and `rtk ls -la docs/plan`; plan `086` remains the current migration plan.
+- Scope complete: shared UI foundation, portal shell/auth/projects/org/capture/guide/interactive demo/public routes, extension popup, cleanup, README/status docs, screenshots, tests, builds, and browser QA.
+- Final repeated-class search found only intentional non-control names: `formError` React state and `styles.badges` layout container.
+- Root `rtk pnpm test` remains unavailable because the repo root has no `test` script; package-level UI/web/extension tests passed.
+- Authenticated full portal/editor browser screenshots were not regenerated because the local browser QA used safe public-route network fixtures rather than a seeded authenticated backend session. Existing portal/editor screenshots remain documented as 2026-06-22 dogfood evidence, while public guide/demo and extension setup screenshots were refreshed on 2026-06-30.
+- No unresolved implementation leftovers remain for this plan.
