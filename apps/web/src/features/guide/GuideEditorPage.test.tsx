@@ -1348,6 +1348,63 @@ describe("GuideEditorPage", () => {
     expect(screen.getByText("Draft has changes not yet published.")).toBeInTheDocument();
   });
 
+  it("keeps screenshot upload recoverable after a failed attempt", async () => {
+    const uploadBlockScreenshot = vi.fn()
+      .mockRejectedValueOnce(new Error("upload failed"))
+      .mockImplementationOnce(async (_projectId, _guideId, blockId, input) => {
+        const block = guideDetail.guide_blocks.find((candidate) => candidate.id === blockId)!;
+        const capture_asset: GuideSourceCaptureAsset = {
+          id: "asset_uploaded_retry",
+          capture_session_id: "capture_session_1",
+          asset_type: "screenshot",
+          width: 1440,
+          height: 900,
+          device_pixel_ratio: 1,
+          page_url: "https://example.test/uploaded",
+          page_title: "Uploaded after retry",
+          captured_at: "2026-06-05T10:05:00.000Z",
+          file_url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_uploaded_retry/file",
+          file: {
+            id: "file_uploaded_retry",
+            original_name: input.file.name,
+            mime_type: input.file.type,
+            size_bytes: input.file.size,
+          },
+        };
+
+        return {
+          guide_block: {
+            ...block,
+            selected_capture_asset_id: capture_asset.id,
+            screenshot_hidden: false,
+            display_capture_asset_id: capture_asset.id,
+          },
+          capture_asset,
+        };
+      });
+    renderPage({ uploadBlockScreenshot });
+    const file = new File(["replacement"], "replacement.png", { type: "image/png" });
+
+    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Upload screenshot for step 1"), {
+      target: { files: [file] },
+    });
+
+    expect(await screen.findByText("Could not upload screenshot.")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Upload screenshot for step 1"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => expect(uploadBlockScreenshot).toHaveBeenCalledTimes(2));
+    expect(await screen.findByRole("img", { name: "Uploaded after retry" })).toHaveAttribute(
+      "src",
+      "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/asset_uploaded_retry/file"
+    );
+    expect(screen.getByText("Screenshot uploaded.")).toBeInTheDocument();
+  });
+
   it("shows publish-panel busy labels without locking guide editing", async () => {
     const publishCurrentGuide = vi.fn(() => new Promise<GuidePublishStatusResponse>(() => undefined));
 
