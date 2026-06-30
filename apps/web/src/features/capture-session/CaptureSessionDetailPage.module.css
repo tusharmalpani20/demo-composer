@@ -326,18 +326,6 @@
   font-weight: 700;
 }
 
-.retryButton {
-  margin-top: 14px;
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid #b8c3cf;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #1c2430;
-  cursor: pointer;
-  font-weight: 700;
-}
-
 @media (max-width: 900px) {
   .main {
     padding: 22px 16px 32px;

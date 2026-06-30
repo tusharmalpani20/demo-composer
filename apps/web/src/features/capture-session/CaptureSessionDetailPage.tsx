@@ -384,7 +384,7 @@ export const CaptureSessionDetailPage = ({
       <PortalShell projectId={projectId} captureSessionId={captureSessionId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load capture session.</div>
-          <Button className={styles.retryButton} variant="secondary" size="sm" type="button" onClick={() => setReloadKey((key) => key + 1)}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => setReloadKey((key) => key + 1)}>
             Retry
           </Button>
         </div>

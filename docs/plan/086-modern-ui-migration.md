@@ -167,10 +167,10 @@ Design-system constraints:
 
 ### 8. Cleanup And Consolidation
 
-- [ ] Remove obsolete CSS module classes and unused shared placeholders.
-- [ ] Re-run `rg` for repeated local button/control classes.
-- [ ] Document intentional remaining local styles.
-- [ ] Commit cleanup slice.
+- [x] Remove obsolete CSS module classes and unused shared placeholders.
+- [x] Re-run `rg` for repeated local button/control classes.
+- [x] Document intentional remaining local styles.
+- [x] Commit cleanup slice.
 
 ## Chrome Extension Migration Plan
 
@@ -333,6 +333,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: Interactive demo editor verification passed: pre-change `rtk pnpm --filter web test -- InteractiveDemoEditorPage`; post-change `rtk pnpm --filter @repo/ui test`, `check-types`, `lint`, `rtk pnpm --filter web test -- InteractiveDemoEditorPage`, `rtk pnpm --filter web test -- InteractiveDemo`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 - 2026-06-30: Modernized the Chrome extension popup controls with shared `Button`, `Input`, and `Label` primitives, added `@repo/ui` as an extension dependency, and removed global manual button/input styling while preserving compact popup layout classes.
 - 2026-06-30: Extension verification passed: pre-change and post-change `rtk pnpm --filter extension test`, targeted raw-control `rg`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
+- 2026-06-30: Removed the remaining obsolete `retryButton` CSS from `CaptureSessionDetailPage`.
+- 2026-06-30: Cleanup verification passed: `rtk pnpm --filter web test -- CaptureSessionDetailPage`; repeated-class `rg` only reports intentional `formError` state naming and `styles.badges` layout container.
 
 ## Final Gap Review
 
