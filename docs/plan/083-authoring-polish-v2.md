@@ -109,6 +109,12 @@ Post-completion recheck:
 - follow-up commit added regression coverage that a failed direct screenshot upload can be retried with the same file and then attach the replacement screenshot
 - no product bug was found in the upload retry path during the recheck
 
+Final closeout review:
+
+- acceptance criteria are met for the selected guide screenshot picker/recovery slice
+- no additional product bug was found in this implementation during the closeout review
+- remaining guide/demo authoring items below are still open and should become a future authoring-focused plan, not a self-host ops or docs-site add-on
+
 Verification run:
 
 ```bash
@@ -248,3 +254,5 @@ rtk pnpm --filter server check-types
 ## Follow-Up Notes
 
 Do not try to finish every authoring issue in one patch. If the selected scope grows beyond one coherent slice, split it into additional plans.
+
+The next two master phases are self-host operations and docs-site work. The authoring leftovers recorded above should stay available for a later authoring plan unless one of those phases needs to document the current alpha limitations.

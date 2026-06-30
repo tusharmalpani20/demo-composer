@@ -440,6 +440,11 @@ Post-completion recheck:
 - follow-up coverage confirms a failed direct screenshot upload can be retried with the same file and then attach the replacement screenshot
 - no product bug was found in the upload retry path during the recheck
 
+Final closeout review:
+
+- acceptance criteria are met for the selected guide screenshot picker/recovery slice
+- remaining guide/demo authoring candidates should become a later authoring-focused plan rather than being folded into Phase 7 self-host ops or Phase 8 docs-site work, except as documented alpha limitations
+
 Carry-forward authoring candidates:
 
 - manual browser smoke of the guide screenshot picker
