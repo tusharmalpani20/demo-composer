@@ -1,4 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { Badge } from "@repo/ui/badge";
+import { Button, buttonVariants } from "@repo/ui/button";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
+import { Textarea } from "@repo/ui/textarea";
+import { ArrowDown, ArrowUp, X } from "lucide-react";
 import {
   ApiClientError,
   createGuideBlock,
@@ -986,9 +992,9 @@ export const GuideEditorPage = ({
       <PortalShell projectId={projectId} guideId={guideId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load guide.</div>
-          <button className={styles.secondaryButton} type="button" onClick={reload}>
+          <Button variant="secondary" onClick={reload}>
             Retry
-          </button>
+          </Button>
         </div>
       </PortalShell>
     );
@@ -1178,32 +1184,29 @@ const GuideEditorView = ({
             {detail.guide.description ? <p className={styles.description}>{detail.guide.description}</p> : null}
           </div>
           <div className={styles.headerActions}>
-            <button
-              className={styles.secondaryButton}
-              type="button"
+            <Button
+              variant="secondary"
               disabled={busyAction === "export-copy" || busyAction === "export-download" || busyAction === "export-html"}
               onClick={onCopyMarkdown}
             >
               {busyAction === "export-copy" ? "Copying Markdown..." : "Copy Markdown"}
-            </button>
-            <button
-              className={styles.secondaryButton}
-              type="button"
+            </Button>
+            <Button
+              variant="secondary"
               disabled={busyAction === "export-copy" || busyAction === "export-download" || busyAction === "export-html"}
               onClick={onDownloadMarkdown}
             >
               {busyAction === "export-download" ? "Downloading Markdown..." : "Download Markdown"}
-            </button>
-            <button
-              className={styles.secondaryButton}
-              type="button"
+            </Button>
+            <Button
+              variant="secondary"
               disabled={busyAction === "export-copy" || busyAction === "export-download" || busyAction === "export-html"}
               onClick={onDownloadHtmlZip}
             >
               {busyAction === "export-html" ? "Exporting HTML..." : "Export HTML"}
-            </button>
-            <a className={styles.previewLink} href={guidePreviewUrl(projectId, guideId)}>Preview guide</a>
-            <span className={styles.badge}>{detail.guide.status}</span>
+            </Button>
+            <a className={`${buttonVariants({ variant: "secondary" })} ${styles.previewLink}`} href={guidePreviewUrl(projectId, guideId)}>Preview guide</a>
+            <Badge variant={detail.guide.status === "draft" ? "warning" : "success"}>{detail.guide.status}</Badge>
           </div>
         </div>
         {readOnly ? <div className={styles.notice}>Archived guides are read-only.</div> : null}
@@ -1229,9 +1232,9 @@ const GuideEditorView = ({
           />
           <section className={styles.panel} aria-labelledby="metadata-heading">
             <h2 className={styles.sectionTitle} id="metadata-heading">Guide metadata</h2>
-            <label className={styles.field}>
+            <Label className={styles.field}>
               <span>Guide title</span>
-              <input
+              <Input
                 value={guideDraft.title}
                 disabled={readOnly || busyAction === "guide"}
                 onChange={(event) => onGuideDraftChange({
@@ -1239,10 +1242,10 @@ const GuideEditorView = ({
                   title: event.target.value,
                 })}
               />
-            </label>
-            <label className={styles.field}>
+            </Label>
+            <Label className={styles.field}>
               <span>Guide description</span>
-              <textarea
+              <Textarea
                 value={guideDraft.description}
                 disabled={readOnly || busyAction === "guide"}
                 rows={5}
@@ -1251,15 +1254,13 @@ const GuideEditorView = ({
                   description: event.target.value,
                 })}
               />
-            </label>
-            <button
-              className={styles.primaryButton}
-              type="button"
+            </Label>
+            <Button
               disabled={readOnly || busyAction === "guide"}
               onClick={onSaveGuide}
             >
               Save guide
-            </button>
+            </Button>
           </section>
         </div>
 
@@ -1435,23 +1436,21 @@ const PublishPanel = ({
       {state.status === "error" ? (
         <div className={styles.publishStack}>
           <div className={styles.publishText}>Could not load publishing status.</div>
-          <button className={styles.secondaryButton} type="button" onClick={onRetry}>
+          <Button variant="secondary" onClick={onRetry}>
             Retry
-          </button>
+          </Button>
         </div>
       ) : null}
       {state.status === "loaded" && !activeLink ? (
         <div className={styles.publishStack}>
           <div className={styles.publishText}>This guide is not published.</div>
           <p className={styles.publishNote}>Publishing creates a public read-only snapshot.</p>
-          <button
-            className={styles.primaryButton}
-            type="button"
+          <Button
             disabled={readOnly || isBusy}
             onClick={onPublish}
           >
             {publishLabel}
-          </button>
+          </Button>
         </div>
       ) : null}
       {activeLink && publishedArtifact ? (
@@ -1476,38 +1475,35 @@ const PublishPanel = ({
             </div>
             <div className={styles.publishActions}>
               {activeLink.visibility === "public" ? (
-                <button
-                  className={styles.secondaryButton}
-                  type="button"
+                <Button
+                  variant="secondary"
                   disabled={readOnly || isBusy}
                   onClick={() => onUpdateAccess({ visibility: "restricted", expires_at: null })}
                 >
                   {accessLabel ?? "Disable public access"}
-                </button>
+                </Button>
               ) : (
-                <button
-                  className={styles.secondaryButton}
-                  type="button"
+                <Button
+                  variant="secondary"
                   disabled={readOnly || isBusy}
                   onClick={() => onUpdateAccess({ visibility: "public", expires_at: null })}
                 >
                   {accessLabel ?? "Enable public access"}
-                </button>
+                </Button>
               )}
             </div>
-            <label className={styles.compactField}>
+            <Label className={styles.compactField}>
               <span>Expiry</span>
-              <input
+              <Input
                 type="datetime-local"
                 value={expiryInput || formatExpiryInputValue(activeLink.expires_at)}
                 disabled={readOnly || isBusy}
                 onChange={(event) => setExpiryInput(event.target.value)}
               />
-            </label>
+            </Label>
             <div className={styles.publishActions}>
-              <button
-                className={styles.secondaryButton}
-                type="button"
+              <Button
+                variant="secondary"
                 disabled={readOnly || isBusy || !(expiryInput || activeLink.expires_at)}
                 onClick={() => {
                   onUpdateAccess({
@@ -1518,10 +1514,9 @@ const PublishPanel = ({
                 }}
               >
                 {accessLabel ?? "Set expiry"}
-              </button>
-              <button
-                className={styles.secondaryButton}
-                type="button"
+              </Button>
+              <Button
+                variant="secondary"
                 disabled={readOnly || isBusy || !activeLink.expires_at}
                 onClick={() => {
                   onUpdateAccess({ visibility: activeLink.visibility, expires_at: null });
@@ -1529,7 +1524,7 @@ const PublishPanel = ({
                 }}
               >
                 Clear expiry
-              </button>
+              </Button>
             </div>
           </div>
           <div className={styles.accessPanel}>
@@ -1541,19 +1536,18 @@ const PublishPanel = ({
                 Updating the password requires existing viewers to unlock again.
               </p>
             </div>
-            <label className={styles.compactField}>
+            <Label className={styles.compactField}>
               <span>Publish link password</span>
-              <input
+              <Input
                 type="password"
                 value={passwordInput}
                 disabled={readOnly || isBusy}
                 onChange={(event) => setPasswordInput(event.target.value)}
               />
-            </label>
+            </Label>
             <div className={styles.publishActions}>
-              <button
-                className={styles.secondaryButton}
-                type="button"
+              <Button
+                variant="secondary"
                 disabled={readOnly || isBusy || passwordInput.length === 0}
                 onClick={() => {
                   onUpdatePassword({ password: passwordInput });
@@ -1561,11 +1555,10 @@ const PublishPanel = ({
                 }}
               >
                 {passwordLabel}
-              </button>
+              </Button>
               {activeLink.password_protected ? (
-                <button
-                  className={styles.secondaryButton}
-                  type="button"
+                <Button
+                  variant="secondary"
                   disabled={readOnly || isBusy}
                   onClick={() => {
                     onUpdatePassword({ password: null });
@@ -1573,54 +1566,49 @@ const PublishPanel = ({
                   }}
                 >
                   Clear password
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>
           <div className={styles.publicUrl}>{activeLink.public_url}</div>
           <div className={styles.publishActions}>
-            <button
-              className={styles.secondaryButton}
-              type="button"
+            <Button
+              variant="secondary"
               disabled={isBusy}
               onClick={() => onCopyPublicLink(activeLink.public_url)}
             >
               {copyLabel}
-            </button>
+            </Button>
             {canCopyEmbed ? (
-              <button
-                className={styles.secondaryButton}
-                type="button"
+              <Button
+                variant="secondary"
                 disabled={isBusy}
                 onClick={() => onCopyEmbedCode(activeLink.public_url)}
               >
                 {copyEmbedLabel}
-              </button>
+              </Button>
             ) : null}
             <a
-              className={styles.previewLink}
+              className={`${buttonVariants({ variant: "secondary" })} ${styles.previewLink}`}
               href={activeLink.public_url}
               target="_blank"
               rel="noreferrer"
             >
               Open public guide
             </a>
-            <button
-              className={styles.primaryButton}
-              type="button"
+            <Button
               disabled={readOnly || isBusy}
               onClick={onPublish}
             >
               {republishLabel}
-            </button>
-            <button
-              className={styles.dangerButton}
-              type="button"
+            </Button>
+            <Button
+              variant="destructive"
               disabled={isBusy}
               onClick={onRevoke}
             >
               {revokeLabel}
-            </button>
+            </Button>
           </div>
           {embedCopyFallback ? <div className={styles.publicUrl}>{embedCopyFallback}</div> : null}
         </div>
@@ -1729,40 +1717,39 @@ const GuideBlockEditor = ({
           ) : null}
         </div>
         <div className={styles.blockActions}>
-          <button
-            className={styles.iconButton}
-            type="button"
+          <Button
+            variant="secondary"
+            size="icon"
             aria-label={`Move ${actionLabel} ${blockNumber} up`}
             disabled={readOnly || actionBusy || isFirst}
             onClick={() => onMoveBlock(block.id, -1)}
           >
-            ↑
-          </button>
-          <button
-            className={styles.iconButton}
-            type="button"
+            <ArrowUp aria-hidden="true" size={16} />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
             aria-label={`Move ${actionLabel} ${blockNumber} down`}
             disabled={readOnly || actionBusy || isLast}
             onClick={() => onMoveBlock(block.id, 1)}
           >
-            ↓
-          </button>
-          <button
-            className={styles.dangerButton}
-            type="button"
+            <ArrowDown aria-hidden="true" size={16} />
+          </Button>
+          <Button
+            variant="destructive"
             disabled={readOnly || actionBusy}
             onClick={() => onDeleteBlock(block)}
           >
             Delete {actionLabel} {blockNumber}
-          </button>
+          </Button>
         </div>
       </div>
 
       {step && draft ? (
         <div className={styles.stepForm}>
-          <label className={styles.field}>
+          <Label className={styles.field}>
             <span>Step title</span>
-            <input
+            <Input
               aria-label={`Step title ${blockNumber}`}
               value={draft.title}
               disabled={readOnly || busyAction === `step:${step.id}`}
@@ -1771,10 +1758,10 @@ const GuideBlockEditor = ({
                 title: event.target.value,
               })}
             />
-          </label>
-          <label className={styles.field}>
+          </Label>
+          <Label className={styles.field}>
             <span>Step body</span>
-            <textarea
+            <Textarea
               aria-label={`Step body ${blockNumber}`}
               value={draft.body}
               disabled={readOnly || busyAction === `step:${step.id}`}
@@ -1784,15 +1771,14 @@ const GuideBlockEditor = ({
                 body: event.target.value,
               })}
             />
-          </label>
-          <button
-            className={styles.secondaryButton}
-            type="button"
+          </Label>
+          <Button
+            variant="secondary"
             disabled={readOnly || busyAction === `step:${step.id}`}
             onClick={() => onSaveStep(step)}
           >
             Save step {blockNumber}
-          </button>
+          </Button>
           {sourceAsset ? (
             <div className={styles.media}>
               <button
@@ -1813,7 +1799,7 @@ const GuideBlockEditor = ({
             </div>
           ) : null}
           <div className={styles.mediaActions}>
-            <label className={`${styles.secondaryButton} ${styles.uploadButton}`}>
+            <Label className={`${buttonVariants({ variant: "secondary" })} ${styles.uploadButton}`}>
               {uploadBusy ? `Uploading screenshot for step ${blockNumber}` : `Upload screenshot for step ${blockNumber}`}
               <input
                 aria-label={`Upload screenshot for step ${blockNumber}`}
@@ -1830,72 +1816,67 @@ const GuideBlockEditor = ({
                   }
                 }}
               />
-            </label>
-            <button
-              className={styles.secondaryButton}
-              type="button"
+            </Label>
+            <Button
+              variant="secondary"
               disabled={readOnly || actionBusy}
               onClick={() => onOpenScreenshotPicker(block)}
             >
               {sourceAsset ? `Change screenshot for step ${blockNumber}` : `Attach screenshot for step ${blockNumber}`}
-            </button>
+            </Button>
             {sourceAsset ? (
-              <button
-                className={styles.secondaryButton}
-                type="button"
+              <Button
+                variant="secondary"
                 disabled={readOnly || actionBusy}
                 onClick={() => onSaveScreenshot(block, null)}
               >
                 Remove screenshot for step {blockNumber}
-              </button>
+              </Button>
             ) : null}
             {sourceAsset ? (
-              <button
-                className={styles.secondaryButton}
-                type="button"
+              <Button
+                variant="secondary"
                 disabled={readOnly || actionBusy || annotationsBusy || annotations.length >= 10}
                 onClick={() => onAddHighlight(block)}
               >
                 Add highlight for step {blockNumber}
-              </button>
+              </Button>
             ) : null}
             {sourceAsset ? annotations.map((annotation, index) => (
-              <button
-                className={styles.secondaryButton}
-                type="button"
+              <Button
+                variant="secondary"
                 key={annotation.id}
                 disabled={readOnly || actionBusy || annotationsBusy}
                 onClick={() => onRemoveHighlight(block, index)}
               >
                 Remove highlight {index + 1} from step {blockNumber}
-              </button>
+              </Button>
             )) : null}
           </div>
           {screenshotPickerOpen ? (
             <div className={styles.screenshotPicker} aria-label={`Screenshot choices for step ${blockNumber}`}>
               <div className={styles.screenshotPickerHeader}>
                 <span>Choose screenshot</span>
-                <button
-                  className={styles.iconButton}
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="icon"
                   aria-label={`Close screenshot choices for step ${blockNumber}`}
                   onClick={onCloseScreenshotPicker}
                 >
-                  ×
-                </button>
+                  <X aria-hidden="true" size={16} />
+                </Button>
               </div>
               {screenshotAssets.length === 0 ? (
                 screenshotAssetsError ? (
                   <div className={styles.pickerState} role="status">
                     <span>Could not load screenshots.</span>
-                    <button
-                      className={styles.secondaryButton}
-                      type="button"
+                    <Button
+                      variant="secondary"
                       disabled={readOnly || actionBusy}
                       onClick={() => onOpenScreenshotPicker(block)}
                     >
                       Retry loading screenshots for step {blockNumber}
-                    </button>
+                    </Button>
                   </div>
                 ) : pickerLoading ? (
                   <div className={styles.pickerState} role="status">Loading screenshots...</div>
@@ -1943,9 +1924,9 @@ const GuideBlockEditor = ({
       ) : editableContentBlock && contentDraft ? (
         <div className={styles.stepForm}>
           {block.block_type !== "paragraph" ? (
-            <label className={styles.field}>
+            <Label className={styles.field}>
               <span>{block.block_type === "header" ? "Header title" : `${block.block_type} title`}</span>
-              <input
+              <Input
                 aria-label={`${labelForBlockType(block.block_type)} title ${blockNumber}`}
                 value={contentDraft.title}
                 disabled={readOnly || busyAction === `block:${block.id}`}
@@ -1954,12 +1935,12 @@ const GuideBlockEditor = ({
                   title: event.target.value,
                 })}
               />
-            </label>
+            </Label>
           ) : null}
           {block.block_type !== "header" ? (
-            <label className={styles.field}>
+            <Label className={styles.field}>
               <span>{labelForBlockType(block.block_type)} body</span>
-              <textarea
+              <Textarea
                 aria-label={`${labelForBlockType(block.block_type)} body ${blockNumber}`}
                 value={contentDraft.body}
                 disabled={readOnly || busyAction === `block:${block.id}`}
@@ -1969,16 +1950,15 @@ const GuideBlockEditor = ({
                   body: event.target.value,
                 })}
               />
-            </label>
+            </Label>
           ) : null}
-          <button
-            className={styles.secondaryButton}
-            type="button"
+          <Button
+            variant="secondary"
             disabled={readOnly || busyAction === `block:${block.id}`}
             onClick={() => onSaveBlock(block)}
           >
             Save {block.block_type} {blockNumber}
-          </button>
+          </Button>
         </div>
       ) : block.block_type === "divider" ? (
         <div className={styles.dividerBlock}>
@@ -2057,23 +2037,23 @@ const BlockInsertControls = ({
   onAdd: (blockType: "step" | "header" | "paragraph" | "tip" | "alert" | "divider") => void;
 }) => (
   <div className={styles.insertControls} aria-label={`Add block after block ${blockNumber}`}>
-    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("step")}>
+    <Button variant="secondary" size="sm" disabled={disabled} onClick={() => onAdd("step")}>
       Add step after block {blockNumber}
-    </button>
-    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("header")}>
+    </Button>
+    <Button variant="secondary" size="sm" disabled={disabled} onClick={() => onAdd("header")}>
       Add header after block {blockNumber}
-    </button>
-    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("paragraph")}>
+    </Button>
+    <Button variant="secondary" size="sm" disabled={disabled} onClick={() => onAdd("paragraph")}>
       Add paragraph after block {blockNumber}
-    </button>
-    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("tip")}>
+    </Button>
+    <Button variant="secondary" size="sm" disabled={disabled} onClick={() => onAdd("tip")}>
       Add tip after block {blockNumber}
-    </button>
-    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("alert")}>
+    </Button>
+    <Button variant="secondary" size="sm" disabled={disabled} onClick={() => onAdd("alert")}>
       Add alert after block {blockNumber}
-    </button>
-    <button className={styles.insertButton} type="button" disabled={disabled} onClick={() => onAdd("divider")}>
+    </Button>
+    <Button variant="secondary" size="sm" disabled={disabled} onClick={() => onAdd("divider")}>
       Add divider after block {blockNumber}
-    </button>
+    </Button>
   </div>
 );

@@ -143,12 +143,12 @@ Design-system constraints:
 ### 5. Guide Screens
 
 - [x] Modernize `ProjectGuideListPage`.
-- [ ] Modernize `GuideEditorPage`.
+- [x] Modernize `GuideEditorPage`.
 - [x] Modernize `GuidePreviewPage`.
 - [x] Modernize `GuideScreenshotViewer`.
 - [x] Modernize `PublicGuideReaderPage` and embed mode.
-- [ ] Preserve authoring, upload, screenshot picker, publish controls, export controls, and reader behavior.
-- [ ] Commit guide slice.
+- [x] Preserve authoring, upload, screenshot picker, publish controls, export controls, and reader behavior.
+- [x] Commit guide slice.
 
 ### 6. Interactive Demo Screens
 
@@ -325,6 +325,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: Guide list verification passed: `rtk pnpm --filter web test -- ProjectGuideListPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 - 2026-06-30: Modernized `GuidePreviewPage`, `GuideScreenshotViewer`, and `PublicGuideReaderPage` action/password/viewer controls with shared primitives and Lucide icons while preserving screenshot media controls.
 - 2026-06-30: Guide viewer verification passed: `rtk pnpm --filter web test -- GuidePreviewPage`, `GuideScreenshotViewer`, `PublicGuideReaderPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
+- 2026-06-30: Modernized `GuideEditorPage` action bars, metadata form, publishing controls, block editors, screenshot actions, and insert controls with shared primitives while keeping screenshot media and choice tiles layout-specific.
+- 2026-06-30: Guide editor verification passed: pre-change characterization `rtk pnpm --filter web test -- GuideEditorPage`; post-change `GuideEditorPage`, `rtk pnpm --filter web test -- Guide`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 
 ## Final Gap Review
 
