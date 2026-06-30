@@ -16,7 +16,7 @@
     "clean": "rm -rf dist",
     "build": "tsc",
     "start": "node dist/index.js",
-    "env:report": "tsx src/ops/production-env-report.ts",
+    "env:report": "node --no-deprecation --import tsx src/ops/production-env-report.ts",
     "db:create": "env-cmd -f .env-cmdrc -e development -- tsx src/db/create-db.ts",
     "migrate:up": "env-cmd -f .env-cmdrc -e development -- tsx src/db/migrate.ts up",
     "migrate:down": "env-cmd -f .env-cmdrc -e development -- tsx src/db/migrate.ts down",
