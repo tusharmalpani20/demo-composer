@@ -105,7 +105,8 @@ Completed slice:
 - The active-capture popup now shows the latest automatic capture failure and keeps the manual screenshot fallback available.
 - The active-capture popup now shows the latest successful automatic capture step number when the background records one.
 - Split API/web portal URL behavior from plan `076` remains unchanged.
-- Raw input values, screenshot bytes, tokens, cookies, and page HTML are not stored in diagnostics.
+- Raw input values, page URLs, screenshot bytes, tokens, cookies, and page HTML are not stored in diagnostics.
+- Follow-up recheck minimized diagnostics further so they now store only status, optional message, optional event index, and timestamp.
 
 Selected reliability slice:
 
@@ -141,6 +142,7 @@ Missed or deferred work to keep as follow-up candidates:
 - Manual screenshot fallback reliability remains part of plan `080`.
 - Extension visual evidence and artifact re-dogfood remain part of plan `081`.
 - Previous plan `078` manual split-origin invite dogfood is unrelated to this extension implementation and should stay with broader browser dogfood follow-up work.
+- If diagnostics remain empty during headed dogfood, the next reliability slice should focus on content-script injection permissions and service-worker lifecycle, not upload/event code.
 
 ### 1. Reproduce And Trace
 
@@ -235,3 +237,4 @@ Carry these notes into the next relevant plan:
 - Plan `080` should keep manual screenshot fallback upload/event diagnostics separate from automatic capture.
 - Plan `081` should run the headed extension evidence pass and capture whether automatic clicks now create screenshot-backed events or surface one of the new diagnostics.
 - If the headed run still produces no diagnostic, the next reliability slice should focus on content-script injection/permissions and service-worker lifecycle evidence.
+- Keep automatic capture diagnostics intentionally small; do not add page URLs unless the product explicitly accepts that privacy tradeoff.

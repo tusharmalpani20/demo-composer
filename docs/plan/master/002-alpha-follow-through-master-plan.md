@@ -207,7 +207,8 @@ Completion result:
 - content-script message-delivery failures are recorded when the background worker cannot receive a click message
 - active-capture popup shows automatic capture failures while preserving manual screenshot fallback
 - split API/web portal URL behavior from plan `076` remains unchanged
-- diagnostics avoid raw input values, screenshot bytes, tokens, cookies, and page HTML
+- diagnostics avoid raw input values, page URLs, screenshot bytes, tokens, cookies, and page HTML
+- follow-up recheck minimized diagnostics to status, optional message, optional event index, and timestamp only
 
 Carry-forward automatic capture candidates:
 
@@ -215,6 +216,7 @@ Carry-forward automatic capture candidates:
 - collect service-worker and content-script evidence during that headed run
 - verify unsupported/restricted page behavior in a real browser
 - keep manual screenshot fallback diagnostics in plan `080`
+- if headed dogfood still produces no diagnostic, focus the next automatic-capture slice on content-script injection permissions and service-worker lifecycle evidence
 
 ### Goal
 
