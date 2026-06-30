@@ -135,9 +135,9 @@ Design-system constraints:
 ### 4. Capture Session Screens
 
 - [x] Modernize `ProjectCaptureSessionListPage`.
-- [ ] Modernize `CaptureSessionDetailPage`.
-- [ ] Preserve upload, event ordering, event editing, create guide, and create demo behavior.
-- [ ] Keep complex screenshot/event layout CSS where it is still useful.
+- [x] Modernize `CaptureSessionDetailPage`.
+- [x] Preserve upload, event ordering, event editing, create guide, and create demo behavior.
+- [x] Keep complex screenshot/event layout CSS where it is still useful.
 - [ ] Commit capture-session slice.
 
 ### 5. Guide Screens
@@ -319,6 +319,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: Modernized `ProjectCaptureSessionListPage` with shared create-form, button, badge, card, alert, and field primitives. `CaptureSessionDetailPage` remains pending as its own safer slice because it owns upload, event editing, asset display, and artifact creation controls.
 - 2026-06-30: Capture list verification passed: `rtk pnpm --filter web test -- ProjectCaptureSessionListPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 - 2026-06-30: Added README and screenshot refresh as an explicit final deliverable after the user's follow-up request.
+- 2026-06-30: Modernized `CaptureSessionDetailPage` header actions, upload panel, reorder/edit controls, badges, alerts, and form fields with shared primitives while keeping native file input and complex event/asset layout CSS.
+- 2026-06-30: Capture detail verification passed: `rtk pnpm --filter web test -- CaptureSessionDetailPage`, `check-types`, `lint`, `build`, `rtk git diff --check`, and `rg` found no remaining `primaryButton`, `secondaryButton`, `eventMoveButton`, `formError`, raw `<button>`, or raw `<textarea>` in the detail page.
 
 ## Final Gap Review
 

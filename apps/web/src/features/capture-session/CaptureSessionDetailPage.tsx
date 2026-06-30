@@ -1,4 +1,11 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Alert } from "@repo/ui/alert";
+import { Badge } from "@repo/ui/badge";
+import { Button } from "@repo/ui/button";
+import { Card, CardContent, CardHeader } from "@repo/ui/card";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
+import { Textarea } from "@repo/ui/textarea";
 import {
   ApiClientError,
   createCaptureSessionEvent,
@@ -377,9 +384,9 @@ export const CaptureSessionDetailPage = ({
       <PortalShell projectId={projectId} captureSessionId={captureSessionId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load capture session.</div>
-          <button className={styles.retryButton} type="button" onClick={() => setReloadKey((key) => key + 1)}>
+          <Button className={styles.retryButton} variant="secondary" size="sm" type="button" onClick={() => setReloadKey((key) => key + 1)}>
             Retry
-          </button>
+          </Button>
         </div>
       </PortalShell>
     );
@@ -744,29 +751,28 @@ const CaptureSessionDetailView = ({
             {session.description ? <p className={styles.description}>{session.description}</p> : null}
           </div>
           <div className={styles.badges}>
-            <span className={styles.badge}>{session.status}</span>
-            <span className={styles.badge}>{session.source_type}</span>
+            <Badge variant={session.status === "completed" ? "success" : "default"}>{session.status}</Badge>
+            <Badge>{session.source_type}</Badge>
           </div>
         </div>
         <div className={styles.actionRow}>
-          <button
-            className={styles.primaryButton}
+          <Button
             type="button"
             disabled={!canCreateGuide}
             aria-describedby={artifactActionDescription}
             onClick={handleCreateGuide}
           >
             {createState === "creating" ? "Creating guide..." : "Create guide"}
-          </button>
-          <button
-            className={styles.secondaryButton}
+          </Button>
+          <Button
+            variant="secondary"
             type="button"
             disabled={!canCreateInteractiveDemo}
             aria-describedby={artifactActionDescription}
             onClick={handleCreateInteractiveDemo}
           >
             {createDemoState === "creating" ? "Creating interactive demo..." : "Create interactive demo"}
-          </button>
+          </Button>
           {guideTitle.length === 0 ? (
             <div className={styles.actionMessage} id={missingTitleMessageId}>
               Capture session needs a name before creating guide or demo artifacts.
@@ -798,11 +804,14 @@ const CaptureSessionDetailView = ({
       </section>
 
       {canUploadScreenshot ? (
-        <section className={styles.uploadPanel} aria-labelledby="upload-screenshot-heading">
-          <h2 className={styles.uploadTitle} id="upload-screenshot-heading">Upload screenshot</h2>
+        <Card className={styles.uploadPanel} aria-labelledby="upload-screenshot-heading">
+          <CardHeader>
+            <h2 className={styles.uploadTitle} id="upload-screenshot-heading">Upload screenshot</h2>
+          </CardHeader>
+          <CardContent>
           <form className={styles.uploadForm} onSubmit={handleUploadScreenshot}>
-            {uploadError ? <div className={styles.formError}>{uploadError}</div> : null}
-            <label className={styles.field}>
+            {uploadError ? <Alert variant="destructive">{uploadError}</Alert> : null}
+            <Label className={styles.field}>
               <span>Screenshot file</span>
               <input
                 ref={uploadFileInputRef}
@@ -812,7 +821,7 @@ const CaptureSessionDetailView = ({
                 disabled={isUploading}
                 onChange={(event) => updateUploadFiles(Array.from(event.target.files ?? []))}
               />
-            </label>
+            </Label>
             {uploadQueue.length > 0 ? (
               <div className={styles.uploadQueue} aria-label="Selected screenshots">
                 {uploadQueue.map((item) => (
@@ -823,35 +832,36 @@ const CaptureSessionDetailView = ({
                 ))}
               </div>
             ) : null}
-            <label className={styles.field}>
+            <Label className={styles.field}>
               <span>Page title</span>
-              <input
+              <Input
                 value={uploadPageTitle}
                 disabled={isUploading}
                 onChange={(event) => updateUploadPageTitle(event.target.value)}
               />
-            </label>
-            <label className={styles.field}>
+            </Label>
+            <Label className={styles.field}>
               <span>Page URL</span>
-              <input
+              <Input
                 value={uploadPageUrl}
                 disabled={isUploading}
                 onChange={(event) => updateUploadPageUrl(event.target.value)}
               />
-            </label>
+            </Label>
             <div className={styles.uploadActions}>
-              <button className={styles.primaryButton} type="submit" disabled={isUploading}>
+              <Button type="submit" disabled={isUploading}>
                 {uploadButtonText}
-              </button>
+              </Button>
             </div>
           </form>
-        </section>
+          </CardContent>
+        </Card>
       ) : null}
 
       <div className={styles.content}>
         <section className={styles.section} aria-labelledby="events-heading">
           <h2 className={styles.sectionTitle} id="events-heading">Events</h2>
-          {reorderError ? <div className={styles.formError}>{reorderError}</div> : null}
+          {reorderError ? <Alert className={styles.sectionAlert} variant="destructive">{reorderError}</Alert> : null}
           {detail.capture_events.length === 0 ? (
             <div className={styles.empty}>No capture events yet.</div>
           ) : (
@@ -971,67 +981,68 @@ const EventRow = ({
               onSave();
             }}
           >
-            {editError ? <div className={styles.formError}>{editError}</div> : null}
-            <label className={styles.field}>
+            {editError ? <Alert variant="destructive">{editError}</Alert> : null}
+            <Label className={styles.field}>
               <span>Event page title</span>
-              <input
+              <Input
                 value={editDraft.page_title}
                 disabled={isSaving}
                 onChange={(changeEvent) => onChangeDraft("page_title", changeEvent.target.value)}
               />
-            </label>
-            <label className={styles.field}>
+            </Label>
+            <Label className={styles.field}>
               <span>Event page URL</span>
-              <input
+              <Input
                 value={editDraft.page_url}
                 disabled={isSaving}
                 onChange={(changeEvent) => onChangeDraft("page_url", changeEvent.target.value)}
               />
-            </label>
-            <label className={styles.field}>
+            </Label>
+            <Label className={styles.field}>
               <span>Event target label</span>
-              <input
+              <Input
                 value={editDraft.target_label}
                 disabled={isSaving}
                 onChange={(changeEvent) => onChangeDraft("target_label", changeEvent.target.value)}
               />
-            </label>
-            <label className={styles.field}>
+            </Label>
+            <Label className={styles.field}>
               <span>Event target text</span>
-              <input
+              <Input
                 value={editDraft.target_text}
                 disabled={isSaving}
                 onChange={(changeEvent) => onChangeDraft("target_text", changeEvent.target.value)}
               />
-            </label>
-            <label className={styles.field}>
+            </Label>
+            <Label className={styles.field}>
               <span>Event input intent</span>
-              <input
+              <Input
                 value={editDraft.input_intent}
                 disabled={isSaving}
                 onChange={(changeEvent) => onChangeDraft("input_intent", changeEvent.target.value)}
               />
-            </label>
-            <label className={styles.field}>
+            </Label>
+            <Label className={styles.field}>
               <span>Event note</span>
-              <textarea
+              <Textarea
                 value={editDraft.note}
                 disabled={isSaving}
                 onChange={(changeEvent) => onChangeDraft("note", changeEvent.target.value)}
               />
-            </label>
+            </Label>
             <div className={styles.eventEditActions}>
-              <button className={styles.primaryButton} type="submit" disabled={isSaving}>
+              <Button type="submit" disabled={isSaving}>
                 {isSaving ? `Saving event ${stepNumber}` : `Save event ${stepNumber}`}
-              </button>
-              <button
-                className={styles.eventMoveButton}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 type="button"
                 disabled={isSaving}
                 onClick={onCancelEdit}
               >
                 {`Cancel event ${stepNumber} edit`}
-              </button>
+              </Button>
             </div>
           </form>
         ) : (
@@ -1056,36 +1067,39 @@ const EventRow = ({
       {canReorder || canEdit ? (
         <div className={styles.eventActions}>
           {canEdit ? (
-            <button
-              className={styles.eventMoveButton}
+            <Button
+              variant="secondary"
+              size="sm"
               type="button"
               disabled={disableEdit || isEditing}
               aria-label={`Edit event ${stepNumber}`}
               onClick={onEdit}
             >
               Edit
-            </button>
+            </Button>
           ) : null}
           {canReorder ? (
             <>
-              <button
-                className={styles.eventMoveButton}
+              <Button
+                variant="secondary"
+                size="sm"
                 type="button"
                 disabled={disableReorder || isFirst}
                 aria-label={`Move event ${stepNumber} up`}
                 onClick={onMoveUp}
               >
                 Up
-              </button>
-              <button
-                className={styles.eventMoveButton}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 type="button"
                 disabled={disableReorder || isLast}
                 aria-label={`Move event ${stepNumber} down`}
                 onClick={onMoveDown}
               >
                 Down
-              </button>
+              </Button>
             </>
           ) : null}
         </div>
