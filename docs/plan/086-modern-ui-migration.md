@@ -152,9 +152,9 @@ Design-system constraints:
 
 ### 6. Interactive Demo Screens
 
-- [ ] Modernize `ProjectInteractiveDemoListPage`.
+- [x] Modernize `ProjectInteractiveDemoListPage`.
 - [ ] Modernize `InteractiveDemoEditorPage`.
-- [ ] Modernize `PublicInteractiveDemoViewerPage` and embed mode.
+- [x] Modernize `PublicInteractiveDemoViewerPage` and embed mode.
 - [ ] Preserve scene editing, hotspot editing, publish controls, password access, and viewer navigation.
 - [ ] Commit interactive-demo slice.
 
@@ -327,6 +327,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: Guide viewer verification passed: `rtk pnpm --filter web test -- GuidePreviewPage`, `GuideScreenshotViewer`, `PublicGuideReaderPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 - 2026-06-30: Modernized `GuideEditorPage` action bars, metadata form, publishing controls, block editors, screenshot actions, and insert controls with shared primitives while keeping screenshot media and choice tiles layout-specific.
 - 2026-06-30: Guide editor verification passed: pre-change characterization `rtk pnpm --filter web test -- GuideEditorPage`; post-change `GuideEditorPage`, `rtk pnpm --filter web test -- Guide`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
+- 2026-06-30: Modernized `ProjectInteractiveDemoListPage` and `PublicInteractiveDemoViewerPage` with shared retry/actions, cards, badges, password field, navigation controls, and dismiss action while keeping hotspot overlay buttons custom.
+- 2026-06-30: Interactive demo list/viewer verification passed: pre-change and post-change `rtk pnpm --filter web test -- ProjectInteractiveDemoListPage PublicInteractiveDemoViewerPage`, plus `check-types`, `lint`, `build`, and `rtk git diff --check`.
 
 ## Final Gap Review
 

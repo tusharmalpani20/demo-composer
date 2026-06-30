@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { Button } from "@repo/ui/button";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
 import {
   ApiClientError,
   createPublicPublishViewerSession,
@@ -251,13 +254,13 @@ const PasswordGate = ({
       <main className={`${styles.main} ${mode === "embed" ? styles.embedMain : ""}`} role="main">
         <section className={styles.state}>
           <h1>{mode === "embed" ? "Password required" : "This demo is password protected."}</h1>
-          <label>
+          <Label className={styles.passwordField}>
             Password
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-          </label>
-          <button type="button" onClick={() => void createViewerSession(slug, { password }).then(onUnlocked)}>
+            <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+          </Label>
+          <Button disabled={password.length === 0} onClick={() => void createViewerSession(slug, { password }).then(onUnlocked)}>
             {mode === "embed" ? "Unlock" : "Unlock demo"}
-          </button>
+          </Button>
         </section>
       </main>
     </div>
@@ -320,12 +323,12 @@ const Viewer = ({ snapshot, mode }: { snapshot: PublishedInteractiveDemoSnapshot
               {activeScene.description ? <p className={styles.sceneDescription}>{activeScene.description}</p> : null}
             </div>
             <div className={styles.nav}>
-              <button type="button" disabled={activeIndex === 0} onClick={() => goToIndex(activeIndex - 1)}>
+              <Button variant="secondary" size="sm" disabled={activeIndex === 0} onClick={() => goToIndex(activeIndex - 1)}>
                 Previous scene
-              </button>
-              <button type="button" disabled={activeIndex >= scenes.length - 1} onClick={() => goToIndex(activeIndex + 1)}>
+              </Button>
+              <Button variant="secondary" size="sm" disabled={activeIndex >= scenes.length - 1} onClick={() => goToIndex(activeIndex + 1)}>
                 Next scene
-              </button>
+              </Button>
             </div>
           </div>
           <div className={styles.screenshotFrame}>
@@ -354,7 +357,7 @@ const Viewer = ({ snapshot, mode }: { snapshot: PublishedInteractiveDemoSnapshot
             <section className={styles.infoPanel} aria-label="Hotspot information">
               <h2>{infoHotspot.label ?? "Information"}</h2>
               {infoHotspot.content ? <p>{infoHotspot.content}</p> : null}
-              <button className={styles.dismiss} type="button" onClick={() => setInfoHotspot(null)}>Dismiss</button>
+              <Button className={styles.dismiss} variant="secondary" size="sm" onClick={() => setInfoHotspot(null)}>Dismiss</Button>
             </section>
           ) : null}
         </section>
