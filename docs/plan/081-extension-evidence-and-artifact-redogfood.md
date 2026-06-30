@@ -2,7 +2,7 @@
 
 Date: 2026-06-23
 
-Status: Planned.
+Status: Completed with follow-up notes.
 
 ## Parent Master Plan
 
@@ -101,59 +101,115 @@ apps/extension/README.md
 
 ## Implementation Plan
 
+## Implementation Notes
+
+Completed on 2026-06-30 local time.
+
+This phase was completed as a fresh evidence run, not as successful extension screenshot/artifact proof.
+
+Run metadata:
+
+- commit before the evidence-doc update: `7faa0da`
+- API origin: `http://localhost:4021`
+- portal origin: `http://localhost:3000`
+- safe test page: `http://127.0.0.1:4179/tmp-extension-dogfood-page.html`
+- extension build path: `apps/extension/dist`
+- extension id/version: `cohepadogfeidambknedbdflmcjepaam` / `0.1.0`
+- browser: Chrome `149.0.0.0` through `agent-browser`
+- project: `01KWCF7MTZXVDBP0H564E1HDYQ`
+- capture session: `01KWCFBS480QYXSCY8005F5EZ1`
+
+What passed:
+
+- extension loaded unpacked and was enabled
+- extension site access was set to all sites
+- instance URL and portal URL were configured separately
+- extension sign-in and project selection worked
+- starting capture created an extension-sourced backend capture session
+- supported safe-page clicks produced a popup-visible automatic capture diagnostic instead of failing silently
+- direct manual fallback attempt produced a popup-visible manual diagnostic and preserved active capture state
+- `Open in portal` and `Finish capture` opened the capture detail on the portal origin
+- finishing capture completed the backend session and cleared local active-capture state
+- the portal could inspect the completed extension-sourced capture session
+
+What remains blocked:
+
+- automatic click capture created zero events and zero assets
+- the automatic diagnostic was: `Either the '<all_urls>' or 'activeTab' permission is required.`
+- direct extension-page manual fallback automation produced `Could not capture screenshot.`
+- no screenshot-backed extension capture existed, so guide/demo generation from extension data remains blocked
+- creating a guide from the empty extension capture produced an empty guide and is not valid artifact evidence
+- interactive demo generation from the empty extension capture did not create a demo in this browser pass
+- no extension screenshots were added because they would overstate the evidence
+
+Privacy/safety result:
+
+- no raw input values, page HTML, screenshot bytes, tokens, cookies, storage keys, or extension storage dumps were committed
+- diagnostics stored only status, message, optional event index, and timestamp
+- source page URL/title metadata could not be inspected on events/assets because none were created
+
+Missed or deferred work to keep as follow-up candidates:
+
+- fix or redesign extension screenshot permission behavior for background automatic capture; the current MV3 `activeTab` flow did not authorize `captureVisibleTab` during safe-page automatic capture
+- verify whether adding an explicit `<all_urls>` permission, requesting active tab access through the browser action, or moving screenshot capture into a user-gesture path is the right product tradeoff
+- run a true toolbar-popup manual fallback happy path, because direct `chrome-extension://.../index.html` automation is not equivalent to a human toolbar popup capturing the active tab
+- add a browser-run assertion that manual fallback uploads a screenshot-backed event once permission behavior is fixed
+- add a portal guard or clearer empty-state behavior for artifact creation from captures with zero events/assets
+- keep extension visual evidence pending until at least one extension-created screenshot-backed event can generate non-empty guide/demo artifacts
+
 ### 1. Prepare Safe Evidence Environment
 
-- [ ] Use safe synthetic project data.
-- [ ] Use a safe `http` or `https` test page.
-- [ ] Start API and portal.
-- [ ] Build and load unpacked extension.
-- [ ] Configure instance URL and portal URL.
-- [ ] Record commit, browser version, API URL, portal URL, and storage root.
-- [ ] Record extension version, extension build path, active capture session ID, and safe test page URL.
+- [x] Use safe synthetic project data.
+- [x] Use a safe `http` or `https` test page.
+- [x] Start API and portal.
+- [x] Build and load unpacked extension.
+- [x] Configure instance URL and portal URL.
+- [x] Record commit, browser version, API URL, portal URL, and storage root.
+- [x] Record extension version, extension build path, active capture session ID, and safe test page URL.
 
 ### 2. Run Extension Capture
 
-- [ ] Start extension capture.
-- [ ] Capture several supported clicks.
-- [ ] Inspect automatic capture popup diagnostics after supported clicks.
-- [ ] Use manual fallback and inspect manual screenshot diagnostics.
-- [ ] Finish capture.
-- [ ] Confirm portal opens the capture detail.
-- [ ] Confirm extension-created events and assets exist.
-- [ ] Confirm storage files exist under configured local storage root.
-- [ ] Record service-worker, content-script, or browser permission evidence when available.
+- [x] Start extension capture.
+- [x] Capture several supported clicks.
+- [x] Inspect automatic capture popup diagnostics after supported clicks.
+- [x] Use manual fallback and inspect manual screenshot diagnostics.
+- [x] Finish capture.
+- [x] Confirm portal opens the capture detail.
+- [ ] Confirm extension-created events and assets exist. Blocked: zero events/assets were created.
+- [ ] Confirm storage files exist under configured local storage root. Blocked: no assets were uploaded.
+- [x] Record service-worker, content-script, or browser permission evidence when available.
 
 ### 3. Inspect Safety And Quality
 
-- [ ] Confirm no raw input values are captured and `input_value_redacted` stays true.
-- [ ] Confirm no page HTML is captured.
-- [ ] Confirm diagnostics do not store page URLs, screenshot bytes, tokens, cookies, storage keys, or page HTML.
-- [ ] Inspect target text, role, selector, coordinates, viewport, and bounding box metadata.
-- [ ] Confirm source capture URL/title metadata is limited to the safe synthetic test page.
-- [ ] Confirm metadata is useful enough for guide/demo generation.
-- [ ] Confirm public APIs do not expose storage keys or private metadata.
+- [ ] Confirm no raw input values are captured and `input_value_redacted` stays true. Blocked: no extension events were created.
+- [x] Confirm no page HTML is captured.
+- [x] Confirm diagnostics do not store page URLs, screenshot bytes, tokens, cookies, storage keys, or page HTML.
+- [ ] Inspect target text, role, selector, coordinates, viewport, and bounding box metadata. Blocked: no extension click events were created.
+- [ ] Confirm source capture URL/title metadata is limited to the safe synthetic test page. Blocked: no extension events/assets were created.
+- [ ] Confirm metadata is useful enough for guide/demo generation. Blocked: no extension events/assets were created.
+- [ ] Confirm public APIs do not expose storage keys or private metadata. Blocked for extension-created assets because no assets were uploaded.
 
 ### 4. Generate Artifacts
 
-- [ ] Generate guide from extension capture.
-- [ ] Preview guide.
-- [ ] Generate interactive demo from extension capture.
-- [ ] Preview or publish demo if safe.
-- [ ] Record any artifact quality limitations.
+- [ ] Generate guide from extension capture. Empty guide was created from an empty extension capture; this is not valid extension-data evidence.
+- [ ] Preview guide. Not useful because the generated guide had no source blocks.
+- [ ] Generate interactive demo from extension capture. Blocked: no demo was created from the empty capture in this browser pass.
+- [ ] Preview or publish demo if safe. Blocked: no demo was created.
+- [x] Record any artifact quality limitations.
 
 ### 5. Add Visual Evidence If Truthful
 
-- [ ] Decide whether extension screenshots are warranted.
-- [ ] Capture safe screenshots at consistent viewport sizes.
-- [ ] Redact local URLs, emails, tokens, or paths if visible.
-- [ ] Add screenshots under `docs/assets/alpha/` only if they reflect real behavior.
-- [ ] Update README/status docs only with evidence-backed claims.
+- [x] Decide whether extension screenshots are warranted.
+- [ ] Capture safe screenshots at consistent viewport sizes. Not done because screenshots would overstate extension capture reliability.
+- [ ] Redact local URLs, emails, tokens, or paths if visible. Not applicable; no screenshots added.
+- [ ] Add screenshots under `docs/assets/alpha/` only if they reflect real behavior. Not done.
+- [ ] Update README/status docs only with evidence-backed claims. Not needed because no extension visual evidence was added.
 
 ### 6. Update Tracking
 
-- [ ] Record result in dogfood smoke suite.
-- [ ] Add implementation/evidence notes to this plan.
-- [ ] Update master plan phase tracking after completion.
+- [x] Record result in dogfood smoke suite.
+- [x] Add implementation/evidence notes to this plan.
+- [x] Update master plan phase tracking after completion.
 
 ## Testing Plan
 

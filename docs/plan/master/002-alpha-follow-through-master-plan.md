@@ -306,6 +306,30 @@ Suggested child plan:
 docs/plan/081-extension-evidence-and-artifact-redogfood.md
 ```
 
+Status: completed with follow-up notes by `docs/plan/081-extension-evidence-and-artifact-redogfood.md`.
+
+### Progress Update
+
+Updated on 2026-06-30 local time.
+
+Completion result:
+
+- a fresh headed extension evidence run loaded the unpacked extension, configured split API/portal origins, signed in, selected a synthetic project, started capture, opened the portal, finished capture, and completed the backend extension-sourced capture session
+- extension split-origin portal links worked in this run: `Open in portal` and `Finish capture` opened `http://localhost:3000/...`
+- automatic click capture no longer failed silently; supported safe-page clicks persisted the diagnostic `Either the '<all_urls>' or 'activeTab' permission is required.`
+- direct extension-page manual fallback no longer failed silently; it persisted `Could not capture screenshot.` while preserving active capture state
+- no extension events or assets were created, so guide/demo generation from extension data remains blocked
+- no extension screenshots were added because they would overstate the evidence
+
+Carry-forward extension evidence candidates:
+
+- fix or redesign MV3 screenshot permission behavior for background automatic capture
+- verify whether explicit `<all_urls>` permission, browser-action active-tab grant behavior, or a user-gesture screenshot path is the right product tradeoff
+- run a true toolbar-popup manual fallback happy path after the permission model is fixed
+- add a browser-run assertion that manual fallback uploads a screenshot-backed event
+- add a clearer portal guard or empty state for creating artifacts from captures with zero events/assets
+- keep extension visual evidence pending until extension-created screenshot-backed events can produce non-empty guide/demo artifacts
+
 ### Goal
 
 Prove extension-created capture data can produce guide/demo artifacts and add extension visual evidence only if truthful.
@@ -514,7 +538,7 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 1. Split-Origin URL Hardening | Completed with follow-up notes | `docs/plan/078-split-origin-url-hardening.md` |
 | 2. Extension Automatic Capture Reliability V3 | Completed with follow-up notes | `docs/plan/079-extension-automatic-capture-reliability-v3.md` |
 | 3. Extension Manual Fallback And Diagnostics | Completed with follow-up notes | `docs/plan/080-extension-manual-fallback-diagnostics.md` |
-| 4. Extension Evidence And Artifact Re-Dogfood | Planned | TBD |
+| 4. Extension Evidence And Artifact Re-Dogfood | Completed with follow-up notes | `docs/plan/081-extension-evidence-and-artifact-redogfood.md` |
 | 5. Portal Interaction Accessibility Pass | Planned | TBD |
 | 6. Authoring Polish V2 | Planned | TBD |
 | 7. Self-Host Ops Tooling V3 | Planned | TBD |

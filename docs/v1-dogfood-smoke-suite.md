@@ -134,6 +134,47 @@ Do not use production accounts, customer systems, private URLs, or private scree
 
 ## Result Log
 
+### 2026-06-30 Extension Evidence And Artifact Re-Dogfood
+
+- Plan: `docs/plan/081-extension-evidence-and-artifact-redogfood.md`
+- Commit before evidence-doc update: `7faa0da`
+- Environment: development DB `dev-dc`; API `http://localhost:4021`; web `http://localhost:3000`; safe test page `http://127.0.0.1:4179/tmp-extension-dogfood-page.html`; extension build path `apps/extension/dist`; local storage root `apps/server/storage`
+- Browser: Chrome `149.0.0.0` via `agent-browser`; unpacked extension id `cohepadogfeidambknedbdflmcjepaam`; extension version `0.1.0`
+- Capture: project `01KWCF7MTZXVDBP0H564E1HDYQ`; capture session `01KWCFBS480QYXSCY8005F5EZ1`
+- Automated evidence:
+  - `rtk pnpm --filter extension test` passed with 9 files and 82 tests
+  - `rtk pnpm --filter extension check-types` passed
+  - `rtk pnpm --filter extension build` passed
+  - `rtk pnpm --filter server test:smoke` passed after creating and migrating the missing local testing database
+- Manual extension evidence: blocked for artifact proof
+- Flows passed:
+  - extension loaded unpacked from `apps/extension/dist`
+  - instance URL `http://localhost:4021` and portal URL `http://localhost:3000` were configured separately
+  - synthetic owner sign-in returned the project list
+  - project selection worked
+  - starting automatic capture created an extension-sourced backend capture session
+  - supported safe-page clicks now produced a persisted automatic capture diagnostic instead of failing silently
+  - direct manual fallback attempt produced a persisted manual diagnostic and preserved active capture state
+  - `Open in portal` opened the web portal capture detail on `localhost:3000`
+  - `Finish capture` completed the backend session, cleared active extension state, and opened the web portal capture detail on `localhost:3000`
+  - portal capture detail could inspect the completed extension-sourced capture session
+- Flows failed or limited:
+  - automatic click capture produced zero events and zero assets after supported clicks on the safe HTTP page
+  - automatic capture diagnostic was `Either the '<all_urls>' or 'activeTab' permission is required.`
+  - direct extension-page manual fallback produced `Could not capture screenshot.`
+  - manual fallback happy-path evidence remains blocked because direct `chrome-extension://.../index.html` automation is not equivalent to a human toolbar popup capturing the active tab
+  - no extension-created screenshot-backed event existed, so guide/demo generation from extension data remains blocked
+  - creating a guide from the empty extension capture produced an empty guide and is not valid artifact evidence
+  - interactive demo generation from the empty extension capture did not create a demo in this browser pass
+  - no extension screenshots were added because they would overstate reliability
+- Known limitations found:
+  - the current MV3 screenshot permission path is still insufficient for background automatic capture in this browser run
+  - the next extension reliability slice should decide between explicit `<all_urls>` permission, browser-action active-tab grant behavior, or moving screenshot capture into a user-gesture path
+  - portal artifact creation from captures with zero events/assets needs a clearer guard or empty-state behavior
+- Follow-up plans/issues:
+  - Add a focused extension permission/manual-popup reliability plan before attempting extension visual evidence again.
+  - Keep extension screenshots pending until an extension-created screenshot-backed event can produce non-empty guide/demo artifacts.
+
 ### 2026-06-22 Manual Extension Dogfood
 
 - Commit: `1da95db`
