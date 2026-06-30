@@ -28,6 +28,7 @@ export default function Home() {
             alt="Project workspace showing capture, guide, and interactive demo entry points."
             width={960}
             height={600}
+            loading="eager"
             priority
           />
         </div>
@@ -76,7 +77,7 @@ export default function Home() {
           </p>
         </div>
         <div className={styles.evidenceGrid}>
-          {evidenceItems.map((item) => (
+          {evidenceItems.slice(1).map((item) => (
             <figure className={styles.evidenceCard} key={item.src}>
               <Image src={item.src} alt={item.alt} width={960} height={600} />
               <figcaption>{item.title}</figcaption>
