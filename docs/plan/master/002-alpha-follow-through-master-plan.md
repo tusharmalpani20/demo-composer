@@ -435,6 +435,11 @@ Completion result:
 - direct screenshot upload behavior remains recoverable through the existing file input and page notice
 - no server/API contract changes were required
 
+Post-completion recheck:
+
+- follow-up coverage confirms a failed direct screenshot upload can be retried with the same file and then attach the replacement screenshot
+- no product bug was found in the upload retry path during the recheck
+
 Carry-forward authoring candidates:
 
 - manual browser smoke of the guide screenshot picker

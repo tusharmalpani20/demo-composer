@@ -104,6 +104,11 @@ Implementation result:
 - no server/API contract changes were required
 - README screenshots do not need refresh from this slice because the layout changed only inside an existing editor control
 
+Post-completion recheck:
+
+- follow-up commit added regression coverage that a failed direct screenshot upload can be retried with the same file and then attach the replacement screenshot
+- no product bug was found in the upload retry path during the recheck
+
 Verification run:
 
 ```bash
@@ -117,8 +122,8 @@ rtk git diff --check
 
 Results:
 
-- focused guide editor suite passed with 38 tests
-- full web suite passed with 295 tests
+- focused guide editor suite passed with 39 tests after the recheck coverage addition
+- full web suite passed with 296 tests after the recheck coverage addition
 - web typecheck passed
 - web lint passed
 - web production build passed
