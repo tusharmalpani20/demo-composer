@@ -382,6 +382,7 @@ Completion result:
 - folded in the portal-facing carry-forward from plan `081` by disabling guide/demo artifact creation when captures have zero events
 - added accessible explanatory copy for disabled artifact actions when captures have zero events or no usable name
 - verified the focused capture detail behavior plus full web test, typecheck, lint, and build
+- post-completion recheck found no additional portal accessibility gaps in this slice
 
 Carry-forward portal accessibility candidates:
 

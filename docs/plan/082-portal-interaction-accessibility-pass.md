@@ -104,6 +104,12 @@ Missed or deferred work to keep as follow-up candidates:
 - deeper guide/demo authoring workflow polish should stay in plan `083`
 - if future UX wants artifact creation from empty captures for draft scaffolding, that should be a deliberate product decision with explicit empty-artifact copy
 
+Post-completion recheck:
+
+- follow-up commit `e960888` broadened the artifact prerequisite messaging so both guide and demo buttons have accessible descriptions when a capture has no usable name
+- follow-up commit `388a50c` aligned this plan and the master plan with that final behavior
+- no additional portal accessibility gaps were found in this slice after the follow-up recheck
+
 ### 1. Audit Dogfood Evidence
 
 - [x] Read plan `071`.
