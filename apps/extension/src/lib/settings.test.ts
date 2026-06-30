@@ -5,6 +5,7 @@ import {
   saveActiveCaptureMode,
   saveActiveCapture,
   saveActiveCaptureEventIndex,
+  saveAutomaticCaptureDiagnostic,
   saveInstanceUrl,
   savePortalUrl,
   saveSelectedProjectId,
@@ -54,6 +55,7 @@ describe("extension settings", () => {
       activeCaptureEventIndex: null,
       activeCaptureMode: null,
       activeCapturePaused: false,
+      automaticCaptureDiagnostic: null,
     });
   });
 
@@ -79,6 +81,46 @@ describe("extension settings", () => {
       activeCaptureEventIndex: 0,
       activeCaptureMode: "automatic",
       activeCapturePaused: false,
+      automaticCaptureDiagnostic: null,
+    });
+  });
+
+  it("saves automatic capture diagnostics without clearing split-origin or active capture state", async () => {
+    await saveInstanceUrl(storage, "http://localhost:4021");
+    await savePortalUrl(storage, "http://localhost:3000");
+    await saveSessionToken(storage, "session-token");
+    await saveSelectedProjectId(storage, "project_1");
+    await saveActiveCapture(storage, {
+      captureSessionId: "capture_session_1",
+      projectId: "project_1",
+      mode: "automatic",
+    });
+
+    await saveAutomaticCaptureDiagnostic(storage, {
+      status: "failed",
+      message: "Screenshot capture is unavailable.",
+      eventIndex: null,
+      pageUrl: "https://example.com/safe-page",
+      occurredAt: "2026-06-30T10:00:00.000Z",
+    });
+
+    await expect(getSettings(storage)).resolves.toEqual({
+      instanceUrl: "http://localhost:4021",
+      portalUrl: "http://localhost:3000",
+      sessionToken: "session-token",
+      selectedProjectId: "project_1",
+      activeCaptureSessionId: "capture_session_1",
+      activeCaptureProjectId: "project_1",
+      activeCaptureEventIndex: 0,
+      activeCaptureMode: "automatic",
+      activeCapturePaused: false,
+      automaticCaptureDiagnostic: {
+        status: "failed",
+        message: "Screenshot capture is unavailable.",
+        eventIndex: null,
+        pageUrl: "https://example.com/safe-page",
+        occurredAt: "2026-06-30T10:00:00.000Z",
+      },
     });
   });
 
@@ -103,6 +145,7 @@ describe("extension settings", () => {
       activeCaptureEventIndex: null,
       activeCaptureMode: null,
       activeCapturePaused: false,
+      automaticCaptureDiagnostic: null,
     });
   });
 
@@ -127,6 +170,7 @@ describe("extension settings", () => {
       activeCaptureEventIndex: null,
       activeCaptureMode: null,
       activeCapturePaused: false,
+      automaticCaptureDiagnostic: null,
     });
   });
 
@@ -150,6 +194,7 @@ describe("extension settings", () => {
       activeCaptureEventIndex: 0,
       activeCaptureMode: "automatic",
       activeCapturePaused: false,
+      automaticCaptureDiagnostic: null,
     });
 
     await saveActiveCaptureMode(storage, {
@@ -169,6 +214,7 @@ describe("extension settings", () => {
       activeCaptureEventIndex: 3,
       activeCaptureMode: "automatic",
       activeCapturePaused: true,
+      automaticCaptureDiagnostic: null,
     });
 
     await clearActiveCapture(storage);
@@ -183,6 +229,7 @@ describe("extension settings", () => {
       activeCaptureEventIndex: null,
       activeCaptureMode: null,
       activeCapturePaused: false,
+      automaticCaptureDiagnostic: null,
     });
   });
 
@@ -207,6 +254,7 @@ describe("extension settings", () => {
       activeCaptureEventIndex: null,
       activeCaptureMode: null,
       activeCapturePaused: false,
+      automaticCaptureDiagnostic: null,
     });
   });
 
@@ -223,6 +271,7 @@ describe("extension settings", () => {
       activeCaptureEventIndex: null,
       activeCaptureMode: null,
       activeCapturePaused: false,
+      automaticCaptureDiagnostic: null,
     });
   });
 

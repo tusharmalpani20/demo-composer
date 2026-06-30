@@ -101,6 +101,7 @@ const build_dependencies = (overrides: Partial<Parameters<typeof handleAutomatic
   uploadCaptureAsset: vi.fn(async () => capture_asset_response),
   createCaptureEvent: vi.fn(async () => capture_event_response),
   saveActiveCaptureEventIndex: vi.fn(async () => {}),
+  saveAutomaticCaptureDiagnostic: vi.fn(async () => {}),
   ...overrides,
 });
 
@@ -150,6 +151,13 @@ describe("automatic capture orchestration", () => {
       })
     );
     expect(dependencies.saveActiveCaptureEventIndex).toHaveBeenCalledWith(2);
+    expect(dependencies.saveAutomaticCaptureDiagnostic).toHaveBeenCalledWith({
+      status: "success",
+      message: null,
+      eventIndex: 2,
+      pageUrl: "https://example.com/path",
+      occurredAt: "2026-06-05T10:00:00.000Z",
+    });
   });
 
   it("skips capture when automatic capture is paused or unavailable", async () => {
@@ -168,6 +176,7 @@ describe("automatic capture orchestration", () => {
     expect(dependencies.captureVisibleTabScreenshot).not.toHaveBeenCalled();
     expect(dependencies.uploadCaptureAsset).not.toHaveBeenCalled();
     expect(dependencies.createCaptureEvent).not.toHaveBeenCalled();
+    expect(dependencies.saveAutomaticCaptureDiagnostic).not.toHaveBeenCalled();
   });
 
   it("does not advance the local event index when upload fails", async () => {
@@ -185,6 +194,13 @@ describe("automatic capture orchestration", () => {
 
     expect(dependencies.createCaptureEvent).not.toHaveBeenCalled();
     expect(dependencies.saveActiveCaptureEventIndex).not.toHaveBeenCalled();
+    expect(dependencies.saveAutomaticCaptureDiagnostic).toHaveBeenCalledWith({
+      status: "failed",
+      message: "Upload failed",
+      eventIndex: null,
+      pageUrl: "https://example.com/path",
+      occurredAt: expect.any(String),
+    });
   });
 
   it("skips duplicate click messages while one automatic capture is still running", async () => {

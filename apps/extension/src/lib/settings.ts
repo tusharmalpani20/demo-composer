@@ -1,3 +1,11 @@
+export type AutomaticCaptureDiagnostic = {
+  status: "success" | "failed";
+  message: string | null;
+  eventIndex: number | null;
+  pageUrl: string | null;
+  occurredAt: string;
+};
+
 export type ExtensionSettings = {
   instanceUrl: string | null;
   portalUrl?: string | null;
@@ -8,6 +16,7 @@ export type ExtensionSettings = {
   activeCaptureEventIndex: number | null;
   activeCaptureMode: "manual" | "automatic" | null;
   activeCapturePaused: boolean;
+  automaticCaptureDiagnostic?: AutomaticCaptureDiagnostic | null;
 };
 
 export type ExtensionStorageArea = {
@@ -26,6 +35,7 @@ const keys = {
   activeCaptureEventIndex: "activeCaptureEventIndex",
   activeCaptureMode: "activeCaptureMode",
   activeCapturePaused: "activeCapturePaused",
+  automaticCaptureDiagnostic: "automaticCaptureDiagnostic",
 } as const;
 
 const default_settings: ExtensionSettings = {
@@ -38,6 +48,7 @@ const default_settings: ExtensionSettings = {
   activeCaptureEventIndex: null,
   activeCaptureMode: null,
   activeCapturePaused: false,
+  automaticCaptureDiagnostic: null,
 };
 
 const stringOrNull = (value: unknown) => (
@@ -53,6 +64,28 @@ const activeCaptureModeOrNull = (value: unknown) => (
 );
 
 const booleanOrFalse = (value: unknown) => value === true;
+
+const automaticCaptureDiagnosticOrNull = (value: unknown): AutomaticCaptureDiagnostic | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const diagnostic = value as Partial<AutomaticCaptureDiagnostic>;
+  const status = diagnostic.status;
+  const occurredAt = stringOrNull(diagnostic.occurredAt);
+
+  if ((status !== "success" && status !== "failed") || !occurredAt) {
+    return null;
+  }
+
+  return {
+    status,
+    message: stringOrNull(diagnostic.message),
+    eventIndex: nonNegativeIntegerOrNull(diagnostic.eventIndex),
+    pageUrl: stringOrNull(diagnostic.pageUrl),
+    occurredAt,
+  };
+};
 
 const assertNonNegativeInteger = (value: number) => {
   if (!Number.isInteger(value) || value < 0) {
@@ -101,6 +134,7 @@ export const getSettings = async (
     activeCaptureEventIndex: nonNegativeIntegerOrNull(stored[keys.activeCaptureEventIndex]),
     activeCaptureMode: activeCaptureModeOrNull(stored[keys.activeCaptureMode]),
     activeCapturePaused: booleanOrFalse(stored[keys.activeCapturePaused]),
+    automaticCaptureDiagnostic: automaticCaptureDiagnosticOrNull(stored[keys.automaticCaptureDiagnostic]),
   };
 };
 
@@ -118,6 +152,7 @@ export const saveInstanceUrl = async (
     [keys.activeCaptureEventIndex]: null,
     [keys.activeCaptureMode]: null,
     [keys.activeCapturePaused]: false,
+    [keys.automaticCaptureDiagnostic]: null,
   });
 };
 
@@ -140,6 +175,7 @@ export const saveSessionToken = async (
       [keys.activeCaptureEventIndex]: null,
       [keys.activeCaptureMode]: null,
       [keys.activeCapturePaused]: false,
+      [keys.automaticCaptureDiagnostic]: null,
     } : {}),
   });
 };
@@ -171,7 +207,15 @@ export const saveActiveCapture = async (
     [keys.activeCaptureEventIndex]: eventIndex,
     [keys.activeCaptureMode]: mode,
     [keys.activeCapturePaused]: false,
+    [keys.automaticCaptureDiagnostic]: null,
   });
+};
+
+export const saveAutomaticCaptureDiagnostic = async (
+  storage: ExtensionStorageArea,
+  diagnostic: AutomaticCaptureDiagnostic | null
+) => {
+  await storage.set({ [keys.automaticCaptureDiagnostic]: diagnostic });
 };
 
 export const saveActiveCaptureEventIndex = async (
@@ -205,6 +249,7 @@ export const clearActiveCapture = async (
     [keys.activeCaptureEventIndex]: null,
     [keys.activeCaptureMode]: null,
     [keys.activeCapturePaused]: false,
+    [keys.automaticCaptureDiagnostic]: null,
   });
 };
 

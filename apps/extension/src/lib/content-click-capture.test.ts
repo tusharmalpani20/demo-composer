@@ -165,4 +165,41 @@ describe("content click capture", () => {
       type: "demo_composer:page_click",
     }));
   });
+
+  it("records a diagnostic when click message delivery fails", async () => {
+    const addEventListener = vi.spyOn(document, "addEventListener");
+    const clickListeners: Array<(event: MouseEvent) => void> = [];
+    addEventListener.mockImplementation((type, listener) => {
+      if (type === "click" && typeof listener === "function") {
+        clickListeners.push(listener as (event: MouseEvent) => void);
+      }
+    });
+    const button = document.createElement("button");
+    button.textContent = "Add Department";
+    document.body.appendChild(button);
+    const event = {
+      button: 0,
+      clientX: 240,
+      clientY: 80,
+      isTrusted: true,
+      target: button,
+    } as unknown as MouseEvent;
+    const sendMessage = vi.fn(async () => {
+      throw new Error("Receiving end does not exist.");
+    });
+    const saveDiagnostic = vi.fn(async () => {});
+
+    installClickCaptureListener(sendMessage, async () => active_settings, saveDiagnostic);
+    clickListeners[0]?.(event);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(saveDiagnostic).toHaveBeenCalledWith({
+      status: "failed",
+      message: "Receiving end does not exist.",
+      eventIndex: null,
+      pageUrl: "http://localhost:3000/",
+      occurredAt: expect.any(String),
+    });
+  });
 });

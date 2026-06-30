@@ -149,6 +149,8 @@ The content script listens for trusted primary click events on `http://` and `ht
 
 The background service worker checks local active capture state again before doing any upload work. If automatic capture is active and not paused, it captures the visible tab, uploads the screenshot asset, creates a linked `click` event, then advances the local event index. A simple in-flight guard prevents duplicate ordered events while a previous automatic click capture is still being processed.
 
+The latest automatic capture outcome is stored in extension storage and shown when the popup is opened during an active capture. Screenshot, upload, event-recording, and content-script message-delivery failures are shown as actionable popup errors while preserving the active capture state and manual screenshot fallback. Successful automatic clicks show the recorded step number.
+
 The extension never stores raw input values or page HTML. It sends `input_value_redacted: true` for automatic click events.
 
 ## Manual Screenshot Upload
@@ -222,7 +224,7 @@ After backend completion succeeds, the extension clears only the local active ca
 
 The extension currently requests:
 
-- `storage` for instance, session, selected project, and active capture state
+- `storage` for instance, session, selected project, active capture state, and the latest automatic capture diagnostic
 - `tabs` for active tab URL/title metadata and opening the portal capture detail page after finishing
 - `activeTab` for visible tab screenshot capture
 - `host_permissions` for `http://*/*` and `https://*/*` so the content script can observe supported page clicks

@@ -2,7 +2,7 @@
 
 Date: 2026-06-23
 
-Status: Planned.
+Status: Completed with follow-up notes.
 
 ## Parent Master Plan
 
@@ -95,9 +95,56 @@ docs/project-zoomout-status.md
 
 ## Implementation Plan
 
+## Implementation Result: 2026-06-30
+
+Completed slice:
+
+- Added persisted automatic capture diagnostics to extension settings.
+- Background automatic click capture now records the latest successful event index or failure message after screenshot, upload, or event-recording attempts.
+- Content-script click message delivery failures now record a diagnostic when the background worker cannot receive the click message.
+- The active-capture popup now shows the latest automatic capture failure and keeps the manual screenshot fallback available.
+- The active-capture popup now shows the latest successful automatic capture step number when the background records one.
+- Split API/web portal URL behavior from plan `076` remains unchanged.
+- Raw input values, screenshot bytes, tokens, cookies, and page HTML are not stored in diagnostics.
+
+Selected reliability slice:
+
+- The previous zero-event dogfood failure was most harmful because automatic capture could fail with no popup-visible reason.
+- This implementation does not claim that headed automatic capture now fully succeeds in every browser scenario.
+- It makes the click pipeline observable at the content-script message-delivery, screenshot, upload, and event-recording failure points so the next headed run can identify the exact remaining blocker.
+
+Verification run:
+
+```bash
+rtk pnpm --filter extension test -- src/lib/settings.test.ts src/lib/automatic-capture.test.ts src/lib/content-click-capture.test.ts src/App.test.tsx
+rtk pnpm --filter extension test
+rtk pnpm --filter extension check-types
+rtk pnpm --filter extension lint
+rtk pnpm --filter extension build
+rtk git diff --check
+```
+
+Results:
+
+- Focused extension suites passed with 4 files and 53 tests.
+- Full extension test suite passed with 9 files and 79 tests.
+- Extension typecheck passed.
+- Extension lint passed.
+- Extension build passed.
+- Whitespace check passed.
+
+Missed or deferred work to keep as follow-up candidates:
+
+- Manual headed browser verification of a safe automatic click capture scenario.
+- Service-worker and content-script log capture from a real browser run.
+- Unsupported/restricted page browser evidence.
+- Manual screenshot fallback reliability remains part of plan `080`.
+- Extension visual evidence and artifact re-dogfood remain part of plan `081`.
+- Previous plan `078` manual split-origin invite dogfood is unrelated to this extension implementation and should stay with broader browser dogfood follow-up work.
+
 ### 1. Reproduce And Trace
 
-- [ ] Build the extension.
+- [x] Build the extension.
 - [ ] Load `apps/extension/dist` unpacked in Chrome or Chromium.
 - [ ] Configure API instance URL and portal URL.
 - [ ] Start a safe capture session.
@@ -114,33 +161,33 @@ Choose one focused fix if the failure is located:
 
 - content script is not injected
 - content script storage lookup fails
-- message delivery to background fails
+- [x] message delivery to background fails
 - visible-tab screenshot capture fails
-- upload fails silently
-- event creation fails silently
-- popup state hides active failure
+- [x] upload fails silently
+- [x] event creation fails silently
+- [x] popup state hides active failure
 
-If more than one unrelated failure exists, split into follow-up plans.
+Manual browser evidence, content-script injection evidence, and unsupported-page behavior remain follow-up work.
 
 ### 3. Implement Diagnostics First
 
-- [ ] Add failing tests for the selected failure path.
-- [ ] Add user-visible popup state for actionable failures.
-- [ ] Avoid exposing raw URLs beyond what is already visible to the user.
-- [ ] Avoid logging tokens, cookies, screenshot data, input values, or HTML.
-- [ ] Preserve existing active-capture recovery behavior.
+- [x] Add failing tests for the selected failure path.
+- [x] Add user-visible popup state for actionable failures.
+- [x] Avoid exposing raw URLs beyond what is already visible to the user.
+- [x] Avoid logging tokens, cookies, screenshot data, input values, or HTML.
+- [x] Preserve existing active-capture recovery behavior.
 
 ### 4. Implement Reliability Fix
 
-- [ ] Apply the smallest production change needed.
-- [ ] Preserve event ordering.
-- [ ] Preserve pause/resume behavior.
-- [ ] Preserve manual fallback availability.
-- [ ] Preserve split API/web portal URL behavior from plan `076`.
+- [x] Apply the smallest production change needed.
+- [x] Preserve event ordering.
+- [x] Preserve pause/resume behavior.
+- [x] Preserve manual fallback availability.
+- [x] Preserve split API/web portal URL behavior from plan `076`.
 
 ### 5. Manual Verification
 
-- [ ] Rebuild extension.
+- [x] Rebuild extension.
 - [ ] Reload unpacked extension.
 - [ ] Run the safe click capture scenario.
 - [ ] Confirm ordered screenshot-backed click events arrive, or record the exact remaining blocker.
@@ -149,10 +196,10 @@ If more than one unrelated failure exists, split into follow-up plans.
 
 ### 6. Update Docs And Tracking
 
-- [ ] Update extension README if workflow or diagnostics changed.
-- [ ] Update dogfood smoke log with fresh evidence.
-- [ ] Add implementation notes to this plan.
-- [ ] Update master plan phase tracking after implementation.
+- [x] Update extension README if workflow or diagnostics changed.
+- [x] Update dogfood smoke log with fresh evidence.
+- [x] Add implementation notes to this plan.
+- [x] Update master plan phase tracking after implementation.
 
 ## Testing Plan
 
@@ -183,4 +230,8 @@ rtk pnpm --filter server test
 
 ## Follow-Up Notes
 
-If automatic capture still cannot be made reliable in one slice, close this plan with a precise failure location and create the next extension reliability child plan.
+Carry these notes into the next relevant plan:
+
+- Plan `080` should keep manual screenshot fallback upload/event diagnostics separate from automatic capture.
+- Plan `081` should run the headed extension evidence pass and capture whether automatic clicks now create screenshot-backed events or surface one of the new diagnostics.
+- If the headed run still produces no diagnostic, the next reliability slice should focus on content-script injection/permissions and service-worker lifecycle evidence.

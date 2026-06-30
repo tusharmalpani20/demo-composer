@@ -69,6 +69,7 @@ const defaultSettings: ExtensionSettings = {
   activeCaptureEventIndex: null,
   activeCaptureMode: null,
   activeCapturePaused: false,
+  automaticCaptureDiagnostic: null,
 };
 
 const captureSessionResponse = {
@@ -539,6 +540,33 @@ describe("extension popup App", () => {
     expect(screen.getByText("Internal onboarding demos")).toBeInTheDocument();
     expect(screen.getByText(/capture_session_1/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Start automatic capture" })).not.toBeInTheDocument();
+  });
+
+  it("shows the latest automatic capture failure diagnostic with manual fallback available", async () => {
+    renderApp({
+      settings: {
+        instanceUrl: "https://demo.example.com",
+        sessionToken: "extension-session-token",
+        selectedProjectId: "project_1",
+        activeCaptureSessionId: "capture_session_1",
+        activeCaptureProjectId: "project_1",
+        activeCaptureEventIndex: 0,
+        activeCaptureMode: "automatic",
+        activeCapturePaused: false,
+        automaticCaptureDiagnostic: {
+          status: "failed",
+          message: "Screenshot capture is unavailable.",
+          eventIndex: null,
+          pageUrl: "https://example.com/safe-page",
+          occurredAt: "2026-06-30T10:00:00.000Z",
+        },
+      },
+    });
+
+    expect(await screen.findByRole("heading", { name: "Capture active" })).toBeInTheDocument();
+    expect(screen.getByText("Automatic click capture failed: Screenshot capture is unavailable.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Capture screenshot" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pause automatic capture" })).toBeInTheDocument();
   });
 
   it("pauses and resumes automatic capture without clearing active capture state", async () => {

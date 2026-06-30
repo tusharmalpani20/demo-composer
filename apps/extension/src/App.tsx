@@ -340,6 +340,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
         activeCaptureEventIndex={state.settings.activeCaptureEventIndex}
         activeCaptureMode={state.settings.activeCaptureMode}
         activeCapturePaused={state.settings.activeCapturePaused}
+        automaticCaptureDiagnostic={state.settings.automaticCaptureDiagnostic ?? null}
         onSelect={async (projectId) => {
           await dependencies.saveSelectedProjectId(projectId);
           setState({
@@ -745,6 +746,7 @@ const ProjectPicker = ({
   activeCaptureEventIndex,
   activeCaptureMode,
   activeCapturePaused,
+  automaticCaptureDiagnostic,
   onSelect,
   onStartCapture,
   onSetActiveCaptureMode,
@@ -763,6 +765,7 @@ const ProjectPicker = ({
   activeCaptureEventIndex: number | null;
   activeCaptureMode: "manual" | "automatic" | null;
   activeCapturePaused: boolean;
+  automaticCaptureDiagnostic: ExtensionSettings["automaticCaptureDiagnostic"];
   onSelect: (projectId: string) => Promise<void>;
   onStartCapture: (projectId: string) => Promise<void>;
   onSetActiveCaptureMode: (input: { mode: "manual" | "automatic"; paused: boolean }) => Promise<void>;
@@ -803,6 +806,12 @@ const ProjectPicker = ({
   const busy = starting || capturingScreenshot || finishing || openingPortal || changingCaptureMode;
   const resolvedCaptureMode = activeCaptureMode ?? "manual";
   const isAutomaticCapture = resolvedCaptureMode === "automatic";
+  const automaticCaptureDiagnosticMessage = automaticCaptureDiagnostic?.status === "failed"
+    ? `Automatic click capture failed: ${automaticCaptureDiagnostic.message ?? "Check extension permissions and supported pages."}`
+    : null;
+  const automaticCaptureSuccessMessage = automaticCaptureDiagnostic?.status === "success" && automaticCaptureDiagnostic.eventIndex
+    ? `Automatic capture event recorded: step ${automaticCaptureDiagnostic.eventIndex}`
+    : null;
 
   const heading = hasActiveCapture
     ? "Capture active"
@@ -952,8 +961,10 @@ const ProjectPicker = ({
           <p className="captureProject">{activeProject?.name ?? "Project unavailable"}</p>
           <p className="captureSession">Session {activeCaptureSessionId}</p>
           {screenshotError ? <div className="error">{screenshotError}</div> : null}
+          {automaticCaptureDiagnosticMessage ? <div className="error">{automaticCaptureDiagnosticMessage}</div> : null}
           {finishError ? <div className="error">{finishError}</div> : null}
           {portalOpenError ? <div className="error">{portalOpenError}</div> : null}
+          {automaticCaptureSuccessMessage ? <p className="success">{automaticCaptureSuccessMessage}</p> : null}
           {lastCaptureEventIndex ? <p className="success">Capture event recorded: step {lastCaptureEventIndex}</p> : null}
           <div className="actions">
             {isAutomaticCapture ? (

@@ -1,3 +1,5 @@
+import type { AutomaticCaptureDiagnostic } from "./settings";
+
 export type PageClickCapturePayload = {
   page_url: string | null;
   page_title: string | null;
@@ -50,6 +52,7 @@ const state_keys = {
 
 type StorageArea = {
   get: (keys?: string[]) => Promise<Record<string, unknown>>;
+  set?: (items: Record<string, unknown>) => Promise<void>;
 };
 
 const stringOrNull = (value: unknown) => (
@@ -66,7 +69,7 @@ const chromeLocalStorage = (): StorageArea => (
   (globalThis as {
     chrome?: {
       storage?: {
-        local?: StorageArea;
+    local?: StorageArea;
       };
     };
   }).chrome?.storage?.local ?? {
@@ -99,6 +102,53 @@ const isAutomaticClickCaptureActive = (settings: ClickCaptureState) => (
     && !settings.activeCapturePaused
   )
 );
+
+const automatic_capture_diagnostic_key = "automaticCaptureDiagnostic";
+
+const saveAutomaticCaptureDiagnostic = async (
+  diagnostic: AutomaticCaptureDiagnostic,
+  storage: StorageArea = chromeLocalStorage()
+) => {
+  await storage.set?.({ [automatic_capture_diagnostic_key]: diagnostic });
+};
+
+const errorMessage = (error: unknown) => (
+  error instanceof Error ? error.message : "Automatic capture message delivery failed."
+);
+
+const defaultSendMessage = (message: PageClickCaptureMessage) => new Promise<void>((resolve, reject) => {
+  const runtime = (globalThis as {
+    chrome?: {
+      runtime?: {
+        lastError?: { message?: string };
+        sendMessage?: (
+          payload: PageClickCaptureMessage,
+          callback?: (response?: { ok?: boolean; reason?: string; message?: string }) => void
+        ) => void;
+      };
+    };
+  }).chrome?.runtime;
+
+  if (!runtime?.sendMessage) {
+    reject(new Error("Extension message delivery is unavailable."));
+    return;
+  }
+
+  runtime.sendMessage(message, (response) => {
+    const lastError = runtime.lastError;
+    if (lastError) {
+      reject(new Error(lastError.message ?? "Extension message delivery failed."));
+      return;
+    }
+
+    if (response?.ok === false && response.reason === "automatic_capture_failed") {
+      reject(new Error(response.message ?? "Automatic capture failed."));
+      return;
+    }
+
+    resolve();
+  });
+});
 
 const cssEscape = (value: string) => (
   typeof CSS !== "undefined" && typeof CSS.escape === "function"
@@ -219,16 +269,9 @@ export const buildClickCaptureMessage = (event: MouseEvent): PageClickCaptureMes
 };
 
 export const installClickCaptureListener = (
-  sendMessage: (message: PageClickCaptureMessage) => void = (message) => {
-    (globalThis as {
-      chrome?: {
-        runtime?: {
-          sendMessage?: (payload: PageClickCaptureMessage) => void;
-        };
-      };
-    }).chrome?.runtime?.sendMessage?.(message);
-  },
-  getCaptureState: () => Promise<ClickCaptureState> = getClickCaptureState
+  sendMessage: (message: PageClickCaptureMessage) => void | Promise<void> = defaultSendMessage,
+  getCaptureState: () => Promise<ClickCaptureState> = getClickCaptureState,
+  saveDiagnostic: (diagnostic: AutomaticCaptureDiagnostic) => Promise<void> = saveAutomaticCaptureDiagnostic
 ) => {
   const handleClick = (event: MouseEvent) => {
     if (!shouldCaptureClick(event)) {
@@ -243,7 +286,15 @@ export const installClickCaptureListener = (
 
         const message = buildClickCaptureMessage(event);
         if (message) {
-          sendMessage(message);
+          void Promise.resolve(sendMessage(message)).catch((error: unknown) => {
+            void saveDiagnostic({
+              status: "failed",
+              message: errorMessage(error),
+              eventIndex: null,
+              pageUrl: message.payload.page_url,
+              occurredAt: new Date().toISOString(),
+            }).catch(() => {});
+          });
         }
       })
       .catch(() => {});

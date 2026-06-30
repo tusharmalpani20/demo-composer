@@ -167,6 +167,21 @@ Do not use production accounts, customer systems, private URLs, or private scree
   - Feed automatic capture failure, silent fallback failure, and split-origin portal links into `docs/plan/076-extension-capture-reliability-v2.md`.
   - Do not proceed to alpha visual screenshots from extension capture until extension dogfood has a passing or explicitly bounded capture path.
 
+### 2026-06-30 Automatic Capture Diagnostic Slice
+
+- Plan: `docs/plan/079-extension-automatic-capture-reliability-v3.md`
+- Implementation evidence: focused extension tests now cover persisted automatic capture diagnostics for success, upload failure, content-script message-delivery failure, and popup rendering.
+- Behavior changed:
+  - background automatic capture stores the latest success/failure outcome in extension storage
+  - content-script message-delivery failures are recorded when the background worker cannot receive the click message
+  - popup active-capture state shows automatic capture failures while keeping manual screenshot fallback available
+- Manual browser evidence still needed:
+  - reload the built extension in a headed browser
+  - create a safe split API/web capture session
+  - click supported HTTP(S) targets
+  - verify screenshot-backed click events or capture the exact popup diagnostic
+  - verify unsupported/restricted page behavior
+
 ### 2026-06-22 Manual Portal Dogfood
 
 - Commit: `51d6b20`

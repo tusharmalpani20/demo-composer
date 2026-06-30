@@ -9,7 +9,9 @@ import {
   chromeLocalStorage,
   getSettings,
   saveActiveCaptureEventIndex,
+  saveAutomaticCaptureDiagnostic,
   type ExtensionSettings,
+  type AutomaticCaptureDiagnostic,
 } from "./settings";
 import type { PageClickCaptureMessage } from "./content-click-capture";
 
@@ -29,6 +31,7 @@ type AutomaticCaptureDependencies = {
   uploadCaptureAsset: typeof uploadCaptureAsset;
   createCaptureEvent: typeof createCaptureEvent;
   saveActiveCaptureEventIndex: (eventIndex: number) => Promise<void>;
+  saveAutomaticCaptureDiagnostic: (diagnostic: AutomaticCaptureDiagnostic | null) => Promise<void>;
 };
 
 const screenshotFileName = (capturedAt: string) => (
@@ -59,7 +62,19 @@ export const buildAutomaticCaptureDependencies = (): AutomaticCaptureDependencie
     uploadCaptureAsset,
     createCaptureEvent,
     saveActiveCaptureEventIndex: (eventIndex) => saveActiveCaptureEventIndex(storage, eventIndex),
+    saveAutomaticCaptureDiagnostic: (diagnostic) => saveAutomaticCaptureDiagnostic(storage, diagnostic),
   };
+};
+
+const persistAutomaticCaptureDiagnostic = async (
+  dependencies: AutomaticCaptureDependencies,
+  diagnostic: AutomaticCaptureDiagnostic
+) => {
+  try {
+    await dependencies.saveAutomaticCaptureDiagnostic(diagnostic);
+  } catch {
+    // Capture success/failure should not be hidden by diagnostic persistence failure.
+  }
 };
 
 export const handleAutomaticClickCapture = async (
@@ -141,16 +156,32 @@ export const handleAutomaticClickCapture = async (
     );
 
     await dependencies.saveActiveCaptureEventIndex(event.capture_event.event_index);
+    await persistAutomaticCaptureDiagnostic(dependencies, {
+      status: "success",
+      message: null,
+      eventIndex: event.capture_event.event_index,
+      pageUrl: message.payload.page_url,
+      occurredAt: screenshot.capturedAt,
+    });
 
     return {
       ok: true,
       event_index: event.capture_event.event_index,
     };
   } catch (error) {
+    const messageText = errorMessage(error);
+    await persistAutomaticCaptureDiagnostic(dependencies, {
+      status: "failed",
+      message: messageText,
+      eventIndex: null,
+      pageUrl: message.payload.page_url,
+      occurredAt: new Date().toISOString(),
+    });
+
     return {
       ok: false,
       reason: "automatic_capture_failed",
-      message: errorMessage(error),
+      message: messageText,
     };
   }
 };

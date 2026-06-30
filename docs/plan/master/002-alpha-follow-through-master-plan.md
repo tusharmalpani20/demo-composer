@@ -194,6 +194,28 @@ Suggested child plan:
 docs/plan/079-extension-automatic-capture-reliability-v3.md
 ```
 
+Status: completed with follow-up notes by `docs/plan/079-extension-automatic-capture-reliability-v3.md`.
+
+### Progress Update
+
+Updated on 2026-06-30 local time.
+
+Completion result:
+
+- extension settings now persist the latest automatic capture diagnostic
+- background automatic click capture records success and failure outcomes after screenshot, upload, and event-recording attempts
+- content-script message-delivery failures are recorded when the background worker cannot receive a click message
+- active-capture popup shows automatic capture failures while preserving manual screenshot fallback
+- split API/web portal URL behavior from plan `076` remains unchanged
+- diagnostics avoid raw input values, screenshot bytes, tokens, cookies, and page HTML
+
+Carry-forward automatic capture candidates:
+
+- run a headed browser extension dogfood pass and record whether supported clicks now create screenshot-backed events or show a diagnostic
+- collect service-worker and content-script evidence during that headed run
+- verify unsupported/restricted page behavior in a real browser
+- keep manual screenshot fallback diagnostics in plan `080`
+
 ### Goal
 
 Diagnose and improve automatic click capture in a headed/manual browser.
@@ -465,7 +487,7 @@ DB-backed checks require the configured PostgreSQL testing database.
 | Phase | Status | Result Link |
 | --- | --- | --- |
 | 1. Split-Origin URL Hardening | Completed with follow-up notes | `docs/plan/078-split-origin-url-hardening.md` |
-| 2. Extension Automatic Capture Reliability V3 | Planned | TBD |
+| 2. Extension Automatic Capture Reliability V3 | Completed with follow-up notes | `docs/plan/079-extension-automatic-capture-reliability-v3.md` |
 | 3. Extension Manual Fallback And Diagnostics | Planned | TBD |
 | 4. Extension Evidence And Artifact Re-Dogfood | Planned | TBD |
 | 5. Portal Interaction Accessibility Pass | Planned | TBD |
