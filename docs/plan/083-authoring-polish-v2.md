@@ -2,7 +2,7 @@
 
 Date: 2026-06-23
 
-Status: Planned.
+Status: Planned; rechecked and narrowed for implementation.
 
 ## Parent Master Plan
 
@@ -29,6 +29,8 @@ Reason:
 
 Reduce remaining guide and demo authoring friction after the first hardening slices.
 
+This implementation pass is narrowed to guide screenshot picker clarity and recovery.
+
 ## Current Baseline
 
 Plans `074` and `075` completed narrow hardening slices:
@@ -40,7 +42,19 @@ They intentionally deferred broader authoring polish.
 
 ## Scope
 
-This master phase is broad. The child implementation should select one coherent slice or split this plan before coding.
+This master phase is broad. The implementation for this plan now selects one coherent slice before coding.
+
+Selected guide slice:
+
+- make guide screenshot choices easier to distinguish without exposing raw asset IDs
+- make the currently attached screenshot clear in the picker
+- provide an inline retry path when screenshot choices fail to load
+- preserve direct screenshot upload behavior and keep upload failures recoverable through the existing file control
+
+Carry-forward from plan `082`:
+
+- deeper guide/demo authoring workflow polish belongs here, but this implementation only takes the guide screenshot picker/recovery slice
+- empty-capture artifact creation and portal activation semantics were already handled or deferred by plan `082`
 
 Candidate guide slices:
 
@@ -60,6 +74,19 @@ Candidate demo slices:
 - embed and narrow viewport QA
 - public demo final-scene stale-target behavior
 - extension-generated demo quality after extension evidence exists
+
+Deferred from this implementation:
+
+- guide annotation editing affordances
+- guide publish stale-state clarity
+- guide export error messaging
+- guide metadata and step save/error/retry behavior
+- empty and partial-data guide editor states
+- demo scene list and reorder feedback
+- demo hotspot editor affordances
+- demo embed and narrow viewport QA
+- public demo final-scene stale-target behavior
+- extension-generated guide/demo quality until extension-created screenshot-backed events exist
 
 ## Explicit Non-Goals
 
@@ -101,15 +128,15 @@ docs/plan/master/002-alpha-follow-through-master-plan.md
 
 ### 1. Pick A Focused Slice
 
-- [ ] Review plans `074` and `075`.
-- [ ] Review current guide and demo tests.
-- [ ] Pick one guide slice, one demo slice, or split into new child plans.
-- [ ] Write the selected slice in this plan before implementation.
-- [ ] Define what is explicitly deferred.
+- [x] Review plans `074` and `075`.
+- [x] Review current guide and demo carry-forward notes.
+- [x] Pick one guide slice: screenshot picker clarity and picker load recovery.
+- [x] Write the selected slice in this plan before implementation.
+- [x] Define what is explicitly deferred.
 
 ### 2. Add Focused Tests
 
-- [ ] Add failing tests for the selected behavior.
+- [ ] Add failing tests for screenshot picker clarity and load recovery.
 - [ ] Prefer user-visible behavior over private implementation details.
 - [ ] Add server tests only if API contracts or validation change.
 - [ ] Cover error states if the slice changes recovery behavior.
