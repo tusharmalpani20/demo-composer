@@ -1,4 +1,10 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
+import { Alert } from "@repo/ui/alert";
+import { Badge } from "@repo/ui/badge";
+import { Button } from "@repo/ui/button";
+import { Card, CardContent, CardHeader } from "@repo/ui/card";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
 import {
   ApiClientError,
   createOrganizationInvite,
@@ -205,9 +211,9 @@ export const OrganizationMembersPage = ({
       <PortalShell performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load organization members.</div>
-          <button className={styles.secondaryButton} type="button" onClick={() => setReloadKey((key) => key + 1)}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => setReloadKey((key) => key + 1)}>
             Retry
-          </button>
+          </Button>
         </div>
       </PortalShell>
     );
@@ -222,40 +228,47 @@ export const OrganizationMembersPage = ({
         </div>
       </section>
 
-      <section className={styles.panel} aria-labelledby="invite-member-heading">
-        <h2 className={styles.sectionTitle} id="invite-member-heading">Invite member</h2>
+      <Card className={styles.panel} aria-labelledby="invite-member-heading">
+        <CardHeader>
+          <h2 className={styles.sectionTitle} id="invite-member-heading">Invite member</h2>
+        </CardHeader>
+        <CardContent>
         <form className={styles.form} onSubmit={submitInvite}>
-          {formError ? <div className={styles.formError}>{formError}</div> : null}
-          {message ? <div className={styles.message}>{message}</div> : null}
+          {formError ? <Alert variant="destructive">{formError}</Alert> : null}
+          {message ? <Alert variant="success">{message}</Alert> : null}
           {inviteUrl ? (
             <div className={styles.inviteLink}>
               <span>{inviteUrl}</span>
-              <button className={styles.secondaryButton} type="button" onClick={() => void copyInviteUrl()}>
+              <Button variant="secondary" size="sm" type="button" onClick={() => void copyInviteUrl()}>
                 Copy invite link
-              </button>
+              </Button>
             </div>
           ) : null}
           <div className={styles.formGrid}>
-            <label className={styles.field}>
+            <Label className={styles.field}>
               <span>Invite email</span>
-              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-            </label>
-            <label className={styles.field}>
+              <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+            </Label>
+            <Label className={styles.field}>
               <span>Invite role</span>
               <select value={role} onChange={(event) => setRole(event.target.value as OrganizationRole)}>
                 <option value="member">member</option>
                 <option value="owner">owner</option>
               </select>
-            </label>
+            </Label>
           </div>
-          <button className={styles.primaryButton} type="submit" disabled={isSubmitting}>
+          <Button className={styles.submitButton} type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Creating invite..." : "Create invite"}
-          </button>
+          </Button>
         </form>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section className={styles.panel} aria-labelledby="members-heading">
-        <h2 className={styles.sectionTitle} id="members-heading">Members</h2>
+      <Card className={styles.panel} aria-labelledby="members-heading">
+        <CardHeader>
+          <h2 className={styles.sectionTitle} id="members-heading">Members</h2>
+        </CardHeader>
+        <CardContent>
         <div className={styles.rows}>
           {state.members.map((member) => (
             <article className={styles.row} data-testid="organization-member-row" key={member.id}>
@@ -263,14 +276,18 @@ export const OrganizationMembersPage = ({
                 <h3 className={styles.rowTitle}>{member.display_name || member.email}</h3>
                 <div className={styles.rowMeta}>{member.email}</div>
               </div>
-              <span className={styles.badge}>{member.role}</span>
+              <Badge>{member.role}</Badge>
             </article>
           ))}
         </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section className={styles.panel} aria-labelledby="pending-invites-heading">
-        <h2 className={styles.sectionTitle} id="pending-invites-heading">Pending invites</h2>
+      <Card className={styles.panel} aria-labelledby="pending-invites-heading">
+        <CardHeader>
+          <h2 className={styles.sectionTitle} id="pending-invites-heading">Pending invites</h2>
+        </CardHeader>
+        <CardContent>
         {state.invites.length === 0 ? (
           <div className={styles.empty}>No pending invites.</div>
         ) : (
@@ -282,21 +299,23 @@ export const OrganizationMembersPage = ({
                   <div className={styles.rowMeta}>Expires {new Date(invite.expires_at).toLocaleDateString()}</div>
                 </div>
                 <div className={styles.rowActions}>
-                  <span className={styles.badge}>{invite.status}</span>
-                  <button
-                    className={styles.secondaryButton}
+                  <Badge variant="warning">{invite.status}</Badge>
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     type="button"
                     disabled={busyInviteId === invite.id}
                     onClick={() => void revokePendingInvite(invite)}
                   >
                     {busyInviteId === invite.id ? "Revoking..." : `Revoke invite for ${invite.email}`}
-                  </button>
+                  </Button>
                 </div>
               </article>
             ))}
           </div>
         )}
-      </section>
+        </CardContent>
+      </Card>
     </PortalShell>
   );
 };

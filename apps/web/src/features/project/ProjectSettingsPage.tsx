@@ -1,4 +1,11 @@
 import { type FormEvent, useEffect, useState } from "react";
+import { Alert } from "@repo/ui/alert";
+import { Badge } from "@repo/ui/badge";
+import { Button } from "@repo/ui/button";
+import { Card, CardContent, CardHeader } from "@repo/ui/card";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
+import { Textarea } from "@repo/ui/textarea";
 import {
   ApiClientError,
   getProject,
@@ -259,9 +266,9 @@ export const ProjectSettingsPage = ({
       <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load project settings.</div>
-          <button className={styles.secondaryButton} type="button" onClick={() => setReloadKey((key) => key + 1)}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => setReloadKey((key) => key + 1)}>
             Retry
-          </button>
+          </Button>
         </div>
       </PortalShell>
     );
@@ -281,7 +288,7 @@ export const ProjectSettingsPage = ({
           <div className={styles.eyebrow}>Project settings</div>
           <div className={styles.titleRow}>
             <h1 className={styles.title}>Project settings</h1>
-            <span className={styles.badge}>{project.status}</span>
+            <Badge variant={project.status === "active" ? "success" : "default"}>{project.status}</Badge>
           </div>
           <p className={styles.description}>{project.name}</p>
           <div className={styles.meta}>
@@ -295,55 +302,63 @@ export const ProjectSettingsPage = ({
       </section>
 
       <div className={styles.content}>
-        <section className={styles.panel} aria-labelledby="project-details-heading">
-          <h2 className={styles.sectionTitle} id="project-details-heading">Details</h2>
-          {message ? <div className={styles.formMessage}>{message}</div> : null}
-          {error ? <div className={styles.formError}>{error}</div> : null}
-          <form className={styles.form} onSubmit={saveDetails}>
-            <label className={styles.field}>
-              <span>Project name</span>
-              <input
-                value={form.name}
-                disabled={isBusy}
-                onChange={(event) => updateField("name", event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Description</span>
-              <textarea
-                rows={4}
-                value={form.description}
-                disabled={isBusy}
-                onChange={(event) => updateField("description", event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Slug</span>
-              <input
-                value={form.slug}
-                disabled={isBusy}
-                onChange={(event) => updateField("slug", event.target.value)}
-              />
-            </label>
-            <div className={styles.formActions}>
-              <button className={styles.primaryButton} type="submit" disabled={isBusy || !detailsDirty}>
-                {isSaving ? "Saving changes..." : "Save changes"}
-              </button>
-            </div>
-          </form>
-        </section>
+        <Card className={styles.panel} aria-labelledby="project-details-heading">
+          <CardHeader>
+            <h2 className={styles.sectionTitle} id="project-details-heading">Details</h2>
+          </CardHeader>
+          <CardContent>
+            {message ? <Alert variant="success">{message}</Alert> : null}
+            {error ? <Alert variant="destructive">{error}</Alert> : null}
+            <form className={styles.form} onSubmit={saveDetails}>
+              <Label className={styles.field}>
+                <span>Project name</span>
+                <Input
+                  value={form.name}
+                  disabled={isBusy}
+                  onChange={(event) => updateField("name", event.target.value)}
+                />
+              </Label>
+              <Label className={styles.field}>
+                <span>Description</span>
+                <Textarea
+                  rows={4}
+                  value={form.description}
+                  disabled={isBusy}
+                  onChange={(event) => updateField("description", event.target.value)}
+                />
+              </Label>
+              <Label className={styles.field}>
+                <span>Slug</span>
+                <Input
+                  value={form.slug}
+                  disabled={isBusy}
+                  onChange={(event) => updateField("slug", event.target.value)}
+                />
+              </Label>
+              <div className={styles.formActions}>
+                <Button type="submit" disabled={isBusy || !detailsDirty}>
+                  {isSaving ? "Saving changes..." : "Save changes"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
 
-        <section className={styles.panel} aria-labelledby="project-lifecycle-heading">
-          <h2 className={styles.sectionTitle} id="project-lifecycle-heading">Lifecycle</h2>
-          <p className={styles.panelText}>
-            {project.status === "archived"
-              ? "Return this project to the active project list."
-              : "Archived projects are hidden from the active project list but can still be opened directly and restored later."}
-          </p>
-          <button className={styles.secondaryButton} type="button" disabled={isBusy} onClick={updateStatus}>
-            {isUpdatingStatus ? "Updating project..." : lifecycleButtonText}
-          </button>
-        </section>
+        <Card className={styles.panel} aria-labelledby="project-lifecycle-heading">
+          <CardHeader>
+            <h2 className={styles.sectionTitle} id="project-lifecycle-heading">Lifecycle</h2>
+          </CardHeader>
+          <CardContent>
+            <p className={styles.panelText}>
+              {project.status === "archived"
+                ? "Return this project to the active project list."
+                : "Archived projects are hidden from the active project list but can still be opened directly and restored later."}
+            </p>
+            <Button variant="secondary" type="button" disabled={isBusy} onClick={updateStatus}>
+              {isUpdatingStatus ? "Updating project..." : lifecycleButtonText}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </PortalShell>
   );

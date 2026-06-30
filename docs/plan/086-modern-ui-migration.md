@@ -124,11 +124,11 @@ Design-system constraints:
 - [x] Modernize `LoginPage`.
 - [x] Modernize `FirstRunSetupPage`.
 - [x] Modernize `ProjectListPage`.
-- [ ] Modernize `ProjectWorkspacePage`.
-- [ ] Modernize `ProjectSettingsPage`.
-- [ ] Modernize `OrganizationMembersPage`.
-- [ ] Modernize `InviteAcceptPage`.
-- [ ] Replace local repeated buttons/fields/panels with shared primitives where practical.
+- [x] Modernize `ProjectWorkspacePage`.
+- [x] Modernize `ProjectSettingsPage`.
+- [x] Modernize `OrganizationMembersPage`.
+- [x] Modernize `InviteAcceptPage`.
+- [x] Replace local repeated buttons/fields/panels with shared primitives where practical.
 - [ ] Commit portal-foundation screen slice.
 
 ### 4. Capture Session Screens
@@ -305,6 +305,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: App-shell verification passed: `rtk pnpm --filter web test -- App`, `rtk pnpm --filter web test -- PortalTopbar`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 - 2026-06-30: Modernized `LoginPage`, `FirstRunSetupPage`, and `ProjectListPage` with shared card/form/button/alert primitives while preserving existing behavior.
 - 2026-06-30: Portal foundation verification passed: `rtk pnpm --filter web test -- LoginPage`, `FirstRunSetupPage`, `ProjectListPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
+- 2026-06-30: Modernized `ProjectWorkspacePage`, `ProjectSettingsPage`, `OrganizationMembersPage`, and `InviteAcceptPage` with shared primitives while preserving project and organization workflows.
+- 2026-06-30: Remaining portal foundation verification passed: `rtk pnpm --filter web test -- ProjectWorkspacePage`, `ProjectSettingsPage`, `OrganizationMembersPage`, `InviteAcceptPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 
 ## Final Gap Review
 

@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { Badge } from "@repo/ui/badge";
+import { Button } from "@repo/ui/button";
+import { Card } from "@repo/ui/card";
 import { ApiClientError, getProject, type ProjectDetailResponse } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
 import { PortalTopbar } from "../portal/PortalTopbar";
@@ -126,9 +129,9 @@ export const ProjectWorkspacePage = ({
       <PortalShell projectId={projectId} performLogout={performLogout} navigate={navigate}>
         <div className={styles.state}>
           <div>Could not load project.</div>
-          <button className={styles.secondaryButton} type="button" onClick={() => setReloadKey((key) => key + 1)}>
+          <Button variant="secondary" size="sm" type="button" onClick={() => setReloadKey((key) => key + 1)}>
             Retry
-          </button>
+          </Button>
         </div>
       </PortalShell>
     );
@@ -141,7 +144,7 @@ export const ProjectWorkspacePage = ({
           <div className={styles.eyebrow}>Project workspace</div>
           <div className={styles.titleRow}>
             <h1 className={styles.title}>{state.project.name}</h1>
-            <span className={styles.badge}>{state.project.status}</span>
+            <Badge variant={state.project.status === "active" ? "success" : "default"}>{state.project.status}</Badge>
           </div>
           {state.project.description ? (
             <p className={styles.description}>{state.project.description}</p>
@@ -212,7 +215,7 @@ const WorkspaceAction = ({
   href: string;
   linkLabel: string;
 }) => (
-  <article className={styles.action}>
+  <Card className={styles.action} role="article">
     <div className={styles.actionBody}>
       <h3 className={styles.actionTitle}>{title}</h3>
       <p className={styles.actionDescription}>{description}</p>
@@ -220,5 +223,5 @@ const WorkspaceAction = ({
     <a className={styles.openLink} href={href}>
       {linkLabel}
     </a>
-  </article>
+  </Card>
 );

@@ -1,4 +1,9 @@
 import { type FormEvent, useEffect, useState } from "react";
+import { Alert } from "@repo/ui/alert";
+import { Button } from "@repo/ui/button";
+import { Card, CardContent, CardHeader } from "@repo/ui/card";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
 import {
   acceptPublicOrganizationInvite,
   ApiClientError,
@@ -115,10 +120,12 @@ export const InviteAcceptPage = ({
   if (state.status === "unavailable") {
     return (
       <InviteShell>
-        <section className={styles.card}>
-          <h1 className={styles.title}>Invite unavailable</h1>
-          <p className={styles.copy}>This invite is no longer available.</p>
-        </section>
+        <Card className={styles.card}>
+          <CardHeader>
+            <h1 className={styles.title}>Invite unavailable</h1>
+            <p className={styles.copy}>This invite is no longer available.</p>
+          </CardHeader>
+        </Card>
       </InviteShell>
     );
   }
@@ -126,10 +133,12 @@ export const InviteAcceptPage = ({
   if (state.status === "error") {
     return (
       <InviteShell>
-        <section className={styles.card}>
-          <h1 className={styles.title}>Invite unavailable</h1>
-          <p className={styles.copy}>Could not load this invite.</p>
-        </section>
+        <Card className={styles.card}>
+          <CardHeader>
+            <h1 className={styles.title}>Invite unavailable</h1>
+            <p className={styles.copy}>Could not load this invite.</p>
+          </CardHeader>
+        </Card>
       </InviteShell>
     );
   }
@@ -138,9 +147,12 @@ export const InviteAcceptPage = ({
 
   return (
     <InviteShell>
-      <section className={styles.card}>
-        <div className={styles.eyebrow}>Organization invite</div>
-        <h1 className={styles.title}>Join {invite.organization_name}</h1>
+      <Card className={styles.card}>
+        <CardHeader>
+          <div className={styles.eyebrow}>Organization invite</div>
+          <h1 className={styles.title}>Join {invite.organization_name}</h1>
+        </CardHeader>
+        <CardContent>
         <div className={styles.details}>
           <div>
             <span>Email</span>
@@ -151,44 +163,44 @@ export const InviteAcceptPage = ({
             <strong>{invite.role}</strong>
           </div>
         </div>
-        {error ? <div className={styles.error}>{error}</div> : null}
+        {error ? <Alert className={styles.error} variant="destructive">{error}</Alert> : null}
 
         {invite.requires_login ? (
           <div className={styles.existingUser}>
             <p className={styles.copy}>This email already has an account. Sign in first, then return to accept the invite.</p>
             <div className={styles.actions}>
               <a className={styles.secondaryLink} href={signInUrl(invitePath(token))}>Sign in to accept</a>
-              <button
-                className={styles.primaryButton}
+              <Button
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => void accept({})}
               >
                 {isSubmitting ? "Accepting..." : "Accept with current session"}
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
           <form className={styles.form} noValidate onSubmit={submitNewUser}>
-            <label className={styles.field}>
+            <Label className={styles.field}>
               <span>Display name</span>
-              <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
-            </label>
-            <label className={styles.field}>
+              <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+            </Label>
+            <Label className={styles.field}>
               <span>Password</span>
-              <input
+              <Input
                 required
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
-            </label>
-            <button className={styles.primaryButton} type="submit" disabled={isSubmitting}>
+            </Label>
+            <Button className={styles.submitButton} type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Accepting..." : "Accept invite"}
-            </button>
+            </Button>
           </form>
         )}
-      </section>
+        </CardContent>
+      </Card>
     </InviteShell>
   );
 };
@@ -196,7 +208,7 @@ export const InviteAcceptPage = ({
 const InviteShell = ({ children }: { children: React.ReactNode }) => (
   <div className={styles.page}>
     <header className={styles.topbar}>
-      <div className={styles.brand}>Demo Composer</div>
+      <a className={styles.brand} href="/projects">Demo Composer</a>
     </header>
     <main className={styles.main}>{children}</main>
   </div>
