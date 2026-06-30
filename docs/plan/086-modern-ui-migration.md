@@ -116,14 +116,14 @@ Design-system constraints:
 - [x] Modernize `App` loading/error shells.
 - [x] Modernize `PortalTopbar`.
 - [ ] Introduce reusable page shell/page header patterns if they reduce duplication.
-- [ ] Preserve route behavior and setup/auth gating.
-- [ ] Commit app-shell slice.
+- [x] Preserve route behavior and setup/auth gating.
+- [x] Commit app-shell slice.
 
 ### 3. Auth, Setup, Projects, Organization
 
-- [ ] Modernize `LoginPage`.
-- [ ] Modernize `FirstRunSetupPage`.
-- [ ] Modernize `ProjectListPage`.
+- [x] Modernize `LoginPage`.
+- [x] Modernize `FirstRunSetupPage`.
+- [x] Modernize `ProjectListPage`.
 - [ ] Modernize `ProjectWorkspacePage`.
 - [ ] Modernize `ProjectSettingsPage`.
 - [ ] Modernize `OrganizationMembersPage`.
@@ -303,6 +303,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: Foundation verification passed: `rtk pnpm --filter @repo/ui test`, `check-types`, `lint`, `rtk pnpm --filter web build`, and `rtk pnpm --filter extension build`.
 - 2026-06-30: Modernized the App fallback shell and `PortalTopbar`, added focused topbar coverage, and preserved route/setup behavior under focused App tests.
 - 2026-06-30: App-shell verification passed: `rtk pnpm --filter web test -- App`, `rtk pnpm --filter web test -- PortalTopbar`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
+- 2026-06-30: Modernized `LoginPage`, `FirstRunSetupPage`, and `ProjectListPage` with shared card/form/button/alert primitives while preserving existing behavior.
+- 2026-06-30: Portal foundation verification passed: `rtk pnpm --filter web test -- LoginPage`, `FirstRunSetupPage`, `ProjectListPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 
 ## Final Gap Review
 

@@ -1,4 +1,9 @@
 import { FormEvent, useState } from "react";
+import { Alert } from "@repo/ui/alert";
+import { Button } from "@repo/ui/button";
+import { Card, CardContent, CardHeader } from "@repo/ui/card";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
 import { ApiClientError, login } from "../../lib/api";
 import { safeNextPath } from "./navigation";
 import type { AuthResponse } from "./types";
@@ -50,40 +55,45 @@ export const LoginPage = ({
   return (
     <div className={styles.page}>
       <header className={styles.topbar}>
-        <div className={styles.brand}>Demo Composer</div>
+        <a className={styles.brand} href="/projects">Demo Composer</a>
       </header>
       <main className={styles.main}>
-        <section className={styles.panel} aria-labelledby="login-heading">
-          <h1 className={styles.title} id="login-heading">Sign in</h1>
-          <form className={styles.form} onSubmit={handleSubmit}>
-            <label className={styles.field}>
-              <span>Email</span>
-              <input
-                type="email"
-                value={email}
-                required
-                autoComplete="email"
-                disabled={submitting}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Password</span>
-              <input
-                type="password"
-                value={password}
-                required
-                autoComplete="current-password"
-                disabled={submitting}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
-            {error ? <div className={styles.error}>{error}</div> : null}
-            <button className={styles.primaryButton} type="submit" disabled={submitting}>
-              {submitting ? "Signing in..." : "Sign in"}
-            </button>
-          </form>
-        </section>
+        <Card className={styles.panel} aria-labelledby="login-heading">
+          <CardHeader>
+            <h1 className={styles.title} id="login-heading">Sign in</h1>
+            <p className={styles.copy}>Access your projects, capture sessions, guides, and demos.</p>
+          </CardHeader>
+          <CardContent>
+            <form className={styles.form} onSubmit={handleSubmit}>
+              <Label className={styles.field}>
+                <span>Email</span>
+                <Input
+                  type="email"
+                  value={email}
+                  required
+                  autoComplete="email"
+                  disabled={submitting}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </Label>
+              <Label className={styles.field}>
+                <span>Password</span>
+                <Input
+                  type="password"
+                  value={password}
+                  required
+                  autoComplete="current-password"
+                  disabled={submitting}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </Label>
+              {error ? <Alert variant="destructive">{error}</Alert> : null}
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Signing in..." : "Sign in"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
