@@ -198,7 +198,6 @@ describe("content click capture", () => {
       status: "failed",
       message: "Receiving end does not exist.",
       eventIndex: null,
-      pageUrl: "http://localhost:3000/",
       occurredAt: expect.any(String),
     });
   });

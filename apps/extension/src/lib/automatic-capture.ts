@@ -160,7 +160,6 @@ export const handleAutomaticClickCapture = async (
       status: "success",
       message: null,
       eventIndex: event.capture_event.event_index,
-      pageUrl: message.payload.page_url,
       occurredAt: screenshot.capturedAt,
     });
 
@@ -174,7 +173,6 @@ export const handleAutomaticClickCapture = async (
       status: "failed",
       message: messageText,
       eventIndex: null,
-      pageUrl: message.payload.page_url,
       occurredAt: new Date().toISOString(),
     });
 

@@ -2,7 +2,6 @@ export type AutomaticCaptureDiagnostic = {
   status: "success" | "failed";
   message: string | null;
   eventIndex: number | null;
-  pageUrl: string | null;
   occurredAt: string;
 };
 
@@ -82,7 +81,6 @@ const automaticCaptureDiagnosticOrNull = (value: unknown): AutomaticCaptureDiagn
     status,
     message: stringOrNull(diagnostic.message),
     eventIndex: nonNegativeIntegerOrNull(diagnostic.eventIndex),
-    pageUrl: stringOrNull(diagnostic.pageUrl),
     occurredAt,
   };
 };

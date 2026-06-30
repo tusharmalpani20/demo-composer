@@ -69,7 +69,7 @@ const chromeLocalStorage = (): StorageArea => (
   (globalThis as {
     chrome?: {
       storage?: {
-    local?: StorageArea;
+        local?: StorageArea;
       };
     };
   }).chrome?.storage?.local ?? {
@@ -291,7 +291,6 @@ export const installClickCaptureListener = (
               status: "failed",
               message: errorMessage(error),
               eventIndex: null,
-              pageUrl: message.payload.page_url,
               occurredAt: new Date().toISOString(),
             }).catch(() => {});
           });

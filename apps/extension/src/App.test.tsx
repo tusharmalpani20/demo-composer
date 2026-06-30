@@ -557,7 +557,6 @@ describe("extension popup App", () => {
           status: "failed",
           message: "Screenshot capture is unavailable.",
           eventIndex: null,
-          pageUrl: "https://example.com/safe-page",
           occurredAt: "2026-06-30T10:00:00.000Z",
         },
       },

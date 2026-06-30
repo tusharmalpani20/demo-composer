@@ -155,7 +155,6 @@ describe("automatic capture orchestration", () => {
       status: "success",
       message: null,
       eventIndex: 2,
-      pageUrl: "https://example.com/path",
       occurredAt: "2026-06-05T10:00:00.000Z",
     });
   });
@@ -198,7 +197,6 @@ describe("automatic capture orchestration", () => {
       status: "failed",
       message: "Upload failed",
       eventIndex: null,
-      pageUrl: "https://example.com/path",
       occurredAt: expect.any(String),
     });
   });
