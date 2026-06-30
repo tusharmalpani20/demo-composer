@@ -290,19 +290,19 @@ Carry-forward handling in this plan:
 
 ## Completion Checklist
 
-- [ ] Plan created in `docs/plan` with the next correct number.
-- [ ] Plan rechecked before implementation.
-- [ ] Official docs researched for install/config choices.
-- [ ] Tailwind/shadcn-style shared UI foundation implemented.
-- [ ] Web portal UI modernized.
-- [ ] Public guide/demo UI modernized.
-- [ ] Chrome extension popup UI modernized.
-- [ ] README and related screenshot/status docs updated with current visual evidence after browser QA.
-- [ ] Repeated manual control classes removed or documented if intentionally retained.
-- [ ] `$tdd` workflow followed for behavior-affecting slices.
-- [ ] `$agent-browser` visual QA performed and recorded.
-- [ ] Relevant tests, typechecks, lint, and builds pass or are documented with blockers.
-- [ ] Small logical commits created for coherent slices.
+- [x] Plan created in `docs/plan` with the next correct number.
+- [x] Plan rechecked before implementation.
+- [x] Official docs researched for install/config choices.
+- [x] Tailwind/shadcn-style shared UI foundation implemented.
+- [x] Web portal UI modernized.
+- [x] Public guide/demo UI modernized.
+- [x] Chrome extension popup UI modernized.
+- [x] README and related screenshot/status docs updated with current visual evidence after browser QA.
+- [x] Repeated manual control classes removed or documented if intentionally retained.
+- [x] `$tdd` workflow followed for behavior-affecting slices.
+- [x] `$agent-browser` visual QA performed and recorded.
+- [x] Relevant tests, typechecks, lint, and builds pass or are documented with blockers.
+- [x] Small logical commits created for coherent slices.
 - [ ] Final gap review completed.
 
 ## Implementation Log
@@ -335,6 +335,9 @@ Carry-forward handling in this plan:
 - 2026-06-30: Extension verification passed: pre-change and post-change `rtk pnpm --filter extension test`, targeted raw-control `rg`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 - 2026-06-30: Removed the remaining obsolete `retryButton` CSS from `CaptureSessionDetailPage`.
 - 2026-06-30: Cleanup verification passed: `rtk pnpm --filter web test -- CaptureSessionDetailPage`; repeated-class `rg` only reports intentional `formError` state naming and `styles.badges` layout container.
+- 2026-06-30: Full verification passed: `rtk pnpm check-types`, `rtk pnpm lint`, `rtk pnpm --filter @repo/ui test`, `rtk pnpm --filter web test`, `rtk pnpm --filter extension test`, and `rtk pnpm build`. Root `rtk pnpm test` is not available because the repo root has no `test` script.
+- 2026-06-30: Browser QA used `rtk agent-browser skills get core`, local web dev server at `http://localhost:3000/`, and extension dev server at `http://localhost:5173/`. Public guide/demo routes were checked with safe network fixtures at desktop `1440x900`, tablet `1024x768`, and mobile `390x844`; extension popup was checked at `360x420`.
+- 2026-06-30: Refreshed screenshots: `docs/assets/alpha/alpha-public-guide-reader.png`, `docs/assets/alpha/alpha-public-demo-viewer.png`, and `docs/assets/alpha/alpha-extension-connect.png`; updated `README.md`, `docs/project-zoomout-status.md`, `docs/oss-alpha-summary.md`, and `docs/roadmap.md`.
 
 ## Final Gap Review
 
