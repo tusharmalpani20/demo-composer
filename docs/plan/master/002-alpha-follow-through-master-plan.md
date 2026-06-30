@@ -513,6 +513,12 @@ Completion result:
 - report avoids secret values such as `COOKIE_SECRET`, `DB_PASSWORD`, raw cookies, bearer tokens, invite tokens, and the local storage root path
 - operations, self-hosting, and production readiness docs now describe the command and its limits
 
+Post-completion recheck:
+
+- follow-up commit sanitizes `API_URL` in the report to its origin before output
+- the report now avoids leaking accidental URL userinfo, paths, query strings, or hashes from an over-specified `API_URL`
+- no additional product bug was found in this slice after the API URL sanitization fix
+
 Carry-forward ops candidates:
 
 - storage reference inventory and dry-run cleanup reporting

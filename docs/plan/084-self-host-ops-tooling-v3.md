@@ -94,6 +94,12 @@ Implementation result:
 - invalid production config exits non-zero through the same startup validation errors used by server startup
 - operations, self-hosting, and production readiness docs now describe the command and its limits
 
+Post-completion recheck:
+
+- follow-up commit sanitizes `API_URL` in the report to its origin before output
+- the report now avoids leaking accidental URL userinfo, paths, query strings, or hashes from an over-specified `API_URL`
+- no additional product bug was found in this slice after the API URL sanitization fix
+
 Verification run:
 
 ```bash
@@ -106,8 +112,8 @@ rtk git diff --check
 
 Results:
 
-- focused production env report suite passed with 2 tests
-- full non-DB server suite passed with 252 tests
+- focused production env report suite passed with 3 tests after the recheck coverage addition
+- full non-DB server suite passed with 253 tests after the recheck coverage addition
 - server typecheck passed
 - server lint passed
 - whitespace check passed
