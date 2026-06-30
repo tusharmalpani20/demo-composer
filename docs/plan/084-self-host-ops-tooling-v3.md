@@ -2,7 +2,7 @@
 
 Date: 2026-06-23
 
-Status: Planned; rechecked and narrowed for implementation.
+Status: Completed with follow-up notes.
 
 ## Parent Master Plan
 
@@ -79,6 +79,55 @@ Deferred from this implementation:
 - object storage provider
 - dependency audit acceptance workflow beyond existing docs
 
+## Implementation Result
+
+Completed on 2026-06-30 local time.
+
+This phase was implemented as the selected production environment report slice.
+
+Implementation result:
+
+- added `rtk pnpm --filter server env:report`
+- added a server-side report builder that reuses startup validation before producing output
+- report output is JSON and includes non-secret summaries for runtime/deployment mode, database config presence, cookie/CORS state, API and portal origins, local storage classification, upload/body-size limits, in-memory rate limiting, and known alpha operational limitations
+- report output avoids `COOKIE_SECRET`, `DB_PASSWORD`, raw cookies, bearer tokens, invite tokens, and the local storage root path
+- invalid production config exits non-zero through the same startup validation errors used by server startup
+- operations, self-hosting, and production readiness docs now describe the command and its limits
+
+Verification run:
+
+```bash
+rtk pnpm --filter server test -- production-env-report
+rtk pnpm --filter server test
+rtk pnpm --filter server check-types
+rtk pnpm --filter server lint
+rtk git diff --check
+```
+
+Results:
+
+- focused production env report suite passed with 2 tests
+- full non-DB server suite passed with 252 tests
+- server typecheck passed
+- server lint passed
+- whitespace check passed
+
+Skipped commands:
+
+- `rtk docker compose config` was not run because this slice did not change Compose files.
+- DB-backed tests and smoke tests were not run because this slice does not touch database schema, persistence, or runtime routes.
+- backup/restore rehearsal was not run because it remains a deferred operational slice.
+
+Missed or deferred work to keep as follow-up candidates:
+
+- storage reference inventory and dry-run cleanup reporting
+- destructive storage cleanup with explicit confirmation
+- real backup/restore rehearsal against disposable database and storage
+- Docker image or one-command production packaging
+- shared rate-limit backend for multi-instance deployments
+- object storage provider
+- dependency audit accepted-risk workflow
+
 ## Explicit Non-Goals
 
 - Kubernetes or Terraform platform
@@ -124,39 +173,39 @@ docker-compose.yml
 
 For tooling:
 
-- [ ] Default to read-only or dry-run.
-- [ ] Print summaries without secrets.
-- [ ] Require explicit confirmation before destructive behavior. Not applicable; selected command is read-only.
-- [ ] Define exit codes.
-- [ ] Define test fixtures.
+- [x] Default to read-only or dry-run.
+- [x] Print summaries without secrets.
+- [x] Require explicit confirmation before destructive behavior. Not applicable; selected command is read-only.
+- [x] Define exit codes.
+- [x] Define test fixtures.
 
 For docs/rehearsal:
 
-- [ ] Use disposable database and storage paths.
-- [ ] Record commands and assumptions.
-- [ ] Do not imply production readiness beyond what was run.
+- [x] Use disposable database and storage paths. Not applicable; no rehearsal was selected.
+- [x] Record commands and assumptions.
+- [x] Do not imply production readiness beyond what was run.
 
 ### 3. Implement Or Rehearse
 
-- [ ] Add failing tests before code changes.
-- [ ] Implement minimal tooling or docs change.
-- [ ] Avoid broad packaging or infrastructure churn.
-- [ ] Keep local file storage as the current default unless object storage is the selected slice.
+- [x] Add failing tests before code changes.
+- [x] Implement minimal tooling or docs change.
+- [x] Avoid broad packaging or infrastructure churn.
+- [x] Keep local file storage as the current default unless object storage is the selected slice.
 
 ### 4. Verify
 
-- [ ] Run focused tests.
-- [ ] Run server checks if code changes.
-- [ ] Run `rtk docker compose config` if Compose changes.
-- [ ] Run backup/restore rehearsal if selected and environment supports it.
-- [ ] Record skipped commands with reasons.
+- [x] Run focused tests.
+- [x] Run server checks if code changes.
+- [x] Run `rtk docker compose config` if Compose changes. Not needed; no Compose changes.
+- [x] Run backup/restore rehearsal if selected and environment supports it. Not selected.
+- [x] Record skipped commands with reasons.
 
 ### 5. Update Tracking
 
-- [ ] Update operations docs.
-- [ ] Update production readiness checklist.
-- [ ] Add implementation notes to this plan.
-- [ ] Update master plan phase tracking after implementation.
+- [x] Update operations docs.
+- [x] Update production readiness checklist.
+- [x] Add implementation notes to this plan.
+- [x] Update master plan phase tracking after implementation.
 
 ## Testing Plan
 

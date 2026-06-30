@@ -10,6 +10,30 @@ This guide covers the operational basics for a self-hosted Demo Composer v1 inst
 - `GET /readyz` is a readiness check. It returns `200` only when the API can reach PostgreSQL.
 - Use `/healthz` for process liveness and `/readyz` before sending traffic to the API.
 
+## Production Environment Report
+
+Before starting a production API process, operators can run a read-only environment report from the server app:
+
+```bash
+cd apps/server
+rtk pnpm env:report
+```
+
+Run the command with the same environment variables that the production API process will use. The command reuses server startup validation and exits non-zero if required production configuration is missing or malformed.
+
+The report prints JSON with non-secret summaries only:
+
+- runtime and deployment modes
+- whether database host/user/name/password settings are configured
+- cookie and CORS summary
+- API and browser-facing portal origins
+- local storage provider and storage path classification
+- upload/body-size limits
+- in-memory rate-limit settings
+- known alpha operational limitations
+
+It does not print `COOKIE_SECRET`, `DB_PASSWORD`, raw cookies, bearer tokens, invite tokens, or the local storage root path. Treat the report as a preflight aid, not a replacement for `/readyz`, reverse proxy testing, backup rehearsal, or a full production readiness review.
+
 ## Backups
 
 Back up both durable stores together:

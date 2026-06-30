@@ -498,6 +498,31 @@ Suggested child plan:
 docs/plan/084-self-host-ops-tooling-v3.md
 ```
 
+Status: completed with follow-up notes by `docs/plan/084-self-host-ops-tooling-v3.md`.
+
+### Progress Update
+
+Updated on 2026-06-30 local time.
+
+Completion result:
+
+- Phase 7 was narrowed to a production environment report slice
+- added `rtk pnpm --filter server env:report`
+- report reuses server startup validation before producing output
+- report prints non-secret JSON summaries for runtime/deployment mode, database config presence, cookie/CORS state, API and portal origins, local storage classification, upload/body-size limits, in-memory rate limiting, and known alpha operational limitations
+- report avoids secret values such as `COOKIE_SECRET`, `DB_PASSWORD`, raw cookies, bearer tokens, invite tokens, and the local storage root path
+- operations, self-hosting, and production readiness docs now describe the command and its limits
+
+Carry-forward ops candidates:
+
+- storage reference inventory and dry-run cleanup reporting
+- destructive storage cleanup with explicit confirmation
+- real backup/restore rehearsal against disposable database and storage
+- Docker image or one-command production packaging
+- shared rate-limit backend for multi-instance deployments
+- object storage provider
+- dependency audit accepted-risk workflow
+
 ### Goal
 
 Move self-host operations beyond documentation-only guidance where a conservative tool is justified.
@@ -609,5 +634,5 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 4. Extension Evidence And Artifact Re-Dogfood | Completed with follow-up notes | `docs/plan/081-extension-evidence-and-artifact-redogfood.md` |
 | 5. Portal Interaction Accessibility Pass | Completed with follow-up notes | `docs/plan/082-portal-interaction-accessibility-pass.md` |
 | 6. Authoring Polish V2 | Completed with follow-up notes | `docs/plan/083-authoring-polish-v2.md` |
-| 7. Self-Host Ops Tooling V3 | Planned | TBD |
+| 7. Self-Host Ops Tooling V3 | Completed with follow-up notes | `docs/plan/084-self-host-ops-tooling-v3.md` |
 | 8. Docs Site V1 | Planned | TBD |

@@ -69,6 +69,14 @@ For a local self-hosted evaluation using the provided Compose database:
 For production, set `NODE_ENV=production`, `DEV_TYPE=production`, a strong `COOKIE_SECRET`, and explicit `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS`.
 For a production portal build, set `VITE_DEMO_COMPOSER_API_URL` when the API is not served from the same origin as the portal.
 
+After setting the production API environment, run:
+
+```bash
+rtk pnpm --filter server env:report
+```
+
+The report reuses startup validation and prints non-secret configuration summaries. Use it as a preflight check before starting the API; it does not replace the production readiness checklist, `/readyz`, reverse proxy testing, or backup/restore rehearsal.
+
 When the API and portal are served from different origins, set:
 
 - `API_URL` to the externally reachable API origin, for example `https://api.example.com`

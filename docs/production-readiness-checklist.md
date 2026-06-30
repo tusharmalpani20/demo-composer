@@ -29,6 +29,7 @@ These settings are validated at server startup in production:
 
 These settings still require operator verification:
 
+- [ ] Run `rtk pnpm --filter server env:report` with the production API environment and confirm it exits successfully without printing secrets.
 - [ ] Set `COOKIE_DOMAIN` for the deployed portal domain if your cookie scope needs it.
 - [ ] Set `VITE_DEMO_COMPOSER_API_URL` for the portal build.
 - [ ] For split API/web deployments, confirm the extension instance URL is the API origin and the extension portal URL is the browser-facing portal origin.
