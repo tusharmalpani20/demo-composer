@@ -144,9 +144,9 @@ Design-system constraints:
 
 - [x] Modernize `ProjectGuideListPage`.
 - [ ] Modernize `GuideEditorPage`.
-- [ ] Modernize `GuidePreviewPage`.
-- [ ] Modernize `GuideScreenshotViewer`.
-- [ ] Modernize `PublicGuideReaderPage` and embed mode.
+- [x] Modernize `GuidePreviewPage`.
+- [x] Modernize `GuideScreenshotViewer`.
+- [x] Modernize `PublicGuideReaderPage` and embed mode.
 - [ ] Preserve authoring, upload, screenshot picker, publish controls, export controls, and reader behavior.
 - [ ] Commit guide slice.
 
@@ -323,6 +323,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: Capture detail verification passed: `rtk pnpm --filter web test -- CaptureSessionDetailPage`, `check-types`, `lint`, `build`, `rtk git diff --check`, and `rg` found no remaining `primaryButton`, `secondaryButton`, `eventMoveButton`, `formError`, raw `<button>`, or raw `<textarea>` in the detail page.
 - 2026-06-30: Modernized `ProjectGuideListPage` with shared retry button, badges, and empty-state card while preserving real `<article>` rows required by behavior tests.
 - 2026-06-30: Guide list verification passed: `rtk pnpm --filter web test -- ProjectGuideListPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
+- 2026-06-30: Modernized `GuidePreviewPage`, `GuideScreenshotViewer`, and `PublicGuideReaderPage` action/password/viewer controls with shared primitives and Lucide icons while preserving screenshot media controls.
+- 2026-06-30: Guide viewer verification passed: `rtk pnpm --filter web test -- GuidePreviewPage`, `GuideScreenshotViewer`, `PublicGuideReaderPage`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 
 ## Final Gap Review
 

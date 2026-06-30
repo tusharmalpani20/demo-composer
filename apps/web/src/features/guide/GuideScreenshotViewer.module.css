@@ -69,32 +69,15 @@
   gap: 8px;
 }
 
-.iconButton,
-.controlButton {
+.darkButton {
   border: 1px solid rgb(255 255 255 / 22%);
-  border-radius: 7px;
   background: rgb(255 255 255 / 9%);
   color: #f8fafc;
-  cursor: pointer;
-  font-weight: 800;
 }
 
-.iconButton {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-}
-
-.controlButton {
-  min-height: 34px;
-  padding: 0 12px;
-}
-
-.iconButton:disabled,
-.controlButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
+.darkButton:hover {
+  background: rgb(255 255 255 / 16%);
+  color: #ffffff;
 }
 
 .viewport {

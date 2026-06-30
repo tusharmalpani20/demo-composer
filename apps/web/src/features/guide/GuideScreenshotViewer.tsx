@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@repo/ui/button";
+import { ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
 import styles from "./GuideScreenshotViewer.module.css";
 
 export type GuideScreenshotViewerImage = {
@@ -124,21 +126,23 @@ export const GuideScreenshotViewer = ({
             <h2 className={styles.title}>{activeImage.title}</h2>
             <div className={styles.counter}>{activeIndex + 1} / {images.length}</div>
           </div>
-          <button
+          <Button
             ref={closeButtonRef}
-            className={styles.iconButton}
-            type="button"
+            className={styles.darkButton}
+            size="icon"
+            variant="secondary"
             aria-label="Close screenshot viewer"
             onClick={onClose}
           >
-            x
-          </button>
+            <X aria-hidden="true" size={16} />
+          </Button>
         </header>
 
         <div className={styles.toolbar}>
-          <button
-            className={styles.controlButton}
-            type="button"
+          <Button
+            className={styles.darkButton}
+            variant="secondary"
+            size="sm"
             aria-label="Previous screenshot"
             disabled={!hasMultipleImages || !navigation.previous}
             onClick={() => {
@@ -147,39 +151,44 @@ export const GuideScreenshotViewer = ({
               }
             }}
           >
+            <ChevronLeft aria-hidden="true" size={16} />
             Previous
-          </button>
+          </Button>
           <div className={styles.zoomControls} aria-label="Zoom controls">
-            <button
-              className={styles.controlButton}
-              type="button"
+            <Button
+              className={styles.darkButton}
+              variant="secondary"
+              size="icon"
               aria-label="Zoom out"
               disabled={zoom !== "fit" && zoom === zoomLevels[0]}
               onClick={() => setZoom((value) => previousZoom(value))}
             >
-              -
-            </button>
-            <button
-              className={styles.controlButton}
-              type="button"
+              <Minus aria-hidden="true" size={16} />
+            </Button>
+            <Button
+              className={styles.darkButton}
+              variant="secondary"
+              size="sm"
               aria-label="Reset zoom"
               onClick={() => setZoom("fit")}
             >
               {zoomLabel(zoom)}
-            </button>
-            <button
-              className={styles.controlButton}
-              type="button"
+            </Button>
+            <Button
+              className={styles.darkButton}
+              variant="secondary"
+              size="icon"
               aria-label="Zoom in"
               disabled={zoom === zoomLevels[zoomLevels.length - 1]}
               onClick={() => setZoom((value) => nextZoom(value))}
             >
-              +
-            </button>
+              <Plus aria-hidden="true" size={16} />
+            </Button>
           </div>
-          <button
-            className={styles.controlButton}
-            type="button"
+          <Button
+            className={styles.darkButton}
+            variant="secondary"
+            size="sm"
             aria-label="Next screenshot"
             disabled={!hasMultipleImages || !navigation.next}
             onClick={() => {
@@ -189,7 +198,8 @@ export const GuideScreenshotViewer = ({
             }}
           >
             Next
-          </button>
+            <ChevronRight aria-hidden="true" size={16} />
+          </Button>
         </div>
 
         <div className={styles.viewport}>

@@ -55,19 +55,6 @@
   line-height: 1.55;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  border: 1px solid #c9d4e3;
-  border-radius: 999px;
-  padding: 0 10px;
-  background: #ffffff;
-  color: #33435c;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -75,35 +62,8 @@
   gap: 10px;
 }
 
-.primaryLink,
-.secondaryLink {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 38px;
-  border-radius: 7px;
-  padding: 0 14px;
-  font-weight: 800;
-  font: inherit;
+.actionLink {
   text-decoration: none;
-  cursor: pointer;
-}
-
-.primaryLink {
-  background: #2453d4;
-  color: #ffffff;
-}
-
-.secondaryLink {
-  border: 1px solid #c9d4e3;
-  background: #ffffff;
-  color: #26364f;
-}
-
-.primaryLink:disabled,
-.secondaryLink:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
 }
 
 .notice {
