@@ -160,10 +160,10 @@ Design-system constraints:
 
 ### 7. Chrome Extension Popup
 
-- [ ] Modernize `apps/extension` popup visual system.
-- [ ] Reuse compatible shared UI primitives or mirror shared tokens where extension constraints require local CSS.
-- [ ] Preserve configuration, login, project selection, capture start, manual capture, automatic capture controls, diagnostics, finalize, and logout behavior.
-- [ ] Commit extension slice.
+- [x] Modernize `apps/extension` popup visual system.
+- [x] Reuse compatible shared UI primitives or mirror shared tokens where extension constraints require local CSS.
+- [x] Preserve configuration, login, project selection, capture start, manual capture, automatic capture controls, diagnostics, finalize, and logout behavior.
+- [x] Commit extension slice.
 
 ### 8. Cleanup And Consolidation
 
@@ -331,6 +331,8 @@ Carry-forward handling in this plan:
 - 2026-06-30: Interactive demo list/viewer verification passed: pre-change and post-change `rtk pnpm --filter web test -- ProjectInteractiveDemoListPage PublicInteractiveDemoViewerPage`, plus `check-types`, `lint`, `build`, and `rtk git diff --check`.
 - 2026-06-30: Added shared `Select` primitive and modernized `InteractiveDemoEditorPage` metadata, publishing, scene, and hotspot editors with shared form/button/badge primitives while keeping hotspot overlay buttons custom.
 - 2026-06-30: Interactive demo editor verification passed: pre-change `rtk pnpm --filter web test -- InteractiveDemoEditorPage`; post-change `rtk pnpm --filter @repo/ui test`, `check-types`, `lint`, `rtk pnpm --filter web test -- InteractiveDemoEditorPage`, `rtk pnpm --filter web test -- InteractiveDemo`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
+- 2026-06-30: Modernized the Chrome extension popup controls with shared `Button`, `Input`, and `Label` primitives, added `@repo/ui` as an extension dependency, and removed global manual button/input styling while preserving compact popup layout classes.
+- 2026-06-30: Extension verification passed: pre-change and post-change `rtk pnpm --filter extension test`, targeted raw-control `rg`, `check-types`, `lint`, `build`, and `rtk git diff --check`.
 
 ## Final Gap Review
 

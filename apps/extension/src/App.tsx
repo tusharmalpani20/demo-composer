@@ -1,4 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Button } from "@repo/ui/button";
+import { Input } from "@repo/ui/input";
+import { Label } from "@repo/ui/label";
 import {
   ApiClientError,
   completeCaptureSession,
@@ -327,17 +330,17 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
           <h1>Connection issue</h1>
           <p className="error">{state.message}</p>
           <div className="actions">
-            <button type="button" onClick={reload}>Retry</button>
-            <button
-              type="button"
+            <Button onClick={reload}>Retry</Button>
+            <Button
               className="secondary"
+              variant="secondary"
               onClick={async () => {
                 await dependencies.clearSettings();
                 reload();
               }}
             >
               Change instance
-            </button>
+            </Button>
           </div>
         </div>
       </Shell>
@@ -677,30 +680,30 @@ const ConnectInstance = ({
     <section className="panel" aria-labelledby="connect-heading">
       <h1 id="connect-heading">Connect instance</h1>
       <form className="form" onSubmit={handleSubmit}>
-        <label>
+        <Label>
           <span>Instance URL</span>
-          <input
+          <Input
             type="url"
             value={instanceUrl}
             placeholder="http://localhost:3002"
             disabled={submitting}
             onChange={(event) => setInstanceUrl(event.target.value)}
           />
-        </label>
-        <label>
+        </Label>
+        <Label>
           <span>Portal URL (optional)</span>
-          <input
+          <Input
             type="url"
             value={portalUrl}
             placeholder="http://localhost:3000"
             disabled={submitting}
             onChange={(event) => setPortalUrl(event.target.value)}
           />
-        </label>
+        </Label>
         {error ? <div className="error">{error}</div> : null}
-        <button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting}>
           {submitting ? "Connecting..." : "Connect"}
-        </button>
+        </Button>
       </form>
     </section>
   );
@@ -741,34 +744,34 @@ const SignIn = ({
       <h1 id="sign-in-heading">Sign in</h1>
       <p className="instance">{instanceUrl}</p>
       <form className="form" onSubmit={handleSubmit}>
-        <label>
+        <Label>
           <span>Email</span>
-          <input
+          <Input
             type="email"
             value={email}
             autoComplete="email"
             disabled={submitting}
             onChange={(event) => setEmail(event.target.value)}
           />
-        </label>
-        <label>
+        </Label>
+        <Label>
           <span>Password</span>
-          <input
+          <Input
             type="password"
             value={password}
             autoComplete="current-password"
             disabled={submitting}
             onChange={(event) => setPassword(event.target.value)}
           />
-        </label>
+        </Label>
         {error ? <div className="error">{error}</div> : null}
         <div className="actions">
-          <button type="submit" disabled={submitting}>
+          <Button type="submit" disabled={submitting}>
             {submitting ? "Signing in..." : "Sign in"}
-          </button>
-          <button type="button" className="secondary" disabled={submitting} onClick={() => void onChangeInstance()}>
+          </Button>
+          <Button variant="secondary" className="secondary" disabled={submitting} onClick={() => void onChangeInstance()}>
             Change instance
-          </button>
+          </Button>
         </div>
       </form>
     </section>
@@ -983,12 +986,12 @@ const ProjectPicker = ({
           <p className="instance">{auth.organization.name}</p>
         </div>
         <div className="toolbarActions">
-          <button type="button" className="secondary" disabled={busy} onClick={() => void onChangeInstance()}>
+          <Button variant="secondary" className="secondary" disabled={busy} onClick={() => void onChangeInstance()}>
             Change instance
-          </button>
-          <button type="button" className="secondary" disabled={busy} onClick={() => void onSignOut()}>
+          </Button>
+          <Button variant="secondary" className="secondary" disabled={busy} onClick={() => void onSignOut()}>
             Sign out
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1016,27 +1019,27 @@ const ProjectPicker = ({
           {lastCaptureEventIndex ? <p className="success">Capture event recorded: step {lastCaptureEventIndex}</p> : null}
           <div className="actions">
             {isAutomaticCapture ? (
-              <button
-                type="button"
+              <Button
                 className="secondary"
+                variant="secondary"
                 disabled={busy}
                 onClick={() => void handleSetAutomaticPaused(!activeCapturePaused)}
               >
                 {activeCapturePaused ? "Resume automatic capture" : "Pause automatic capture"}
-              </button>
+              </Button>
             ) : null}
-            <button type="button" disabled={busy} onClick={() => void handleCaptureScreenshot()}>
+            <Button disabled={busy} onClick={() => void handleCaptureScreenshot()}>
               {capturingScreenshot ? "Capturing..." : "Capture screenshot"}
-            </button>
-            <button type="button" className="secondary" disabled={busy} onClick={() => void handleOpenActiveCapture()}>
+            </Button>
+            <Button variant="secondary" className="secondary" disabled={busy} onClick={() => void handleOpenActiveCapture()}>
               {openingPortal ? "Opening..." : "Open in portal"}
-            </button>
-            <button type="button" disabled={busy} onClick={() => void handleFinishCapture()}>
+            </Button>
+            <Button disabled={busy} onClick={() => void handleFinishCapture()}>
               {finishing ? "Finishing..." : "Finish capture"}
-            </button>
-            <button type="button" className="secondary" disabled={busy} onClick={() => void onDiscardActiveCapture()}>
+            </Button>
+            <Button variant="secondary" className="secondary" disabled={busy} onClick={() => void onDiscardActiveCapture()}>
               Discard local capture state
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
@@ -1049,9 +1052,9 @@ const ProjectPicker = ({
           <p className="captureProject">{selectedProject.name}</p>
           {startError ? <div className="error">{startError}</div> : null}
           {finishError ? <div className="error">{finishError}</div> : null}
-          <button type="button" disabled={busy} onClick={() => void handleStartCapture()}>
+          <Button disabled={busy} onClick={() => void handleStartCapture()}>
             {starting ? "Starting..." : "Start automatic capture"}
-          </button>
+          </Button>
         </div>
       ) : null}
 
@@ -1062,8 +1065,8 @@ const ProjectPicker = ({
       {!hasActiveCapture && projects.length > 0 ? (
         <div className="projects">
           {projects.map((project) => (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               className={project.id === selectedProjectId ? "project selected" : "project"}
               disabled={busy}
               key={project.id}
@@ -1071,7 +1074,7 @@ const ProjectPicker = ({
             >
               <span>Use <strong>{project.name}</strong></span>
               <small>{project.status}</small>
-            </button>
+            </Button>
           ))}
         </div>
       ) : null}
