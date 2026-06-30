@@ -138,7 +138,7 @@ Design-system constraints:
 - [x] Modernize `CaptureSessionDetailPage`.
 - [x] Preserve upload, event ordering, event editing, create guide, and create demo behavior.
 - [x] Keep complex screenshot/event layout CSS where it is still useful.
-- [ ] Commit capture-session slice.
+- [x] Commit capture-session slice.
 
 ### 5. Guide Screens
 
