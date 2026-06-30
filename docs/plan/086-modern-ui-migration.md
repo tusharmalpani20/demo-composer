@@ -129,7 +129,7 @@ Design-system constraints:
 - [x] Modernize `OrganizationMembersPage`.
 - [x] Modernize `InviteAcceptPage`.
 - [x] Replace local repeated buttons/fields/panels with shared primitives where practical.
-- [ ] Commit portal-foundation screen slice.
+- [x] Commit portal-foundation screen slice.
 
 ### 4. Capture Session Screens
 
