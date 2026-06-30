@@ -330,6 +330,12 @@ Carry-forward extension evidence candidates:
 - add a clearer portal guard or empty state for creating artifacts from captures with zero events/assets
 - keep extension visual evidence pending until extension-created screenshot-backed events can produce non-empty guide/demo artifacts
 
+Recommended next-plan handling:
+
+- do not fold this extension permission work into Phase 5 portal accessibility unless the user explicitly changes scope
+- create a focused extension permission/manual-popup reliability plan before attempting extension visual evidence again
+- include the empty-capture artifact guard either in that focused extension follow-up or the next authoring/product polish slice
+
 ### Goal
 
 Prove extension-created capture data can produce guide/demo artifacts and add extension visual evidence only if truthful.

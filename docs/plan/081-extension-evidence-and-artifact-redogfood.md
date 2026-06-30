@@ -257,4 +257,18 @@ rtk pnpm --filter server test
 
 ## Follow-Up Notes
 
-If this run finds new reliability bugs, record them as follow-up candidates rather than mixing broad fixes into this evidence plan.
+Completion status:
+
+- This plan is complete as an evidence run.
+- It did not complete the original ideal outcome of extension-created events driving guide/demo artifacts.
+- The artifact path is explicitly blocked by extension screenshot permission behavior, not by missing guide/demo server smoke coverage.
+
+Carry these missed items into the next relevant extension plan:
+
+- fix or redesign MV3 screenshot permission behavior for background automatic capture
+- decide whether the product should request explicit `<all_urls>`, rely on browser-action active-tab grants, or move screenshot capture into a user-gesture path
+- run a true toolbar-popup manual fallback happy path after permission behavior is fixed
+- verify manual fallback uploads a screenshot-backed event and preserves event ordering in a real browser
+- verify automatic capture creates screenshot-backed click events, including target metadata, in a real browser
+- add portal guardrails for creating guide/demo artifacts from captures with zero events/assets
+- keep extension screenshots and public extension claims pending until extension-created screenshot-backed events can produce non-empty guide/demo artifacts
