@@ -379,8 +379,8 @@ Completion result:
 - audited the plan `071` pointer/keyboard activation concerns against current portal components
 - confirmed the affected controls use native button/link semantics and have focused click/route coverage in existing tests
 - kept extension screenshot permission/manual-popup reliability from plan `081` out of this portal accessibility phase
-- folded in the portal-facing carry-forward from plan `081` by disabling guide/demo artifact creation for captures with zero events
-- added accessible explanatory copy for disabled empty-capture artifact actions
+- folded in the portal-facing carry-forward from plan `081` by disabling guide/demo artifact creation when captures have zero events
+- added accessible explanatory copy for disabled artifact actions when captures have zero events or no usable name
 - verified the focused capture detail behavior plus full web test, typecheck, lint, and build
 
 Carry-forward portal accessibility candidates:

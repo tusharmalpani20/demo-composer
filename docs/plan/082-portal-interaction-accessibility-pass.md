@@ -84,8 +84,8 @@ Implementation result:
 - first-run submit, project settings save/archive, manual event edit, guide preview, and project workspace/settings navigation all use native `button`/`a` semantics in the current code
 - existing focused tests already cover the main click/route behavior for those controls
 - plan `074` already handled the inert guide add-block issue from plan `071`
-- capture detail now disables `Create guide` and `Create interactive demo` when a capture session has zero events
-- the disabled artifact buttons are described by explanatory text: `Add at least one capture event before creating guide or demo artifacts.`
+- capture detail now disables `Create guide` and `Create interactive demo` when a capture session has zero events or lacks a usable name
+- the disabled artifact buttons are described by explanatory text for missing capture events and missing capture names
 - empty extension captures no longer present enabled artifact creation actions that can only produce empty/no-op output
 
 Verification run:
