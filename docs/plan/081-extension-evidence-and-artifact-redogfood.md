@@ -46,12 +46,25 @@ Reason:
 
 Extension dogfood in plan `072` could not generate guide/demo artifacts because no extension-created events or assets existed. Plan `073` therefore added portal-only visual evidence and kept extension screenshots pending.
 
+Plans `079` and `080` added persisted popup diagnostics for automatic click capture and manual screenshot fallback, but they intentionally did not claim headed-browser success. This phase must treat those diagnostics as evidence to verify in a real browser, not as proof that extension capture now works end to end.
+
+Carry-forward items from the previous extension slices:
+
+- record the exact API origin, portal origin, extension version/build, browser, and active capture session used for the run
+- verify whether supported automatic clicks create screenshot-backed events or show the new automatic diagnostic
+- verify whether manual screenshot fallback creates a screenshot-backed event or shows the new manual diagnostic
+- collect service-worker/browser permission evidence where practical
+- verify that a screenshot-backed extension capture can feed guide/demo artifact work before adding extension screenshots
+- if no diagnostic appears in a headed run, record popup lifecycle, browser screenshot permission, content-script injection, or service-worker evidence as the next likely investigation area
+
 ## Scope
 
 Included:
 
 - run a fresh extension dogfood scenario
 - confirm extension-created events and assets exist
+- verify both automatic click capture diagnostics and manual screenshot fallback diagnostics
+- record service-worker, content-script, and browser permission evidence where practical
 - inspect click metadata safety and usefulness
 - generate a guide from extension capture data
 - generate an interactive demo from extension capture data
@@ -96,22 +109,27 @@ apps/extension/README.md
 - [ ] Build and load unpacked extension.
 - [ ] Configure instance URL and portal URL.
 - [ ] Record commit, browser version, API URL, portal URL, and storage root.
+- [ ] Record extension version, extension build path, active capture session ID, and safe test page URL.
 
 ### 2. Run Extension Capture
 
 - [ ] Start extension capture.
 - [ ] Capture several supported clicks.
-- [ ] Use manual fallback if included in the supported path.
+- [ ] Inspect automatic capture popup diagnostics after supported clicks.
+- [ ] Use manual fallback and inspect manual screenshot diagnostics.
 - [ ] Finish capture.
 - [ ] Confirm portal opens the capture detail.
 - [ ] Confirm extension-created events and assets exist.
 - [ ] Confirm storage files exist under configured local storage root.
+- [ ] Record service-worker, content-script, or browser permission evidence when available.
 
 ### 3. Inspect Safety And Quality
 
-- [ ] Confirm no raw input values are captured.
+- [ ] Confirm no raw input values are captured and `input_value_redacted` stays true.
 - [ ] Confirm no page HTML is captured.
+- [ ] Confirm diagnostics do not store page URLs, screenshot bytes, tokens, cookies, storage keys, or page HTML.
 - [ ] Inspect target text, role, selector, coordinates, viewport, and bounding box metadata.
+- [ ] Confirm source capture URL/title metadata is limited to the safe synthetic test page.
 - [ ] Confirm metadata is useful enough for guide/demo generation.
 - [ ] Confirm public APIs do not expose storage keys or private metadata.
 
