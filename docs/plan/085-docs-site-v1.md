@@ -2,7 +2,7 @@
 
 Date: 2026-06-23
 
-Status: Planned; rechecked and narrowed for implementation.
+Status: Completed with follow-up notes.
 
 ## Parent Master Plan
 
@@ -60,6 +60,48 @@ Carry-forward from plan `084`:
 - storage inventory/cleanup, backup rehearsal, packaging, shared rate limiting, object storage, and dependency audit accepted-risk workflow remain future ops work
 - this docs-site pass may describe those limitations but must not implement ops tooling
 
+## Implementation Result
+
+Completed on 2026-06-30 local time.
+
+This phase was implemented as the selected real docs/product hub path.
+
+Implementation result:
+
+- replaced the default Turborepo/Next starter page in `apps/docs`
+- added a compact alpha docs hub with current positioning, capabilities, source-doc links, safe screenshot evidence, and visible alpha limitations
+- kept markdown docs as source-of-truth deep dives by linking to repository source docs instead of duplicating every document in the app
+- surfaced the plan `084` self-host operations leftovers as limitations only
+- updated docs app metadata, docs app README, root README, contributor guide, project status, and roadmap to stop describing `apps/docs` as parked starter content
+- added focused docs content tests
+
+Verification run:
+
+```bash
+rtk pnpm --filter docs test
+rtk pnpm --filter docs check-types
+rtk pnpm --filter docs lint
+rtk pnpm --filter docs build
+rtk git diff --check
+```
+
+Results:
+
+- docs content suite passed with 4 tests
+- docs typecheck passed
+- docs lint passed
+- docs production build passed
+- whitespace check passed
+
+Missed or deferred work to keep as follow-up candidates:
+
+- richer docs navigation structure
+- search
+- docs versioning
+- deployment and canonical URL decision for `apps/docs`
+- automatic ingestion of markdown docs instead of curated links
+- deeper docs IA and content ownership model
+
 ## Explicit Non-Goals
 
 - hosted SaaS marketing site
@@ -101,34 +143,34 @@ docs/assets/alpha/
 
 ### 2. If Building A Real Site
 
-- [ ] Replace starter content.
-- [ ] Add alpha overview.
-- [ ] Link to self-hosting and operations docs.
-- [ ] Link to production readiness checklist.
-- [ ] Add screenshot/evidence section using safe existing assets.
-- [ ] Add roadmap and known limitations.
-- [ ] Add contribution links.
-- [ ] Keep claims aligned with README.
+- [x] Replace starter content.
+- [x] Add alpha overview.
+- [x] Link to self-hosting and operations docs.
+- [x] Link to production readiness checklist.
+- [x] Add screenshot/evidence section using safe existing assets.
+- [x] Add roadmap and known limitations.
+- [x] Add contribution links.
+- [x] Keep claims aligned with README.
 
 ### 3. If Parking The Site
 
-- [ ] Add clear parked/starter status in `apps/docs`.
-- [ ] Ensure README does not direct users there as real docs.
-- [ ] Record when a future docs-site plan should reopen it.
+- [x] Add clear parked/starter status in `apps/docs`. Not applicable; selected path built the docs hub.
+- [x] Ensure README does not direct users there as real docs. README now points to the docs app overview and source docs.
+- [x] Record when a future docs-site plan should reopen it. Not applicable; selected path built the docs hub.
 
 ### 4. If Removing From Positioning
 
-- [ ] Remove public references that imply `apps/docs` is ready.
-- [ ] Keep package/workspace structure unchanged unless separately approved.
-- [ ] Document why it remains in the repo.
+- [x] Remove public references that imply `apps/docs` is ready. Not applicable; selected path built the docs hub.
+- [x] Keep package/workspace structure unchanged unless separately approved.
+- [x] Document why it remains in the repo.
 
 ### 5. Verify And Track
 
-- [ ] Run docs app tests/build if touched.
-- [ ] Run repo docs checks.
-- [ ] Update project status docs.
-- [ ] Add implementation notes to this plan.
-- [ ] Update master plan phase tracking after completion.
+- [x] Run docs app tests/build if touched.
+- [x] Run repo docs checks.
+- [x] Update project status docs.
+- [x] Add implementation notes to this plan.
+- [x] Update master plan phase tracking after completion.
 
 ## Testing Plan
 

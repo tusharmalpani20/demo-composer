@@ -576,6 +576,30 @@ Suggested child plan:
 docs/plan/085-docs-site-v1.md
 ```
 
+Status: completed with follow-up notes by `docs/plan/085-docs-site-v1.md`.
+
+### Progress Update
+
+Updated on 2026-06-30 local time.
+
+Completion result:
+
+- replaced the default Turborepo/Next starter page in `apps/docs`
+- added a compact alpha docs hub with current positioning, capabilities, source-doc links, safe screenshot evidence, and visible alpha limitations
+- kept markdown docs as source-of-truth deep dives by linking to repository source docs instead of duplicating every document in the app
+- surfaced Phase 7 self-host operations leftovers as limitations only
+- updated docs app metadata, docs app README, root README, contributor guide, project status, and roadmap to stop describing `apps/docs` as parked starter content
+- added focused docs content tests
+
+Carry-forward docs-site candidates:
+
+- richer docs navigation structure
+- search
+- docs versioning
+- deployment and canonical URL decision for `apps/docs`
+- automatic ingestion of markdown docs instead of curated links
+- deeper docs IA and content ownership model
+
 ### Goal
 
 Resolve the `apps/docs` starter-content gap.
@@ -651,4 +675,4 @@ DB-backed checks require the configured PostgreSQL testing database.
 | 5. Portal Interaction Accessibility Pass | Completed with follow-up notes | `docs/plan/082-portal-interaction-accessibility-pass.md` |
 | 6. Authoring Polish V2 | Completed with follow-up notes | `docs/plan/083-authoring-polish-v2.md` |
 | 7. Self-Host Ops Tooling V3 | Completed with follow-up notes | `docs/plan/084-self-host-ops-tooling-v3.md` |
-| 8. Docs Site V1 | Planned | TBD |
+| 8. Docs Site V1 | Completed with follow-up notes | `docs/plan/085-docs-site-v1.md` |
