@@ -1,5 +1,9 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
-import { PUBLISH_VISIBILITIES } from "@repo/constants";
+import {
+  CreatePublicViewerSessionRequestSchema,
+  UpdatePublishAccessRequestSchema,
+  UpdatePublishPasswordRequestSchema,
+} from "@repo/types/publish";
 import {
   UnauthenticatedSessionError,
   type AuthContext,
@@ -133,63 +137,43 @@ const publish_auth_context = (auth: AuthContext): PublishAuthContext => ({
 });
 
 const parse_publish_access_body = (body: unknown): { visibility: PublishVisibility; expires_at: string | null } => {
-  if (!body || typeof body !== "object") {
-    throw new InvalidPublishAccessSettingsError();
-  }
+  const parsed = UpdatePublishAccessRequestSchema.safeParse(body);
 
-  const candidate = body as { visibility?: unknown; expires_at?: unknown };
-
-  if (!PUBLISH_VISIBILITIES.includes(candidate.visibility as PublishVisibility)) {
+  if (!parsed.success) {
     throw new InvalidPublishAccessSettingsError();
   }
 
   if (
-    candidate.expires_at !== undefined
-    && candidate.expires_at !== null
-    && (
-      typeof candidate.expires_at !== "string"
-      || !Number.isFinite(new Date(candidate.expires_at).getTime())
-    )
+    parsed.data.expires_at !== null
+    && !Number.isFinite(new Date(parsed.data.expires_at).getTime())
   ) {
     throw new InvalidPublishAccessSettingsError();
   }
 
   return {
-    visibility: candidate.visibility as PublishVisibility,
-    expires_at: candidate.expires_at ?? null,
+    visibility: parsed.data.visibility,
+    expires_at: parsed.data.expires_at,
   };
 };
 
 const parse_publish_password_body = (body: unknown): { password: string | null } => {
-  if (!body || typeof body !== "object") {
+  const parsed = UpdatePublishPasswordRequestSchema.safeParse(body);
+
+  if (!parsed.success) {
     throw new InvalidPublishPasswordSettingsError();
   }
 
-  const candidate = body as { password?: unknown };
-
-  if (candidate.password === null) {
-    return { password: null };
-  }
-
-  if (typeof candidate.password !== "string") {
-    throw new InvalidPublishPasswordSettingsError();
-  }
-
-  return { password: candidate.password };
+  return { password: parsed.data.password };
 };
 
 const parse_public_viewer_password_body = (body: unknown): { password: string } => {
-  if (!body || typeof body !== "object") {
+  const parsed = CreatePublicViewerSessionRequestSchema.safeParse(body);
+
+  if (!parsed.success) {
     throw new InvalidPublicViewerPasswordError();
   }
 
-  const candidate = body as { password?: unknown };
-
-  if (typeof candidate.password !== "string") {
-    throw new InvalidPublicViewerPasswordError();
-  }
-
-  return { password: candidate.password };
+  return { password: parsed.data.password };
 };
 
 const public_publish_response = (result: PublicPublishResult): PublicPublishResult => ({

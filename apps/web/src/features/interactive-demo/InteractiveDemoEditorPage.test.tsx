@@ -11,9 +11,15 @@ import {
   type InteractiveDemoHotspotUpdateResponse,
   type InteractiveDemoHotspotReorderResponse,
 } from "../../lib/api";
-import type { GuidePublishStatusResponse } from "../guide/types";
 import { InteractiveDemoEditorPage } from "./InteractiveDemoEditorPage";
-import type { CreateDemoHotspotInput, DemoHotspot, DemoScene, InteractiveDemo, UpdateDemoHotspotInput } from "./types";
+import type {
+  CreateDemoHotspotInput,
+  DemoHotspot,
+  DemoScene,
+  InteractiveDemo,
+  InteractiveDemoPublishStatusResponse,
+  UpdateDemoHotspotInput,
+} from "./types";
 
 const interactiveDemo: InteractiveDemo = {
   id: "interactive_demo_1",
@@ -82,7 +88,7 @@ const hotspot: DemoHotspot = {
   updated_at: "2026-06-05T10:01:00.000Z",
 };
 
-const publishStatus: GuidePublishStatusResponse = {
+const publishStatus: InteractiveDemoPublishStatusResponse = {
   publish_link: {
     id: "publish_link_1",
     artifact_type: "interactive_demo",
@@ -148,18 +154,18 @@ const renderPage = (overrides: {
     hotspotIds: string[]
   ) => Promise<InteractiveDemoHotspotReorderResponse>;
   deleteHotspot?: (projectId: string, interactiveDemoId: string, sceneId: string, hotspotId: string) => Promise<void>;
-  loadPublishStatus?: (projectId: string, interactiveDemoId: string) => Promise<GuidePublishStatusResponse>;
-  publishDemo?: (projectId: string, interactiveDemoId: string) => Promise<GuidePublishStatusResponse>;
+  loadPublishStatus?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoPublishStatusResponse>;
+  publishDemo?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoPublishStatusResponse>;
   updatePublishAccess?: (
     projectId: string,
     interactiveDemoId: string,
     input: { visibility: "public" | "restricted"; expires_at: string | null }
-  ) => Promise<GuidePublishStatusResponse>;
+  ) => Promise<InteractiveDemoPublishStatusResponse>;
   updatePublishPassword?: (
     projectId: string,
     interactiveDemoId: string,
     input: { password: string | null }
-  ) => Promise<GuidePublishStatusResponse>;
+  ) => Promise<InteractiveDemoPublishStatusResponse>;
   revokePublishLink?: (projectId: string, interactiveDemoId: string) => Promise<{ publish_link: { id: string; status: "revoked"; revoked_at: string } }>;
   resolveAssetUrl?: (fileUrl: string) => string;
   currentPath?: string;

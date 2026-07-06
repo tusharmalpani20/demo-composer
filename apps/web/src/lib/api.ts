@@ -43,6 +43,8 @@ import type {
 import type {
   CreateDemoHotspotInput,
   CreateInteractiveDemoFromCaptureResponse,
+  InteractiveDemoPublishResult,
+  InteractiveDemoPublishStatusResponse,
   InteractiveDemoDetailResponse,
   InteractiveDemoHotspotCreateResponse,
   InteractiveDemoHotspotListResponse,
@@ -52,9 +54,12 @@ import type {
   InteractiveDemoSceneReorderResponse,
   InteractiveDemoSceneUpdateResponse,
   ProjectInteractiveDemoListResponse,
+  RevokePublishResult,
   UpdateDemoHotspotInput,
   UpdateDemoSceneInput,
   UpdateInteractiveDemoInput,
+  UpdatePublishAccessInput,
+  UpdatePublishPasswordInput,
 } from "../features/interactive-demo/types";
 
 export type {
@@ -537,8 +542,8 @@ export const getGuidePublishStatus = async (
 export const getInteractiveDemoPublishStatus = async (
   projectId: string,
   interactiveDemoId: string
-): Promise<GuidePublishStatusResponse> => (
-  requestJson<GuidePublishStatusResponse>(
+): Promise<InteractiveDemoPublishStatusResponse> => (
+  requestJson<InteractiveDemoPublishStatusResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/publish`
   )
 );
@@ -558,8 +563,8 @@ export const publishGuide = async (
 export const publishInteractiveDemo = async (
   projectId: string,
   interactiveDemoId: string
-): Promise<GuidePublishResult> => (
-  requestJson<GuidePublishResult>(
+): Promise<InteractiveDemoPublishResult> => (
+  requestJson<InteractiveDemoPublishResult>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/publish`,
     {
       method: "POST",
@@ -582,8 +587,8 @@ export const revokeGuidePublishLink = async (
 export const revokeInteractiveDemoPublishLink = async (
   projectId: string,
   interactiveDemoId: string
-): Promise<GuideRevokePublishResult> => (
-  requestJson<GuideRevokePublishResult>(
+): Promise<RevokePublishResult> => (
+  requestJson<RevokePublishResult>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/publish`,
     {
       method: "DELETE",
@@ -611,9 +616,9 @@ export const updateGuidePublishAccess = async (
 export const updateInteractiveDemoPublishAccess = async (
   projectId: string,
   interactiveDemoId: string,
-  input: UpdateGuidePublishAccessInput
-): Promise<GuidePublishStatusResponse> => (
-  requestJson<GuidePublishStatusResponse>(
+  input: UpdatePublishAccessInput
+): Promise<InteractiveDemoPublishStatusResponse> => (
+  requestJson<InteractiveDemoPublishStatusResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/publish/access`,
     {
       method: "PATCH",
@@ -645,9 +650,9 @@ export const updateGuidePublishPassword = async (
 export const updateInteractiveDemoPublishPassword = async (
   projectId: string,
   interactiveDemoId: string,
-  input: UpdateGuidePublishPasswordInput
-): Promise<GuidePublishStatusResponse> => (
-  requestJson<GuidePublishStatusResponse>(
+  input: UpdatePublishPasswordInput
+): Promise<InteractiveDemoPublishStatusResponse> => (
+  requestJson<InteractiveDemoPublishStatusResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/interactive-demos/${encodeURIComponent(interactiveDemoId)}/publish/password`,
     {
       method: "PATCH",

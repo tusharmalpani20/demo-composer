@@ -1,8 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { PublicPublishLinkResponse } from "../guide/types";
 import { PublicInteractiveDemoViewerPage } from "./PublicInteractiveDemoViewerPage";
-import type { PublishedInteractiveDemoSnapshot } from "./types";
+import type { PublishedInteractiveDemoSnapshot, PublicPublishLinkResponse } from "./types";
 
 const publicDemoSnapshot: PublishedInteractiveDemoSnapshot = {
   artifact_type: "interactive_demo",

@@ -8,13 +8,13 @@ import {
   getPublicPublishLink,
   resolveApiAssetUrl,
 } from "../../lib/api";
-import type { PublicPublishLinkResponse } from "../guide/types";
 import type {
   DemoHotspotType,
   PublishedInteractiveDemoSnapshot,
   PublishedInteractiveDemoSnapshotAsset,
   PublishedInteractiveDemoSnapshotHotspot,
   PublishedInteractiveDemoSnapshotScene,
+  PublicPublishLinkResponse,
 } from "./types";
 import styles from "./PublicInteractiveDemoViewerPage.module.css";
 

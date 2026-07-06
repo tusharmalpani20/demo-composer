@@ -34,7 +34,6 @@ import {
   type InteractiveDemoSceneUpdateResponse,
 } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
-import type { GuidePublishStatusResponse, GuideRevokePublishResult } from "../guide/types";
 import { PortalTopbar } from "../portal/PortalTopbar";
 import type {
   CreateDemoHotspotInput,
@@ -42,6 +41,8 @@ import type {
   DemoHotspotType,
   DemoScene,
   InteractiveDemo,
+  InteractiveDemoPublishStatusResponse,
+  RevokePublishResult,
   UpdateDemoHotspotInput,
   UpdateDemoSceneInput,
   UpdateInteractiveDemoInput,
@@ -55,7 +56,7 @@ type LoadState =
     demo: InteractiveDemo;
     scenes: DemoScene[];
     hotspotsBySceneId: Record<string, DemoHotspot[]>;
-    publishStatus: GuidePublishStatusResponse;
+    publishStatus: InteractiveDemoPublishStatusResponse;
   }
   | { status: "unauthenticated" }
   | { status: "not_found" }
@@ -136,19 +137,19 @@ export type InteractiveDemoEditorPageProps = {
     hotspotIds: string[]
   ) => Promise<InteractiveDemoHotspotReorderResponse>;
   deleteHotspot?: (projectId: string, interactiveDemoId: string, sceneId: string, hotspotId: string) => Promise<void>;
-  loadPublishStatus?: (projectId: string, interactiveDemoId: string) => Promise<GuidePublishStatusResponse>;
-  publishDemo?: (projectId: string, interactiveDemoId: string) => Promise<GuidePublishStatusResponse>;
+  loadPublishStatus?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoPublishStatusResponse>;
+  publishDemo?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoPublishStatusResponse>;
   updatePublishAccess?: (
     projectId: string,
     interactiveDemoId: string,
     input: { visibility: "public" | "restricted"; expires_at: string | null }
-  ) => Promise<GuidePublishStatusResponse>;
+  ) => Promise<InteractiveDemoPublishStatusResponse>;
   updatePublishPassword?: (
     projectId: string,
     interactiveDemoId: string,
     input: { password: string | null }
-  ) => Promise<GuidePublishStatusResponse>;
-  revokePublishLink?: (projectId: string, interactiveDemoId: string) => Promise<GuideRevokePublishResult>;
+  ) => Promise<InteractiveDemoPublishStatusResponse>;
+  revokePublishLink?: (projectId: string, interactiveDemoId: string) => Promise<RevokePublishResult>;
   resolveAssetUrl?: (fileUrl: string) => string;
   currentPath?: string;
   performLogout?: () => Promise<void>;
@@ -235,12 +236,12 @@ const sceneAssetFileUrl = (projectId: string, scene: DemoScene) => {
   return `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(scene.source_capture_session_id)}/assets/${encodeURIComponent(scene.background_capture_asset_id)}/file`;
 };
 
-const unpublishedStatus = (): GuidePublishStatusResponse => ({
+const unpublishedStatus = (): InteractiveDemoPublishStatusResponse => ({
   publish_link: null,
   published_artifact: null,
 });
 
-const publishDraftFromStatus = (publishStatus: GuidePublishStatusResponse): PublishDraft => ({
+const publishDraftFromStatus = (publishStatus: InteractiveDemoPublishStatusResponse): PublishDraft => ({
   visibility: publishStatus.publish_link?.visibility ?? "public",
   expires_at: formatExpiryInputValue(publishStatus.publish_link?.expires_at ?? null),
   password: "",
@@ -493,7 +494,7 @@ const InteractiveDemoEditorLoaded = ({
   demo: InteractiveDemo;
   scenes: DemoScene[];
   hotspotsBySceneId: Record<string, DemoHotspot[]>;
-  publishStatus: GuidePublishStatusResponse;
+  publishStatus: InteractiveDemoPublishStatusResponse;
   saveDemo: NonNullable<InteractiveDemoEditorPageProps["saveDemo"]>;
   saveScene: NonNullable<InteractiveDemoEditorPageProps["saveScene"]>;
   reorderScenes: NonNullable<InteractiveDemoEditorPageProps["reorderScenes"]>;
@@ -511,7 +512,7 @@ const InteractiveDemoEditorLoaded = ({
     demo: InteractiveDemo;
     scenes: DemoScene[];
     hotspotsBySceneId: Record<string, DemoHotspot[]>;
-    publishStatus: GuidePublishStatusResponse;
+    publishStatus: InteractiveDemoPublishStatusResponse;
   }) => void;
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
@@ -687,7 +688,7 @@ const InteractiveDemoEditorLoaded = ({
     setHotspotDrafts(hotspotDraftsFromHotspots(nextHotspotsBySceneId));
   };
 
-  const applyPublishStatus = (nextPublishStatus: GuidePublishStatusResponse) => {
+  const applyPublishStatus = (nextPublishStatus: InteractiveDemoPublishStatusResponse) => {
     updateLoadedState(demo, orderedScenes, hotspotsBySceneId, nextPublishStatus);
     setPublishDraft(publishDraftFromStatus(nextPublishStatus));
   };
