@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  CaptureAssetParamsSchema,
   CaptureAssetResponseSchema,
+  CaptureEventParamsSchema,
   CaptureEventResponseSchema,
   CaptureSessionDetailResponseSchema,
   CompleteCaptureSessionResponseSchema,
   CreateCaptureEventRequestSchema,
   CreateCaptureSessionRequestSchema,
   ProjectCaptureAssetListResponseSchema,
+  ProjectCaptureSessionParamsSchema,
   ReorderCaptureEventsRequestSchema,
   UpdateCaptureEventRequestSchema,
   UpdateCaptureSessionRequestSchema,
@@ -97,6 +100,36 @@ const captureAsset = {
 };
 
 describe("capture contracts", () => {
+  it("matches existing item route param names", () => {
+    expect(ProjectCaptureSessionParamsSchema.parse({
+      project_id: " project_1 ",
+      id: " capture_session_1 ",
+    })).toEqual({
+      project_id: "project_1",
+      id: "capture_session_1",
+    });
+
+    expect(CaptureEventParamsSchema.parse({
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      id: " capture_event_1 ",
+    })).toEqual({
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      id: "capture_event_1",
+    });
+
+    expect(CaptureAssetParamsSchema.parse({
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      id: " capture_asset_1 ",
+    })).toEqual({
+      project_id: "project_1",
+      capture_session_id: "capture_session_1",
+      id: "capture_asset_1",
+    });
+  });
+
   it("preserves capture session request passthrough and response shapes", () => {
     expect(CreateCaptureSessionRequestSchema.parse({
       name: " Session ",

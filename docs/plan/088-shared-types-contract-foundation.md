@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -28,6 +28,7 @@ Implementation commits:
 
 - `e94b682 feat(types): add shared API contract schemas`
 - `b7e2f7c refactor(apps): consume shared API contract types`
+- Closeout audit fix: align exported capture params schemas with existing `:id` route params.
 
 What changed:
 
@@ -40,6 +41,7 @@ What changed:
 - Kept multipart upload request construction and capture asset JSON create request validation local.
 - Did not add new Fastify params validation or response validation.
 - Did not change frontend/browser runtime behavior or UI.
+- Post-implementation audit fixed exported capture item params schemas so they match existing route parameter names that use `:id`.
 
 Verification passed:
 
@@ -54,6 +56,7 @@ Verification passed:
 - `rtk pnpm --filter web test`
 - `rtk pnpm --filter extension test`
 - `rtk pnpm check-types`
+- Closeout audit reran `rtk pnpm --filter @repo/types test` after the params schema correction.
 
 Browser validation:
 
@@ -66,6 +69,7 @@ Leftovers for later plans:
 - Plan `092` should own capture lifecycle policy, privacy/redaction policy, extension capture request narrowing, and capture-domain behavior extraction.
 - File-domain work should own MIME allow-lists, upload limits, storage paths, storage adapter contracts, and JSON create-capture-asset request centralization if another real consumer appears.
 - Capture asset extension response subsets remain local because the extension currently models only the fields it consumes.
+- Plan `089` should account for the route-param naming convention found during closeout: current server item routes commonly use `:id`, while domain service inputs use semantic names such as `capture_session_id`, so domain package conventions should define where HTTP adapter param names end and domain command/query input names begin.
 
 ## Completion Checklist
 
@@ -81,6 +85,7 @@ Leftovers for later plans:
 - [x] Multipart upload request construction left local.
 - [x] No new params validation, response validation, UI behavior, route URL, database, auth, permission, or privacy behavior changes introduced.
 - [x] Focused verification completed.
+- [x] Post-implementation audit completed and exported capture params schemas aligned with actual route names.
 
 ## Baseline From Completed Plan 087
 
@@ -401,11 +406,11 @@ Routes:
 ```text
 POST /api/v1/projects/:project_id/capture-sessions
 GET /api/v1/projects/:project_id/capture-sessions
-GET /api/v1/projects/:project_id/capture-sessions/:capture_session_id
-GET /api/v1/projects/:project_id/capture-sessions/:capture_session_id/detail
-PATCH /api/v1/projects/:project_id/capture-sessions/:capture_session_id
-POST /api/v1/projects/:project_id/capture-sessions/:capture_session_id/complete
-DELETE /api/v1/projects/:project_id/capture-sessions/:capture_session_id
+GET /api/v1/projects/:project_id/capture-sessions/:id/detail
+POST /api/v1/projects/:project_id/capture-sessions/:id/complete
+GET /api/v1/projects/:project_id/capture-sessions/:id
+PATCH /api/v1/projects/:project_id/capture-sessions/:id
+DELETE /api/v1/projects/:project_id/capture-sessions/:id
 ```
 
 Files:
@@ -466,7 +471,7 @@ Complete response schema:
 
 Params/query schemas:
 
-- `ProjectCaptureSessionParamsSchema`: `{ project_id: IdSchema, capture_session_id: IdSchema }`
+- `ProjectCaptureSessionParamsSchema`: `{ project_id: IdSchema, id: IdSchema }`
 - `ProjectCaptureSessionCollectionParamsSchema`: `{ project_id: IdSchema }`
 - `CaptureSessionListQuerySchema`: `{ status: z.enum(CAPTURE_SESSION_STATUSES).optional() }`
 
@@ -485,10 +490,10 @@ Routes:
 ```text
 POST /api/v1/projects/:project_id/capture-sessions/:capture_session_id/events
 GET /api/v1/projects/:project_id/capture-sessions/:capture_session_id/events
-GET /api/v1/projects/:project_id/capture-sessions/:capture_session_id/events/:capture_event_id
-PATCH /api/v1/projects/:project_id/capture-sessions/:capture_session_id/events/:capture_event_id
-POST /api/v1/projects/:project_id/capture-sessions/:capture_session_id/events/reorder
-DELETE /api/v1/projects/:project_id/capture-sessions/:capture_session_id/events/:capture_event_id
+PUT /api/v1/projects/:project_id/capture-sessions/:capture_session_id/events/order
+GET /api/v1/projects/:project_id/capture-sessions/:capture_session_id/events/:id
+PATCH /api/v1/projects/:project_id/capture-sessions/:capture_session_id/events/:id
+DELETE /api/v1/projects/:project_id/capture-sessions/:capture_session_id/events/:id
 ```
 
 Files:
@@ -527,7 +532,7 @@ Update request schema fields:
 
 Params/query schemas:
 
-- `CaptureEventParamsSchema`: `{ project_id: IdSchema, capture_session_id: IdSchema, capture_event_id: IdSchema }`
+- `CaptureEventParamsSchema`: `{ project_id: IdSchema, capture_session_id: IdSchema, id: IdSchema }`
 - `CaptureEventCollectionParamsSchema`: `{ project_id: IdSchema, capture_session_id: IdSchema }`
 - `CaptureEventListQuerySchema`: `{ event_type: z.enum(CAPTURE_EVENT_TYPES).optional() }`
 
@@ -546,6 +551,9 @@ Routes:
 POST /api/v1/projects/:project_id/capture-sessions/:capture_session_id/assets
 GET /api/v1/projects/:project_id/capture-sessions/:capture_session_id/assets
 GET /api/v1/projects/:project_id/capture-assets
+GET /api/v1/projects/:project_id/capture-sessions/:capture_session_id/assets/:id
+GET /api/v1/projects/:project_id/capture-sessions/:capture_session_id/assets/:id/file
+DELETE /api/v1/projects/:project_id/capture-sessions/:capture_session_id/assets/:id
 ```
 
 Files:
@@ -562,6 +570,7 @@ Exports:
 
 - `CaptureAssetParamsSchema`
 - `CaptureAssetCollectionParamsSchema`
+- `ProjectCaptureAssetCollectionParamsSchema`
 - `CaptureAssetFileSchema`
 - `CaptureAssetSchema`
 - `CaptureAssetWithFileUrlSchema`
@@ -574,6 +583,9 @@ Behavior rules:
 
 - Share response schemas only in this phase.
 - `CaptureAssetSchema.captured_at` must match the server service response shape, which is currently a non-null ISO datetime string. Extension upload inputs may still pass nullable `capturedAt`; that is a request concern and stays local.
+- `CaptureAssetParamsSchema`: `{ project_id: IdSchema, capture_session_id: IdSchema, id: IdSchema }`
+- `CaptureAssetCollectionParamsSchema`: `{ project_id: IdSchema, capture_session_id: IdSchema }`
+- `ProjectCaptureAssetCollectionParamsSchema`: `{ project_id: IdSchema }`
 - Use `CaptureAssetWithFileUrlSchema` for project-level/list/detail responses that include `file_url`.
 - Keep extension-local capture asset subset response types local unless implementation proves the extension safely consumes the full server response type without runtime or type churn.
 - Do not add new Fastify params validation to capture asset routes unless implementation first confirms current invalid-param behavior and focused route tests prove no behavior change.

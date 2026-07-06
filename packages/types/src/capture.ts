@@ -25,7 +25,7 @@ export type ProjectCaptureSessionCollectionParams = z.infer<
 
 export const ProjectCaptureSessionParamsSchema = z.object({
   project_id: TrimmedIdParamSchema,
-  capture_session_id: TrimmedIdParamSchema,
+  id: TrimmedIdParamSchema,
 });
 export type ProjectCaptureSessionParams = z.infer<typeof ProjectCaptureSessionParamsSchema>;
 
@@ -38,20 +38,27 @@ export type CaptureEventCollectionParams = z.infer<typeof CaptureEventCollection
 export const CaptureEventParamsSchema = z.object({
   project_id: TrimmedIdParamSchema,
   capture_session_id: TrimmedIdParamSchema,
-  capture_event_id: TrimmedIdParamSchema,
+  id: TrimmedIdParamSchema,
 });
 export type CaptureEventParams = z.infer<typeof CaptureEventParamsSchema>;
 
 export const CaptureAssetCollectionParamsSchema = z.object({
   project_id: TrimmedIdParamSchema,
-  capture_session_id: TrimmedIdParamSchema.optional(),
+  capture_session_id: TrimmedIdParamSchema,
 });
 export type CaptureAssetCollectionParams = z.infer<typeof CaptureAssetCollectionParamsSchema>;
+
+export const ProjectCaptureAssetCollectionParamsSchema = z.object({
+  project_id: TrimmedIdParamSchema,
+});
+export type ProjectCaptureAssetCollectionParams = z.infer<
+  typeof ProjectCaptureAssetCollectionParamsSchema
+>;
 
 export const CaptureAssetParamsSchema = z.object({
   project_id: TrimmedIdParamSchema,
   capture_session_id: TrimmedIdParamSchema,
-  capture_asset_id: TrimmedIdParamSchema,
+  id: TrimmedIdParamSchema,
 });
 export type CaptureAssetParams = z.infer<typeof CaptureAssetParamsSchema>;
 
