@@ -855,6 +855,8 @@ Acceptance:
 
 ### 098: Extension Shared Contract Consumption
 
+Status: Completed on 2026-07-07.
+
 File:
 
 - `docs/plan/098-extension-shared-contract-consumption.md`
@@ -865,21 +867,26 @@ Goal:
 
 Scope:
 
-- Add `@repo/types` and/or `@repo/constants` dependencies to `apps/extension` only when imports are introduced.
-- Replace duplicated capture payload types with `@repo/types`.
-- Replace duplicated capture/privacy constants with `@repo/constants`.
+- `apps/extension` already depended on `@repo/types` and `@repo/constants`; no package dependency change was needed.
+- Replace duplicated capture response DTOs with `@repo/types`.
+- Keep extension-specific request inputs local where they enforce browser multipart behavior, extension source attribution, or privacy/redaction constraints.
+- Keep shared constants usage type-based where current constants expose enum arrays/types; do not add singular constants or use enum array indexes.
 - Keep extension UI and capture semantics unchanged.
 
 Tests:
 
-- Extension typecheck/tests.
-- Focused tests for payload builders and API calls if present.
-- Server capture contract tests remain green.
+- Extension typecheck/tests passed.
+- Focused extension API, popup App, and automatic capture tests passed.
+- Extension lint, workspace typecheck, and `git diff --check` passed.
+- Server tests were not required because no server/shared schema behavior changed.
 
 Acceptance:
 
 - Extension and server agree on capture payload contracts through shared packages.
 - Existing capture behavior remains unchanged.
+- `apps/extension/src/lib/api.ts` now imports/re-exports shared `CaptureSession`, `CaptureSessionResponse`, `CompleteCaptureSessionResponse`, `CaptureAsset`, and `CaptureAssetResponse` DTOs directly from `@repo/types/capture`.
+- Extension-local `CreateCaptureSessionInput`, `UploadCaptureAssetInput`, and `CreateCaptureEventInput` remain intentionally local and narrowed.
+- No extension UI, runtime, manifest, route, storage, permission, or browser-visible behavior changed.
 
 ### 099: Contract Regression, Docs Sync, And Architecture Closeout
 

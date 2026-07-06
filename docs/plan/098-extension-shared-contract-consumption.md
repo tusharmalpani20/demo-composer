@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -26,6 +26,75 @@ The desired end state is:
 - extension API literals are typed or validated with `@repo/constants` where they represent shared product/API vocabulary;
 - browser-only inputs, runtime messages, storage state, `Blob`/`FormData` upload inputs, content-script payloads, and extension UI state remain local;
 - privacy-preserving request narrowing remains intact even when shared server DTOs are broader than the extension should send.
+
+## Completion Summary
+
+Completed on 2026-07-07.
+
+Implemented changes:
+
+- Updated `apps/extension/src/lib/api.ts` to import and re-export shared capture response DTOs directly from `@repo/types/capture`:
+  - `CaptureSession`
+  - `CaptureSessionResponse`
+  - `CompleteCaptureSessionResponse`
+  - `CaptureAsset`
+  - `CaptureAssetResponse`
+- Removed the local duplicate `CaptureSession`, `CaptureSessionResponse`, `CompleteCaptureSessionResponse`, `CaptureAsset`, and `CaptureAssetResponse` definitions from the extension API client.
+- Kept extension request inputs local and intentionally narrowed:
+  - `CreateCaptureSessionInput`
+  - `UploadCaptureAssetInput`
+  - `CreateCaptureEventInput`
+- Updated extension API, popup, and automatic-capture test fixtures to use the full shared capture session/asset response shape, including file metadata and audit fields.
+
+Actual affected implementation files:
+
+```text
+apps/extension/src/lib/api.ts
+apps/extension/src/lib/api.test.ts
+apps/extension/src/App.test.tsx
+apps/extension/src/lib/automatic-capture.test.ts
+```
+
+Actual affected documentation files:
+
+```text
+docs/plan/098-extension-shared-contract-consumption.md
+docs/plan/master/003-shared-contracts-domainization-master-plan.md
+```
+
+Implementation checklist:
+
+- [x] Re-read this plan, the master plan, and completed `097` notes before coding.
+- [x] Confirmed the worktree was clean before editing.
+- [x] Added the red compile-time check by expanding typed extension capture response fixtures to the full shared DTO shape.
+- [x] Verified the red step with `rtk pnpm --filter extension check-types`; it failed on the old local narrow `CaptureAsset`/`CaptureSession` shapes.
+- [x] Migrated extension capture response exports to shared `@repo/types/capture` DTOs.
+- [x] Kept browser-only and privacy-narrowed request input types local.
+- [x] Avoided shared enum array index usage and did not add singular constants to `@repo/constants`.
+- [x] Avoided extension UI, runtime, manifest, route, storage, and behavior changes.
+- [x] Ran focused and broad verification.
+
+Verification passed:
+
+- Red step: `rtk pnpm --filter extension check-types` failed before implementation with expected local narrow type errors.
+- `rtk pnpm --filter extension check-types`
+- `rtk pnpm --filter extension test -- api`
+- `rtk pnpm --filter extension test -- App automatic-capture`
+- `rtk pnpm --filter extension test -- api App automatic-capture`
+- `rtk pnpm --filter extension test`
+- `rtk pnpm --filter extension lint`
+- `rtk pnpm check-types`
+- `rtk git diff --check`
+
+Browser validation:
+
+- Not required for this phase because implementation changed only TypeScript API type imports/exports and test fixtures. No `App.tsx`, content script, background, screenshot runtime, manifest, JSX, CSS, popup behavior, or browser-visible workflow changed.
+
+Leftovers for later phases:
+
+- `CreateCaptureSessionInput`, `UploadCaptureAssetInput`, and `CreateCaptureEventInput` remain local by design because they enforce extension-specific source, browser multipart, and privacy/redaction constraints.
+- Extension runtime message, settings, screenshot, diagnostics, and popup dependency types remain local browser-extension contracts.
+- No carry-forward implementation work is required for `099` beyond the normal regression/docs closeout.
 
 ## Implemented Baseline From 097
 
@@ -50,14 +119,12 @@ Relevant carry-forward from `097`:
 
 Do not add new dependencies unless implementation discovers a real missing package. `@repo/*-domain` packages must not be added to `apps/extension`; the extension consumes public contracts/constants, not domain policies.
 
-Current `apps/extension/src/lib/api.ts` already imports these shared contracts:
+Current `apps/extension/src/lib/api.ts` imports these shared contracts:
 
 ```text
 @repo/constants:
-  CaptureAssetType
   CaptureEventType
   CaptureSessionSourceType
-  CaptureSessionStatus
 
 @repo/types/auth:
   AuthResponse
@@ -69,27 +136,26 @@ Current `apps/extension/src/lib/api.ts` already imports these shared contracts:
   ProjectListResponse
 
 @repo/types/capture:
+  CaptureAsset
+  CaptureAssetResponse
   CaptureEvent
   CaptureEventResponse
+  CaptureSession
+  CaptureSessionResponse
+  CompleteCaptureSessionResponse
 ```
 
-Current local API types that need review in this phase:
+Current local API request/input types intentionally kept after this phase:
 
 ```text
-CaptureSession
 CreateCaptureSessionInput
-CaptureSessionResponse
-CompleteCaptureSessionResponse
-CaptureAsset
-CaptureAssetResponse
 UploadCaptureAssetInput
 CreateCaptureEventInput
 ```
 
-Important baseline nuance:
+Important implementation notes:
 
-- `CaptureSessionResponse` and `CompleteCaptureSessionResponse` have matching shared DTOs in `@repo/types/capture`.
-- `CaptureAssetResponse` has a matching shared DTO in `@repo/types/capture`, but the current local `CaptureAsset` is a narrow extension subset. The shared `CaptureAsset` includes fields such as `organization_id`, `file`, audit fields, and timestamps. Replace only after fixtures and consumers are updated safely.
+- `CaptureSessionResponse`, `CompleteCaptureSessionResponse`, and `CaptureAssetResponse` now come from `@repo/types/capture`.
 - `CreateCaptureSessionInput` is intentionally extension-oriented and currently forces `source_type: "extension"` at the API call boundary.
 - `CreateCaptureEventInput` is intentionally narrower than the shared server request. It only allows `event_type: "capture" | "click"`, requires `capture_asset_id`, and keeps redaction explicit. Do not blindly replace it with the broader shared `CreateCaptureEventInput` if doing so broadens what extension callers can send.
 - `UploadCaptureAssetInput` is browser-only multipart input with `Blob`, `fileName`, and camelCase metadata fields. It should remain local.
