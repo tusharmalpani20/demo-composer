@@ -819,6 +819,8 @@ Acceptance:
 
 ### 097: Web Shared Contract Consumption
 
+Status: Completed on 2026-07-07.
+
 File:
 
 - `docs/plan/097-web-shared-contract-consumption.md`
@@ -840,11 +842,16 @@ Tests:
 - Web typecheck.
 - Existing web tests.
 - Focused tests for API client or data adapters if present.
+- Additional verification passed for focused web API tests, focused organization and interactive demo page tests, web lint, workspace typecheck, agent-browser validation for affected organization and interactive demo option-list flows, and `git diff --check`.
 
 Acceptance:
 
 - Web compiles against shared contracts.
 - No markup, copy, styling, layout, or user flow changes are introduced.
+- `apps/web/src/lib/api.ts` now consumes shared project, capture, guide, demo, organization, auth, setup, instance, and publish DTOs directly where those types are API contracts.
+- Local API response aliases for project, capture session, guide list, and inline guide block responses were replaced with existing shared DTOs.
+- `apps/web` uses shared constants for duplicated organization role, interactive demo status, publish visibility, and demo hotspot option lists.
+- Browser-only upload inputs, public snapshot parsers, guide publish compatibility aliases, fetch paths, credentials behavior, API error classification, and public viewer behavior remain unchanged.
 
 ### 098: Extension Shared Contract Consumption
 

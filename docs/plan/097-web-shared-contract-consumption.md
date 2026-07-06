@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -26,6 +26,68 @@ The desired end state is:
 - `apps/web/src/lib/api.ts` uses shared request/response DTOs directly instead of redefining them locally or routing them through unrelated feature aliases;
 - UI-only component props, local drafts, form state, parse helpers, and browser-only upload inputs remain local;
 - guide-named compatibility aliases remain only where they protect existing guide UI imports and are explicitly documented.
+
+## Completion Summary
+
+Completed on 2026-07-07.
+
+Implemented changes:
+
+- Updated `apps/web/src/lib/api.ts` to import shared API request/response DTOs directly from `@repo/types/*` instead of routing them through feature barrels.
+- Removed local `ProjectGuideListResponse`, `ProjectDetailResponse`, `ProjectListResponse`, `ProjectCreateResponse`, `ProjectUpdateResponse`, `ProjectCaptureSessionListResponse`, and `CaptureSessionCreateResponse` aliases from the web API client.
+- Replaced inline guide response annotations in the API client with shared guide response DTOs:
+  - `UpdateGuideResponse`
+  - `UpdateGuideStepResponse`
+  - `GuideBlocksResponse`
+  - `GuideBlockResponse`
+- Kept browser-only upload inputs and screenshot-list aliases in feature barrels because they model browser `File`, multipart metadata, and screenshot-only UI behavior.
+- Kept guide-named publish compatibility aliases in `apps/web/src/features/guide/types.ts` for existing guide UI imports.
+- Updated duplicated domain option lists to consume shared constants:
+  - `ORGANIZATION_ROLES` in `OrganizationMembersPage`
+  - `INTERACTIVE_DEMO_STATUSES`, `PUBLISH_VISIBILITIES`, and `DEMO_HOTSPOT_TYPES` in `InteractiveDemoEditorPage`
+- Preserved the existing organization invite role option order by deriving the rendered list from `ORGANIZATION_ROLES` without changing visible order.
+
+Actual affected implementation files:
+
+```text
+apps/web/src/lib/api.ts
+apps/web/src/features/organization/OrganizationMembersPage.tsx
+apps/web/src/features/interactive-demo/InteractiveDemoEditorPage.tsx
+```
+
+Actual affected documentation files:
+
+```text
+docs/plan/097-web-shared-contract-consumption.md
+docs/plan/master/003-shared-contracts-domainization-master-plan.md
+```
+
+Verification passed:
+
+- `rtk pnpm --filter web check-types`
+- `rtk pnpm --filter web test -- api`
+- `rtk pnpm --filter web test -- api OrganizationMembersPage InteractiveDemoEditorPage`
+- `rtk pnpm --filter web lint`
+- `rtk pnpm check-types`
+- `rtk git diff --check`
+
+Browser validation:
+
+- Started the local web app with `rtk pnpm --filter web dev -- --host 127.0.0.1 --port 5173`; Vite served it at `http://localhost:3000/`.
+- Used agent-browser with mocked API responses to validate `/organization/members`.
+  - Confirmed the invite role combobox still renders `member` selected, then `owner`.
+- Used agent-browser with mocked API responses to validate `/projects/project_1/interactive-demos/interactive_demo_1`.
+  - Confirmed the demo status combobox renders `draft` and `archived`.
+  - Confirmed the publish visibility combobox renders `public` and `restricted`.
+  - Confirmed the hotspot type combobox renders `click`, `info`, and `next`.
+
+No route URL, method, response envelope, request body, credentials behavior, API error classification, public viewer parsing, upload behavior, JSX copy, CSS class, layout, or navigation behavior changed.
+
+Leftovers for later phases:
+
+- `apps/web/src/features/guide/types.ts` still intentionally keeps guide-named publish compatibility aliases for guide UI imports.
+- Public guide/demo snapshot parsing remains local defensive browser runtime parsing.
+- Browser-only upload input types remain local to feature barrels.
 
 ## Implemented Baseline From 096
 
@@ -536,16 +598,16 @@ No server verification is expected because server code should not change. If ser
 
 ## Completion Checklist
 
-- [ ] Audited current web shared imports and uncommitted work before editing.
-- [ ] Kept changes scoped to contract/type consumption.
-- [ ] Removed local API response aliases only where shared DTOs already exist.
-- [ ] Preserved browser-only upload types and public snapshot defensive parsing.
-- [ ] Preserved fetch paths, methods, headers, request bodies, credentials, blob behavior, and error classification.
-- [ ] Preserved rendered UI, copy, CSS, route/navigation behavior, and public viewer behavior.
-- [ ] Avoided server, extension, shared package, and CSS changes unless explicitly documented.
-- [ ] Ran focused web API/type verification.
-- [ ] Ran page tests and agent-browser validation if TSX behavior-bearing files changed.
-- [ ] Updated this plan and the master plan after implementation.
+- [x] Audited current web shared imports and uncommitted work before editing.
+- [x] Kept changes scoped to contract/type consumption.
+- [x] Removed local API response aliases only where shared DTOs already exist.
+- [x] Preserved browser-only upload types and public snapshot defensive parsing.
+- [x] Preserved fetch paths, methods, headers, request bodies, credentials, blob behavior, and error classification.
+- [x] Preserved rendered UI, copy, CSS, route/navigation behavior, and public viewer behavior.
+- [x] Avoided server, extension, shared package, and CSS changes unless explicitly documented.
+- [x] Ran focused web API/type verification.
+- [x] Ran page tests and agent-browser validation if TSX behavior-bearing files changed.
+- [x] Updated this plan and the master plan after implementation.
 
 ## Handoff Notes
 
