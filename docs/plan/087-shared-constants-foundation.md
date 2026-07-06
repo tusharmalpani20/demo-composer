@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -701,6 +701,8 @@ If implementation changes JSX structure, CSS, visible copy, navigation behavior,
 - [x] Added `@repo/constants` dependencies only to apps/packages that now import it.
 - [x] Avoided UI, route, database schema, and runtime behavior changes.
 - [x] Ran focused and workspace verification.
+- [x] Rechecked implemented work against this child plan and the master plan after implementation.
+- [x] Confirmed no agent-browser validation was required because no frontend/browser behavior changed.
 
 ## Implementation Log
 
@@ -709,6 +711,7 @@ Commits:
 - `5c75617 feat(constants): add shared product constants`
 - `6729bff refactor(server): consume shared product constants`
 - `d810f75 refactor(apps): reuse shared constant types`
+- `99cb0bb docs: record shared constants implementation`
 
 Constants added:
 
@@ -753,6 +756,7 @@ Behavior notes:
 - Guide create-block validation still uses the creatable subset and does not accept `capture` or `gif`.
 - Server services still expose existing type names so downstream route/repository imports remain compatible.
 - Web and extension changes were type/API-only. No JSX, CSS, visible copy, or navigation behavior changed.
+- Extension runtime request payload literals in `apps/extension/src/App.tsx`, `apps/extension/src/lib/api.ts`, and `apps/extension/src/lib/automatic-capture.ts` remain local intentionally. They are now type-checked against shared constant-derived types, and moving runtime payload construction further should happen with shared request schemas in `088` or capture payload/domain work in `092`.
 - Agent-browser validation was not required because no frontend/browser behavior changed.
 - No database migrations or persisted data changes were needed.
 
@@ -791,14 +795,33 @@ rtk pnpm lint
 
 Both workspace checks passed.
 
+Post-implementation closeout audit:
+
+```text
+rtk git status --short
+rtk rg "@repo/constants|CAPTURE_|GUIDE_|INTERACTIVE_DEMO|DEMO_HOTSPOT|PUBLISH_|ORGANIZATION_|PROJECT_|DEPLOYMENT|ONBOARDING|source_type: \"extension\"|event_type: \"capture\"|event_type: \"click\"|asset_type: \"screenshot\"" packages/constants apps/server/src apps/web/src apps/extension/src --glob '!**/*.test.ts'
+rtk rg 'z\\.enum\\(\\[|"draft" \\| "archived"|"active" \\| "archived"|"owner" \\| "member"|"public" \\| "restricted"|"screenshot" \\| "html_snapshot"|"navigation" \\| "click"|"manual" \\| "extension"|"self_hosted" \\| "hosted"|"first_run_setup" \\| "signup"' apps/server/src apps/web/src apps/extension/src packages --glob '!**/*.test.ts' --glob '!packages/constants/**'
+```
+
+Closeout audit result:
+
+- No unrelated files were found in the implementation commits.
+- No route URL, API shape, database schema, permission, or UI behavior changes were found.
+- Remaining local literals are either test fixtures, UI-local states, metadata strings, DTO examples, or request-payload construction points that should be handled with shared schemas/types in later plans rather than forced into this constants-only phase.
+- Focused verification was rerun after this audit with the same package/server/web/extension commands listed above, and all checks passed.
+
 ## Leftovers And Follow-Ups
 
 - `@repo/types` remains intentionally untouched; schema extraction belongs to child plan `088`.
+- `088` should use the constants exported here when building enum-backed Zod schemas.
+- `088` should evaluate shared request/response schemas for extension capture-session, capture-event, and capture-asset payloads before moving more extension runtime payload construction to shared contracts.
 - Extension-local active capture modes, pause state, storage keys, and diagnostic statuses remain local.
+- Extension runtime request literals for `source_type: "extension"`, manual/automatic capture event types, and screenshot asset metadata remain local until shared payload schemas or capture-domain command inputs exist.
 - Capture privacy raw input field-name detection remains server-local for the later capture/privacy phase.
 - MIME allow-lists, upload limits, and storage path constants remain local until file-domain work proves a shared need.
 - Test fixture payload literals remain mostly local for readability.
 - Public viewer state strings such as `restricted` and `expired` remain UI-local because they are not the same ownership boundary as publish visibility constants.
+- Component-local draft unions for publish visibility and organization invite test doubles remain local until `088` introduces shared request DTOs or the component contracts are otherwise simplified.
 
 ## Handoff Notes For The Implementing Agent
 
