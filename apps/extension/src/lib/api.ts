@@ -1,12 +1,15 @@
 import type {
-  CaptureAssetType,
   CaptureEventType,
   CaptureSessionSourceType,
-  CaptureSessionStatus,
 } from "@repo/constants";
 import type {
+  CaptureAsset,
+  CaptureAssetResponse,
   CaptureEvent,
   CaptureEventResponse,
+  CaptureSession,
+  CaptureSessionResponse,
+  CompleteCaptureSessionResponse,
 } from "@repo/types/capture";
 import type {
   AuthResponse,
@@ -20,19 +23,17 @@ import type {
 
 export type {
   AuthResponse,
+  CaptureAsset,
+  CaptureAssetResponse,
   CaptureEvent,
   CaptureEventResponse,
+  CaptureSession,
+  CaptureSessionResponse,
+  CompleteCaptureSessionResponse,
   ExtensionLoginResponse as LoginResponse,
   LoginRequest,
   Project,
   ProjectListResponse,
-};
-
-export type CaptureSession = {
-  id: string;
-  project_id: string;
-  source_type: CaptureSessionSourceType;
-  status: CaptureSessionStatus;
 };
 
 export type CreateCaptureSessionInput = {
@@ -48,35 +49,6 @@ export type CreateCaptureSessionInput = {
   device_pixel_ratio?: number | null;
   user_agent?: string | null;
   metadata?: Record<string, unknown>;
-};
-
-export type CaptureSessionResponse = {
-  capture_session: CaptureSession;
-};
-
-export type CompleteCaptureSessionResponse = {
-  capture_session: CaptureSession;
-  redirect: {
-    path: string;
-    reason: "capture_session_completed";
-  };
-};
-
-export type CaptureAsset = {
-  id: string;
-  project_id: string;
-  capture_session_id: string;
-  asset_type: CaptureAssetType;
-  width: number | null;
-  height: number | null;
-  device_pixel_ratio: number | null;
-  page_url: string | null;
-  page_title: string | null;
-  captured_at: string | null;
-};
-
-export type CaptureAssetResponse = {
-  capture_asset: CaptureAsset;
 };
 
 export type UploadCaptureAssetInput = {

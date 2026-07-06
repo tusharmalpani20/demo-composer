@@ -27,8 +27,17 @@ const screenshot: ScreenshotCapture = {
 const capture_asset_response: CaptureAssetResponse = {
   capture_asset: {
     id: "capture_asset_1",
+    organization_id: "organization_1",
     project_id: "project_1",
     capture_session_id: "capture_session_1",
+    file: {
+      id: "file_1",
+      storage_provider: "local",
+      mime_type: "image/png",
+      size_bytes: 1024,
+      original_name: "screenshot-2026-06-05T10-00-00-000Z.png",
+      checksum_sha256: null,
+    },
     asset_type: "screenshot",
     width: 1440,
     height: 900,
@@ -36,6 +45,11 @@ const capture_asset_response: CaptureAssetResponse = {
     page_url: "https://example.com/path",
     page_title: "Example Page",
     captured_at: "2026-06-05T10:00:00.000Z",
+    created_by_id: "org_user_1",
+    updated_by_id: "org_user_1",
+    version: 1,
+    created_at: "2026-06-05T10:00:00.000Z",
+    updated_at: "2026-06-05T10:00:00.000Z",
   },
 };
 
