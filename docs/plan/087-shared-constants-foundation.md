@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Ready for implementation.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -688,6 +688,117 @@ If implementation changes JSX structure, CSS, visible copy, navigation behavior,
 - Backend-only database identifiers remain out of `@repo/constants`.
 - No UI output, styling, visible copy, or user-visible behavior changes.
 - Verification commands are run and results are recorded in the implementation handoff.
+
+## Execution Checklist
+
+- [x] Confirmed initial worktree state before coding.
+- [x] Added failing constants package tests before adding production constants.
+- [x] Activated `@repo/constants` with domain-grouped exports and real tests.
+- [x] Replaced low-risk server route/config/service literals with shared constants.
+- [x] Preserved server service modules as type-export compatibility surfaces.
+- [x] Replaced duplicated web feature/API literal union types with shared constant-derived types.
+- [x] Replaced duplicated extension API literal union types with shared constant-derived types.
+- [x] Added `@repo/constants` dependencies only to apps/packages that now import it.
+- [x] Avoided UI, route, database schema, and runtime behavior changes.
+- [x] Ran focused and workspace verification.
+
+## Implementation Log
+
+Commits:
+
+- `5c75617 feat(constants): add shared product constants`
+- `6729bff refactor(server): consume shared product constants`
+- `d810f75 refactor(apps): reuse shared constant types`
+
+Constants added:
+
+- Capture: session statuses, source types, event types.
+- File/capture asset: asset types, storage providers.
+- Guide: statuses, full block types, creatable block types, placements, annotation types.
+- Interactive Demo: statuses and hotspot types.
+- Publish: artifact types, visibilities, link statuses.
+- Organization: roles, invite statuses, member statuses.
+- Project: statuses.
+- Setup/instance: deployment modes and onboarding modes.
+
+Files changed during implementation:
+
+- `packages/constants/package.json`
+- `packages/constants/src/index.ts`
+- `packages/constants/src/capture.ts`
+- `packages/constants/src/file.ts`
+- `packages/constants/src/guide.ts`
+- `packages/constants/src/demo.ts`
+- `packages/constants/src/publish.ts`
+- `packages/constants/src/organization.ts`
+- `packages/constants/src/project.ts`
+- `packages/constants/src/setup.ts`
+- `packages/constants/src/constants.test.ts`
+- `apps/server/package.json`
+- Server route/service/config/repository files for capture, capture asset, guide, interactive demo, publish, organization, project, public instance, startup, and setup.
+- `apps/web/package.json`
+- Web type/API files for capture session, guide, interactive demo, organization, project, and public instance status.
+- `apps/extension/package.json`
+- `apps/extension/src/lib/api.ts`
+- `pnpm-lock.yaml`
+
+Dependency changes:
+
+- Added `vitest` to `@repo/constants` dev dependencies.
+- Added `@repo/constants` to `server`, `web`, and `extension` dependencies.
+
+Behavior notes:
+
+- Existing literal values were preserved byte-for-byte.
+- Guide create-block validation still uses the creatable subset and does not accept `capture` or `gif`.
+- Server services still expose existing type names so downstream route/repository imports remain compatible.
+- Web and extension changes were type/API-only. No JSX, CSS, visible copy, or navigation behavior changed.
+- Agent-browser validation was not required because no frontend/browser behavior changed.
+- No database migrations or persisted data changes were needed.
+
+## Verification Notes
+
+Red step:
+
+```text
+rtk pnpm --filter @repo/constants test
+```
+
+Initial constants test failed before implementation because the planned exports were missing.
+
+Focused verification run:
+
+```text
+rtk pnpm --filter @repo/constants lint
+rtk pnpm --filter @repo/constants test
+rtk pnpm --filter @repo/constants build
+rtk pnpm --filter server check-types
+rtk pnpm --filter server test -- capture-session capture-event capture-asset guide interactive-demo publish organization project setup
+rtk pnpm --filter web check-types
+rtk pnpm --filter web test -- api capture-session guide interactive-demo organization project setup
+rtk pnpm --filter extension check-types
+rtk pnpm --filter extension test -- api automatic-capture
+```
+
+All focused checks passed.
+
+Workspace verification run:
+
+```text
+rtk pnpm check-types
+rtk pnpm lint
+```
+
+Both workspace checks passed.
+
+## Leftovers And Follow-Ups
+
+- `@repo/types` remains intentionally untouched; schema extraction belongs to child plan `088`.
+- Extension-local active capture modes, pause state, storage keys, and diagnostic statuses remain local.
+- Capture privacy raw input field-name detection remains server-local for the later capture/privacy phase.
+- MIME allow-lists, upload limits, and storage path constants remain local until file-domain work proves a shared need.
+- Test fixture payload literals remain mostly local for readability.
+- Public viewer state strings such as `restricted` and `expired` remain UI-local because they are not the same ownership boundary as publish visibility constants.
 
 ## Handoff Notes For The Implementing Agent
 
