@@ -1,9 +1,14 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
 import {
-  GUIDE_ANNOTATION_TYPES,
-  GUIDE_BLOCK_PLACEMENTS,
-  GUIDE_CREATABLE_BLOCK_TYPES,
-} from "@repo/constants";
+  CreateGuideBlockRequestSchema,
+  CreateGuideFromCaptureRequestSchema,
+  ReorderGuideBlocksRequestSchema,
+  UpdateGuideBlockAnnotationsRequestSchema,
+  UpdateGuideBlockRequestSchema,
+  UpdateGuideBlockScreenshotRequestSchema,
+  UpdateGuideRequestSchema,
+  UpdateGuideStepRequestSchema,
+} from "@repo/types/guide";
 import { z } from "zod";
 import {
   UnauthenticatedSessionError,
@@ -158,65 +163,14 @@ export type GuideRouteDependencies = {
   };
 };
 
-const create_guide_body_schema = z.object({
-  title: z.string().trim().min(1),
-  description: z.string().nullable().optional(),
-  selected_capture_event_ids: z.array(z.string().trim().min(1)).optional(),
-}).passthrough();
-
-const update_guide_body_schema = z.object({
-  title: z.string().optional(),
-  description: z.string().nullable().optional(),
-  status: z.literal("archived").optional(),
-}).passthrough();
-
-const update_guide_step_body_schema = z.object({
-  title: z.string().optional(),
-  body: z.string().nullable().optional(),
-}).passthrough();
-
-const reorder_guide_blocks_body_schema = z.object({
-  block_ids: z.array(z.string().trim().min(1)).min(1),
-}).passthrough();
-
-const guide_block_content_schema = z.object({
-  title: z.string().nullable().optional(),
-  body: z.string().nullable().optional(),
-}).passthrough();
-
-const create_guide_block_body_schema = z.object({
-  block_type: z.enum(GUIDE_CREATABLE_BLOCK_TYPES),
-  position: z.object({
-    placement: z.enum(GUIDE_BLOCK_PLACEMENTS),
-    guide_block_id: z.string().trim().min(1),
-  }).nullable().optional(),
-  step: z.object({
-    title: z.string().optional(),
-    body: z.string().nullable().optional(),
-  }).nullable().optional(),
-  content: guide_block_content_schema.nullable().optional(),
-}).passthrough();
-
-const update_guide_block_body_schema = z.object({
-  content: guide_block_content_schema.nullable().optional(),
-}).passthrough();
-
-const update_guide_block_screenshot_body_schema = z.object({
-  capture_asset_id: z.string().trim().min(1).nullable(),
-}).passthrough();
-
-const guide_screenshot_annotation_schema = z.object({
-  id: z.string().trim().min(1).optional(),
-  type: z.literal(GUIDE_ANNOTATION_TYPES[0]),
-  x: z.number(),
-  y: z.number(),
-  width: z.number(),
-  height: z.number(),
-}).passthrough();
-
-const update_guide_block_annotations_body_schema = z.object({
-  annotations: z.array(guide_screenshot_annotation_schema).max(10),
-}).passthrough();
+const create_guide_body_schema = CreateGuideFromCaptureRequestSchema;
+const update_guide_body_schema = UpdateGuideRequestSchema;
+const update_guide_step_body_schema = UpdateGuideStepRequestSchema;
+const reorder_guide_blocks_body_schema = ReorderGuideBlocksRequestSchema;
+const create_guide_block_body_schema = CreateGuideBlockRequestSchema;
+const update_guide_block_body_schema = UpdateGuideBlockRequestSchema;
+const update_guide_block_screenshot_body_schema = UpdateGuideBlockScreenshotRequestSchema;
+const update_guide_block_annotations_body_schema = UpdateGuideBlockAnnotationsRequestSchema;
 
 const unauthorized_response = () => ({
   error: {

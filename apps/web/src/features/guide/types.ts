@@ -1,118 +1,41 @@
 import type {
   CaptureAssetType,
-  GuideAnnotationType,
-  GuideBlockPlacement,
   GuideBlockType,
-  GuideCreatableBlockType,
-  GuideStatus,
   PublishArtifactType,
   PublishLinkStatus,
   PublishVisibility,
 } from "@repo/constants";
+import type {
+  CreateGuideBlockInput,
+  Guide,
+  GuideBlock,
+  GuideBlockContent,
+  GuideDetail,
+  GuideMarkdownExport,
+  GuideScreenshotAnnotation,
+  GuideSourceCaptureAsset,
+  GuideStatus,
+  GuideStep,
+  UpdateGuideBlockAnnotationsInput,
+  UpdateGuideBlockInput,
+  UpdateGuideBlockScreenshotInput,
+} from "@repo/types/guide";
 
 export type {
+  CreateGuideBlockInput,
+  Guide,
+  GuideBlock,
+  GuideBlockContent,
   GuideBlockType,
+  GuideDetail,
+  GuideMarkdownExport,
+  GuideScreenshotAnnotation,
+  GuideSourceCaptureAsset,
   GuideStatus,
-};
-
-export type GuideBlockContent = {
-  title?: string | null;
-  body?: string | null;
-  annotations?: GuideScreenshotAnnotation[] | null;
-};
-
-export type GuideScreenshotAnnotation = {
-  id: string;
-  type: GuideAnnotationType;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-
-export type Guide = {
-  id: string;
-  organization_id: string;
-  project_id: string;
-  source_capture_session_id: string | null;
-  title: string;
-  description: string | null;
-  status: GuideStatus;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type GuideStep = {
-  id: string;
-  organization_id: string;
-  project_id: string;
-  guide_id: string;
-  guide_block_id: string;
-  source_capture_session_id: string | null;
-  source_capture_event_id: string | null;
-  source_capture_asset_id: string | null;
-  title: string;
-  body: string | null;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type GuideBlock = {
-  id: string;
-  organization_id: string;
-  project_id: string;
-  guide_id: string;
-  source_capture_session_id: string | null;
-  source_capture_event_id: string | null;
-  source_capture_asset_id: string | null;
-  selected_capture_asset_id: string | null;
-  screenshot_hidden: boolean;
-  display_capture_asset_id: string | null;
-  block_type: GuideBlockType;
-  content: GuideBlockContent | null;
-  block_index: number;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-  step: GuideStep | null;
-};
-
-export type GuideSourceCaptureAsset = {
-  id: string;
-  capture_session_id: string;
-  asset_type: CaptureAssetType;
-  width: number | null;
-  height: number | null;
-  device_pixel_ratio: number | null;
-  page_url: string | null;
-  page_title: string | null;
-  captured_at: string;
-  file_url: string;
-  file: {
-    id: string;
-    original_name: string | null;
-    mime_type: string;
-    size_bytes: number;
-  };
-};
-
-export type GuideDetail = {
-  guide: Guide;
-  guide_blocks: GuideBlock[];
-  source_capture_assets: GuideSourceCaptureAsset[];
-};
-
-export type GuideMarkdownExport = {
-  filename: string;
-  markdown: string;
+  GuideStep,
+  UpdateGuideBlockAnnotationsInput,
+  UpdateGuideBlockInput,
+  UpdateGuideBlockScreenshotInput,
 };
 
 export type PublishedGuideSnapshotAsset = {
@@ -142,38 +65,6 @@ export type PublishedGuideSnapshotBlock = {
     body: string | null;
   } | null;
   source_asset: PublishedGuideSnapshotAsset | null;
-};
-
-export type CreateGuideBlockInput = {
-  block_type: GuideCreatableBlockType;
-  position?: {
-    placement: GuideBlockPlacement;
-    guide_block_id: string;
-  } | null;
-  step?: {
-    title?: string;
-    body?: string | null;
-  } | null;
-  content?: GuideBlockContent | null;
-};
-
-export type UpdateGuideBlockInput = {
-  content?: GuideBlockContent | null;
-};
-
-export type UpdateGuideBlockScreenshotInput = {
-  capture_asset_id: string | null;
-};
-
-export type UpdateGuideBlockAnnotationsInput = {
-  annotations: Array<{
-    id?: string;
-    type: GuideAnnotationType;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  }>;
 };
 
 export type ProjectScreenshotAssetListResponse = {
