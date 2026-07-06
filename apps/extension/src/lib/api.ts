@@ -1,3 +1,11 @@
+import type {
+  CaptureAssetType,
+  CaptureEventType,
+  CaptureSessionSourceType,
+  CaptureSessionStatus,
+  ProjectStatus,
+} from "@repo/constants";
+
 export type AuthResponse = {
   auth: {
     user: {
@@ -33,7 +41,7 @@ export type Project = {
   slug: string | null;
   color: string | null;
   icon: string | null;
-  status: "active" | "archived";
+  status: ProjectStatus;
   created_by_id: string;
   updated_by_id: string;
   version: number;
@@ -48,14 +56,14 @@ export type ProjectListResponse = {
 export type CaptureSession = {
   id: string;
   project_id: string;
-  source_type: "manual" | "extension" | "import";
-  status: "draft" | "capturing" | "completed" | "canceled" | "archived";
+  source_type: CaptureSessionSourceType;
+  status: CaptureSessionStatus;
 };
 
 export type CreateCaptureSessionInput = {
   name: string;
   description?: string | null;
-  source_type: "extension";
+  source_type: Extract<CaptureSessionSourceType, "extension">;
   start_url?: string | null;
   browser_name?: string | null;
   browser_version?: string | null;
@@ -83,7 +91,7 @@ export type CaptureAsset = {
   id: string;
   project_id: string;
   capture_session_id: string;
-  asset_type: "screenshot" | "html_snapshot" | "thumbnail" | "redacted_screenshot";
+  asset_type: CaptureAssetType;
   width: number | null;
   height: number | null;
   device_pixel_ratio: number | null;
@@ -107,8 +115,6 @@ export type UploadCaptureAssetInput = {
   capturedAt?: string | null;
   metadata?: Record<string, unknown>;
 };
-
-export type CaptureEventType = "navigation" | "click" | "input" | "capture" | "note";
 
 export type CaptureEvent = {
   id: string;
@@ -146,7 +152,7 @@ export type CaptureEventResponse = {
 };
 
 export type CreateCaptureEventInput = {
-  event_type: "capture" | "click";
+  event_type: Extract<CaptureEventType, "capture" | "click">;
   event_index: number;
   capture_asset_id: string;
   occurred_at?: string | null;

@@ -1,4 +1,13 @@
-export type OrganizationRole = "owner" | "member";
+import type {
+  OrganizationInviteStatus,
+  OrganizationMemberStatus,
+  OrganizationRole,
+} from "@repo/constants";
+
+export type {
+  OrganizationInviteStatus,
+  OrganizationRole,
+};
 
 export type OrganizationMember = {
   id: string;
@@ -6,12 +15,10 @@ export type OrganizationMember = {
   email: string;
   display_name: string | null;
   role: OrganizationRole;
-  status: string;
+  status: OrganizationMemberStatus;
   created_at: string;
   updated_at: string;
 };
-
-export type OrganizationInviteStatus = "pending" | "accepted" | "revoked" | "expired";
 
 export type OrganizationInvite = {
   id: string;

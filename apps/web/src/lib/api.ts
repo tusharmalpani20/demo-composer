@@ -1,4 +1,8 @@
 import type {
+  DeploymentMode,
+  OnboardingMode,
+} from "@repo/constants";
+import type {
   CaptureSession,
   CaptureSessionDetail,
   CaptureSessionStatus,
@@ -68,8 +72,8 @@ export type ProjectGuideListResponse = {
 };
 
 export type PublicInstanceStatus = {
-  deployment_mode: "self_hosted" | "hosted";
-  onboarding_mode: "first_run_setup" | "signup";
+  deployment_mode: DeploymentMode;
+  onboarding_mode: OnboardingMode;
   setup_required: boolean;
   signup_enabled: boolean;
 };

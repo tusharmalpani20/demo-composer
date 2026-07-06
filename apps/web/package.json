@@ -13,6 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@repo/constants": "workspace:*",
     "@repo/ui": "workspace:*",
     "lucide-react": "^1.22.0",
     "react": "^19.2.0",

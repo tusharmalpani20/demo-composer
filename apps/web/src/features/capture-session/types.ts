@@ -1,5 +1,17 @@
-export type CaptureSessionStatus = "draft" | "capturing" | "completed" | "canceled" | "archived";
-export type CaptureSessionSourceType = "manual" | "extension" | "import";
+import type {
+  CaptureAssetType,
+  CaptureEventType,
+  CaptureSessionSourceType,
+  CaptureSessionStatus,
+  FileStorageProvider,
+} from "@repo/constants";
+
+export type {
+  CaptureAssetType,
+  CaptureEventType,
+  CaptureSessionSourceType,
+  CaptureSessionStatus,
+};
 
 export type CaptureSession = {
   id: string;
@@ -33,8 +45,6 @@ export type CreateCaptureSessionInput = {
   source_type?: CaptureSessionSourceType;
   start_url?: string | null;
 };
-
-export type CaptureEventType = "navigation" | "click" | "input" | "capture" | "note";
 
 export type UploadCaptureAssetInput = {
   file: File;
@@ -98,8 +108,6 @@ export type CaptureEvent = {
   updated_at: string;
 };
 
-export type CaptureAssetType = "screenshot" | "html_snapshot" | "thumbnail" | "redacted_screenshot";
-
 export type CaptureAsset = {
   id: string;
   organization_id: string;
@@ -107,7 +115,7 @@ export type CaptureAsset = {
   capture_session_id: string;
   file: {
     id: string;
-    storage_provider: "local" | "external";
+    storage_provider: FileStorageProvider;
     mime_type: string;
     size_bytes: number;
     original_name: string | null;

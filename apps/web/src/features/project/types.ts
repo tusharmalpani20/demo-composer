@@ -1,4 +1,6 @@
-export type ProjectStatus = "active" | "archived";
+import type { ProjectStatus } from "@repo/constants";
+
+export type { ProjectStatus };
 
 export type Project = {
   id: string;

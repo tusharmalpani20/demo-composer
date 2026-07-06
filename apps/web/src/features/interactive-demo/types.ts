@@ -1,3 +1,12 @@
+import type {
+  CaptureAssetType,
+  DemoHotspotType,
+  InteractiveDemoStatus,
+  PublishArtifactType,
+} from "@repo/constants";
+
+export type { DemoHotspotType };
+
 export type InteractiveDemo = {
   id: string;
   organization_id: string;
@@ -5,7 +14,7 @@ export type InteractiveDemo = {
   source_capture_session_id: string | null;
   title: string;
   description: string | null;
-  status: "draft" | "archived";
+  status: InteractiveDemoStatus;
   created_by_id: string;
   updated_by_id: string;
   version: number;
@@ -31,8 +40,6 @@ export type DemoScene = {
   created_at: string;
   updated_at: string;
 };
-
-export type DemoHotspotType = "click" | "info" | "next";
 
 export type DemoHotspot = {
   id: string;
@@ -97,7 +104,7 @@ export type UpdateDemoHotspotInput = {
 
 export type PublishedInteractiveDemoSnapshotAsset = {
   id: string;
-  asset_type: "screenshot" | "html_snapshot" | "thumbnail" | "redacted_screenshot";
+  asset_type: CaptureAssetType;
   width: number | null;
   height: number | null;
   page_title: string | null;
@@ -134,7 +141,7 @@ export type PublishedInteractiveDemoSnapshotScene = {
 };
 
 export type PublishedInteractiveDemoSnapshot = {
-  artifact_type: "interactive_demo";
+  artifact_type: Extract<PublishArtifactType, "interactive_demo">;
   schema_version: 1;
   interactive_demo: {
     id: string;

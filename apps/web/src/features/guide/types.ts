@@ -1,5 +1,19 @@
-export type GuideStatus = "draft" | "archived";
-export type GuideBlockType = "step" | "header" | "paragraph" | "tip" | "alert" | "capture" | "divider" | "gif";
+import type {
+  CaptureAssetType,
+  GuideAnnotationType,
+  GuideBlockPlacement,
+  GuideBlockType,
+  GuideCreatableBlockType,
+  GuideStatus,
+  PublishArtifactType,
+  PublishLinkStatus,
+  PublishVisibility,
+} from "@repo/constants";
+
+export type {
+  GuideBlockType,
+  GuideStatus,
+};
 
 export type GuideBlockContent = {
   title?: string | null;
@@ -9,7 +23,7 @@ export type GuideBlockContent = {
 
 export type GuideScreenshotAnnotation = {
   id: string;
-  type: "highlight";
+  type: GuideAnnotationType;
   x: number;
   y: number;
   width: number;
@@ -74,7 +88,7 @@ export type GuideBlock = {
 export type GuideSourceCaptureAsset = {
   id: string;
   capture_session_id: string;
-  asset_type: "screenshot" | "html_snapshot" | "thumbnail" | "redacted_screenshot";
+  asset_type: CaptureAssetType;
   width: number | null;
   height: number | null;
   device_pixel_ratio: number | null;
@@ -103,7 +117,7 @@ export type GuideMarkdownExport = {
 
 export type PublishedGuideSnapshotAsset = {
   id: string;
-  asset_type: "screenshot" | "html_snapshot" | "thumbnail" | "redacted_screenshot";
+  asset_type: CaptureAssetType;
   width: number | null;
   height: number | null;
   page_title: string | null;
@@ -131,9 +145,9 @@ export type PublishedGuideSnapshotBlock = {
 };
 
 export type CreateGuideBlockInput = {
-  block_type: "step" | "header" | "paragraph" | "tip" | "alert" | "divider";
+  block_type: GuideCreatableBlockType;
   position?: {
-    placement: "before" | "after";
+    placement: GuideBlockPlacement;
     guide_block_id: string;
   } | null;
   step?: {
@@ -154,7 +168,7 @@ export type UpdateGuideBlockScreenshotInput = {
 export type UpdateGuideBlockAnnotationsInput = {
   annotations: Array<{
     id?: string;
-    type: "highlight";
+    type: GuideAnnotationType;
     x: number;
     y: number;
     width: number;
@@ -183,7 +197,7 @@ export type UploadGuideBlockScreenshotResponse = {
 };
 
 export type PublishedGuideSnapshot = {
-  artifact_type: "guide";
+  artifact_type: Extract<PublishArtifactType, "guide">;
   guide: {
     id: string;
     title: string;
@@ -195,20 +209,20 @@ export type PublishedGuideSnapshot = {
   blocks: PublishedGuideSnapshotBlock[];
 };
 
-export type GuidePublishVisibility = "public" | "restricted";
+export type GuidePublishVisibility = PublishVisibility;
 
 export type PublicPublishLink = {
   slug: string;
-  artifact_type: "guide" | "interactive_demo";
+  artifact_type: PublishArtifactType;
   visibility: GuidePublishVisibility;
   expires_at: string | null;
-  status: "active" | "revoked";
+  status: PublishLinkStatus;
   password_protected: boolean;
 };
 
 export type PublicPublishedArtifact = {
   id: string;
-  artifact_type: "guide" | "interactive_demo";
+  artifact_type: PublishArtifactType;
   artifact_id: string;
   version_number: number;
   title: string;
@@ -223,13 +237,13 @@ export type PublicPublishLinkResponse = {
 
 export type GuidePublishLink = {
   id: string;
-  artifact_type: "guide" | "interactive_demo";
+  artifact_type: PublishArtifactType;
   artifact_id: string;
   published_artifact_id: string;
   slug: string;
   visibility: GuidePublishVisibility;
   expires_at: string | null;
-  status: "active" | "revoked";
+  status: PublishLinkStatus;
   published_at: string;
   revoked_at: string | null;
   public_url: string;
@@ -238,7 +252,7 @@ export type GuidePublishLink = {
 
 export type GuidePublishedArtifact = {
   id: string;
-  artifact_type: "guide" | "interactive_demo";
+  artifact_type: PublishArtifactType;
   artifact_id: string;
   version_number: number;
   title: string;
@@ -264,7 +278,7 @@ export type UpdateGuidePublishPasswordInput = {
 export type GuideRevokePublishResult = {
   publish_link: {
     id: string;
-    status: "revoked";
+    status: Extract<PublishLinkStatus, "revoked">;
     revoked_at: string;
   };
 };

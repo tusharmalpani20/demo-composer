@@ -70,6 +70,9 @@ importers:
 
   apps/extension:
     dependencies:
+      '@repo/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
       '@repo/ui':
         specifier: workspace:^
         version: link:../../packages/ui
@@ -231,6 +234,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@repo/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
