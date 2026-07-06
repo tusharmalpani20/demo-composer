@@ -6,12 +6,24 @@ import {
   assert_supported_screenshot_upload_mime_type,
   assert_upload_size_within_limit,
   compact_optional_string,
-  InvalidFileMetadataError,
-  type NormalizedFileMetadata,
-  normalize_file_metadata,
-  UnsupportedScreenshotUploadMimeTypeError,
-  UploadTooLargeError as FileDomainUploadTooLargeError,
 } from "@repo/file-domain";
+import {
+  CaptureAssetNotFoundError,
+  CaptureSessionNotFoundError,
+  InvalidCaptureAssetInputError,
+  InvalidCaptureAssetUploadError,
+  UnsupportedCaptureAssetTypeError,
+  UnsupportedCaptureAssetUploadTypeError,
+  UploadTooLargeError,
+  assert_project_screenshot_picker_asset_type,
+  build_capture_session_asset_file_url,
+  map_file_domain_upload_policy_error,
+  normalize_create_capture_asset,
+  normalize_upload_capture_asset,
+  type CreateCaptureAssetInput,
+  type NormalizedCreateCaptureAssetInput,
+  type UploadCaptureAssetInput,
+} from "@repo/capture-domain";
 import { ulid } from "ulid";
 import {
   type ReadStoredFile,
@@ -68,54 +80,10 @@ export type CaptureAssetWithFileUrl = CaptureAsset & {
   file_url: string;
 };
 
-export type CreateCaptureAssetInput = {
-  asset_type: CaptureAssetType;
-  width?: number | null;
-  height?: number | null;
-  device_pixel_ratio?: number | null;
-  page_url?: string | null;
-  page_title?: string | null;
-  captured_at?: string | null;
-  metadata?: unknown;
-  file: {
-    storage_provider?: FileStorageProvider;
-    storage_key: string;
-    mime_type: string;
-    size_bytes: number;
-    original_name?: string | null;
-    checksum_sha256?: string | null;
-    metadata?: unknown;
-  };
-};
-
-export type UploadCaptureAssetInput = {
-  width?: number | null;
-  height?: number | null;
-  device_pixel_ratio?: number | null;
-  page_url?: string | null;
-  page_title?: string | null;
-  captured_at?: string | null;
-  metadata?: unknown;
-};
-
-export type NormalizedCreateCaptureAssetInput = {
-  asset_type: "screenshot";
-  width?: number | null;
-  height?: number | null;
-  device_pixel_ratio?: number | null;
-  page_url?: string | null;
-  page_title?: string | null;
-  captured_at?: string | null;
-  metadata?: unknown;
-  file: {
-    storage_provider: FileStorageProvider;
-    storage_key: string;
-    mime_type: string;
-    size_bytes: number;
-    original_name?: string | null;
-    checksum_sha256?: string | null;
-    metadata?: unknown;
-  };
+export type {
+  CreateCaptureAssetInput,
+  NormalizedCreateCaptureAssetInput,
+  UploadCaptureAssetInput,
 };
 
 export type CaptureAssetFile = {
@@ -211,51 +179,9 @@ export type CaptureAssetTransactionalRepository = {
   }) => Promise<boolean>;
 };
 
-export class CaptureSessionNotFoundError extends Error {
-  constructor() {
-    super("Capture session was not found");
-  }
-}
-
 export class ProjectNotFoundError extends Error {
   constructor() {
     super("Project was not found");
-  }
-}
-
-export class CaptureAssetNotFoundError extends Error {
-  constructor() {
-    super("Capture asset was not found");
-  }
-}
-
-export class InvalidCaptureAssetInputError extends Error {
-  constructor() {
-    super("Capture asset input is invalid");
-  }
-}
-
-export class InvalidCaptureAssetUploadError extends Error {
-  constructor() {
-    super("Capture asset upload input is invalid");
-  }
-}
-
-export class UnsupportedCaptureAssetTypeError extends Error {
-  constructor() {
-    super("Capture asset type is not supported yet");
-  }
-}
-
-export class UnsupportedCaptureAssetUploadTypeError extends Error {
-  constructor() {
-    super("Capture asset upload type is not supported");
-  }
-}
-
-export class UploadTooLargeError extends Error {
-  constructor() {
-    super("Capture asset upload is too large");
   }
 }
 
@@ -277,56 +203,15 @@ export class FileStorageKeyConflictError extends Error {
   }
 }
 
-const normalize_create_capture_asset = (
-  input: CreateCaptureAssetInput
-): NormalizedCreateCaptureAssetInput => {
-  if (input.asset_type !== "screenshot") {
-    throw new UnsupportedCaptureAssetTypeError();
-  }
-
-  if (!input.file) {
-    throw new InvalidCaptureAssetInputError();
-  }
-
-  let file: NormalizedFileMetadata;
-
-  try {
-    file = normalize_file_metadata(input.file);
-  } catch (error) {
-    if (error instanceof InvalidFileMetadataError) {
-      throw new InvalidCaptureAssetInputError();
-    }
-
-    throw error;
-  }
-
-  return {
-    asset_type: "screenshot",
-    width: input.width,
-    height: input.height,
-    device_pixel_ratio: input.device_pixel_ratio,
-    page_url: compact_optional_string(input.page_url),
-    page_title: compact_optional_string(input.page_title),
-    captured_at: compact_optional_string(input.captured_at),
-    metadata: input.metadata,
-    file,
-  };
+export {
+  CaptureAssetNotFoundError,
+  CaptureSessionNotFoundError,
+  InvalidCaptureAssetInputError,
+  InvalidCaptureAssetUploadError,
+  UnsupportedCaptureAssetTypeError,
+  UnsupportedCaptureAssetUploadTypeError,
+  UploadTooLargeError,
 };
-
-const project_screenshot_picker_asset_types = new Set<CaptureAssetType>([
-  "screenshot",
-  "redacted_screenshot",
-]);
-
-const normalize_upload_capture_asset = (input: UploadCaptureAssetInput): UploadCaptureAssetInput => ({
-  width: input.width,
-  height: input.height,
-  device_pixel_ratio: input.device_pixel_ratio,
-  page_url: compact_optional_string(input.page_url),
-  page_title: compact_optional_string(input.page_title),
-  captured_at: compact_optional_string(input.captured_at),
-  metadata: input.metadata,
-});
 
 export const build_capture_asset_service = (
   repository: CaptureAssetRepository,
@@ -427,12 +312,9 @@ export const build_capture_asset_service = (
         max_upload_bytes,
       });
     } catch (error) {
-      if (error instanceof UnsupportedScreenshotUploadMimeTypeError) {
-        throw new UnsupportedCaptureAssetUploadTypeError();
-      }
-
-      if (error instanceof FileDomainUploadTooLargeError) {
-        throw new UploadTooLargeError();
+      const capture_error = map_file_domain_upload_policy_error(error);
+      if (capture_error) {
+        throw capture_error;
       }
 
       throw error;
@@ -542,11 +424,7 @@ export const build_capture_asset_service = (
     project_id: string;
     asset_type?: CaptureAssetType;
   }): Promise<CaptureAssetWithFileUrl[]> => {
-    const asset_type = input.asset_type ?? "screenshot";
-
-    if (!project_screenshot_picker_asset_types.has(asset_type)) {
-      throw new UnsupportedCaptureAssetTypeError();
-    }
+    const asset_type = assert_project_screenshot_picker_asset_type(input.asset_type);
 
     await ensure_project_exists({
       repository,
@@ -562,7 +440,7 @@ export const build_capture_asset_service = (
 
     return assets.map((asset) => ({
       ...asset,
-      file_url: `/api/v1/projects/${asset.project_id}/capture-sessions/${asset.capture_session_id}/assets/${asset.id}/file`,
+      file_url: build_capture_session_asset_file_url(asset),
     }));
   };
 

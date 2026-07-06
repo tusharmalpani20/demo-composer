@@ -281,6 +281,33 @@ export const CaptureAssetWithFileUrlSchema = CaptureAssetSchema.extend({
 });
 export type CaptureAssetWithFileUrl = z.infer<typeof CaptureAssetWithFileUrlSchema>;
 
+export const CreateCaptureAssetRequestSchema = z.object({
+  asset_type: z.enum(CAPTURE_ASSET_TYPES),
+  width: PositiveIntSchema.nullable().optional(),
+  height: PositiveIntSchema.nullable().optional(),
+  device_pixel_ratio: PositiveNumberSchema.nullable().optional(),
+  page_url: z.string().nullable().optional(),
+  page_title: z.string().nullable().optional(),
+  captured_at: NullableIsoDateTimeStringSchema.optional(),
+  metadata: z.unknown().optional(),
+  file: z.object({
+    storage_provider: z.enum(FILE_STORAGE_PROVIDERS).optional(),
+    storage_key: z.string().trim().min(1),
+    mime_type: z.string().trim().min(1),
+    size_bytes: z.number().int().nonnegative(),
+    original_name: z.string().nullable().optional(),
+    checksum_sha256: z.string().nullable().optional(),
+    metadata: z.unknown().optional(),
+  }).passthrough(),
+}).passthrough();
+export type CreateCaptureAssetRequest = z.infer<typeof CreateCaptureAssetRequestSchema>;
+export type CreateCaptureAssetInput = CreateCaptureAssetRequest;
+
+export const CaptureAssetListQuerySchema = z.object({
+  asset_type: z.enum(CAPTURE_ASSET_TYPES).optional(),
+});
+export type CaptureAssetListQuery = z.infer<typeof CaptureAssetListQuerySchema>;
+
 export const CaptureAssetResponseSchema = z.object({
   capture_asset: CaptureAssetSchema,
 });

@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@repo/constants": "workspace:*",
+    "@repo/capture-domain": "workspace:*",
     "@repo/file-domain": "workspace:*",
     "@repo/types": "workspace:*",
     "@casl/ability": "^6.8.0",

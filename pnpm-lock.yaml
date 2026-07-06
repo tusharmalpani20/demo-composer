@@ -152,6 +152,9 @@ importers:
       '@fastify/websocket':
         specifier: ^11.2.0
         version: 11.2.0
+      '@repo/capture-domain':
+        specifier: workspace:*
+        version: link:../../packages/capture-domain
       '@repo/constants':
         specifier: workspace:*
         version: link:../../packages/constants
@@ -304,6 +307,31 @@ importers:
       vite:
         specifier: ^7.3.0
         version: 7.3.2(@types/node@22.15.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3)
+      vitest:
+        specifier: ^4.1.5
+        version: 4.1.8(@types/node@22.15.3)(jsdom@29.1.1)(vite@7.3.2(@types/node@22.15.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))
+
+  packages/capture-domain:
+    dependencies:
+      '@repo/constants':
+        specifier: workspace:*
+        version: link:../constants
+      '@repo/file-domain':
+        specifier: workspace:*
+        version: link:../file-domain
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.1(jiti@2.7.0)
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
       vitest:
         specifier: ^4.1.5
         version: 4.1.8(@types/node@22.15.3)(jsdom@29.1.1)(vite@7.3.2(@types/node@22.15.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))

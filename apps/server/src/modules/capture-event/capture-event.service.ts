@@ -3,6 +3,27 @@ import type {
   CaptureSessionSourceType,
   CaptureSessionStatus,
 } from "@repo/constants";
+import {
+  CaptureAssetNotFoundError,
+  CaptureEventIndexConflictError,
+  CaptureEventNotFoundError,
+  CaptureEventReorderNotAllowedError,
+  CaptureEventUpdateNotAllowedError,
+  CaptureSessionNotFoundError,
+  InvalidCaptureEventInputError,
+  InvalidCaptureEventOrderError,
+  assert_capture_event_update_allowed,
+  assert_reorder_allowed_for_source_type,
+  assert_reorder_covers_all_events,
+  normalize_create_capture_event,
+  normalize_reorder_capture_events,
+  normalize_update_capture_event,
+  type CreateCaptureEventInput,
+  type NormalizedCreateCaptureEventInput,
+  type NormalizedUpdateCaptureEventInput,
+  type ReorderCaptureEventsInput,
+  type UpdateCaptureEventInput,
+} from "@repo/capture-domain";
 
 export type {
   CaptureEventType,
@@ -46,72 +67,12 @@ export type CaptureEvent = {
   updated_at: string;
 };
 
-export type CreateCaptureEventInput = {
-  event_type: CaptureEventType;
-  event_index: number;
-  capture_asset_id?: string | null;
-  occurred_at?: string | null;
-  page_url?: string | null;
-  page_title?: string | null;
-  target_label?: string | null;
-  target_selector?: string | null;
-  target_role?: string | null;
-  target_test_id?: string | null;
-  target_text?: string | null;
-  client_x?: number | null;
-  client_y?: number | null;
-  viewport_width?: number | null;
-  viewport_height?: number | null;
-  device_pixel_ratio?: number | null;
-  input_intent?: string | null;
-  input_value_redacted?: boolean;
-  note?: string | null;
-  metadata?: unknown;
-} & Record<string, unknown>;
-
-export type ReorderCaptureEventsInput = {
-  event_ids: string[];
-};
-
-export type UpdateCaptureEventInput = {
-  page_url?: string | null;
-  page_title?: string | null;
-  target_label?: string | null;
-  target_text?: string | null;
-  input_intent?: string | null;
-  note?: string | null;
-} & Record<string, unknown>;
-
-export type NormalizedCreateCaptureEventInput = {
-  event_type: CaptureEventType;
-  event_index: number;
-  capture_asset_id?: string | null;
-  occurred_at?: string | null;
-  page_url?: string | null;
-  page_title?: string | null;
-  target_label?: string | null;
-  target_selector?: string | null;
-  target_role?: string | null;
-  target_test_id?: string | null;
-  target_text?: string | null;
-  client_x?: number | null;
-  client_y?: number | null;
-  viewport_width?: number | null;
-  viewport_height?: number | null;
-  device_pixel_ratio?: number | null;
-  input_intent?: string | null;
-  input_value_redacted: true;
-  note?: string | null;
-  metadata?: unknown;
-};
-
-export type NormalizedUpdateCaptureEventInput = {
-  page_url?: string | null;
-  page_title?: string | null;
-  target_label?: string | null;
-  target_text?: string | null;
-  input_intent?: string | null;
-  note?: string | null;
+export type {
+  CreateCaptureEventInput,
+  NormalizedCreateCaptureEventInput,
+  NormalizedUpdateCaptureEventInput,
+  ReorderCaptureEventsInput,
+  UpdateCaptureEventInput,
 };
 
 export type CaptureEventRepository = {
@@ -192,189 +153,15 @@ export class ProjectNotFoundError extends Error {
   }
 }
 
-export class CaptureSessionNotFoundError extends Error {
-  constructor() {
-    super("Capture session was not found");
-  }
-}
-
-export class CaptureAssetNotFoundError extends Error {
-  constructor() {
-    super("Capture asset was not found");
-  }
-}
-
-export class CaptureEventNotFoundError extends Error {
-  constructor() {
-    super("Capture event was not found");
-  }
-}
-
-export class InvalidCaptureEventInputError extends Error {
-  constructor() {
-    super("Capture event input is invalid");
-  }
-}
-
-export class CaptureEventIndexConflictError extends Error {
-  constructor() {
-    super("A capture event with this index already exists");
-  }
-}
-
-export class InvalidCaptureEventOrderError extends Error {
-  constructor() {
-    super("Capture event order is invalid");
-  }
-}
-
-export class CaptureEventReorderNotAllowedError extends Error {
-  constructor() {
-    super("Only manual capture sessions can be reordered");
-  }
-}
-
-export class CaptureEventUpdateNotAllowedError extends Error {
-  constructor() {
-    super("Only active manual capture sessions can be edited");
-  }
-}
-
-const raw_input_field_names = new Set([
-  "input_value",
-  "value",
-  "typed_value",
-  "password",
-  "secret",
-]);
-
-const compact_optional_string = (value: string | null | undefined) => {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (value === null) {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed || null;
-};
-
-const has_raw_input_field = (input: CreateCaptureEventInput) => (
-  Object.keys(input).some((key) => raw_input_field_names.has(key))
-);
-
-const editable_update_field_names = new Set([
-  "page_url",
-  "page_title",
-  "target_label",
-  "target_text",
-  "input_intent",
-  "note",
-]);
-
-const has_forbidden_update_field = (input: UpdateCaptureEventInput) => (
-  Object.keys(input).some((key) => (
-    raw_input_field_names.has(key)
-    || !editable_update_field_names.has(key)
-  ))
-);
-
-const has_click_target = (input: NormalizedCreateCaptureEventInput) => (
-  Boolean(input.target_label)
-  || Boolean(input.target_selector)
-  || Boolean(input.target_role)
-  || Boolean(input.target_text)
-  || input.client_x !== undefined
-  || input.client_y !== undefined
-);
-
-const normalize_create_capture_event = (
-  input: CreateCaptureEventInput
-): NormalizedCreateCaptureEventInput => {
-  if (has_raw_input_field(input) || input.input_value_redacted === false) {
-    throw new InvalidCaptureEventInputError();
-  }
-
-  const normalized: NormalizedCreateCaptureEventInput = {
-    event_type: input.event_type,
-    event_index: input.event_index,
-    capture_asset_id: compact_optional_string(input.capture_asset_id),
-    occurred_at: compact_optional_string(input.occurred_at),
-    page_url: compact_optional_string(input.page_url),
-    page_title: compact_optional_string(input.page_title),
-    target_label: compact_optional_string(input.target_label),
-    target_selector: compact_optional_string(input.target_selector),
-    target_role: compact_optional_string(input.target_role),
-    target_test_id: compact_optional_string(input.target_test_id),
-    target_text: compact_optional_string(input.target_text),
-    client_x: input.client_x,
-    client_y: input.client_y,
-    viewport_width: input.viewport_width,
-    viewport_height: input.viewport_height,
-    device_pixel_ratio: input.device_pixel_ratio,
-    input_intent: compact_optional_string(input.input_intent),
-    input_value_redacted: true,
-    note: compact_optional_string(input.note),
-    metadata: input.metadata,
-  };
-
-  if (normalized.event_type === "navigation" && !normalized.page_url) {
-    throw new InvalidCaptureEventInputError();
-  }
-  if (normalized.event_type === "click" && !has_click_target(normalized)) {
-    throw new InvalidCaptureEventInputError();
-  }
-  if (normalized.event_type === "capture" && !normalized.capture_asset_id) {
-    throw new InvalidCaptureEventInputError();
-  }
-  if (normalized.event_type === "note" && !normalized.note) {
-    throw new InvalidCaptureEventInputError();
-  }
-
-  return normalized;
-};
-
-const normalize_reorder_capture_events = (
-  input: ReorderCaptureEventsInput
-) => {
-  if (!Array.isArray(input.event_ids) || input.event_ids.length === 0) {
-    throw new InvalidCaptureEventOrderError();
-  }
-
-  const event_ids = input.event_ids.map((id) => id.trim());
-
-  if (event_ids.some((id) => id.length === 0)) {
-    throw new InvalidCaptureEventOrderError();
-  }
-
-  if (new Set(event_ids).size !== event_ids.length) {
-    throw new InvalidCaptureEventOrderError();
-  }
-
-  return event_ids;
-};
-
-const normalize_update_capture_event = (
-  input: UpdateCaptureEventInput
-): NormalizedUpdateCaptureEventInput => {
-  const keys = Object.keys(input);
-
-  if (keys.length === 0 || has_forbidden_update_field(input)) {
-    throw new InvalidCaptureEventInputError();
-  }
-
-  const normalized: NormalizedUpdateCaptureEventInput = {};
-
-  for (const key of editable_update_field_names) {
-    if (input[key] !== undefined) {
-      normalized[key as keyof NormalizedUpdateCaptureEventInput] =
-        compact_optional_string(input[key] as string | null | undefined);
-    }
-  }
-
-  return normalized;
+export {
+  CaptureAssetNotFoundError,
+  CaptureEventIndexConflictError,
+  CaptureEventNotFoundError,
+  CaptureEventReorderNotAllowedError,
+  CaptureEventUpdateNotAllowedError,
+  CaptureSessionNotFoundError,
+  InvalidCaptureEventInputError,
+  InvalidCaptureEventOrderError,
 };
 
 export const build_capture_event_service = (repository: CaptureEventRepository) => {
@@ -553,20 +340,10 @@ export const build_capture_event_service = (repository: CaptureEventRepository) 
       throw new CaptureSessionNotFoundError();
     }
 
-    if (source_type !== "manual") {
-      throw new CaptureEventReorderNotAllowedError();
-    }
+    assert_reorder_allowed_for_source_type(source_type);
 
     const active_events = await repository.list_capture_events(scope);
-    const active_ids = new Set(active_events.map((event) => event.id));
-
-    if (active_events.length !== event_ids.length) {
-      throw new InvalidCaptureEventOrderError();
-    }
-
-    if (event_ids.some((event_id) => !active_ids.has(event_id))) {
-      throw new InvalidCaptureEventOrderError();
-    }
+    assert_reorder_covers_all_events(event_ids, active_events);
 
     return repository.reorder_capture_events({
       ...scope,
@@ -600,13 +377,7 @@ export const build_capture_event_service = (repository: CaptureEventRepository) 
       throw new CaptureSessionNotFoundError();
     }
 
-    if (
-      editability.source_type !== "manual"
-      || editability.status === "archived"
-      || editability.status === "canceled"
-    ) {
-      throw new CaptureEventUpdateNotAllowedError();
-    }
+    assert_capture_event_update_allowed(editability);
 
     const capture_event = await repository.update_capture_event({
       ...scope,

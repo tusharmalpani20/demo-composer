@@ -1,8 +1,8 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
 import {
-  CAPTURE_ASSET_TYPES,
-  FILE_STORAGE_PROVIDERS,
-} from "@repo/constants";
+  CaptureAssetListQuerySchema,
+  CreateCaptureAssetRequestSchema,
+} from "@repo/types/capture";
 import { z } from "zod";
 import {
   UnauthenticatedSessionError,
@@ -85,35 +85,6 @@ export type CaptureAssetRouteDependencies = {
     }) => Promise<void>;
   };
 };
-
-const asset_type_schema = z.enum(CAPTURE_ASSET_TYPES);
-const storage_provider_schema = z.enum(FILE_STORAGE_PROVIDERS);
-const positive_int_schema = z.number().int().positive();
-const positive_number_schema = z.number().positive();
-
-const create_capture_asset_body_schema = z.object({
-  asset_type: asset_type_schema,
-  width: positive_int_schema.nullable().optional(),
-  height: positive_int_schema.nullable().optional(),
-  device_pixel_ratio: positive_number_schema.nullable().optional(),
-  page_url: z.string().nullable().optional(),
-  page_title: z.string().nullable().optional(),
-  captured_at: z.string().datetime().nullable().optional(),
-  metadata: z.unknown().optional(),
-  file: z.object({
-    storage_provider: storage_provider_schema.optional(),
-    storage_key: z.string().trim().min(1),
-    mime_type: z.string().trim().min(1),
-    size_bytes: z.number().int().nonnegative(),
-    original_name: z.string().nullable().optional(),
-    checksum_sha256: z.string().nullable().optional(),
-    metadata: z.unknown().optional(),
-  }).passthrough(),
-}).passthrough();
-
-const list_query_schema = z.object({
-  asset_type: asset_type_schema.optional(),
-});
 
 const unauthorized_response = () => ({
   error: {
@@ -402,7 +373,7 @@ export const build_capture_asset_routes = (
       Body: CreateCaptureAssetInput;
     }>("/:project_id/capture-sessions/:capture_session_id/assets", {
       schema: {
-        body: create_capture_asset_body_schema,
+        body: CreateCaptureAssetRequestSchema,
       },
     }, async (request, reply) => {
       try {
@@ -467,7 +438,7 @@ export const build_capture_asset_routes = (
       };
     }>("/:project_id/capture-assets", {
       schema: {
-        querystring: list_query_schema,
+        querystring: CaptureAssetListQuerySchema,
       },
     }, async (request, reply) => {
       try {
@@ -493,7 +464,7 @@ export const build_capture_asset_routes = (
       };
     }>("/:project_id/capture-sessions/:capture_session_id/assets", {
       schema: {
-        querystring: list_query_schema,
+        querystring: CaptureAssetListQuerySchema,
       },
     }, async (request, reply) => {
       try {

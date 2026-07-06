@@ -5,6 +5,10 @@ import {
   UpdateCaptureSessionRequestSchema,
 } from "@repo/types/capture";
 import {
+  assert_no_client_lifecycle_timestamp_input,
+  assert_valid_capture_session_completion_body,
+} from "@repo/capture-domain";
+import {
   UnauthenticatedSessionError,
   type AuthContext,
 } from "../authentication/session.service";
@@ -149,22 +153,6 @@ const pick_update_capture_session_data = (
   metadata: body.metadata,
 });
 
-const has_lifecycle_timestamp_input = (body: UpdateCaptureSessionInput) => (
-  body.started_at !== undefined
-  || body.completed_at !== undefined
-  || body.canceled_at !== undefined
-);
-
-const is_valid_completion_body = (body: unknown) => (
-  body === undefined
-  || (
-    body !== null
-    && typeof body === "object"
-    && !Array.isArray(body)
-    && Object.keys(body).length === 0
-  )
-);
-
 export const build_capture_session_routes = (
   dependencies: CaptureSessionRouteDependencies
 ): FastifyPluginAsync => {
@@ -303,9 +291,7 @@ export const build_capture_session_routes = (
       Body?: Record<string, unknown>;
     }>("/:project_id/capture-sessions/:id/complete", async (request, reply) => {
       try {
-        if (!is_valid_completion_body(request.body)) {
-          throw new InvalidCaptureSessionCompletionError();
-        }
+        assert_valid_capture_session_completion_body(request.body);
 
         const auth = await require_auth(session_token_from_request(request));
         const result = await dependencies.capture_session_service.complete_capture_session({
@@ -350,9 +336,7 @@ export const build_capture_session_routes = (
       },
     }, async (request, reply) => {
       try {
-        if (has_lifecycle_timestamp_input(request.body)) {
-          throw new InvalidCaptureSessionInputError();
-        }
+        assert_no_client_lifecycle_timestamp_input(request.body);
 
         const auth = await require_auth(session_token_from_request(request));
         const capture_session = await dependencies.capture_session_service.update_capture_session({

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   CaptureAssetParamsSchema,
+  CaptureAssetListQuerySchema,
   CaptureAssetResponseSchema,
   CaptureEventParamsSchema,
   CaptureEventResponseSchema,
   CaptureSessionDetailResponseSchema,
   CompleteCaptureSessionResponseSchema,
+  CreateCaptureAssetRequestSchema,
   CreateCaptureEventRequestSchema,
   CreateCaptureSessionRequestSchema,
   ProjectCaptureAssetListResponseSchema,
@@ -195,6 +197,52 @@ describe("capture contracts", () => {
   });
 
   it("validates capture asset response variants and detail responses", () => {
+    expect(CreateCaptureAssetRequestSchema.parse({
+      asset_type: "screenshot",
+      width: 1440,
+      height: 900,
+      device_pixel_ratio: 2,
+      page_url: "https://example.com",
+      page_title: "Example",
+      captured_at: "2026-07-07T00:00:00.000Z",
+      metadata: { source: "manual" },
+      file: {
+        storage_provider: "local",
+        storage_key: " storage/key.png ",
+        mime_type: " image/png ",
+        size_bytes: 1024,
+        original_name: "screenshot.png",
+        checksum_sha256: null,
+        ignored_file_metadata: true,
+      },
+      ignored_but_allowed: true,
+    })).toEqual({
+      asset_type: "screenshot",
+      width: 1440,
+      height: 900,
+      device_pixel_ratio: 2,
+      page_url: "https://example.com",
+      page_title: "Example",
+      captured_at: "2026-07-07T00:00:00.000Z",
+      metadata: { source: "manual" },
+      file: {
+        storage_provider: "local",
+        storage_key: "storage/key.png",
+        mime_type: "image/png",
+        size_bytes: 1024,
+        original_name: "screenshot.png",
+        checksum_sha256: null,
+        ignored_file_metadata: true,
+      },
+      ignored_but_allowed: true,
+    });
+
+    expect(CaptureAssetListQuerySchema.parse({
+      asset_type: "screenshot",
+    })).toEqual({
+      asset_type: "screenshot",
+    });
+
     expect(CaptureAssetResponseSchema.parse({ capture_asset: captureAsset })).toEqual({
       capture_asset: captureAsset,
     });

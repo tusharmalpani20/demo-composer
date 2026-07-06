@@ -2,6 +2,22 @@ import type {
   CaptureSessionSourceType,
   CaptureSessionStatus,
 } from "@repo/constants";
+import {
+  CaptureSessionNotCompletableError,
+  CaptureSessionNotFoundError,
+  EmptyCaptureSessionUpdateError,
+  InvalidCaptureSessionCompletionError,
+  InvalidCaptureSessionInputError,
+  assert_non_empty_capture_session_update,
+  build_capture_session_asset_file_url,
+  build_capture_session_completion_redirect,
+  normalize_create_capture_session,
+  normalize_update_capture_session,
+  type CreateCaptureSessionInput,
+  type NormalizedCreateCaptureSessionInput,
+  type NormalizedUpdateCaptureSessionInput,
+  type UpdateCaptureSessionInput,
+} from "@repo/capture-domain";
 import type { CaptureAsset } from "../capture-asset/capture-asset.service";
 import type { CaptureEvent } from "../capture-event/capture-event.service";
 
@@ -57,42 +73,12 @@ export type CaptureSessionDetail = {
   }>;
 };
 
-export type CreateCaptureSessionInput = {
-  name: string;
-  description?: string | null;
-  source_type?: CaptureSessionSourceType;
-  start_url?: string | null;
-  browser_name?: string | null;
-  browser_version?: string | null;
-  operating_system?: string | null;
-  viewport_width?: number | null;
-  viewport_height?: number | null;
-  device_pixel_ratio?: number | null;
-  user_agent?: string | null;
-  metadata?: unknown;
-  status?: CaptureSessionStatus;
-  started_at?: unknown;
-  completed_at?: unknown;
-  canceled_at?: unknown;
+export type {
+  CreateCaptureSessionInput,
+  NormalizedCreateCaptureSessionInput,
+  NormalizedUpdateCaptureSessionInput,
+  UpdateCaptureSessionInput,
 };
-
-export type UpdateCaptureSessionInput = Partial<{
-  name: string;
-  description: string | null;
-  status: CaptureSessionStatus;
-  start_url: string | null;
-  browser_name: string | null;
-  browser_version: string | null;
-  operating_system: string | null;
-  viewport_width: number | null;
-  viewport_height: number | null;
-  device_pixel_ratio: number | null;
-  user_agent: string | null;
-  metadata: unknown;
-  started_at: unknown;
-  completed_at: unknown;
-  canceled_at: unknown;
-}>;
 
 export type CaptureSessionRepository = {
   project_exists: (input: {
@@ -148,145 +134,18 @@ export type CaptureSessionRepository = {
   }) => Promise<boolean>;
 };
 
-export type NormalizedCreateCaptureSessionInput = {
-  name: string;
-  description?: string | null;
-  source_type?: CaptureSessionSourceType;
-  start_url?: string | null;
-  browser_name?: string | null;
-  browser_version?: string | null;
-  operating_system?: string | null;
-  viewport_width?: number | null;
-  viewport_height?: number | null;
-  device_pixel_ratio?: number | null;
-  user_agent?: string | null;
-  metadata?: unknown;
-};
-
-export type NormalizedUpdateCaptureSessionInput = Partial<{
-  name: string;
-  description: string | null;
-  status: CaptureSessionStatus;
-  start_url: string | null;
-  browser_name: string | null;
-  browser_version: string | null;
-  operating_system: string | null;
-  viewport_width: number | null;
-  viewport_height: number | null;
-  device_pixel_ratio: number | null;
-  user_agent: string | null;
-  metadata: unknown;
-}>;
-
 export class ProjectNotFoundError extends Error {
   constructor() {
     super("Project was not found");
   }
 }
 
-export class CaptureSessionNotFoundError extends Error {
-  constructor() {
-    super("Capture session was not found");
-  }
-}
-
-export class CaptureSessionNotCompletableError extends Error {
-  constructor() {
-    super("Capture session cannot be completed from its current status");
-  }
-}
-
-export class InvalidCaptureSessionCompletionError extends Error {
-  constructor() {
-    super("Capture session completion input is invalid");
-  }
-}
-
-export class EmptyCaptureSessionUpdateError extends Error {
-  constructor() {
-    super("At least one capture session field must be provided");
-  }
-}
-
-export class InvalidCaptureSessionInputError extends Error {
-  constructor() {
-    super("Capture session input is invalid");
-  }
-}
-
-const compact_optional_string = (value: string | null | undefined) => {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (value === null) {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed || null;
-};
-
-const normalize_create_capture_session = (
-  input: CreateCaptureSessionInput
-): NormalizedCreateCaptureSessionInput => ({
-  name: input.name.trim(),
-  description: compact_optional_string(input.description),
-  source_type: input.source_type,
-  start_url: compact_optional_string(input.start_url),
-  browser_name: compact_optional_string(input.browser_name),
-  browser_version: compact_optional_string(input.browser_version),
-  operating_system: compact_optional_string(input.operating_system),
-  viewport_width: input.viewport_width,
-  viewport_height: input.viewport_height,
-  device_pixel_ratio: input.device_pixel_ratio,
-  user_agent: compact_optional_string(input.user_agent),
-  metadata: input.metadata,
-});
-
-const normalize_update_capture_session = (
-  input: UpdateCaptureSessionInput
-): NormalizedUpdateCaptureSessionInput => {
-  const normalized: NormalizedUpdateCaptureSessionInput = {};
-
-  if (input.name !== undefined) {
-    normalized.name = input.name.trim();
-  }
-  if (input.description !== undefined) {
-    normalized.description = compact_optional_string(input.description) ?? null;
-  }
-  if (input.status !== undefined) {
-    normalized.status = input.status;
-  }
-  if (input.start_url !== undefined) {
-    normalized.start_url = compact_optional_string(input.start_url) ?? null;
-  }
-  if (input.browser_name !== undefined) {
-    normalized.browser_name = compact_optional_string(input.browser_name) ?? null;
-  }
-  if (input.browser_version !== undefined) {
-    normalized.browser_version = compact_optional_string(input.browser_version) ?? null;
-  }
-  if (input.operating_system !== undefined) {
-    normalized.operating_system = compact_optional_string(input.operating_system) ?? null;
-  }
-  if (input.viewport_width !== undefined) {
-    normalized.viewport_width = input.viewport_width;
-  }
-  if (input.viewport_height !== undefined) {
-    normalized.viewport_height = input.viewport_height;
-  }
-  if (input.device_pixel_ratio !== undefined) {
-    normalized.device_pixel_ratio = input.device_pixel_ratio;
-  }
-  if (input.user_agent !== undefined) {
-    normalized.user_agent = compact_optional_string(input.user_agent) ?? null;
-  }
-  if (input.metadata !== undefined) {
-    normalized.metadata = input.metadata;
-  }
-
-  return normalized;
+export {
+  CaptureSessionNotCompletableError,
+  CaptureSessionNotFoundError,
+  EmptyCaptureSessionUpdateError,
+  InvalidCaptureSessionCompletionError,
+  InvalidCaptureSessionInputError,
 };
 
 export const build_capture_session_service = (repository: CaptureSessionRepository) => {
@@ -384,7 +243,7 @@ export const build_capture_session_service = (repository: CaptureSessionReposito
       capture_events: detail.capture_events,
       capture_assets: detail.capture_assets.map((asset) => ({
         ...asset,
-        file_url: `/api/v1/projects/${asset.project_id}/capture-sessions/${asset.capture_session_id}/assets/${asset.id}/file`,
+        file_url: build_capture_session_asset_file_url(asset),
       })),
     };
   };
@@ -402,9 +261,7 @@ export const build_capture_session_service = (repository: CaptureSessionReposito
 
     const data = normalize_update_capture_session(input.data);
 
-    if (Object.keys(data).length === 0) {
-      throw new EmptyCaptureSessionUpdateError();
-    }
+    assert_non_empty_capture_session_update(data);
 
     const capture_session = await repository.update_capture_session({
       organization_id: input.auth.organization_id,
@@ -448,10 +305,7 @@ export const build_capture_session_service = (repository: CaptureSessionReposito
 
     return {
       capture_session: result.capture_session,
-      redirect: {
-        path: `/projects/${result.capture_session.project_id}/capture-sessions/${result.capture_session.id}`,
-        reason: "capture_session_completed",
-      },
+      redirect: build_capture_session_completion_redirect(result.capture_session),
     };
   };
 
