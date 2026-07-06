@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Expanded and rechecked for implementation readiness on 2026-07-07.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -21,6 +21,55 @@ Centralize the lower-level app shell contracts that are already shared by server
 This is a contract cleanup phase, not a feature phase. It should make current project, auth/session, setup, public instance, and organization invite/member payloads reusable through `@repo/types` and `@repo/constants`.
 
 This phase should not create a domain package. The parent master plan allows moving product decisions into domain packages where useful; this child plan evaluates that option and defers it because current project/setup/organization behavior is server-only, permission-heavy, and coupled to authentication/session/persistence side effects. Extracting that behavior belongs in a later domain package phase after shared contracts are clean.
+
+## Completion Summary
+
+Completed on 2026-07-07 in implementation commit `e075169 feat(types): share auth and organization contracts`.
+
+Implemented changes:
+
+- Added shared auth request/response schemas and inferred types in `@repo/types`, including web-safe auth responses and extension login responses that retain extension-only `session_token` support.
+- Added shared organization member/invite schemas and inferred types in `@repo/types`.
+- Tightened `FirstRunSetupResponseSchema` so `auth` is no longer `z.unknown()` and instead matches the existing setup-specific response shape.
+- Reused shared login and organization invite request schemas in server routes.
+- Replaced duplicated web and extension auth/setup/organization API types with shared imports where safe.
+- Preserved existing project/setup/instance contracts and existing shared constants.
+- Kept server-owned auth context, login identity lookup, password hashing, token hashing/generation, cookies, request parsing, repositories, and permission context server-local.
+- Kept `OrganizationInviteAuth` server-local because it is a server permission context, not a public contract.
+- Narrowed setup org-user role typing to the existing owner bootstrap behavior without changing runtime behavior.
+- Added no domain package, no database migration, and no UI behavior change.
+
+Verification passed:
+
+- `rtk pnpm --filter @repo/types test`
+- `rtk pnpm --filter @repo/types check-types`
+- `rtk pnpm --filter @repo/types lint`
+- `rtk pnpm --filter @repo/types build`
+- `rtk pnpm --filter server test -- session.routes session.service first-run-setup.routes first-run-setup.service public-instance organization-invites.routes organization-invites.service project.routes project.service`
+- `rtk pnpm --filter server check-types`
+- `rtk pnpm --filter server lint`
+- `rtk pnpm --filter web check-types`
+- `rtk pnpm --filter web lint`
+- `rtk pnpm --filter web test -- api LoginPage FirstRunSetupPage OrganizationMembersPage InviteAcceptPage`
+- `rtk pnpm --filter extension check-types`
+- `rtk pnpm --filter extension lint`
+- `rtk pnpm --filter extension test -- api App`
+- `rtk pnpm --filter @repo/constants test`
+- `rtk pnpm --filter @repo/constants lint`
+- `rtk pnpm --filter @repo/constants build`
+- `rtk pnpm check-types`
+- `rtk git diff --check`
+
+Browser validation was not required because this phase changed shared schemas, imports, and route validation schema sources without changing rendered UI, fetch paths, auth/setup/invite control flow, or browser-visible behavior.
+
+Database verification was not required because this phase did not change repository behavior, persistence behavior, schema, migrations, SQL, or stored data shapes. Focused route/service tests covered the affected contracts and behavior boundaries.
+
+Carry into `092-capture-domain-extraction.md`:
+
+- Keep capture-domain free of server auth/session internals.
+- Use shared auth DTOs only at public API/client boundaries; keep server request auth context and permission adapters server-owned unless a later auth-domain phase explicitly extracts them.
+- Preserve `@repo/file-domain` as file metadata/upload-policy only.
+- Do not import organization invite permission context or session token handling into capture-domain.
 
 ## Baseline From Completed 090
 
@@ -693,22 +742,42 @@ Do not make visual assertions beyond confirming behavior remains stable and ther
 
 ## Completion Checklist
 
-- [ ] Worktree checked before implementation.
-- [ ] Discovery searches run.
-- [ ] Shared auth contracts added and tested.
-- [ ] Shared setup response contract updated to use a setup-specific auth contract.
-- [ ] Shared organization contracts added and tested.
-- [ ] Server auth route uses shared login request schema.
-- [ ] Server setup route/service types use shared first-run setup response types where safe.
-- [ ] Server organization route uses shared invite request schemas.
-- [ ] Web auth and organization local type duplication replaced with shared imports.
-- [ ] Extension auth local type duplication replaced with shared imports.
-- [ ] Project/setup/instance existing shared contracts preserved.
-- [ ] No password/token/cookie/rate-limit behavior changed.
-- [ ] No database migration added.
-- [ ] No UI behavior changed.
-- [ ] Focused verification completed.
-- [ ] Browser validation completed or explicitly documented as not required.
+- [x] Worktree checked before implementation.
+- [x] Discovery searches run.
+- [x] Shared auth contracts added and tested.
+- [x] Shared setup response contract updated to use a setup-specific auth contract.
+- [x] Shared organization contracts added and tested.
+- [x] Server auth route uses shared login request schema.
+- [x] Server setup route/service types use shared first-run setup response types where safe.
+- [x] Server organization route uses shared invite request schemas.
+- [x] Web auth and organization local type duplication replaced with shared imports.
+- [x] Extension auth local type duplication replaced with shared imports.
+- [x] Project/setup/instance existing shared contracts preserved.
+- [x] No password/token/cookie/rate-limit behavior changed.
+- [x] No database migration added.
+- [x] No UI behavior changed.
+- [x] Focused verification completed.
+- [x] Browser validation completed or explicitly documented as not required.
+
+## Implementation Log
+
+2026-07-07:
+
+- Rechecked the current worktree, parent master plan, completed `090` implementation, and all server/web/extension files touched by this phase before coding.
+- Added failing shared contract tests first for auth, organization, and setup response validation.
+- Confirmed the red state with `rtk pnpm --filter @repo/types test`; failures showed missing auth/organization modules and the overly broad setup `auth` contract.
+- Added `packages/types/src/auth.ts` with shared login request, web auth response, and extension login response schemas/types.
+- Added `packages/types/src/organization.ts` with shared organization member, invite, public invite, invite request, and invite response schemas/types.
+- Updated `packages/types/src/setup.ts` so first-run setup uses a setup-specific auth context contract instead of `z.unknown()`.
+- Exported the new shared contracts from `packages/types/src/index.ts`.
+- Updated server auth route validation to use the shared login request schema.
+- Updated server organization invite route validation to use shared invite request schemas while preserving `.passthrough()` compatibility.
+- Updated server setup typing to return the shared setup response shape where safe.
+- Updated web auth, setup, organization, and API types to consume shared contracts without changing UI behavior.
+- Updated extension auth API types to consume shared contracts while preserving extension-only `session_token` behavior.
+- Left server `AuthContext` server-local after inspection because replacing it globally would require broad server auth fixture and permission-context churn outside this contract cleanup phase.
+- Preserved server-local password hashes, token hashes, token generation, cookies, request auth parsing, invite auth permission context, repositories, and persistence behavior.
+- Ran the focused verification listed in the completion summary, including package tests, typechecks, lint, builds where relevant, full repo typecheck, and whitespace checks.
 
 ## Handoff Notes
 

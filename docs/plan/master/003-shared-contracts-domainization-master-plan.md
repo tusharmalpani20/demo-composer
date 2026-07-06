@@ -584,6 +584,8 @@ Acceptance:
 
 ### 091: Project, Identity, Setup, And Organization Contract Cleanup
 
+Status: Completed on 2026-07-07.
+
 File:
 
 - `docs/plan/091-project-identity-setup-organization-contract-cleanup.md`
@@ -594,20 +596,22 @@ Goal:
 
 Scope:
 
-- Extract project status and lifecycle constants/contracts.
+- Preserve existing project, setup, public instance, deployment mode, onboarding mode, and organization constants/contracts.
 - Preserve the User, Organization, and Org User identity split.
-- Extract first-run setup request/response schemas.
-- Extract auth-facing DTOs that are safe to share.
-- Extract public instance status, Deployment Mode, and onboarding mode contracts where reused.
-- Preserve Extension Session and Instance-first login behavior.
-- Extract organization role/member/invite constants and schemas.
-- Move product decisions into domain packages where useful.
+- Add shared auth-facing request/response DTOs that are safe to share.
+- Tighten first-run setup response schemas to the existing setup-specific auth response shape.
+- Add shared organization member/invite request and response schemas.
+- Preserve Extension Session and Instance-first login behavior, including extension-only `session_token` exposure.
+- Keep password hashes, token hashes, token generation, cookies, request parsing, permission context, repositories, persistence, and server auth context server-local.
+- Defer project/setup/organization domain packages because this phase only cleaned contracts and did not move server behavior.
 
 Tests:
 
-- Server route tests for public instance, setup, auth, project, and organization flows.
-- Schema tests for shared contracts.
-- Typecheck web/server.
+- Shared contract tests for auth, setup, organization, project, instance, and constants.
+- Focused server auth, setup, public instance, organization invite, and project route/service tests.
+- Web auth/setup/organization/API tests plus web typecheck and lint.
+- Extension API/App tests plus extension typecheck and lint.
+- Server and full repo typechecks.
 
 Acceptance:
 
@@ -615,6 +619,9 @@ Acceptance:
 - Auth-sensitive implementation details remain server-only.
 - No login/setup/project UI behavior changes.
 - Owner Bootstrap and Web First-Run Setup rules remain intact.
+- Web login responses still omit `session_token`.
+- Extension login responses still support extension-only `session_token`.
+- No database migration or domain package was added in this phase.
 
 ### 092: Capture Domain Extraction
 
