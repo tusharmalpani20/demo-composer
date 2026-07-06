@@ -1,50 +1,20 @@
-import type { PublicInstanceStatus } from "@repo/types/instance";
+import type { CaptureSessionStatus, ProjectStatus } from "@repo/constants";
+import type { AuthResponse, LoginRequest } from "@repo/types/auth";
 import type {
-  FirstRunSetupInput,
-  FirstRunSetupResponse,
-} from "@repo/types/setup";
-
-export type { PublicInstanceStatus } from "@repo/types/instance";
-import type {
-  CaptureSession,
+  CaptureSessionCreateResponse,
   CaptureSessionDetail,
-  CaptureSessionStatus,
   CreateCaptureEventInput,
   CreateCaptureEventResponse,
   CreateCaptureSessionInput,
+  ProjectCaptureSessionListResponse,
   ReorderCaptureEventsInput,
   ReorderCaptureEventsResponse,
   UpdateCaptureEventInput,
   UpdateCaptureEventResponse,
-  UploadCaptureAssetInput,
-  UploadCaptureAssetResponse,
-} from "../features/capture-session/types";
-import type { AuthResponse, LoginRequest } from "@repo/types/auth";
-import type {
-  Guide,
-  GuideBlock,
-  CreateGuideBlockInput,
-  GuideDetail,
-  GuideMarkdownExport,
-  GuidePublishResult,
-  GuidePublishStatusResponse,
-  GuideRevokePublishResult,
-  ProjectScreenshotAssetListResponse,
-  GuideStep,
-  PublicPublishLinkResponse,
-  UpdateGuideBlockInput,
-  UpdateGuideBlockAnnotationsInput,
-  UpdateGuideBlockScreenshotInput,
-  UpdateGuidePublishAccessInput,
-  UpdateGuidePublishPasswordInput,
-  UploadGuideBlockScreenshotInput,
-  UploadGuideBlockScreenshotResponse,
-} from "../features/guide/types";
+} from "@repo/types/capture";
 import type {
   CreateDemoHotspotInput,
   CreateInteractiveDemoFromCaptureResponse,
-  InteractiveDemoPublishResult,
-  InteractiveDemoPublishStatusResponse,
   InteractiveDemoDetailResponse,
   InteractiveDemoHotspotCreateResponse,
   InteractiveDemoHotspotListResponse,
@@ -54,13 +24,66 @@ import type {
   InteractiveDemoSceneReorderResponse,
   InteractiveDemoSceneUpdateResponse,
   ProjectInteractiveDemoListResponse,
-  RevokePublishResult,
   UpdateDemoHotspotInput,
   UpdateDemoSceneInput,
   UpdateInteractiveDemoInput,
+} from "@repo/types/demo";
+import type {
+  CreateGuideBlockInput,
+  Guide,
+  GuideBlockResponse,
+  GuideBlocksResponse,
+  GuideDetail,
+  GuideMarkdownExport,
+  ProjectGuideListResponse,
+  UpdateGuideBlockAnnotationsInput,
+  UpdateGuideBlockInput,
+  UpdateGuideBlockScreenshotInput,
+  UpdateGuideResponse,
+  UpdateGuideStepResponse,
+  UploadGuideBlockScreenshotResponse,
+} from "@repo/types/guide";
+import type { PublicInstanceStatus } from "@repo/types/instance";
+import type {
+  AcceptOrganizationInviteInput,
+  OrganizationInviteCreateInput,
+  OrganizationInviteCreateResponse,
+  OrganizationInviteListResponse,
+  OrganizationInviteUpdateResponse,
+  OrganizationMemberListResponse,
+  PublicOrganizationInviteResponse,
+} from "@repo/types/organization";
+import type {
+  GuidePublishResult,
+  GuidePublishStatusResponse,
+  GuideRevokePublishResult,
+  InteractiveDemoPublishResult,
+  InteractiveDemoPublishStatusResponse,
+  PublicPublishLinkResponse,
+  RevokePublishResult,
   UpdatePublishAccessInput,
   UpdatePublishPasswordInput,
-} from "../features/interactive-demo/types";
+} from "@repo/types/publish";
+import type {
+  CreateProjectInput,
+  ProjectCreateResponse,
+  ProjectDetailResponse,
+  ProjectListResponse,
+  ProjectUpdateResponse,
+  UpdateProjectInput,
+} from "@repo/types/project";
+import type {
+  FirstRunSetupInput,
+  FirstRunSetupResponse,
+} from "@repo/types/setup";
+import type {
+  UploadCaptureAssetInput,
+  UploadCaptureAssetResponse,
+} from "../features/capture-session/types";
+import type {
+  ProjectScreenshotAssetListResponse,
+  UploadGuideBlockScreenshotInput,
+} from "../features/guide/types";
 
 export type {
   InteractiveDemoDetailResponse,
@@ -72,17 +95,21 @@ export type {
   InteractiveDemoSceneReorderResponse,
   InteractiveDemoSceneUpdateResponse,
   ProjectInteractiveDemoListResponse,
-} from "../features/interactive-demo/types";
-import type {
-  AcceptOrganizationInviteInput,
-  OrganizationInviteCreateInput,
-  OrganizationInviteCreateResponse,
-  OrganizationInviteListResponse,
-  OrganizationInviteUpdateResponse,
-  OrganizationMemberListResponse,
-  PublicOrganizationInviteResponse,
-} from "../features/organization/types";
-import type { CreateProjectInput, Project, ProjectStatus, UpdateProjectInput } from "../features/project/types";
+} from "@repo/types/demo";
+export type {
+  CaptureSessionCreateResponse,
+  ProjectCaptureSessionListResponse,
+} from "@repo/types/capture";
+export type {
+  ProjectGuideListResponse,
+} from "@repo/types/guide";
+export type {
+  ProjectCreateResponse,
+  ProjectDetailResponse,
+  ProjectListResponse,
+  ProjectUpdateResponse,
+} from "@repo/types/project";
+export type { PublicInstanceStatus } from "@repo/types/instance";
 
 export type ApiClientErrorKind = "unauthenticated" | "not_found" | "validation" | "unknown";
 
@@ -91,34 +118,6 @@ type ApiErrorBody = {
     type?: string;
     message?: string;
   };
-};
-
-export type ProjectGuideListResponse = {
-  guides: Guide[];
-};
-
-export type ProjectDetailResponse = {
-  project: Project;
-};
-
-export type ProjectListResponse = {
-  projects: Project[];
-};
-
-export type ProjectCreateResponse = {
-  project: Project;
-};
-
-export type ProjectUpdateResponse = {
-  project: Project;
-};
-
-export type ProjectCaptureSessionListResponse = {
-  capture_sessions: CaptureSession[];
-};
-
-export type CaptureSessionCreateResponse = {
-  capture_session: CaptureSession;
 };
 
 export type ListProjectsOptions = {
@@ -599,7 +598,7 @@ export const revokeInteractiveDemoPublishLink = async (
 export const updateGuidePublishAccess = async (
   projectId: string,
   guideId: string,
-  input: UpdateGuidePublishAccessInput
+  input: UpdatePublishAccessInput
 ): Promise<GuidePublishStatusResponse> => (
   requestJson<GuidePublishStatusResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/publish/access`,
@@ -633,7 +632,7 @@ export const updateInteractiveDemoPublishAccess = async (
 export const updateGuidePublishPassword = async (
   projectId: string,
   guideId: string,
-  input: UpdateGuidePublishPasswordInput
+  input: UpdatePublishPasswordInput
 ): Promise<GuidePublishStatusResponse> => (
   requestJson<GuidePublishStatusResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/publish/password`,
@@ -946,8 +945,8 @@ export const updateGuide = async (
     description?: string | null;
     status?: Guide["status"];
   }
-): Promise<{ guide: Guide }> => (
-  requestJson<{ guide: Guide }>(
+): Promise<UpdateGuideResponse> => (
+  requestJson<UpdateGuideResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}`,
     {
       method: "PATCH",
@@ -967,8 +966,8 @@ export const updateGuideStep = async (
     title?: string;
     body?: string | null;
   }
-): Promise<{ guide_step: GuideStep }> => (
-  requestJson<{ guide_step: GuideStep }>(
+): Promise<UpdateGuideStepResponse> => (
+  requestJson<UpdateGuideStepResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/steps/${encodeURIComponent(stepId)}`,
     {
       method: "PATCH",
@@ -984,8 +983,8 @@ export const createGuideBlock = async (
   projectId: string,
   guideId: string,
   data: CreateGuideBlockInput
-): Promise<{ guide_blocks: GuideBlock[] }> => (
-  requestJson<{ guide_blocks: GuideBlock[] }>(
+): Promise<GuideBlocksResponse> => (
+  requestJson<GuideBlocksResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks`,
     {
       method: "POST",
@@ -1002,8 +1001,8 @@ export const updateGuideBlock = async (
   guideId: string,
   blockId: string,
   data: UpdateGuideBlockInput
-): Promise<{ guide_block: GuideBlock }> => (
-  requestJson<{ guide_block: GuideBlock }>(
+): Promise<GuideBlockResponse> => (
+  requestJson<GuideBlockResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/${encodeURIComponent(blockId)}`,
     {
       method: "PATCH",
@@ -1020,8 +1019,8 @@ export const updateGuideBlockScreenshot = async (
   guideId: string,
   blockId: string,
   data: UpdateGuideBlockScreenshotInput
-): Promise<{ guide_block: GuideBlock }> => (
-  requestJson<{ guide_block: GuideBlock }>(
+): Promise<GuideBlockResponse> => (
+  requestJson<GuideBlockResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/${encodeURIComponent(blockId)}/screenshot`,
     {
       method: "PATCH",
@@ -1038,8 +1037,8 @@ export const updateGuideBlockAnnotations = async (
   guideId: string,
   blockId: string,
   data: UpdateGuideBlockAnnotationsInput
-): Promise<{ guide_block: GuideBlock }> => (
-  requestJson<{ guide_block: GuideBlock }>(
+): Promise<GuideBlockResponse> => (
+  requestJson<GuideBlockResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/${encodeURIComponent(blockId)}/annotations`,
     {
       method: "PATCH",
@@ -1095,8 +1094,8 @@ export const reorderGuideBlocks = async (
   projectId: string,
   guideId: string,
   blockIds: string[]
-): Promise<{ guide_blocks: GuideBlock[] }> => (
-  requestJson<{ guide_blocks: GuideBlock[] }>(
+): Promise<GuideBlocksResponse> => (
+  requestJson<GuideBlocksResponse>(
     `/api/v1/projects/${encodeURIComponent(projectId)}/guides/${encodeURIComponent(guideId)}/blocks/reorder`,
     {
       method: "PATCH",

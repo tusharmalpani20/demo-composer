@@ -1,4 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  DEMO_HOTSPOT_TYPES,
+  INTERACTIVE_DEMO_STATUSES,
+  PUBLISH_VISIBILITIES,
+  type PublishVisibility,
+} from "@repo/constants";
 import { Badge } from "@repo/ui/badge";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
@@ -86,7 +92,7 @@ type HotspotDraft = {
 };
 
 type PublishDraft = {
-  visibility: "public" | "restricted";
+  visibility: PublishVisibility;
   expires_at: string;
   password: string;
 };
@@ -940,8 +946,9 @@ const InteractiveDemoEditorLoaded = ({
                 value={demoDraft.status}
                 onChange={(event) => updateDemoDraft("status", event.target.value)}
               >
-                <option value="draft">draft</option>
-                <option value="archived">archived</option>
+                {INTERACTIVE_DEMO_STATUSES.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
               </Select>
             </Label>
             <Button disabled={pendingAction === "demo"} onClick={handleSaveDemo}>
@@ -998,8 +1005,9 @@ const InteractiveDemoEditorLoaded = ({
                       value={publishDraft.visibility}
                       onChange={(event) => updatePublishDraft("visibility", event.target.value as PublishDraft["visibility"])}
                     >
-                      <option value="public">public</option>
-                      <option value="restricted">restricted</option>
+                      {PUBLISH_VISIBILITIES.map((visibility) => (
+                        <option key={visibility} value={visibility}>{visibility}</option>
+                      ))}
                     </Select>
                   </Label>
                   <Label className={styles.field}>
@@ -1254,9 +1262,9 @@ const SceneEditor = ({
                       value={hotspotDraft.hotspot_type}
                       onChange={(event) => updateHotspotDraft(hotspot.id, "hotspot_type", event.target.value as DemoHotspotType)}
                     >
-                      <option value="click">click</option>
-                      <option value="info">info</option>
-                      <option value="next">next</option>
+                      {DEMO_HOTSPOT_TYPES.map((hotspotType) => (
+                        <option key={hotspotType} value={hotspotType}>{hotspotType}</option>
+                      ))}
                     </Select>
                   </Label>
                   <Label className={styles.field}>

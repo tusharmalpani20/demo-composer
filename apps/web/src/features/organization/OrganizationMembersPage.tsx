@@ -1,4 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
+import { ORGANIZATION_ROLES } from "@repo/constants";
 import { Alert } from "@repo/ui/alert";
 import { Badge } from "@repo/ui/badge";
 import { Button } from "@repo/ui/button";
@@ -41,6 +42,8 @@ type OrganizationMembersPageProps = {
   performLogout?: () => Promise<void>;
   navigate?: (path: string) => void;
 };
+
+const inviteRoleOptions = [...ORGANIZATION_ROLES].reverse();
 
 const defaultCopyText = async (text: string) => {
   if (!navigator.clipboard?.writeText) {
@@ -252,8 +255,9 @@ export const OrganizationMembersPage = ({
             <Label className={styles.field}>
               <span>Invite role</span>
               <select value={role} onChange={(event) => setRole(event.target.value as OrganizationRole)}>
-                <option value="member">member</option>
-                <option value="owner">owner</option>
+                {inviteRoleOptions.map((organizationRole) => (
+                  <option key={organizationRole} value={organizationRole}>{organizationRole}</option>
+                ))}
               </select>
             </Label>
           </div>
