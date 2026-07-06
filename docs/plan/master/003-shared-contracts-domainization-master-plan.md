@@ -819,7 +819,7 @@ Acceptance:
 
 ### 097: Web Shared Contract Consumption
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 File:
 
@@ -855,7 +855,7 @@ Acceptance:
 
 ### 098: Extension Shared Contract Consumption
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 File:
 
@@ -887,6 +887,7 @@ Acceptance:
 - `apps/extension/src/lib/api.ts` now imports/re-exports shared `CaptureSession`, `CaptureSessionResponse`, `CompleteCaptureSessionResponse`, `CaptureAsset`, and `CaptureAssetResponse` DTOs directly from `@repo/types/capture`.
 - Extension-local `CreateCaptureSessionInput`, `UploadCaptureAssetInput`, and `CreateCaptureEventInput` remain intentionally local and narrowed.
 - No extension UI, runtime, manifest, route, storage, permission, or browser-visible behavior changed.
+- Post-implementation audit found no leftover implementation work to carry into `099` beyond normal regression and documentation closeout.
 
 ### 099: Contract Regression, Docs Sync, And Architecture Closeout
 
