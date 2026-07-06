@@ -7,23 +7,23 @@ import type { OrganizationInvite, OrganizationMember } from "./types";
 const members: OrganizationMember[] = [
   {
     id: "org_user_1",
+    organization_id: "organization_1",
     user_id: "user_1",
     email: "owner@example.com",
     display_name: "Owner User",
     role: "owner",
     status: "active",
     created_at: "2026-06-05T10:00:00.000Z",
-    updated_at: "2026-06-05T10:00:00.000Z",
   },
   {
     id: "org_user_2",
+    organization_id: "organization_1",
     user_id: "user_2",
     email: "member@example.com",
     display_name: "Member User",
     role: "member",
     status: "active",
     created_at: "2026-06-06T10:00:00.000Z",
-    updated_at: "2026-06-06T10:00:00.000Z",
   },
 ];
 

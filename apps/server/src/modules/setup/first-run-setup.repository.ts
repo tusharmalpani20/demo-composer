@@ -24,7 +24,7 @@ type SetupOrgUser = {
   id: string;
   user_id: string;
   organization_id: string;
-  role: string;
+  role: "owner";
 };
 
 type SetupSession = {

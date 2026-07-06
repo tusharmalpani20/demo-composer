@@ -1,4 +1,8 @@
 import type { PublicInstanceStatus } from "@repo/types/instance";
+import type {
+  FirstRunSetupInput,
+  FirstRunSetupResponse,
+} from "@repo/types/setup";
 
 export type { PublicInstanceStatus } from "@repo/types/instance";
 import type {
@@ -15,7 +19,7 @@ import type {
   UploadCaptureAssetInput,
   UploadCaptureAssetResponse,
 } from "../features/capture-session/types";
-import type { AuthResponse } from "../features/auth/types";
+import type { AuthResponse, LoginRequest } from "@repo/types/auth";
 import type {
   Guide,
   GuideBlock,
@@ -270,17 +274,10 @@ export const getPublicInstanceStatus = async (): Promise<PublicInstanceStatus> =
 );
 
 export const completeFirstRunSetup = async (data: {
-  owner: {
-    email: string;
-    password: string;
-    first_name?: string | null;
-    last_name?: string | null;
-  };
-  organization: {
-    name: string;
-  };
-}): Promise<AuthResponse> => (
-  requestJson<AuthResponse>("/api/v1/setup/first-run", {
+  owner: FirstRunSetupInput["owner"];
+  organization: FirstRunSetupInput["organization"];
+}): Promise<FirstRunSetupResponse> => (
+  requestJson<FirstRunSetupResponse>("/api/v1/setup/first-run", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -289,10 +286,7 @@ export const completeFirstRunSetup = async (data: {
   })
 );
 
-export const login = async (data: {
-  email: string;
-  password: string;
-}): Promise<AuthResponse> => (
+export const login = async (data: LoginRequest): Promise<AuthResponse> => (
   requestJson<AuthResponse>("/api/v1/authentication/login", {
     method: "POST",
     headers: {

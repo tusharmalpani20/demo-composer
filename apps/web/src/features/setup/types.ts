@@ -1,1 +1,4 @@
-export type { FirstRunSetupInput } from "@repo/types/setup";
+export type {
+  FirstRunSetupInput,
+  FirstRunSetupResponse,
+} from "@repo/types/setup";

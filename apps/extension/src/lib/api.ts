@@ -9,42 +9,23 @@ import type {
   CaptureEventResponse,
 } from "@repo/types/capture";
 import type {
+  AuthResponse,
+  ExtensionLoginResponse,
+  LoginRequest,
+} from "@repo/types/auth";
+import type {
   Project,
   ProjectListResponse,
 } from "@repo/types/project";
 
 export type {
+  AuthResponse,
   CaptureEvent,
   CaptureEventResponse,
+  ExtensionLoginResponse as LoginResponse,
+  LoginRequest,
   Project,
   ProjectListResponse,
-};
-
-export type AuthResponse = {
-  auth: {
-    user: {
-      id: string;
-      email: string;
-      display_name: string;
-    };
-    organization: {
-      id: string;
-      name: string;
-    };
-    org_user: {
-      id: string;
-      role: string;
-    };
-    session: {
-      id: string;
-      session_type: string;
-      expires_at: string;
-    };
-  };
-};
-
-export type LoginResponse = AuthResponse & {
-  session_token: string;
 };
 
 export type CaptureSession = {
@@ -211,12 +192,9 @@ const appendOptionalFormValue = (
 
 export const login = async (
   instanceUrl: string,
-  data: {
-    email: string;
-    password: string;
-  }
-): Promise<LoginResponse> => (
-  requestJson<LoginResponse>(instanceUrl, "/api/v1/authentication/login", {
+  data: LoginRequest
+): Promise<ExtensionLoginResponse> => (
+  requestJson<ExtensionLoginResponse>(instanceUrl, "/api/v1/authentication/login", {
     method: "POST",
     headers: {
       ...authHeaders(),

@@ -1,7 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
 import type {
+  OrganizationInvite,
+  OrganizationMember,
+} from "@repo/types/organization";
+import type {
   OrganizationInviteStatus,
-  OrganizationMemberStatus,
   OrganizationRole,
 } from "@repo/constants";
 import { Password } from "../../common/services/password.common.service";
@@ -13,32 +16,8 @@ import {
 
 export type OrgMemberRole = OrganizationRole;
 export type OrgInviteStatus = OrganizationInviteStatus;
-
-export type OrgMember = {
-  id: string;
-  organization_id: string;
-  user_id: string;
-  email: string;
-  display_name: string;
-  role: OrgMemberRole;
-  status: OrganizationMemberStatus;
-  created_at: string;
-};
-
-export type OrgInvite = {
-  id: string;
-  organization_id: string;
-  email: string;
-  role: OrgMemberRole;
-  status: OrgInviteStatus;
-  expires_at: string;
-  accepted_at: string | null;
-  accepted_user_id: string | null;
-  created_by_id: string;
-  updated_by_id: string;
-  created_at: string;
-  updated_at: string;
-};
+export type OrgMember = OrganizationMember;
+export type OrgInvite = OrganizationInvite;
 
 type StoredOrgInvite = OrgInvite & {
   token_hash: string;

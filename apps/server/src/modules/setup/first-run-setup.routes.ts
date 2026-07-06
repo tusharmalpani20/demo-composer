@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import {
   FirstRunSetupRequestSchema,
   type FirstRunSetupRequest,
+  type FirstRunSetupResponse,
 } from "@repo/types/setup";
 import {
   FirstRunSetupAlreadyCompletedError,
@@ -16,9 +17,8 @@ import {
 export { web_session_cookie_name };
 
 export type FirstRunSetupRouteService = {
-  complete_first_run_setup: (input: FirstRunSetupRequest) => Promise<{
+  complete_first_run_setup: (input: FirstRunSetupRequest) => Promise<FirstRunSetupResponse & {
     session_token: string;
-    auth: unknown;
   }>;
 };
 

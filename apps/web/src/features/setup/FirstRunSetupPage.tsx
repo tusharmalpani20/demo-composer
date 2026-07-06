@@ -10,13 +10,13 @@ import {
   getPublicInstanceStatus,
   type PublicInstanceStatus,
 } from "../../lib/api";
-import type { AuthResponse } from "../auth/types";
 import type { FirstRunSetupInput } from "./types";
+import type { FirstRunSetupResponse } from "@repo/types/setup";
 import styles from "./FirstRunSetupPage.module.css";
 
 type FirstRunSetupPageProps = {
   getInstanceStatus?: () => Promise<PublicInstanceStatus>;
-  completeSetup?: (input: FirstRunSetupInput) => Promise<AuthResponse>;
+  completeSetup?: (input: FirstRunSetupInput) => Promise<FirstRunSetupResponse>;
   navigate?: (path: string) => void;
 };
 

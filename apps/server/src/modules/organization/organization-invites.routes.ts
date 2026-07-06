@@ -1,6 +1,10 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
-import { ORGANIZATION_ROLES } from "@repo/constants";
-import { z } from "zod";
+import {
+  AcceptOrganizationInviteRequestSchema,
+  CreateOrganizationInviteRequestSchema,
+  type AcceptOrganizationInviteInput,
+  type OrganizationInviteCreateInput,
+} from "@repo/types/organization";
 import { get_public_web_url } from "../../config/public-web-url.config";
 import { set_web_session_cookie } from "../authentication/session-cookie";
 import { session_token_from_request } from "../authentication/request-session-token";
@@ -66,16 +70,6 @@ export type OrganizationInvitesRouteDependencies = {
     }>;
   };
 };
-
-const invite_body_schema = z.object({
-  email: z.string().trim().email(),
-  role: z.enum(ORGANIZATION_ROLES).optional(),
-}).passthrough();
-
-const accept_invite_body_schema = z.object({
-  password: z.string().optional(),
-  display_name: z.string().nullable().optional(),
-}).passthrough();
 
 const error_response = (type: string, message: string) => ({
   error: {
@@ -175,13 +169,10 @@ export const build_organization_invites_routes = (
     });
 
     fastify.post<{
-      Body: {
-        email: string;
-        role?: OrgMemberRole;
-      };
+      Body: OrganizationInviteCreateInput;
     }>("/organization/invites", {
       schema: {
-        body: invite_body_schema,
+        body: CreateOrganizationInviteRequestSchema,
       },
     }, async (request, reply) => {
       try {
@@ -241,13 +232,10 @@ export const build_organization_invites_routes = (
       Params: {
         token: string;
       };
-      Body: {
-        password?: string;
-        display_name?: string | null;
-      };
+      Body: AcceptOrganizationInviteInput;
     }>("/public/invites/:token/accept", {
       schema: {
-        body: accept_invite_body_schema,
+        body: AcceptOrganizationInviteRequestSchema,
       },
     }, async (request, reply) => {
       try {

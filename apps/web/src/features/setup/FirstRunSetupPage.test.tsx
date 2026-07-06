@@ -57,14 +57,10 @@ describe("FirstRunSetupPage", () => {
   it("submits trimmed setup fields and navigates to projects", async () => {
     const completeSetup = vi.fn(async () => ({
       auth: {
-        user: { id: "user_1", email: "owner@example.com", display_name: "Owner User" },
+        user: { id: "user_1", email: "owner@example.com" },
         organization: { id: "organization_1", name: "Acme" },
-        org_user: { id: "org_user_1", role: "owner" },
-        session: {
-          id: "session_1",
-          session_type: "web",
-          expires_at: "2026-06-06T10:00:00.000Z",
-        },
+        org_user: { id: "org_user_1", role: "owner" as const },
+        session: { id: "session_1" },
       },
     }));
     const navigate = vi.fn();

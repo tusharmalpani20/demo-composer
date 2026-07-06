@@ -1,5 +1,8 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
-import { z } from "zod";
+import {
+  LoginRequestSchema,
+  type LoginRequest,
+} from "@repo/types/auth";
 import {
   clear_web_session_cookie,
   set_web_session_cookie,
@@ -21,20 +24,12 @@ export {
 
 export type AuthenticationSessionRouteService = {
   get_current_auth_context: (session_token?: string) => Promise<AuthContext>;
-  login: (input: {
-    email: string;
-    password: string;
-  }) => Promise<{
+  login: (input: LoginRequest) => Promise<{
     session_token: string;
     auth: AuthContext;
   }>;
   logout: (session_token?: string) => Promise<void>;
 };
-
-const login_body_schema = z.object({
-  email: z.string().min(1),
-  password: z.string().min(1),
-});
 
 const unauthorized_response = (type: "unauthenticated" | "invalid_credentials", message: string) => ({
   error: {
@@ -66,13 +61,10 @@ export const build_authentication_session_routes = (
     });
 
     fastify.post<{
-      Body: {
-        email: string;
-        password: string;
-      };
+      Body: LoginRequest;
     }>("/login", {
       schema: {
-        body: login_body_schema,
+        body: LoginRequestSchema,
       },
     }, async (request, reply) => {
       try {
