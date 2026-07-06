@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -25,6 +25,8 @@ This phase should extract reusable domain policies, not introduce product behavi
 ## Completion Summary
 
 Completed on 2026-07-07 in implementation commit `1da9761 feat(capture): extract capture domain policies`.
+
+Post-implementation audit completed on 2026-07-07. No code changes were required.
 
 Implemented changes:
 
@@ -53,6 +55,14 @@ Verification passed:
 - `rtk pnpm --filter web check-types`
 - `rtk pnpm check-types`
 - `rtk git diff --check`
+
+Post-audit verification passed:
+
+- `rtk pnpm --filter @repo/types lint`
+- `rtk pnpm --filter @repo/types build`
+- `rtk pnpm --filter @repo/capture-domain test`
+- `rtk pnpm --filter @repo/capture-domain check-types`
+- `rtk pnpm --filter @repo/capture-domain lint`
 
 Browser validation was not required because this phase moved pure domain policies and shared JSON schemas without changing rendered UI, fetch paths, extension workflow, upload flow, event ordering behavior, or browser-visible route behavior.
 
@@ -807,6 +817,17 @@ Do not make visual assertions beyond confirming behavior remains stable and ther
 - Replaced capture asset route-local JSON body/list query schemas with shared schemas while leaving multipart upload parsing route-local.
 - Left extension capture input aliases intentionally narrowed to avoid widening extension behavior.
 - Ran the verification commands listed in the completion summary.
+
+2026-07-07 post-implementation audit:
+
+- Rechecked the implementation against this child plan and the master plan.
+- Confirmed `@repo/capture-domain` contains no Fastify, auth/session, request/reply, SQL, transaction, repository, ULID, stream, or server file-storage adapter imports.
+- Confirmed capture-domain storage-related values are file metadata fields only, while stream handling, storage keys, file adapters, and upload cleanup remain server-owned.
+- Confirmed capture asset JSON schemas moved to `@repo/types/capture` and multipart upload parsing stayed in the server route.
+- Confirmed server route `instanceof` error mapping remains stable through re-exported domain errors from server service modules.
+- Confirmed no unrelated files or UI files were changed.
+- Reran additional package checks for `@repo/types` lint/build and `@repo/capture-domain` test/check-types/lint.
+- No additional code changes were needed.
 
 ## Final Output Required
 

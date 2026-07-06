@@ -626,7 +626,7 @@ Acceptance:
 
 ### 092: Capture Domain Extraction
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 File:
 
@@ -665,6 +665,7 @@ Acceptance:
 - No guide or interactive-demo generation occurs on capture completion.
 - Browser validation was not required because there were no browser-visible behavior changes.
 - DB verification was not required because repositories, migrations, transactions, and persisted data shapes were unchanged.
+- Post-implementation audit found no code gaps; additional `@repo/types` lint/build and `@repo/capture-domain` checks passed.
 
 ### 093: Guide Domain Extraction
 
