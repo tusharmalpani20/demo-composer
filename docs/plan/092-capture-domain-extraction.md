@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Expanded and rechecked for implementation readiness on 2026-07-07.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -21,6 +21,49 @@ Create `@repo/capture-domain` and move pure Capture Session, Capture Event, and 
 Capture remains source material. Finishing a capture session must not create a Guide or Interactive Demo automatically.
 
 This phase should extract reusable domain policies, not introduce product behavior. The server remains the application adapter that owns Fastify routes, auth/session context, SQL repositories, transactions, file storage, multipart parsing, cookies, and error-to-HTTP mapping.
+
+## Completion Summary
+
+Completed on 2026-07-07 in implementation commit `1da9761 feat(capture): extract capture domain policies`.
+
+Implemented changes:
+
+- Created `@repo/capture-domain` with pure capture session, capture event, and capture asset policy modules.
+- Added domain tests for session normalization/completion helpers, event safety/order/editability rules, and asset screenshot/upload metadata policies.
+- Wired server capture session, event, and asset services/routes to use `@repo/capture-domain` while preserving service exports and route `instanceof` error mapping.
+- Added shared capture asset JSON request/list query schemas in `@repo/types/capture`.
+- Replaced capture asset route-local JSON body/list query schemas with shared schemas.
+- Preserved Fastify routes, auth/session context, SQL repositories, transactions, multipart parsing, file storage adapters, ULID generation, stream handling, and route error envelopes in `apps/server`.
+- Kept extension local capture create/input DTOs intentionally narrowed because extension session creation must stay `source_type: "extension"` and extension event creation currently only sends `"capture"` and `"click"` payloads.
+- Added no database migration and changed no UI behavior.
+
+Verification passed:
+
+- `rtk pnpm --filter @repo/capture-domain test`
+- `rtk pnpm --filter @repo/capture-domain check-types`
+- `rtk pnpm --filter @repo/capture-domain lint`
+- `rtk pnpm --filter @repo/capture-domain build`
+- `rtk pnpm --filter @repo/types test -- capture`
+- `rtk pnpm --filter @repo/types check-types`
+- `rtk pnpm --filter server test -- capture-session.service capture-session.routes capture-event.service capture-event.routes capture-asset.service capture-asset.routes`
+- `rtk pnpm --filter server check-types`
+- `rtk pnpm --filter server lint`
+- `rtk pnpm --filter extension check-types`
+- `rtk pnpm --filter extension test -- api App automatic-capture content-click-capture`
+- `rtk pnpm --filter web check-types`
+- `rtk pnpm check-types`
+- `rtk git diff --check`
+
+Browser validation was not required because this phase moved pure domain policies and shared JSON schemas without changing rendered UI, fetch paths, extension workflow, upload flow, event ordering behavior, or browser-visible route behavior.
+
+Database verification was not required because this phase did not change repository queries, transactions, migrations, persisted values, file metadata writes, or DB completion/update behavior.
+
+Carry into `093-guide-domain-extraction.md`:
+
+- Capture remains source material only.
+- Guide and interactive-demo generation must continue to happen through explicit existing user actions, not capture completion.
+- Keep guide-domain free of capture storage adapters, auth/session internals, and server route concerns.
+- Reuse capture DTOs and domain policy outputs where helpful, but do not make guide-domain mutate capture source records.
 
 ## Baseline From Completed 091
 
@@ -728,23 +771,42 @@ Do not make visual assertions beyond confirming behavior remains stable and ther
 
 ## Completion Checklist
 
-- [ ] Worktree checked before implementation.
-- [ ] Current `091` completion notes reread.
-- [ ] Current master plan reread.
-- [ ] Existing capture session/event/asset services and routes inspected.
-- [ ] `@repo/capture-domain` package created with tests.
-- [ ] Session policies extracted and wired.
-- [ ] Event policies extracted and wired.
-- [ ] Asset policies extracted and wired.
-- [ ] Existing route error `instanceof` mappings preserved or replaced with equally stable mapping helpers.
-- [ ] Capture asset JSON schema gap closed or explicitly deferred.
-- [ ] Extension local capture type duplication reduced or explicitly documented as intentionally narrowed.
-- [ ] No auth/session/storage/SQL/Fastify internals moved into capture-domain.
-- [ ] No route/API response behavior changed.
-- [ ] No UI behavior changed.
-- [ ] Focused verification completed.
-- [ ] Browser validation completed or explicitly documented as not required.
-- [ ] DB verification completed or explicitly documented as not required.
+- [x] Worktree checked before implementation.
+- [x] Current `091` completion notes reread.
+- [x] Current master plan reread.
+- [x] Existing capture session/event/asset services and routes inspected.
+- [x] `@repo/capture-domain` package created with tests.
+- [x] Session policies extracted and wired.
+- [x] Event policies extracted and wired.
+- [x] Asset policies extracted and wired.
+- [x] Existing route error `instanceof` mappings preserved or replaced with equally stable mapping helpers.
+- [x] Capture asset JSON schema gap closed or explicitly deferred.
+- [x] Extension local capture type duplication reduced or explicitly documented as intentionally narrowed.
+- [x] No auth/session/storage/SQL/Fastify internals moved into capture-domain.
+- [x] No route/API response behavior changed.
+- [x] No UI behavior changed.
+- [x] Focused verification completed.
+- [x] Browser validation completed or explicitly documented as not required.
+- [x] DB verification completed or explicitly documented as not required.
+
+## Implementation Log
+
+2026-07-07:
+
+- Rechecked the current worktree, completed `091` notes, parent master plan, and current capture session/event/asset services and routes before coding.
+- Added failing `@repo/capture-domain` policy tests first; the red run failed because the planned policy modules were missing.
+- Implemented `@repo/capture-domain` package structure, policy modules, errors, type files, package scripts, and ESLint config.
+- Extracted capture session normalization, empty update detection, lifecycle timestamp guard, completion body validation, completion redirect building, and asset file URL building.
+- Extracted capture event input privacy checks, event-type requirements, reorder normalization/full-set validation, manual-only reorder guard, safe update normalization, and manual active editability guard.
+- Extracted capture asset screenshot-only metadata normalization, upload metadata normalization, project screenshot picker validation, and file-domain upload policy error mapping.
+- Re-exported domain error classes through server service modules so route `instanceof` error mapping stayed stable.
+- Wired capture session, event, and asset server services/routes to call `@repo/capture-domain`.
+- Kept project existence checks, auth scope, SQL repositories, transactions, multipart parsing, file storage adapters, ULID generation, and stream reads in `apps/server`.
+- Added failing shared schema tests for capture asset JSON create/list contracts; the red run failed because the schemas were missing.
+- Added `CreateCaptureAssetRequestSchema` and `CaptureAssetListQuerySchema` to `@repo/types/capture`.
+- Replaced capture asset route-local JSON body/list query schemas with shared schemas while leaving multipart upload parsing route-local.
+- Left extension capture input aliases intentionally narrowed to avoid widening extension behavior.
+- Ran the verification commands listed in the completion summary.
 
 ## Final Output Required
 

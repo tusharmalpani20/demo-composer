@@ -626,7 +626,7 @@ Acceptance:
 
 ### 092: Capture Domain Extraction
 
-Status: Expanded and rechecked for implementation readiness on 2026-07-07.
+Status: Completed on 2026-07-07.
 
 File:
 
@@ -642,7 +642,7 @@ Scope:
 - Extract pure capture event validation, ordering, privacy, and editability policies.
 - Extract pure capture asset metadata, screenshot-only, upload-policy mapping, and project screenshot picker policies.
 - Reuse existing capture schemas/constants from `@repo/types/capture` and `@repo/constants`.
-- Close the capture asset JSON schema gap only if current route behavior is preserved exactly.
+- Close the capture asset JSON schema gap while preserving current route behavior exactly.
 - Keep Fastify routes, auth/session context, SQL repositories, transactions, multipart parsing, file storage adapters, and route error mapping in `apps/server`.
 - Preserve immutable capture source records.
 - Preserve screenshot-first capture behavior.
@@ -663,6 +663,8 @@ Acceptance:
 - No visible extension behavior changes.
 - No auth/session/storage/SQL internals move into `@repo/capture-domain`.
 - No guide or interactive-demo generation occurs on capture completion.
+- Browser validation was not required because there were no browser-visible behavior changes.
+- DB verification was not required because repositories, migrations, transactions, and persisted data shapes were unchanged.
 
 ### 093: Guide Domain Extraction
 
