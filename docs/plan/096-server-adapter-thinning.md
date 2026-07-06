@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -27,6 +27,44 @@ After this phase, server modules should read as adapters:
 - Repositories keep SQL, row mapping, unique-constraint mapping, transaction implementation, and database-specific behavior.
 - Domain packages keep pure product validation, ordering, lifecycle, snapshot, access, password, and generation rules.
 - `@repo/types` keeps shared request/response schemas where there is an active cross-package consumer or a documented public API contract reason.
+
+## Completion Summary
+
+Completed on 2026-07-07.
+
+Implemented changes:
+
+- Added `apps/server/src/modules/shared/http-errors.ts` as a server-only helper for the standard unauthenticated and typed error response envelopes.
+- Added `apps/server/src/modules/shared/http-errors.test.ts` to lock the shared helper output against the existing route response shape.
+- Replaced duplicated `unauthorized_response` and `error_response` builders in project, organization invites, capture session, capture event, capture asset, guide, interactive demo, and publish routes.
+- Left `apps/server/src/modules/authentication/session.routes.ts` local because it has authentication-specific `unauthenticated` and `invalid_credentials` response construction.
+- Updated publish routes/tests to import publish policy errors directly from `@repo/publish-domain`.
+- Updated publish routes/tests/app integration fixtures to use shared `@repo/types/publish` DTOs directly instead of server service compatibility aliases.
+- Removed publish-domain error re-exports and the `GuidePublishResult`, `InteractiveDemoPublishResult`, `RevokedGuidePublishResult`, and `RevokedInteractiveDemoPublishResult` compatibility aliases from `apps/server/src/modules/publish/publish.service.ts`.
+- Kept server-owned publish errors, repository interfaces, hashing/token/cookie behavior, storage reads, SQL, transaction boundaries, and route error-to-HTTP mapping server-owned.
+
+No route URL, method, route registration prefix, route parameter name, Fastify schema metadata, response envelope, status code, error `type`, SQL query, row mapping, transaction boundary, migration, cookie behavior, password/token hashing behavior, public URL, public viewer behavior, JSX, CSS, rendered text, web fetch path, or browser-visible behavior changed.
+
+Verification passed:
+
+- `rtk pnpm --filter server test -- http-errors`
+- `rtk pnpm --filter server test -- publish.routes publish.service publish.app http-errors`
+- `rtk pnpm --filter server test -- project.routes organization-invites.routes capture-session.routes capture-event.routes capture-asset.routes guide.routes interactive-demo.routes`
+- `rtk pnpm --filter server check-types`
+- `rtk pnpm --filter server test`
+- `rtk pnpm check-types`
+- `rtk pnpm --filter server lint`
+- `rtk git diff --check`
+
+Browser validation was not required because this phase was backend adapter cleanup only and did not change JSX, CSS, rendered copy, route paths used by the browser, fetch paths, form behavior, public viewer parsing behavior, or published link behavior.
+
+Database verification was not required because this phase did not change repositories, SQL, migrations, row mapping, transaction boundaries, persisted values, persisted snapshot JSON shape, cookie/session tables, or storage access SQL.
+
+Leftovers for later phases:
+
+- Some service modules still intentionally expose server-owned not-found/storage/integration errors and DTOs used by route dependency interfaces.
+- Route-local multipart parsers in capture asset and guide routes remain server-owned because they handle file streams, multipart metadata JSON, timestamp parsing, and upload validation.
+- `apps/web/src/features/guide/types.ts` guide-named publish compatibility aliases remain for plan `097` or later web contract cleanup.
 
 ## Dependencies And Implemented Baseline
 
@@ -558,16 +596,16 @@ Browser validation:
 
 ## Completion Checklist
 
-- [ ] Audited current imports/exports and uncommitted work before editing.
-- [ ] Chose small module slices and kept changes scoped.
-- [ ] Removed only compatibility exports with no remaining consumers.
-- [ ] Preserved route URLs, methods, response envelopes, status codes, and error `type` strings.
-- [ ] Preserved auth/session, cookie, password, token, public viewer, and upload security behavior.
-- [ ] Kept SQL, migrations, transactions, row mapping, and storage adapters server-owned.
-- [ ] Avoided frontend/UI changes.
-- [ ] Ran focused route/service verification for every touched module.
-- [ ] Ran server typecheck and workspace typecheck.
-- [ ] Updated this plan and master plan after implementation.
+- [x] Audited current imports/exports and uncommitted work before editing.
+- [x] Chose small module slices and kept changes scoped.
+- [x] Removed only compatibility exports with no remaining consumers.
+- [x] Preserved route URLs, methods, response envelopes, status codes, and error `type` strings.
+- [x] Preserved auth/session, cookie, password, token, public viewer, and upload security behavior.
+- [x] Kept SQL, migrations, transactions, row mapping, and storage adapters server-owned.
+- [x] Avoided frontend/UI changes.
+- [x] Ran focused route/service verification for every touched module.
+- [x] Ran server typecheck and workspace typecheck.
+- [x] Updated this plan and master plan after implementation.
 
 ## Handoff Notes
 

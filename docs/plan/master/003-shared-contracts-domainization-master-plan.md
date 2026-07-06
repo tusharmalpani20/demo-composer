@@ -781,6 +781,8 @@ Acceptance:
 
 ### 096: Server Adapter Thinning
 
+Status: Completed on 2026-07-07.
+
 File:
 
 - `docs/plan/096-server-adapter-thinning.md`
@@ -802,12 +804,16 @@ Tests:
 - Full server test suite.
 - Targeted route regression tests for all touched endpoints.
 - Typecheck across workspace.
+- Additional verification passed for shared HTTP error helper tests, focused publish route/service/app tests, focused route regression tests for project, organization invites, capture session, capture event, capture asset, guide, and interactive demo routes, server lint, server typecheck, full non-DB server test suite, workspace typecheck, and `git diff --check`.
 
 Acceptance:
 
 - Routes are thin and readable.
 - Domain behavior lives in domain packages.
 - API behavior remains stable.
+- Server route adapters now share standard error envelope builders instead of duplicating them.
+- Publish route/test code imports publish policy errors and shared publish DTOs directly; server publish service no longer re-exports publish-domain errors or old publish/revoke result compatibility aliases.
+- No route URL, method, prefix, parameter name, response envelope, status code, error `type`, auth/session, cookie, SQL, migration, row mapping, transaction, storage, public viewer, or browser-visible behavior changed.
 
 ### 097: Web Shared Contract Consumption
 
