@@ -1,13 +1,19 @@
+import type {
+  CaptureSessionSourceType,
+  CaptureSessionStatus,
+} from "@repo/constants";
 import type { CaptureAsset } from "../capture-asset/capture-asset.service";
 import type { CaptureEvent } from "../capture-event/capture-event.service";
+
+export type {
+  CaptureSessionSourceType,
+  CaptureSessionStatus,
+};
 
 export type CaptureSessionAuthContext = {
   organization_id: string;
   actor_org_user_id: string;
 };
-
-export type CaptureSessionStatus = "draft" | "capturing" | "completed" | "canceled" | "archived";
-export type CaptureSessionSourceType = "manual" | "extension" | "import";
 
 export type CaptureSession = {
   id: string;

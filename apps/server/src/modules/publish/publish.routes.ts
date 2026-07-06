@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
+import { PUBLISH_VISIBILITIES } from "@repo/constants";
 import {
   UnauthenticatedSessionError,
   type AuthContext,
@@ -138,7 +139,7 @@ const parse_publish_access_body = (body: unknown): { visibility: PublishVisibili
 
   const candidate = body as { visibility?: unknown; expires_at?: unknown };
 
-  if (candidate.visibility !== "public" && candidate.visibility !== "restricted") {
+  if (!PUBLISH_VISIBILITIES.includes(candidate.visibility as PublishVisibility)) {
     throw new InvalidPublishAccessSettingsError();
   }
 
@@ -154,7 +155,7 @@ const parse_publish_access_body = (body: unknown): { visibility: PublishVisibili
   }
 
   return {
-    visibility: candidate.visibility,
+    visibility: candidate.visibility as PublishVisibility,
     expires_at: candidate.expires_at ?? null,
   };
 };

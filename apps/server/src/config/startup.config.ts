@@ -1,4 +1,8 @@
 import path from "node:path";
+import {
+    DEPLOYMENT_MODES,
+    ONBOARDING_MODES,
+} from "@repo/constants";
 import { get_cookie_config } from "./cookie.config";
 import { get_cors_config } from "./cors.config";
 import {
@@ -71,13 +75,13 @@ const assert_production_public_api_url = () => {
 const validate_production_startup_config = () => {
     assert_production_enum_env(
         "DEMO_COMPOSER_DEPLOYMENT_MODE",
-        ["self_hosted", "hosted"],
+        [...DEPLOYMENT_MODES],
         "DEMO_COMPOSER_DEPLOYMENT_MODE must be explicitly set in production",
         "DEMO_COMPOSER_DEPLOYMENT_MODE must be self_hosted or hosted"
     );
     assert_production_enum_env(
         "DEMO_COMPOSER_ONBOARDING_MODE",
-        ["first_run_setup", "signup"],
+        [...ONBOARDING_MODES],
         "DEMO_COMPOSER_ONBOARDING_MODE must be explicitly set in production",
         "DEMO_COMPOSER_ONBOARDING_MODE must be first_run_setup or signup"
     );

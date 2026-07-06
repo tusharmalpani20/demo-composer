@@ -1,4 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
+import {
+  PUBLISH_VISIBILITIES,
+  type FileStorageProvider,
+  type PublishArtifactType,
+  type PublishLinkStatus,
+  type PublishVisibility,
+} from "@repo/constants";
 import type {
   GuideDetail,
   GuideScreenshotAnnotation,
@@ -14,14 +21,16 @@ import {
   verify_public_link_password,
 } from "./public-link-password";
 
+export type {
+  PublishArtifactType,
+  PublishLinkStatus,
+  PublishVisibility,
+};
+
 export type PublishAuthContext = {
   organization_id: string;
   actor_org_user_id: string;
 };
-
-export type PublishArtifactType = "guide" | "interactive_demo";
-export type PublishVisibility = "public" | "restricted";
-export type PublishLinkStatus = "active" | "revoked";
 
 export type PublishLink = {
   id: string;
@@ -199,7 +208,7 @@ export class PublishSlugConflictError extends Error {
 
 export type PublicAssetFile = {
   file: {
-    storage_provider: "local" | "external";
+    storage_provider: FileStorageProvider;
     storage_key: string;
     mime_type: string;
   };
@@ -892,7 +901,7 @@ export const build_publish_service = (
     visibility: PublishVisibility;
     expires_at: string | null;
   }) => {
-    if (!["public", "restricted"].includes(input.visibility)) {
+    if (!PUBLISH_VISIBILITIES.includes(input.visibility)) {
       throw new InvalidPublishAccessSettingsError();
     }
 
@@ -929,7 +938,7 @@ export const build_publish_service = (
     visibility: PublishVisibility;
     expires_at: string | null;
   }): Promise<InteractiveDemoPublishStatus> => {
-    if (!["public", "restricted"].includes(input.visibility)) {
+    if (!PUBLISH_VISIBILITIES.includes(input.visibility)) {
       throw new InvalidPublishAccessSettingsError();
     }
 

@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
+import { CAPTURE_EVENT_TYPES } from "@repo/constants";
 import { z } from "zod";
 import {
   UnauthenticatedSessionError,
@@ -68,7 +69,7 @@ export type CaptureEventRouteDependencies = {
   };
 };
 
-const event_type_schema = z.enum(["navigation", "click", "input", "capture", "note"]);
+const event_type_schema = z.enum(CAPTURE_EVENT_TYPES);
 const non_negative_number_schema = z.number().nonnegative();
 const positive_int_schema = z.number().int().positive();
 const positive_number_schema = z.number().positive();

@@ -1,15 +1,26 @@
+import type {
+  CaptureAssetType,
+  CaptureEventType,
+  GuideBlockType,
+  GuideCreatableBlockType,
+  GuideStatus,
+} from "@repo/constants";
 import { ulid } from "ulid";
 import { render_guide_html_export } from "./guide-html-export";
 import { build_guide_zip_export } from "./guide-zip-export";
+
+export type {
+  GuideBlockType,
+  GuideCreatableBlockType,
+  GuideStatus,
+};
 
 export type GuideAuthContext = {
   organization_id: string;
   actor_org_user_id: string;
 };
 
-export type GuideStatus = "draft" | "archived";
-export type GuideBlockType = "step" | "header" | "paragraph" | "tip" | "alert" | "capture" | "divider" | "gif";
-export type GuideSourceEventType = "navigation" | "click" | "input" | "capture" | "note";
+export type GuideSourceEventType = CaptureEventType;
 
 export type Guide = {
   id: string;
@@ -84,7 +95,7 @@ export type GuideScreenshotAnnotation = {
 export type GuideSourceCaptureAsset = {
   id: string;
   capture_session_id: string;
-  asset_type: "screenshot" | "html_snapshot" | "thumbnail" | "redacted_screenshot";
+  asset_type: CaptureAssetType;
   width: number | null;
   height: number | null;
   device_pixel_ratio: number | null;

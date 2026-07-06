@@ -1,8 +1,17 @@
-type DeploymentMode = "self_hosted" | "hosted";
-type OnboardingMode = "first_run_setup" | "signup";
+import {
+  DEPLOYMENT_MODES,
+  ONBOARDING_MODES,
+  type DeploymentMode,
+  type OnboardingMode,
+} from "@repo/constants";
 
-const deployment_modes = new Set<DeploymentMode>(["self_hosted", "hosted"]);
-const onboarding_modes = new Set<OnboardingMode>(["first_run_setup", "signup"]);
+const deployment_modes = new Set<DeploymentMode>(DEPLOYMENT_MODES);
+const onboarding_modes = new Set<OnboardingMode>(ONBOARDING_MODES);
+
+export type {
+  DeploymentMode,
+  OnboardingMode,
+};
 
 const read_enum = <Value extends string>(
   value: string | undefined,

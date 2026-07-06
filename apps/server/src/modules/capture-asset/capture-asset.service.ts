@@ -1,3 +1,7 @@
+import type {
+  CaptureAssetType,
+  FileStorageProvider,
+} from "@repo/constants";
 import { ulid } from "ulid";
 import {
   type ReadStoredFile,
@@ -13,18 +17,15 @@ export {
   FileStorageWriteFailedError,
 };
 
+export type {
+  CaptureAssetType,
+  FileStorageProvider,
+};
+
 export type CaptureAssetAuthContext = {
   organization_id: string;
   actor_org_user_id: string;
 };
-
-export type CaptureAssetType =
-  | "screenshot"
-  | "html_snapshot"
-  | "thumbnail"
-  | "redacted_screenshot";
-
-export type FileStorageProvider = "local" | "external";
 
 export type CaptureAsset = {
   id: string;

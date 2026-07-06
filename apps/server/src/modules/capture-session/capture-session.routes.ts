@@ -1,4 +1,8 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
+import {
+  CAPTURE_SESSION_SOURCE_TYPES,
+  CAPTURE_SESSION_STATUSES,
+} from "@repo/constants";
 import { z } from "zod";
 import {
   UnauthenticatedSessionError,
@@ -65,8 +69,8 @@ export type CaptureSessionRouteDependencies = {
   };
 };
 
-const status_schema = z.enum(["draft", "capturing", "completed", "canceled", "archived"]);
-const source_type_schema = z.enum(["manual", "extension", "import"]);
+const status_schema = z.enum(CAPTURE_SESSION_STATUSES);
+const source_type_schema = z.enum(CAPTURE_SESSION_SOURCE_TYPES);
 const positive_int_schema = z.number().int().positive();
 const positive_number_schema = z.number().positive();
 

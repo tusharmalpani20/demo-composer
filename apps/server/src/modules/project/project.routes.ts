@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
+import { PROJECT_STATUSES } from "@repo/constants";
 import { z } from "zod";
 import {
   UnauthenticatedSessionError,
@@ -62,11 +63,11 @@ const update_project_body_schema = z.object({
   color: z.string().nullable().optional(),
   icon: z.string().nullable().optional(),
   metadata: z.unknown().optional(),
-  status: z.enum(["active", "archived"]).optional(),
+  status: z.enum(PROJECT_STATUSES).optional(),
 }).passthrough();
 
 const list_query_schema = z.object({
-  status: z.enum(["active", "archived"]).optional(),
+  status: z.enum(PROJECT_STATUSES).optional(),
 });
 
 const unauthorized_response = () => ({

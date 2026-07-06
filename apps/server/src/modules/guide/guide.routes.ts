@@ -1,4 +1,9 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
+import {
+  GUIDE_ANNOTATION_TYPES,
+  GUIDE_BLOCK_PLACEMENTS,
+  GUIDE_CREATABLE_BLOCK_TYPES,
+} from "@repo/constants";
 import { z } from "zod";
 import {
   UnauthenticatedSessionError,
@@ -162,7 +167,7 @@ const create_guide_body_schema = z.object({
 const update_guide_body_schema = z.object({
   title: z.string().optional(),
   description: z.string().nullable().optional(),
-  status: z.enum(["archived"]).optional(),
+  status: z.literal("archived").optional(),
 }).passthrough();
 
 const update_guide_step_body_schema = z.object({
@@ -180,9 +185,9 @@ const guide_block_content_schema = z.object({
 }).passthrough();
 
 const create_guide_block_body_schema = z.object({
-  block_type: z.enum(["step", "header", "paragraph", "tip", "alert", "divider"]),
+  block_type: z.enum(GUIDE_CREATABLE_BLOCK_TYPES),
   position: z.object({
-    placement: z.enum(["before", "after"]),
+    placement: z.enum(GUIDE_BLOCK_PLACEMENTS),
     guide_block_id: z.string().trim().min(1),
   }).nullable().optional(),
   step: z.object({
@@ -202,7 +207,7 @@ const update_guide_block_screenshot_body_schema = z.object({
 
 const guide_screenshot_annotation_schema = z.object({
   id: z.string().trim().min(1).optional(),
-  type: z.literal("highlight"),
+  type: z.literal(GUIDE_ANNOTATION_TYPES[0]),
   x: z.number(),
   y: z.number(),
   width: z.number(),

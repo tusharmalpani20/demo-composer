@@ -1,4 +1,8 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
+import {
+  DEMO_HOTSPOT_TYPES,
+  INTERACTIVE_DEMO_STATUSES,
+} from "@repo/constants";
 import { z } from "zod";
 import {
   UnauthenticatedSessionError,
@@ -156,7 +160,7 @@ const create_demo_from_capture_body_schema = z.object({
 const update_demo_body_schema = z.object({
   title: z.string().trim().min(1).optional(),
   description: z.string().nullable().optional(),
-  status: z.enum(["draft", "archived"]).optional(),
+  status: z.enum(INTERACTIVE_DEMO_STATUSES).optional(),
 }).passthrough();
 
 const create_scene_body_schema = z.object({
@@ -176,7 +180,7 @@ const reorder_scenes_body_schema = z.object({
 }).passthrough();
 
 const create_hotspot_body_schema = z.object({
-  hotspot_type: z.enum(["click", "info", "next"]),
+  hotspot_type: z.enum(DEMO_HOTSPOT_TYPES),
   label: z.string().nullable().optional(),
   content: z.string().nullable().optional(),
   x: z.number(),
@@ -187,7 +191,7 @@ const create_hotspot_body_schema = z.object({
 }).passthrough();
 
 const update_hotspot_body_schema = z.object({
-  hotspot_type: z.enum(["click", "info", "next"]).optional(),
+  hotspot_type: z.enum(DEMO_HOTSPOT_TYPES).optional(),
   label: z.string().nullable().optional(),
   content: z.string().nullable().optional(),
   x: z.number().optional(),

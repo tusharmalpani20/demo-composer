@@ -1,10 +1,14 @@
 import { ulid } from "ulid";
 import type {
+  FileStorageProvider,
+  PublishArtifactType,
+  PublishLinkStatus,
+} from "@repo/constants";
+import type {
   InteractiveDemoPublishDetail,
   GuidePublishStatus,
   PublishedArtifact,
   PublishLink,
-  PublishArtifactType,
   PublishRepository,
   PublishVisibility,
   PublicAssetFile,
@@ -31,7 +35,7 @@ type TransactionCapable = Queryable & {
 
 type PublishedArtifactRow = {
   id: string;
-  artifact_type: "guide" | "interactive_demo";
+  artifact_type: PublishArtifactType;
   artifact_id: string;
   version_number: number;
   title: string;
@@ -41,13 +45,13 @@ type PublishedArtifactRow = {
 
 type PublishLinkRow = {
   id: string;
-  artifact_type: "guide" | "interactive_demo";
+  artifact_type: PublishArtifactType;
   artifact_id: string;
   published_artifact_id: string;
   slug: string;
   visibility: PublishVisibility;
   expires_at: Date | null;
-  status: "active" | "revoked";
+  status: PublishLinkStatus;
   published_at: Date;
   revoked_at: Date | null;
   password_hash: string | null;
@@ -65,20 +69,20 @@ type PublicResolveRow = PublishLinkRow & {
 };
 
 type PublicAssetFileRow = {
-  storage_provider: "local" | "external";
+  storage_provider: FileStorageProvider;
   storage_key: string;
   mime_type: string;
 };
 
 type GuidePublishStatusRow = {
   link_id: string;
-  link_artifact_type: "guide" | "interactive_demo";
+  link_artifact_type: PublishArtifactType;
   link_artifact_id: string;
   link_published_artifact_id: string;
   link_slug: string;
   link_visibility: PublishVisibility;
   link_expires_at: Date | null;
-  link_status: "active" | "revoked";
+  link_status: PublishLinkStatus;
   link_published_at: Date;
   link_revoked_at: Date | null;
   link_password_hash: string | null;
@@ -86,7 +90,7 @@ type GuidePublishStatusRow = {
   link_password_set_at: Date | null;
   link_password_updated_at: Date | null;
   artifact_id: string;
-  artifact_artifact_type: "guide" | "interactive_demo";
+  artifact_artifact_type: PublishArtifactType;
   artifact_artifact_id: string;
   artifact_version_number: number;
   artifact_title: string;

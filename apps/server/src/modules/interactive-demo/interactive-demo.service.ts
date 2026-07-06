@@ -1,9 +1,18 @@
+import type {
+  CaptureEventType,
+  DemoHotspotType,
+  InteractiveDemoStatus,
+} from "@repo/constants";
+
+export type {
+  DemoHotspotType,
+  InteractiveDemoStatus,
+};
+
 export type InteractiveDemoAuthContext = {
   organization_id: string;
   actor_org_user_id: string;
 };
-
-export type InteractiveDemoStatus = "draft" | "archived";
 
 export type InteractiveDemo = {
   id: string;
@@ -39,8 +48,6 @@ export type DemoScene = {
   updated_at: string;
 };
 
-export type DemoHotspotType = "click" | "info" | "next";
-
 export type DemoHotspot = {
   id: string;
   organization_id: string;
@@ -63,7 +70,7 @@ export type DemoHotspot = {
   updated_at: string;
 };
 
-export type InteractiveDemoSourceEventType = "navigation" | "click" | "input" | "capture" | "note";
+export type InteractiveDemoSourceEventType = CaptureEventType;
 
 export type InteractiveDemoSourceEvent = {
   id: string;

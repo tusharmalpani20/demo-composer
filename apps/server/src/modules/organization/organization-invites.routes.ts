@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
+import { ORGANIZATION_ROLES } from "@repo/constants";
 import { z } from "zod";
 import { get_public_web_url } from "../../config/public-web-url.config";
 import { set_web_session_cookie } from "../authentication/session-cookie";
@@ -68,7 +69,7 @@ export type OrganizationInvitesRouteDependencies = {
 
 const invite_body_schema = z.object({
   email: z.string().trim().email(),
-  role: z.enum(["owner", "member"]).optional(),
+  role: z.enum(ORGANIZATION_ROLES).optional(),
 }).passthrough();
 
 const accept_invite_body_schema = z.object({

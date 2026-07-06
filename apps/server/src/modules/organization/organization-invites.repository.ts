@@ -1,5 +1,9 @@
 import { ulid } from "ulid";
 import type {
+  OrganizationInviteStatus,
+  OrganizationMemberStatus,
+} from "@repo/constants";
+import type {
   OrganizationInviteRepository,
   OrgInvite,
   OrgMember,
@@ -21,7 +25,7 @@ type OrgInviteRow = {
   email: string;
   role: OrgMemberRole;
   token_hash: string;
-  status: "pending" | "accepted" | "revoked" | "expired";
+  status: OrganizationInviteStatus;
   expires_at: Date;
   accepted_at: Date | null;
   accepted_user_id: string | null;
@@ -38,7 +42,7 @@ type OrgMemberRow = {
   email: string;
   display_name: string;
   role: OrgMemberRole;
-  status: "active" | "disabled";
+  status: OrganizationMemberStatus;
   created_at: Date;
 };
 

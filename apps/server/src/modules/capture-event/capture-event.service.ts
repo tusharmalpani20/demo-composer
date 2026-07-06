@@ -1,11 +1,19 @@
+import type {
+  CaptureEventType,
+  CaptureSessionSourceType,
+  CaptureSessionStatus,
+} from "@repo/constants";
+
+export type {
+  CaptureEventType,
+  CaptureSessionSourceType,
+  CaptureSessionStatus,
+};
+
 export type CaptureEventAuthContext = {
   organization_id: string;
   actor_org_user_id: string;
 };
-
-export type CaptureEventType = "navigation" | "click" | "input" | "capture" | "note";
-export type CaptureSessionSourceType = "manual" | "extension" | "import";
-export type CaptureSessionStatus = "draft" | "capturing" | "completed" | "canceled" | "archived";
 
 export type CaptureEvent = {
   id: string;

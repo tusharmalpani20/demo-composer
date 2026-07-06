@@ -1,3 +1,4 @@
+import { ONBOARDING_MODES, ORGANIZATION_ROLES } from "@repo/constants";
 import { Password } from "../../common/services/password.common.service";
 import { get_public_instance_config } from "../public-instance/public-instance.config";
 import {
@@ -121,7 +122,7 @@ export const build_first_run_setup_service = (repository: FirstRunSetupRepositor
       name: string;
     };
   }) => {
-    if (get_public_instance_config().onboarding_mode !== "first_run_setup") {
+    if (get_public_instance_config().onboarding_mode !== ONBOARDING_MODES[0]) {
       throw new FirstRunSetupUnavailableError();
     }
 
@@ -152,7 +153,7 @@ export const build_first_run_setup_service = (repository: FirstRunSetupRepositor
       const org_user = await transaction_repository.create_org_user({
         user_id: user.id,
         organization_id: organization.id,
-        role: "owner",
+        role: ORGANIZATION_ROLES[0],
       });
       const session_token = generate_session_token();
       const session = await transaction_repository.create_session({

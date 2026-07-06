@@ -1,4 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
+import type {
+  OrganizationInviteStatus,
+  OrganizationMemberStatus,
+  OrganizationRole,
+} from "@repo/constants";
 import { Password } from "../../common/services/password.common.service";
 import {
   generate_session_token,
@@ -6,8 +11,8 @@ import {
   type AuthContext,
 } from "../authentication/session.service";
 
-export type OrgMemberRole = "owner" | "member";
-export type OrgInviteStatus = "pending" | "accepted" | "revoked" | "expired";
+export type OrgMemberRole = OrganizationRole;
+export type OrgInviteStatus = OrganizationInviteStatus;
 
 export type OrgMember = {
   id: string;
@@ -16,7 +21,7 @@ export type OrgMember = {
   email: string;
   display_name: string;
   role: OrgMemberRole;
-  status: "active" | "disabled";
+  status: OrganizationMemberStatus;
   created_at: string;
 };
 

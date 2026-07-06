@@ -1,9 +1,11 @@
+import type { ProjectStatus } from "@repo/constants";
+
+export type { ProjectStatus };
+
 export type ProjectAuthContext = {
   organization_id: string;
   actor_org_user_id: string;
 };
-
-export type ProjectStatus = "active" | "archived";
 
 export type Project = {
   id: string;

@@ -1,4 +1,8 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
+import {
+  CAPTURE_ASSET_TYPES,
+  FILE_STORAGE_PROVIDERS,
+} from "@repo/constants";
 import { z } from "zod";
 import {
   UnauthenticatedSessionError,
@@ -82,13 +86,8 @@ export type CaptureAssetRouteDependencies = {
   };
 };
 
-const asset_type_schema = z.enum([
-  "screenshot",
-  "html_snapshot",
-  "thumbnail",
-  "redacted_screenshot",
-]);
-const storage_provider_schema = z.enum(["local", "external"]);
+const asset_type_schema = z.enum(CAPTURE_ASSET_TYPES);
+const storage_provider_schema = z.enum(FILE_STORAGE_PROVIDERS);
 const positive_int_schema = z.number().int().positive();
 const positive_number_schema = z.number().positive();
 
