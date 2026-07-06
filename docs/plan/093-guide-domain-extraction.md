@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Implementation-ready. Do not implement until explicitly requested.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -21,6 +21,56 @@ Create `@repo/guide-domain` and move pure Guide, Guide Block, Guide Step, Guide 
 Guides remain Scribe-style document artifacts derived from capture source material or created/edited directly by users. Capture remains source material only. Creating, completing, or mutating capture records must not automatically create or mutate guides.
 
 This phase should extract reusable guide domain policies and pure rendering decisions. The server remains the application adapter that owns Fastify routes, auth/session context, SQL repositories, transactions, file storage, multipart parsing, cookies, response headers, and error-to-HTTP mapping.
+
+## Completion Summary
+
+Completed on 2026-07-07.
+
+Implemented changes:
+
+- Created `@repo/guide-domain` with focused guide generation, update, block, annotation, markdown export, and HTML export policies.
+- Added guide-domain tests for guide creation normalization, deterministic source-event step generation, block content rules, reorder validation, screenshot selection, annotation validation, update normalization, editability, markdown rendering, and HTML export rendering.
+- Added shared guide JSON DTO/request/response/param schemas in `@repo/types/guide`.
+- Wired server guide service to use `@repo/guide-domain` policies while keeping Fastify routes, auth/session context, repository SQL, transaction boundaries, multipart parsing, file storage, ZIP stream creation, and error-to-HTTP mapping in `apps/server`.
+- Replaced guide route-local JSON body schemas with shared `@repo/types/guide` schemas while preserving route picker behavior and multipart upload parsing.
+- Converted `apps/server/src/modules/guide/guide-html-export.ts` into a compatibility re-export of the pure guide-domain HTML renderer.
+- Replaced duplicated web guide DTO/request types with shared guide type imports where the runtime shape matched.
+- Kept web publish-specific guide/public snapshot types local for `095-publish-domain-and-public-contract-cleanup.md`.
+- Kept the web screenshot picker response and upload response feature types narrowed to `GuideSourceCaptureAsset` because the editor state consumes the guide-source asset shape; the route-level full capture asset upload contract is still represented in `@repo/types/guide`.
+- Added no database migration and changed no UI behavior, route URL, response envelope, status code, persisted value, or public viewer behavior.
+
+Verification passed:
+
+- `rtk pnpm --filter @repo/types test -- guide`
+- `rtk pnpm --filter @repo/types check-types`
+- `rtk pnpm --filter @repo/types lint`
+- `rtk pnpm --filter @repo/types build`
+- `rtk pnpm --filter @repo/guide-domain test`
+- `rtk pnpm --filter @repo/guide-domain check-types`
+- `rtk pnpm --filter @repo/guide-domain lint`
+- `rtk pnpm --filter @repo/guide-domain build`
+- `rtk pnpm --filter server test -- guide.service guide.routes guide-html-export guide-zip-export guide.app.integration`
+- `rtk pnpm --filter server check-types`
+- `rtk pnpm --filter server lint`
+- `rtk pnpm --filter web check-types`
+- `rtk pnpm --filter web test -- GuideEditorPage GuidePreviewPage GuideScreenshotViewer ProjectGuideListPage PublicGuideReaderPage publishLinks`
+- `rtk pnpm check-types`
+
+Browser validation was not required because this phase changed shared type imports and backend/domain wiring without changing JSX, CSS, rendered copy, navigation, fetch paths, or browser-visible guide behavior.
+
+Database verification was not required because this phase did not change repository SQL, migrations, transaction boundaries, persisted data shapes, or row mapping.
+
+Carry into `094-demo-domain-extraction.md`:
+
+- Use the same adapter-first extraction shape: pure generation/update policies in a domain package; server keeps routes, SQL, transactions, auth, and file/storage integration.
+- Keep Interactive Demo Scene/Hotspot/Transition concepts separate from Guide Block/Step/Annotation.
+- Capture source records should remain immutable for demo generation too.
+
+Carry into `095-publish-domain-and-public-contract-cleanup.md`:
+
+- Publish-specific guide/public snapshot/link/access/password types remain in the web feature for now.
+- Published guide snapshot preparation and public access policy were intentionally not moved into guide-domain.
+- Decide whether the web feature's narrowed screenshot upload response type should remain UI-local or align fully with shared route response parsing once publish/public contracts are centralized.
 
 ## Baseline From Completed 092
 

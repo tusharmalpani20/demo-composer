@@ -669,6 +669,8 @@ Acceptance:
 
 ### 093: Guide Domain Extraction
 
+Status: Completed on 2026-07-07.
+
 File:
 
 - `docs/plan/093-guide-domain-extraction.md`
@@ -689,11 +691,15 @@ Tests:
 - Domain tests for guide generation from representative capture sessions.
 - Server tests for guide creation/update/export routes where applicable.
 - Web typecheck for shared guide contracts.
+- Additional verification passed for `@repo/types` guide schemas, `@repo/guide-domain` test/check-types/lint/build, server guide tests/check-types/lint, guide-focused web tests, and repo-wide `pnpm check-types`.
 
 Acceptance:
 
 - Existing guide output shapes remain stable.
 - Guide UI renders the same data as before.
+- Guide routes, response envelopes, auth behavior, SQL repositories, multipart upload parsing, file storage, and ZIP stream creation remain server-owned.
+- Browser validation was not required because there were no JSX, CSS, route path, fetch path, or browser-visible behavior changes.
+- DB verification was not required because repositories, migrations, transactions, persisted values, and row mapping were unchanged.
 
 ### 094: Demo Domain Extraction
 
