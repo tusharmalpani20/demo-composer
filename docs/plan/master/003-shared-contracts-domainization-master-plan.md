@@ -626,6 +626,8 @@ Acceptance:
 
 ### 092: Capture Domain Extraction
 
+Status: Expanded and rechecked for implementation readiness on 2026-07-07.
+
 File:
 
 - `docs/plan/092-capture-domain-extraction.md`
@@ -636,9 +638,12 @@ Goal:
 
 Scope:
 
-- Extract capture session lifecycle rules.
-- Extract capture event schemas and constants.
-- Extract source asset reference validation.
+- Extract pure capture session lifecycle and normalization policies.
+- Extract pure capture event validation, ordering, privacy, and editability policies.
+- Extract pure capture asset metadata, screenshot-only, upload-policy mapping, and project screenshot picker policies.
+- Reuse existing capture schemas/constants from `@repo/types/capture` and `@repo/constants`.
+- Close the capture asset JSON schema gap only if current route behavior is preserved exactly.
+- Keep Fastify routes, auth/session context, SQL repositories, transactions, multipart parsing, file storage adapters, and route error mapping in `apps/server`.
 - Preserve immutable capture source records.
 - Preserve screenshot-first capture behavior.
 - Preserve privacy defaults.
@@ -646,14 +651,18 @@ Scope:
 Tests:
 
 - Domain tests for session lifecycle, event validation, ordering, completion, and privacy defaults.
-- Server route tests for capture session creation/update/completion.
-- Extension compile/tests for shared capture payload contracts.
+- Server route/service tests for capture session, capture event, and capture asset flows.
+- Type/schema tests for capture contracts when shared schemas change.
+- Extension compile/tests for shared capture payload contracts if extension types are touched.
+- Web compile/tests for capture-session pages if web types are touched.
 
 Acceptance:
 
 - Capture source records remain immutable.
 - Existing extension payloads remain accepted.
 - No visible extension behavior changes.
+- No auth/session/storage/SQL internals move into `@repo/capture-domain`.
+- No guide or interactive-demo generation occurs on capture completion.
 
 ### 093: Guide Domain Extraction
 
