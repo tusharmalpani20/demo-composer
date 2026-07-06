@@ -1,39 +1,43 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
 import {
   CreatePublicViewerSessionRequestSchema,
+  type PublishResult,
+  type PublishStatusResponse,
+  type RevokePublishResult,
   UpdatePublishAccessRequestSchema,
   UpdatePublishPasswordRequestSchema,
 } from "@repo/types/publish";
+import {
+  GuideHasNoPublishableBlocksError,
+  GuideNotPublishableError,
+  InteractiveDemoHasNoPublishableScenesError,
+  InvalidPublicViewerPasswordError,
+  InvalidPublishAccessSettingsError,
+  InvalidPublishPasswordSettingsError,
+  PublishLinkExpiredError,
+  PublishLinkNotPublicError,
+  PublishLinkPasswordRequiredError,
+} from "@repo/publish-domain";
 import {
   UnauthenticatedSessionError,
   type AuthContext,
 } from "../authentication/session.service";
 import { web_session_cookie_name } from "../authentication/session-cookie";
 import {
-  GuideHasNoPublishableBlocksError,
+  error_response,
+  unauthorized_response,
+} from "../shared/http-errors";
+import {
   GuideNotFoundError,
-  GuideNotPublishableError,
-  InteractiveDemoHasNoPublishableScenesError,
   InteractiveDemoNotFoundError,
-  InvalidPublishAccessSettingsError,
-  InvalidPublishPasswordSettingsError,
-  InvalidPublicViewerPasswordError,
   ProjectNotFoundError,
   PublishedAssetNotFoundError,
-  PublishLinkExpiredError,
   PublishLinkNotFoundError,
-  PublishLinkPasswordRequiredError,
-  PublishLinkNotPublicError,
   UnsupportedPublishedAssetStorageProviderError,
-  type GuidePublishResult,
-  type GuidePublishStatus,
-  type InteractiveDemoPublishResult,
-  type InteractiveDemoPublishStatus,
   type PublishAuthContext,
   type PublicPublishResult,
   type PublishedAssetFileRead,
   type PublishVisibility,
-  type RevokedGuidePublishResult,
 } from "./publish.service";
 import {
   public_viewer_cookie_name,
@@ -49,58 +53,58 @@ export type PublishRouteDependencies = {
       auth: PublishAuthContext;
       project_id: string;
       guide_id: string;
-    }) => Promise<GuidePublishResult>;
+    }) => Promise<PublishResult>;
     publish_interactive_demo: (input: {
       auth: PublishAuthContext;
       project_id: string;
       interactive_demo_id: string;
-    }) => Promise<InteractiveDemoPublishResult>;
+    }) => Promise<PublishResult>;
     get_guide_publish_status: (input: {
       auth: PublishAuthContext;
       project_id: string;
       guide_id: string;
-    }) => Promise<GuidePublishStatus>;
+    }) => Promise<PublishStatusResponse>;
     get_interactive_demo_publish_status: (input: {
       auth: PublishAuthContext;
       project_id: string;
       interactive_demo_id: string;
-    }) => Promise<InteractiveDemoPublishStatus>;
+    }) => Promise<PublishStatusResponse>;
     revoke_guide_publish_link: (input: {
       auth: PublishAuthContext;
       project_id: string;
       guide_id: string;
-    }) => Promise<RevokedGuidePublishResult>;
+    }) => Promise<RevokePublishResult>;
     revoke_interactive_demo_publish_link: (input: {
       auth: PublishAuthContext;
       project_id: string;
       interactive_demo_id: string;
-    }) => Promise<RevokedGuidePublishResult>;
+    }) => Promise<RevokePublishResult>;
     update_guide_publish_access: (input: {
       auth: PublishAuthContext;
       project_id: string;
       guide_id: string;
       visibility: PublishVisibility;
       expires_at: string | null;
-    }) => Promise<GuidePublishStatus>;
+    }) => Promise<PublishStatusResponse>;
     update_interactive_demo_publish_access: (input: {
       auth: PublishAuthContext;
       project_id: string;
       interactive_demo_id: string;
       visibility: PublishVisibility;
       expires_at: string | null;
-    }) => Promise<InteractiveDemoPublishStatus>;
+    }) => Promise<PublishStatusResponse>;
     update_guide_publish_password: (input: {
       auth: PublishAuthContext;
       project_id: string;
       guide_id: string;
       password: string | null;
-    }) => Promise<GuidePublishStatus>;
+    }) => Promise<PublishStatusResponse>;
     update_interactive_demo_publish_password: (input: {
       auth: PublishAuthContext;
       project_id: string;
       interactive_demo_id: string;
       password: string | null;
-    }) => Promise<InteractiveDemoPublishStatus>;
+    }) => Promise<PublishStatusResponse>;
     resolve_public_publish_link: (input: {
       slug: string;
       viewer_token?: string;
@@ -116,20 +120,6 @@ export type PublishRouteDependencies = {
     }) => Promise<PublishedAssetFileRead>;
   };
 };
-
-const unauthorized_response = () => ({
-  error: {
-    type: "unauthenticated",
-    message: "Authentication is required",
-  },
-});
-
-const error_response = (type: string, message: string) => ({
-  error: {
-    type,
-    message,
-  },
-});
 
 const publish_auth_context = (auth: AuthContext): PublishAuthContext => ({
   organization_id: auth.organization.id,

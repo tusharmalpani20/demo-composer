@@ -1,9 +1,9 @@
 import { Readable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { build } from "../../app";
-import type { GuidePublishResult } from "./publish.service";
+import type { PublishResult } from "@repo/types/publish";
 
-const publish_result: GuidePublishResult = {
+const publish_result: PublishResult = {
   publish_link: {
     id: "publish_link_1",
     artifact_type: "guide",

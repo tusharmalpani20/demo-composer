@@ -4,19 +4,20 @@ import fastify from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import { describe, expect, it } from "vitest";
 import { UnauthenticatedSessionError } from "../authentication/session.service";
+import type { PublishResult } from "@repo/types/publish";
 import {
   GuideHasNoPublishableBlocksError,
-  GuideNotFoundError,
   GuideNotPublishableError,
   InvalidPublishAccessSettingsError,
-  ProjectNotFoundError,
-  PublishLinkNotFoundError,
   PublishLinkExpiredError,
   PublishLinkNotPublicError,
+} from "@repo/publish-domain";
+import {
+  GuideNotFoundError,
+  ProjectNotFoundError,
+  PublishLinkNotFoundError,
   PublishedAssetNotFoundError,
   UnsupportedPublishedAssetStorageProviderError,
-  type GuidePublishResult,
-  type InteractiveDemoPublishResult,
 } from "./publish.service";
 import { build_publish_routes } from "./publish.routes";
 
@@ -41,7 +42,7 @@ const auth_context = {
   },
 };
 
-const publish_result: GuidePublishResult = {
+const publish_result: PublishResult = {
   publish_link: {
     id: "publish_link_1",
     artifact_type: "guide",
@@ -66,7 +67,7 @@ const publish_result: GuidePublishResult = {
   },
 };
 
-const interactive_demo_publish_result: InteractiveDemoPublishResult = {
+const interactive_demo_publish_result: PublishResult = {
   publish_link: {
     id: "publish_link_demo_1",
     artifact_type: "interactive_demo",

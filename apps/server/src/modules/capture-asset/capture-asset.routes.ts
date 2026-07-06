@@ -10,6 +10,10 @@ import {
 } from "../authentication/session.service";
 import { session_token_from_request } from "../authentication/request-session-token";
 import {
+  error_response,
+  unauthorized_response,
+} from "../shared/http-errors";
+import {
   CaptureAssetNotFoundError,
   CaptureSessionNotFoundError,
   FileBytesNotFoundError,
@@ -85,20 +89,6 @@ export type CaptureAssetRouteDependencies = {
     }) => Promise<void>;
   };
 };
-
-const unauthorized_response = () => ({
-  error: {
-    type: "unauthenticated",
-    message: "Authentication is required",
-  },
-});
-
-const error_response = (type: string, message: string) => ({
-  error: {
-    type,
-    message,
-  },
-});
 
 const capture_asset_auth_context = (auth: AuthContext) => ({
   organization_id: auth.organization.id,

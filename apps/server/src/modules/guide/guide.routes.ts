@@ -16,6 +16,10 @@ import {
 } from "../authentication/session.service";
 import { web_session_cookie_name } from "../authentication/session-cookie";
 import {
+  error_response,
+  unauthorized_response,
+} from "../shared/http-errors";
+import {
   FileStorageKeyConflictError,
   FileStorageWriteFailedError,
   InvalidCaptureAssetUploadError,
@@ -171,20 +175,6 @@ const create_guide_block_body_schema = CreateGuideBlockRequestSchema;
 const update_guide_block_body_schema = UpdateGuideBlockRequestSchema;
 const update_guide_block_screenshot_body_schema = UpdateGuideBlockScreenshotRequestSchema;
 const update_guide_block_annotations_body_schema = UpdateGuideBlockAnnotationsRequestSchema;
-
-const unauthorized_response = () => ({
-  error: {
-    type: "unauthenticated",
-    message: "Authentication is required",
-  },
-});
-
-const error_response = (type: string, message: string) => ({
-  error: {
-    type,
-    message,
-  },
-});
 
 const guide_auth_context = (auth: AuthContext): GuideAuthContext => ({
   organization_id: auth.organization.id,

@@ -13,14 +13,8 @@ import {
   build_published_interactive_demo_snapshot,
   GuideHasNoPublishableBlocksError,
   GuideNotPublishableError,
-  InteractiveDemoHasNoPublishableScenesError,
-  InvalidPublicViewerPasswordError,
-  InvalidPublishAccessSettingsError,
-  InvalidPublishPasswordSettingsError,
   PUBLISH_SLUG_RETRY_LIMIT,
   public_viewer_session_expires_at,
-  PublishLinkExpiredError,
-  PublishLinkNotPublicError,
   PublishLinkPasswordRequiredError,
   publish_slug_for_link,
   validate_publish_access_input,
@@ -32,6 +26,7 @@ import type {
   PublishedInteractiveDemoSnapshot,
   PublishLink,
   PublishResult,
+  RevokePublishResult,
   PublishStatusResponse,
   PublicPublishedArtifact,
   PublicPublishLink,
@@ -57,18 +52,6 @@ export type {
   PublishLinkStatus,
   PublishVisibility,
 };
-export {
-  GuideHasNoPublishableBlocksError,
-  GuideNotPublishableError,
-  InteractiveDemoHasNoPublishableScenesError,
-  InvalidPublicViewerPasswordError,
-  InvalidPublishAccessSettingsError,
-  InvalidPublishPasswordSettingsError,
-  PublishLinkExpiredError,
-  PublishLinkNotPublicError,
-  PublishLinkPasswordRequiredError,
-};
-
 export type PublishAuthContext = {
   organization_id: string;
   actor_org_user_id: string;
@@ -76,14 +59,7 @@ export type PublishAuthContext = {
 
 export type PublishStatus = PublishStatusResponse;
 export type GuidePublishStatus = PublishStatusResponse;
-export type GuidePublishResult = PublishResult;
 export type InteractiveDemoPublishStatus = PublishStatusResponse;
-export type InteractiveDemoPublishResult = PublishResult;
-export type RevokedInteractiveDemoPublishResult = RevokedGuidePublishResult;
-
-export type RevokedGuidePublishResult = {
-  publish_link: PublishLink;
-};
 
 export type PublicPublishResult = {
   publish_link: PublicPublishLink;
@@ -414,7 +390,7 @@ export const build_publish_service = (
     auth: PublishAuthContext;
     project_id: string;
     interactive_demo_id: string;
-  }): Promise<InteractiveDemoPublishResult> => {
+  }): Promise<PublishResult> => {
     let last_error: unknown;
 
     for (let attempt = 0; attempt < PUBLISH_SLUG_RETRY_LIMIT; attempt += 1) {
@@ -546,7 +522,7 @@ export const build_publish_service = (
     auth: PublishAuthContext;
     project_id: string;
     guide_id: string;
-  }) => {
+  }): Promise<RevokePublishResult> => {
     const scope = {
       organization_id: input.auth.organization_id,
       project_id: input.project_id,
@@ -576,7 +552,7 @@ export const build_publish_service = (
     auth: PublishAuthContext;
     project_id: string;
     interactive_demo_id: string;
-  }): Promise<RevokedInteractiveDemoPublishResult> => {
+  }): Promise<RevokePublishResult> => {
     const scope = {
       organization_id: input.auth.organization_id,
       project_id: input.project_id,

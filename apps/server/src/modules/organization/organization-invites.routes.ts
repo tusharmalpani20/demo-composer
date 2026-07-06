@@ -12,6 +12,7 @@ import {
   UnauthenticatedSessionError,
   type AuthContext,
 } from "../authentication/session.service";
+import { error_response } from "../shared/http-errors";
 import {
   AcceptedInviteError,
   DuplicateActiveInviteError,
@@ -70,13 +71,6 @@ export type OrganizationInvitesRouteDependencies = {
     }>;
   };
 };
-
-const error_response = (type: string, message: string) => ({
-  error: {
-    type,
-    message,
-  },
-});
 
 const invite_auth_context = (auth: AuthContext): OrganizationInviteAuth => ({
   organization_id: auth.organization.id,

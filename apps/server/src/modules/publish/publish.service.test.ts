@@ -3,15 +3,17 @@ import { describe, expect, it, vi } from "vitest";
 import type { GuideDetail } from "../guide/guide.service";
 import type { DemoHotspot, DemoScene, InteractiveDemo } from "../interactive-demo/interactive-demo.service";
 import {
-  build_publish_service,
   GuideHasNoPublishableBlocksError,
-  GuideNotFoundError,
   GuideNotPublishableError,
   InteractiveDemoHasNoPublishableScenesError,
+  PublishLinkPasswordRequiredError,
+} from "@repo/publish-domain";
+import {
+  build_publish_service,
+  GuideNotFoundError,
   InteractiveDemoNotFoundError,
   ProjectNotFoundError,
   PublishLinkNotFoundError,
-  PublishLinkPasswordRequiredError,
   PublishedAssetNotFoundError,
   type PublishRepository,
 } from "./publish.service";

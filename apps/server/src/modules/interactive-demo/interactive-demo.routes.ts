@@ -16,6 +16,10 @@ import {
 } from "../authentication/session.service";
 import { session_token_from_request } from "../authentication/request-session-token";
 import {
+  error_response,
+  unauthorized_response,
+} from "../shared/http-errors";
+import {
   CaptureSessionNotFoundError,
   DemoHotspotNotFoundError,
   DemoSceneNotFoundError,
@@ -152,20 +156,6 @@ export type InteractiveDemoRouteDependencies = {
     }) => Promise<void>;
   };
 };
-
-const unauthorized_response = () => ({
-  error: {
-    type: "unauthenticated",
-    message: "Authentication is required",
-  },
-});
-
-const error_response = (type: string, message: string) => ({
-  error: {
-    type,
-    message,
-  },
-});
 
 const interactive_demo_auth_context = (auth: AuthContext): InteractiveDemoAuthContext => ({
   organization_id: auth.organization.id,
