@@ -1,6 +1,7 @@
 export * from "./auth";
 export * from "./capture";
 export * from "./common";
+export * from "./guide";
 export * from "./instance";
 export * from "./organization";
 export * from "./project";
