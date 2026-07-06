@@ -63,16 +63,12 @@ export const PublishResultSchema = z.object({
 });
 export type PublishResult = z.infer<typeof PublishResultSchema>;
 export type GuidePublishStatusResponse = PublishStatusResponse;
-export type GuidePublishResult = PublishStatusResponse;
+export type GuidePublishResult = PublishResult;
 export type InteractiveDemoPublishStatusResponse = PublishStatusResponse;
-export type InteractiveDemoPublishResult = PublishStatusResponse;
+export type InteractiveDemoPublishResult = PublishResult;
 
 export const RevokePublishResultSchema = z.object({
-  publish_link: PublishLinkSchema.pick({
-    id: true,
-    status: true,
-    revoked_at: true,
-  }),
+  publish_link: PublishLinkSchema,
 });
 export type RevokePublishResult = z.infer<typeof RevokePublishResultSchema>;
 

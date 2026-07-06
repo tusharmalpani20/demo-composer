@@ -6,7 +6,9 @@ import { GuideEditorPage } from "./GuideEditorPage";
 import type { GuideEditorPageProps } from "./GuideEditorPage";
 import type {
   GuideDetail,
+  GuidePublishResult,
   GuidePublishStatusResponse,
+  GuideRevokePublishResult,
   GuideSourceCaptureAsset,
   UpdateGuideBlockAnnotationsInput,
 } from "./types";
@@ -213,6 +215,23 @@ const publishedStatus = (versionNumber = 1): GuidePublishStatusResponse => ({
     version_number: versionNumber,
     title: "Department guide",
     published_at: "2026-06-11T00:00:00.000Z",
+  },
+});
+
+const publishResult = (versionNumber = 1): GuidePublishResult => {
+  const status = publishedStatus(versionNumber);
+
+  return {
+    publish_link: status.publish_link!,
+    published_artifact: status.published_artifact!,
+  };
+};
+
+const revokedPublishResult = (): GuideRevokePublishResult => ({
+  publish_link: {
+    ...publishResult().publish_link,
+    status: "revoked",
+    revoked_at: "2026-06-11T01:00:00.000Z",
   },
 });
 
@@ -445,14 +464,8 @@ const renderPage = (overrides: {
   }));
   const downloadTextFile = overrides.downloadTextFile ?? vi.fn(async () => undefined);
   const downloadBlobFile = overrides.downloadBlobFile ?? vi.fn(async () => undefined);
-  const publishCurrentGuide = overrides.publishCurrentGuide ?? vi.fn(async () => publishedStatus());
-  const revokePublishLink = overrides.revokePublishLink ?? vi.fn(async () => ({
-    publish_link: {
-      id: "publish_link_1",
-      status: "revoked" as const,
-      revoked_at: "2026-06-11T01:00:00.000Z",
-    },
-  }));
+  const publishCurrentGuide = overrides.publishCurrentGuide ?? vi.fn(async () => publishResult());
+  const revokePublishLink = overrides.revokePublishLink ?? vi.fn(async () => revokedPublishResult());
   const updatePublishAccess = overrides.updatePublishAccess ?? vi.fn(async (_projectId, _guideId, input) => ({
     ...publishedStatus(),
     publish_link: {
@@ -692,7 +705,7 @@ describe("GuideEditorPage", () => {
         description: data.description ?? null,
       },
     }));
-    const publishCurrentGuide = vi.fn(async () => publishedStatus(2));
+    const publishCurrentGuide = vi.fn(async () => publishResult(2));
 
     renderPage({
       loadPublishStatus: async () => publishedStatus(1),
@@ -1423,7 +1436,7 @@ describe("GuideEditorPage", () => {
   });
 
   it("shows publish-panel busy labels without locking guide editing", async () => {
-    const publishCurrentGuide = vi.fn(() => new Promise<GuidePublishStatusResponse>(() => undefined));
+    const publishCurrentGuide = vi.fn(() => new Promise<GuidePublishResult>(() => undefined));
 
     renderPage({
       publishCurrentGuide,

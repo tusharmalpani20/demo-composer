@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -28,7 +28,7 @@ The server remains the application adapter that owns Fastify routes, auth/sessio
 
 ## Completion Summary
 
-Completed on 2026-07-07.
+Completed on 2026-07-07. Post-implementation audit completed on 2026-07-07.
 
 Implemented changes:
 
@@ -38,6 +38,8 @@ Implemented changes:
 - Replaced publish route body parsing for access, password, and public viewer-session requests with shared `@repo/types/publish` schemas while preserving existing error classes and response types.
 - Replaced guide and interactive demo web publish/public snapshot type definitions with shared `@repo/types/publish` imports/re-exports.
 - Removed guide-named publish type imports from `apps/web/src/features/interactive-demo/**`; guide feature compatibility aliases remain in `apps/web/src/features/guide/types.ts`.
+- Fixed post-implementation shared contract drift so `GuidePublishResult` and `InteractiveDemoPublishResult` are non-null `PublishResult` responses, and `RevokePublishResultSchema` preserves the full returned `PublishLink` instead of narrowing it to `id`, `status`, and `revoked_at`.
+- Updated guide and interactive-demo editor test doubles to return full publish/revoke result payloads that match the actual API responses.
 - Added no database migration and changed no route URL, public URL shape, response envelope, status code, persisted value, JSX, CSS, rendered copy, fetch path, cookie name, cookie options, password hashing algorithm, or public viewer behavior.
 
 Verification passed:
@@ -56,6 +58,11 @@ Verification passed:
 - `rtk pnpm --filter web check-types`
 - `rtk pnpm --filter web test -- GuideEditorPage PublicGuideReaderPage InteractiveDemoEditorPage PublicInteractiveDemoViewerPage`
 - `rtk pnpm --filter web test -- api`
+- Post-implementation audit rerun: `rtk pnpm --filter @repo/types test -- publish`
+- Post-implementation audit rerun: `rtk pnpm --filter web check-types`
+- Post-implementation audit rerun: `rtk pnpm --filter web test -- GuideEditorPage InteractiveDemoEditorPage`
+- Post-implementation audit rerun: `rtk pnpm --filter server check-types`
+- Post-implementation audit rerun: `rtk pnpm check-types`
 
 Browser validation was not required because this phase changed shared types, route body schemas, and backend/domain wiring without changing JSX, CSS, rendered copy, navigation, fetch paths, form behavior, public viewer parsing behavior, or browser-visible publish behavior.
 
@@ -72,11 +79,14 @@ Completion checklist:
 - [x] Kept web UI behavior stable and avoided adding a web dependency on `@repo/publish-domain`.
 - [x] Confirmed browser validation is not required.
 - [x] Confirmed DB validation is not required.
+- [x] Completed post-implementation audit against this plan and the master plan.
+- [x] Confirmed publish-result and revoke-result shared contracts match the implemented route response shapes.
 
 Carry into `096-server-adapter-thinning.md`:
 
 - `apps/web/src/features/guide/types.ts` still intentionally keeps guide-named publish compatibility aliases for existing guide UI imports.
 - `apps/server/src/modules/publish/publish.service.ts` still re-exports publish types/errors for server route/repository/test compatibility.
+- Shared publish result aliases now match actual non-null route responses; keep that stricter API boundary intact when thinning server adapters.
 - Publish repository SQL and row mapping remain server-owned and can be revisited only by adapter-thinning work that preserves database behavior.
 
 ## Baseline From Completed 094

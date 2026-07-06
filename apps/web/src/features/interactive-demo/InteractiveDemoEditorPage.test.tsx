@@ -17,7 +17,9 @@ import type {
   DemoHotspot,
   DemoScene,
   InteractiveDemo,
+  InteractiveDemoPublishResult,
   InteractiveDemoPublishStatusResponse,
+  RevokePublishResult,
   UpdateDemoHotspotInput,
 } from "./types";
 
@@ -113,6 +115,19 @@ const publishStatus: InteractiveDemoPublishStatusResponse = {
   },
 };
 
+const publishResult = (): InteractiveDemoPublishResult => ({
+  publish_link: publishStatus.publish_link!,
+  published_artifact: publishStatus.published_artifact!,
+});
+
+const revokedPublishResult = (): RevokePublishResult => ({
+  publish_link: {
+    ...publishStatus.publish_link!,
+    status: "revoked",
+    revoked_at: "2026-06-10T01:00:00.000Z",
+  },
+});
+
 const renderPage = (overrides: {
   loadDemo?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoDetailResponse>;
   loadScenes?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoSceneListResponse>;
@@ -155,7 +170,7 @@ const renderPage = (overrides: {
   ) => Promise<InteractiveDemoHotspotReorderResponse>;
   deleteHotspot?: (projectId: string, interactiveDemoId: string, sceneId: string, hotspotId: string) => Promise<void>;
   loadPublishStatus?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoPublishStatusResponse>;
-  publishDemo?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoPublishStatusResponse>;
+  publishDemo?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoPublishResult>;
   updatePublishAccess?: (
     projectId: string,
     interactiveDemoId: string,
@@ -166,7 +181,7 @@ const renderPage = (overrides: {
     interactiveDemoId: string,
     input: { password: string | null }
   ) => Promise<InteractiveDemoPublishStatusResponse>;
-  revokePublishLink?: (projectId: string, interactiveDemoId: string) => Promise<{ publish_link: { id: string; status: "revoked"; revoked_at: string } }>;
+  revokePublishLink?: (projectId: string, interactiveDemoId: string) => Promise<RevokePublishResult>;
   resolveAssetUrl?: (fileUrl: string) => string;
   currentPath?: string;
   navigate?: (path: string) => void;
@@ -201,7 +216,7 @@ const renderPage = (overrides: {
   }));
   const deleteHotspot = overrides.deleteHotspot ?? vi.fn(async () => undefined);
   const loadPublishStatus = overrides.loadPublishStatus ?? vi.fn(async () => publishStatus);
-  const publishDemo = overrides.publishDemo ?? vi.fn(async () => publishStatus);
+  const publishDemo = overrides.publishDemo ?? vi.fn(async () => publishResult());
   const updatePublishAccess = overrides.updatePublishAccess ?? vi.fn(async (_projectId, _demoId, input) => ({
     ...publishStatus,
     publish_link: publishStatus.publish_link
@@ -214,13 +229,7 @@ const renderPage = (overrides: {
       ? { ...publishStatus.publish_link, password_protected: input.password !== null }
       : null,
   }));
-  const revokePublishLink = overrides.revokePublishLink ?? vi.fn(async () => ({
-    publish_link: {
-      id: "publish_link_1",
-      status: "revoked" as const,
-      revoked_at: "2026-06-10T01:00:00.000Z",
-    },
-  }));
+  const revokePublishLink = overrides.revokePublishLink ?? vi.fn(async () => revokedPublishResult());
   const resolveAssetUrl = overrides.resolveAssetUrl ?? ((fileUrl: string) => `https://api.example.com${fileUrl}`);
   const copyText = overrides.copyText ?? vi.fn(async () => undefined);
 

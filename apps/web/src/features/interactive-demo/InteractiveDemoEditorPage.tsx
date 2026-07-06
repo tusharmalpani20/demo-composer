@@ -41,6 +41,7 @@ import type {
   DemoHotspotType,
   DemoScene,
   InteractiveDemo,
+  InteractiveDemoPublishResult,
   InteractiveDemoPublishStatusResponse,
   RevokePublishResult,
   UpdateDemoHotspotInput,
@@ -138,7 +139,7 @@ export type InteractiveDemoEditorPageProps = {
   ) => Promise<InteractiveDemoHotspotReorderResponse>;
   deleteHotspot?: (projectId: string, interactiveDemoId: string, sceneId: string, hotspotId: string) => Promise<void>;
   loadPublishStatus?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoPublishStatusResponse>;
-  publishDemo?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoPublishStatusResponse>;
+  publishDemo?: (projectId: string, interactiveDemoId: string) => Promise<InteractiveDemoPublishResult>;
   updatePublishAccess?: (
     projectId: string,
     interactiveDemoId: string,

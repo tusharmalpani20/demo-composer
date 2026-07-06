@@ -4,7 +4,9 @@ import {
   PublishedGuideSnapshotSchema,
   PublishedInteractiveDemoSnapshotSchema,
   PublicPublishLinkResponseSchema,
+  PublishResultSchema,
   PublishStatusResponseSchema,
+  RevokePublishResultSchema,
   UpdatePublishAccessRequestSchema,
   UpdatePublishPasswordRequestSchema,
 } from "./publish";
@@ -65,6 +67,28 @@ describe("publish contracts", () => {
     })).toEqual({
       publish_link: null,
       published_artifact: null,
+    });
+  });
+
+  it("parses publish and revoke result responses with full publish links", () => {
+    expect(PublishResultSchema.parse({
+      publish_link,
+      published_artifact,
+    })).toEqual({
+      publish_link,
+      published_artifact,
+    });
+
+    const revoked_link = {
+      ...publish_link,
+      status: "revoked",
+      revoked_at: "2026-07-07T01:00:00.000Z",
+    };
+
+    expect(RevokePublishResultSchema.parse({
+      publish_link: revoked_link,
+    })).toEqual({
+      publish_link: revoked_link,
     });
   });
 

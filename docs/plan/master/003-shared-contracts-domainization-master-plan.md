@@ -741,7 +741,7 @@ Acceptance:
 
 ### 095: Publish Domain Extraction
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 File:
 
@@ -765,6 +765,7 @@ Tests:
 - Server tests for publish, unpublish, public resolve, and viewer access routes.
 - Contract tests for public response schemas.
 - Additional verification passed for `@repo/types` publish contracts, `@repo/publish-domain` test/check-types/lint/build, server publish tests/check-types/lint, focused web publish/public viewer tests, and web API tests.
+- Post-implementation audit verification passed for `@repo/types` publish contracts, focused guide/interactive-demo publish editor tests, server typecheck, web typecheck, and repo-wide `pnpm check-types`.
 
 Acceptance:
 
@@ -774,6 +775,7 @@ Acceptance:
 - `@repo/publish-domain` owns pure snapshot, access, password, viewer-session, and publish-link helper policies.
 - Server keeps Fastify routes, auth/session, SQL repositories, transactions, storage adapters, password hashing/checking, viewer-token hashing, cookies, and HTTP error mapping.
 - Route URLs, public URL shapes, response envelopes, status codes, error `type` strings, persisted values, cookie behavior, and public viewer UI behavior remain stable.
+- Post-implementation audit fixed shared publish result/revoke result contract drift so publish actions use non-null `PublishResult` responses and revoke preserves the full returned `PublishLink`; no route, UI, persistence, security, or browser-visible behavior changed.
 - Browser validation was not required because there were no JSX, CSS, rendered copy, route path, fetch path, form behavior, public viewer parsing behavior, or browser-visible behavior changes.
 - DB verification was not required because migrations, SQL, row mapping, transaction boundaries, persisted snapshot JSON shape, persisted values, cookie/session tables, and storage access SQL were unchanged.
 
