@@ -67,6 +67,7 @@ Audit findings:
 - Current server routes match the closeout route families recorded in this plan.
 - `docs/backend-route-inventory.md` already reflected current publish public paths under `/api/v1/public/publish-links/:slug*`.
 - `CONTEXT.md`, `docs/system-design-pattern.md`, `docs/project-zoomout-status.md`, `docs/roadmap.md`, and existing ADRs did not require changes for this closeout.
+- The final TODO/FIXME scan found one pre-existing `TODO` in `apps/server/src/common/helper_function/error_handler.helper.ts` inside the generic Fastify response-serialization error branch. It was not introduced by this track, does not represent a shared-contract/domainization leftover, and was left unchanged because this closeout is docs/verification scoped.
 - No route/API contract, schema/type behavior, shared export, security, permission, migration, backwards-compatibility, public viewer, extension, or UI behavior change was introduced.
 
 Verification passed:
@@ -135,6 +136,7 @@ Browser validation:
 Leftovers and follow-ups:
 
 - No implementation leftover remains for this shared-contracts and domainization track.
+- The pre-existing generic server error-handler `TODO` noted above remains outside this track and should be handled by a future server error-handling cleanup only if it becomes actionable.
 - Existing product roadmap deferrals remain outside this closeout: HTML replay, AI behavior, broader analytics/lead-capture work, and manual extension dogfood reliability follow-ups already documented in status/roadmap docs.
 
 ## Implemented Baseline From 098
