@@ -88,6 +88,7 @@ Leftovers for later phases:
 - `apps/web/src/features/guide/types.ts` still intentionally keeps guide-named publish compatibility aliases for guide UI imports.
 - Public guide/demo snapshot parsing remains local defensive browser runtime parsing.
 - Browser-only upload input types remain local to feature barrels.
+- Carry the 097 implementation pattern into `098-extension-shared-contract-consumption.md`: consume shared `@repo/types` and `@repo/constants` directly where they are true extension/API contracts, keep browser-extension runtime message or browser API shapes local, and do not add domain package dependencies to the extension.
 
 ## Implemented Baseline From 096
 
@@ -124,14 +125,19 @@ apps/web/src/features/organization/types.ts
 apps/web/src/features/project/types.ts
 ```
 
-Current remaining cleanup opportunities:
+Current implemented web baseline after this phase:
 
-- `apps/web/src/lib/api.ts` still defines local response aliases that now exist in `@repo/types/project`, `@repo/types/capture`, and `@repo/types/guide`.
-- `apps/web/src/lib/api.ts` imports many API DTOs through feature barrels, which keeps the API client coupled to UI feature modules.
-- Web feature barrels already re-export several shared constant-derived types, but implementation must still audit duplicated domain fixed values against `@repo/constants` before deciding there is no constants cleanup.
+- `apps/web/src/lib/api.ts` imports shared API DTOs directly from `@repo/types/*` for project, capture, guide, demo, organization, auth, setup, instance, and publish contracts.
+- `apps/web/src/lib/api.ts` no longer defines local response aliases for project responses, capture session responses, project guide lists, or inline guide block responses when matching shared DTOs exist.
+- `apps/web/src/lib/api.ts` still imports only browser-local types from feature barrels:
+  - `UploadCaptureAssetInput`
+  - `UploadCaptureAssetResponse`
+  - `ProjectScreenshotAssetListResponse`
+  - `UploadGuideBlockScreenshotInput`
 - Guide publish types still use guide-named compatibility aliases in `apps/web/src/features/guide/types.ts` and guide UI files.
 - Public guide/demo readers still parse public published snapshots from `unknown` manually. That parse behavior is browser-viewer defensive behavior and should not be changed in this phase unless tests and browser validation are expanded.
 - Browser-only upload inputs are local and intentionally not represented by shared server DTOs because they include `File`, camelCase form metadata fields, and multipart behavior.
+- Duplicated domain option lists that were in 097 scope now consume `@repo/constants`; test fixtures and local UI/load-state strings intentionally remain local.
 
 ## Relevant Docs To Read Before Coding
 
