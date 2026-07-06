@@ -42,13 +42,31 @@ import type {
 } from "../features/guide/types";
 import type {
   CreateDemoHotspotInput,
-  DemoScene,
-  DemoHotspot,
-  InteractiveDemo,
   CreateInteractiveDemoFromCaptureResponse,
+  InteractiveDemoDetailResponse,
+  InteractiveDemoHotspotCreateResponse,
+  InteractiveDemoHotspotListResponse,
+  InteractiveDemoHotspotReorderResponse,
+  InteractiveDemoHotspotUpdateResponse,
+  InteractiveDemoSceneListResponse,
+  InteractiveDemoSceneReorderResponse,
+  InteractiveDemoSceneUpdateResponse,
+  ProjectInteractiveDemoListResponse,
   UpdateDemoHotspotInput,
   UpdateDemoSceneInput,
   UpdateInteractiveDemoInput,
+} from "../features/interactive-demo/types";
+
+export type {
+  InteractiveDemoDetailResponse,
+  InteractiveDemoHotspotCreateResponse,
+  InteractiveDemoHotspotListResponse,
+  InteractiveDemoHotspotReorderResponse,
+  InteractiveDemoHotspotUpdateResponse,
+  InteractiveDemoSceneListResponse,
+  InteractiveDemoSceneReorderResponse,
+  InteractiveDemoSceneUpdateResponse,
+  ProjectInteractiveDemoListResponse,
 } from "../features/interactive-demo/types";
 import type {
   AcceptOrganizationInviteInput,
@@ -92,42 +110,6 @@ export type ProjectUpdateResponse = {
 
 export type ProjectCaptureSessionListResponse = {
   capture_sessions: CaptureSession[];
-};
-
-export type ProjectInteractiveDemoListResponse = {
-  interactive_demos: InteractiveDemo[];
-};
-
-export type InteractiveDemoDetailResponse = {
-  interactive_demo: InteractiveDemo;
-};
-
-export type InteractiveDemoSceneListResponse = {
-  demo_scenes: DemoScene[];
-};
-
-export type InteractiveDemoSceneUpdateResponse = {
-  demo_scene: DemoScene;
-};
-
-export type InteractiveDemoSceneReorderResponse = {
-  demo_scenes: DemoScene[];
-};
-
-export type InteractiveDemoHotspotListResponse = {
-  demo_hotspots: DemoHotspot[];
-};
-
-export type InteractiveDemoHotspotCreateResponse = {
-  demo_hotspot: DemoHotspot;
-};
-
-export type InteractiveDemoHotspotUpdateResponse = {
-  demo_hotspot: DemoHotspot;
-};
-
-export type InteractiveDemoHotspotReorderResponse = {
-  demo_hotspots: DemoHotspot[];
 };
 
 export type CaptureSessionCreateResponse = {

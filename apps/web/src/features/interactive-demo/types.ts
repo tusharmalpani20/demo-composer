@@ -1,105 +1,47 @@
 import type {
   CaptureAssetType,
   DemoHotspotType,
-  InteractiveDemoStatus,
   PublishArtifactType,
 } from "@repo/constants";
+import type {
+  CreateDemoHotspotInput,
+  CreateInteractiveDemoFromCaptureResponse,
+  DemoHotspot,
+  DemoScene,
+  InteractiveDemoDetailResponse,
+  InteractiveDemoHotspotCreateResponse,
+  InteractiveDemoHotspotListResponse,
+  InteractiveDemoHotspotReorderResponse,
+  InteractiveDemoHotspotUpdateResponse,
+  InteractiveDemo,
+  InteractiveDemoSceneListResponse,
+  InteractiveDemoSceneReorderResponse,
+  InteractiveDemoSceneUpdateResponse,
+  ProjectInteractiveDemoListResponse,
+  UpdateDemoHotspotInput,
+  UpdateDemoSceneInput,
+  UpdateInteractiveDemoInput,
+} from "@repo/types/demo";
 
-export type { DemoHotspotType };
-
-export type InteractiveDemo = {
-  id: string;
-  organization_id: string;
-  project_id: string;
-  source_capture_session_id: string | null;
-  title: string;
-  description: string | null;
-  status: InteractiveDemoStatus;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type DemoScene = {
-  id: string;
-  organization_id: string;
-  project_id: string;
-  interactive_demo_id: string;
-  source_capture_session_id: string | null;
-  source_capture_event_id: string | null;
-  source_capture_asset_id: string | null;
-  scene_index: number;
-  title: string | null;
-  description: string | null;
-  background_capture_asset_id: string | null;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type DemoHotspot = {
-  id: string;
-  organization_id: string;
-  project_id: string;
-  interactive_demo_id: string;
-  demo_scene_id: string;
-  hotspot_type: DemoHotspotType;
-  label: string | null;
-  content: string | null;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  target_scene_id: string | null;
-  hotspot_index: number;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type CreateInteractiveDemoFromCaptureResponse = {
-  interactive_demo: InteractiveDemo;
-  demo_scenes: DemoScene[];
-  redirect_path: string;
-};
-
-export type UpdateInteractiveDemoInput = {
-  title?: string;
-  description?: string | null;
-  status?: InteractiveDemo["status"];
-};
-
-export type UpdateDemoSceneInput = {
-  title?: string | null;
-  description?: string | null;
-};
-
-export type CreateDemoHotspotInput = {
-  hotspot_type: DemoHotspotType;
-  label?: string | null;
-  content?: string | null;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  target_scene_id?: string | null;
-};
-
-export type UpdateDemoHotspotInput = {
-  hotspot_type?: DemoHotspotType;
-  label?: string | null;
-  content?: string | null;
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  target_scene_id?: string | null;
+export type {
+  CreateDemoHotspotInput,
+  CreateInteractiveDemoFromCaptureResponse,
+  DemoHotspot,
+  DemoHotspotType,
+  DemoScene,
+  InteractiveDemo,
+  InteractiveDemoDetailResponse,
+  InteractiveDemoHotspotCreateResponse,
+  InteractiveDemoHotspotListResponse,
+  InteractiveDemoHotspotReorderResponse,
+  InteractiveDemoHotspotUpdateResponse,
+  InteractiveDemoSceneListResponse,
+  InteractiveDemoSceneReorderResponse,
+  InteractiveDemoSceneUpdateResponse,
+  ProjectInteractiveDemoListResponse,
+  UpdateDemoHotspotInput,
+  UpdateDemoSceneInput,
+  UpdateInteractiveDemoInput,
 };
 
 export type PublishedInteractiveDemoSnapshotAsset = {
