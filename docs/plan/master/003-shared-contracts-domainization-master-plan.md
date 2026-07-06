@@ -547,6 +547,8 @@ Acceptance:
 
 ### 090: File Domain Extraction
 
+Status: Completed and post-implementation audited on 2026-07-07.
+
 File:
 
 - `docs/plan/090-file-domain-extraction.md`
@@ -558,20 +560,26 @@ Goal:
 Scope:
 
 - Extract file metadata validation.
-- Extract file kind/storage provider/MIME/size policy.
-- Define file repository interfaces.
+- Extract screenshot upload MIME/size policy.
+- Keep file repository interfaces deferred because this phase moved pure policy only.
 - Keep raw storage adapters in `apps/server`.
 
 Tests:
 
-- Domain tests for valid and invalid file metadata.
-- Server tests for upload/create-file flows that use the extracted domain.
-- Typecheck server and consumers.
+- `rtk pnpm --filter @repo/file-domain test`
+- `rtk pnpm --filter @repo/file-domain lint`
+- `rtk pnpm --filter @repo/file-domain check-types`
+- `rtk pnpm --filter @repo/file-domain build`
+- `rtk pnpm --filter server test -- capture-asset.service capture-asset.routes`
+- `rtk pnpm --filter server check-types`
+- `rtk pnpm --filter server lint`
+- `rtk pnpm check-types`
 
 Acceptance:
 
-- File business rules are outside route handlers/server services.
+- File metadata and screenshot upload policy are in `@repo/file-domain`.
 - Storage behavior and existing file records remain compatible.
+- Existing capture asset API behavior remains compatible.
 
 ### 091: Project, Identity, Setup, And Organization Contract Cleanup
 

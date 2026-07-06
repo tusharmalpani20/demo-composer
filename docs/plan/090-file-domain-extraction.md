@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Planned. Expanded for implementation on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -27,6 +27,75 @@ This phase should create the first real domain package only because there is con
 - framework-agnostic repository interfaces only if the extracted behavior needs persistence contracts.
 
 Raw storage adapters, SQL implementations, Fastify multipart handling, auth/session lookup, and capture asset product rules stay in `apps/server`.
+
+## Completion Summary
+
+Completed on 2026-07-07.
+
+Implementation commit:
+
+- `24d70d8 feat(file-domain): extract file metadata policies`
+
+What changed:
+
+- Created `@repo/file-domain` with framework-agnostic file metadata and screenshot upload policy.
+- Added file-domain tests for metadata normalization, required string validation, optional string compaction, image metadata validation, supported screenshot MIME types, and upload size limits.
+- Added file-domain package scripts, package config, TypeScript config, ESLint config, README, and workspace lockfile wiring.
+- Added `@repo/file-domain` as a server dependency.
+- Updated capture asset service to delegate file metadata normalization and screenshot upload MIME/size checks to `@repo/file-domain`.
+- Preserved existing capture asset route-local error classes and `instanceof` route mappings by translating file-domain policy errors back to existing server errors.
+- Did not create repository interfaces because this phase moved pure policy only; SQL/file record creation remains a server adapter concern.
+- Did not change shared constants, shared API DTOs, routes, database migrations, raw storage adapters, guide upload code, web code, or extension code.
+
+Verification passed:
+
+- `rtk pnpm --filter @repo/file-domain test`
+- `rtk pnpm --filter @repo/file-domain lint`
+- `rtk pnpm --filter @repo/file-domain check-types`
+- `rtk pnpm --filter @repo/file-domain build`
+- `rtk pnpm --filter server test -- capture-asset.service`
+- `rtk pnpm --filter server test -- capture-asset.routes`
+- `rtk pnpm --filter server test -- capture-asset.service capture-asset.routes`
+- `rtk pnpm --filter server check-types`
+- `rtk pnpm --filter server lint`
+- `rtk pnpm check-types`
+
+Browser validation:
+
+- Not run. This phase did not touch `apps/web`, `apps/extension`, rendered upload controls, client-side validation, route behavior, or browser-visible messaging.
+
+Leftovers for later plans:
+
+- `092-capture-domain-extraction.md` should continue separating capture asset product meaning from file metadata policy.
+- `093-guide-domain-extraction.md` should decide whether duplicated multipart field parsing in guide screenshot upload should be shared or stay route-local.
+- `097-web-shared-contract-consumption.md` and `098-extension-shared-contract-consumption.md` can decide whether screenshot MIME constants should become cross-app constants. This phase kept the screenshot MIME allow-list domain-local because no frontend/extension imports were introduced.
+- Future file storage provider work should keep local filesystem/object-storage adapter details outside `@repo/file-domain`.
+
+## Completion Checklist
+
+- [x] Worktree checked before implementation.
+- [x] Baseline searches run.
+- [x] `@repo/file-domain` created with real moved policy behavior.
+- [x] File metadata normalization/validation moved into file-domain policy.
+- [x] Screenshot upload MIME and declared-size policy moved into file-domain policy.
+- [x] Capture asset service delegates to file-domain policy helpers.
+- [x] Existing capture asset API error codes/statuses preserved through server error translation.
+- [x] Raw storage adapter stayed in `apps/server`.
+- [x] SQL and database row mapping stayed in `apps/server`.
+- [x] No file-domain repository interface created because no persistence-facing command/query moved.
+- [x] No shared constants/types changed.
+- [x] No frontend, extension, UI, browser, database, route URL, auth, or permission behavior changed.
+- [x] Focused verification completed.
+- [x] Browser validation explicitly not required.
+
+## Implementation Log
+
+- 2026-07-07: Added failing file-domain policy tests before production policy code.
+- 2026-07-07: Verified the tests failed first because the target policy modules were missing.
+- 2026-07-07: Implemented file-domain errors, types, file metadata policy, screenshot upload policy, package exports, and package config.
+- 2026-07-07: Wired capture asset service to call file-domain policy helpers while keeping route-facing server error classes stable.
+- 2026-07-07: Added server dependency and lockfile wiring for `@repo/file-domain`.
+- 2026-07-07: Ran focused package/server verification and workspace typecheck.
 
 ## Baseline From Completed 089
 
