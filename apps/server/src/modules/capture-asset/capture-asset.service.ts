@@ -2,6 +2,16 @@ import type {
   CaptureAssetType,
   FileStorageProvider,
 } from "@repo/constants";
+import {
+  assert_supported_screenshot_upload_mime_type,
+  assert_upload_size_within_limit,
+  compact_optional_string,
+  InvalidFileMetadataError,
+  type NormalizedFileMetadata,
+  normalize_file_metadata,
+  UnsupportedScreenshotUploadMimeTypeError,
+  UploadTooLargeError as FileDomainUploadTooLargeError,
+} from "@repo/file-domain";
 import { ulid } from "ulid";
 import {
   type ReadStoredFile,
@@ -267,29 +277,6 @@ export class FileStorageKeyConflictError extends Error {
   }
 }
 
-const compact_optional_string = (value: string | null | undefined) => {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (value === null) {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed || null;
-};
-
-const require_compact_string = (value: string | undefined) => {
-  const compacted = compact_optional_string(value);
-
-  if (!compacted) {
-    throw new InvalidCaptureAssetInputError();
-  }
-
-  return compacted;
-};
-
 const normalize_create_capture_asset = (
   input: CreateCaptureAssetInput
 ): NormalizedCreateCaptureAssetInput => {
@@ -297,10 +284,20 @@ const normalize_create_capture_asset = (
     throw new UnsupportedCaptureAssetTypeError();
   }
 
-  const mime_type = require_compact_string(input.file?.mime_type);
-
-  if (!mime_type.toLowerCase().startsWith("image/")) {
+  if (!input.file) {
     throw new InvalidCaptureAssetInputError();
+  }
+
+  let file: NormalizedFileMetadata;
+
+  try {
+    file = normalize_file_metadata(input.file);
+  } catch (error) {
+    if (error instanceof InvalidFileMetadataError) {
+      throw new InvalidCaptureAssetInputError();
+    }
+
+    throw error;
   }
 
   return {
@@ -312,23 +309,9 @@ const normalize_create_capture_asset = (
     page_title: compact_optional_string(input.page_title),
     captured_at: compact_optional_string(input.captured_at),
     metadata: input.metadata,
-    file: {
-      storage_provider: input.file.storage_provider ?? "local",
-      storage_key: require_compact_string(input.file.storage_key),
-      mime_type,
-      size_bytes: input.file.size_bytes,
-      original_name: compact_optional_string(input.file.original_name),
-      checksum_sha256: compact_optional_string(input.file.checksum_sha256),
-      metadata: input.file.metadata,
-    },
+    file,
   };
 };
-
-const upload_mime_types = new Set([
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-]);
 
 const project_screenshot_picker_asset_types = new Set<CaptureAssetType>([
   "screenshot",
@@ -435,17 +418,24 @@ export const build_capture_asset_service = (
     }
     const file_storage = options.file_storage;
 
-    const mime_type = require_compact_string(input.file.mime_type).toLowerCase();
+    let mime_type: string;
 
-    if (!upload_mime_types.has(mime_type)) {
-      throw new UnsupportedCaptureAssetUploadTypeError();
-    }
+    try {
+      mime_type = assert_supported_screenshot_upload_mime_type(input.file.mime_type);
+      assert_upload_size_within_limit({
+        declared_size_bytes: input.file.declared_size_bytes,
+        max_upload_bytes,
+      });
+    } catch (error) {
+      if (error instanceof UnsupportedScreenshotUploadMimeTypeError) {
+        throw new UnsupportedCaptureAssetUploadTypeError();
+      }
 
-    if (
-      input.file.declared_size_bytes !== undefined
-      && input.file.declared_size_bytes > max_upload_bytes
-    ) {
-      throw new UploadTooLargeError();
+      if (error instanceof FileDomainUploadTooLargeError) {
+        throw new UploadTooLargeError();
+      }
+
+      throw error;
     }
 
     const data = normalize_upload_capture_asset(input.data);
