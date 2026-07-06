@@ -3,8 +3,22 @@ import type {
   CaptureEventType,
   CaptureSessionSourceType,
   CaptureSessionStatus,
-  ProjectStatus,
 } from "@repo/constants";
+import type {
+  CaptureEvent,
+  CaptureEventResponse,
+} from "@repo/types/capture";
+import type {
+  Project,
+  ProjectListResponse,
+} from "@repo/types/project";
+
+export type {
+  CaptureEvent,
+  CaptureEventResponse,
+  Project,
+  ProjectListResponse,
+};
 
 export type AuthResponse = {
   auth: {
@@ -31,26 +45,6 @@ export type AuthResponse = {
 
 export type LoginResponse = AuthResponse & {
   session_token: string;
-};
-
-export type Project = {
-  id: string;
-  organization_id: string;
-  name: string;
-  description: string | null;
-  slug: string | null;
-  color: string | null;
-  icon: string | null;
-  status: ProjectStatus;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type ProjectListResponse = {
-  projects: Project[];
 };
 
 export type CaptureSession = {
@@ -114,41 +108,6 @@ export type UploadCaptureAssetInput = {
   pageTitle?: string | null;
   capturedAt?: string | null;
   metadata?: Record<string, unknown>;
-};
-
-export type CaptureEvent = {
-  id: string;
-  organization_id: string;
-  project_id: string;
-  capture_session_id: string;
-  capture_asset_id: string | null;
-  event_type: CaptureEventType;
-  event_index: number;
-  occurred_at: string;
-  page_url: string | null;
-  page_title: string | null;
-  target_label: string | null;
-  target_selector: string | null;
-  target_role: string | null;
-  target_test_id: string | null;
-  target_text: string | null;
-  client_x: number | null;
-  client_y: number | null;
-  viewport_width: number | null;
-  viewport_height: number | null;
-  device_pixel_ratio: number | null;
-  input_intent: string | null;
-  input_value_redacted: true;
-  note: string | null;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type CaptureEventResponse = {
-  capture_event: CaptureEvent;
 };
 
 export type CreateCaptureEventInput = {

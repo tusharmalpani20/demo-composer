@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@repo/constants": "workspace:*",
+    "@repo/types": "workspace:*",
     "@casl/ability": "^6.8.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.2.0",

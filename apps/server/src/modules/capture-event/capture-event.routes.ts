@@ -1,6 +1,10 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
-import { CAPTURE_EVENT_TYPES } from "@repo/constants";
-import { z } from "zod";
+import {
+  CaptureEventListQuerySchema,
+  CreateCaptureEventRequestSchema,
+  ReorderCaptureEventsRequestSchema,
+  UpdateCaptureEventRequestSchema,
+} from "@repo/types/capture";
 import {
   UnauthenticatedSessionError,
   type AuthContext,
@@ -69,10 +73,6 @@ export type CaptureEventRouteDependencies = {
   };
 };
 
-const event_type_schema = z.enum(CAPTURE_EVENT_TYPES);
-const non_negative_number_schema = z.number().nonnegative();
-const positive_int_schema = z.number().int().positive();
-const positive_number_schema = z.number().positive();
 const raw_input_field_names = new Set([
   "input_value",
   "value",
@@ -80,46 +80,6 @@ const raw_input_field_names = new Set([
   "password",
   "secret",
 ]);
-
-const create_capture_event_body_schema = z.object({
-  event_type: event_type_schema,
-  event_index: positive_int_schema,
-  capture_asset_id: z.string().trim().min(1).nullable().optional(),
-  occurred_at: z.string().datetime().nullable().optional(),
-  page_url: z.string().nullable().optional(),
-  page_title: z.string().nullable().optional(),
-  target_label: z.string().nullable().optional(),
-  target_selector: z.string().nullable().optional(),
-  target_role: z.string().nullable().optional(),
-  target_test_id: z.string().nullable().optional(),
-  target_text: z.string().nullable().optional(),
-  client_x: non_negative_number_schema.nullable().optional(),
-  client_y: non_negative_number_schema.nullable().optional(),
-  viewport_width: positive_int_schema.nullable().optional(),
-  viewport_height: positive_int_schema.nullable().optional(),
-  device_pixel_ratio: positive_number_schema.nullable().optional(),
-  input_intent: z.string().nullable().optional(),
-  input_value_redacted: z.boolean().optional(),
-  note: z.string().nullable().optional(),
-  metadata: z.unknown().optional(),
-}).passthrough();
-
-const list_query_schema = z.object({
-  event_type: event_type_schema.optional(),
-});
-
-const reorder_capture_events_body_schema = z.object({
-  event_ids: z.array(z.string().trim().min(1)).min(1),
-});
-
-const update_capture_event_body_schema = z.object({
-  page_url: z.string().nullable().optional(),
-  page_title: z.string().nullable().optional(),
-  target_label: z.string().nullable().optional(),
-  target_text: z.string().nullable().optional(),
-  input_intent: z.string().nullable().optional(),
-  note: z.string().nullable().optional(),
-}).strict().refine((body) => Object.keys(body).length > 0);
 
 const unauthorized_response = () => ({
   error: {
@@ -283,7 +243,7 @@ export const build_capture_event_routes = (
       Body: CreateCaptureEventInput;
     }>("/:project_id/capture-sessions/:capture_session_id/events", {
       schema: {
-        body: create_capture_event_body_schema,
+        body: CreateCaptureEventRequestSchema,
       },
     }, async (request, reply) => {
       try {
@@ -309,7 +269,7 @@ export const build_capture_event_routes = (
       Body: ReorderCaptureEventsInput;
     }>("/:project_id/capture-sessions/:capture_session_id/events/order", {
       schema: {
-        body: reorder_capture_events_body_schema,
+        body: ReorderCaptureEventsRequestSchema,
       },
     }, async (request, reply) => {
       try {
@@ -338,7 +298,7 @@ export const build_capture_event_routes = (
       };
     }>("/:project_id/capture-sessions/:capture_session_id/events", {
       schema: {
-        querystring: list_query_schema,
+        querystring: CaptureEventListQuerySchema,
       },
     }, async (request, reply) => {
       try {
@@ -385,7 +345,7 @@ export const build_capture_event_routes = (
       Body: UpdateCaptureEventInput;
     }>("/:project_id/capture-sessions/:capture_session_id/events/:id", {
       schema: {
-        body: update_capture_event_body_schema,
+        body: UpdateCaptureEventRequestSchema,
       },
     }, async (request, reply) => {
       try {

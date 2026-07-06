@@ -1,5 +1,8 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
-import { z } from "zod";
+import {
+  FirstRunSetupRequestSchema,
+  type FirstRunSetupRequest,
+} from "@repo/types/setup";
 import {
   FirstRunSetupAlreadyCompletedError,
   FirstRunSetupUnavailableError,
@@ -12,30 +15,8 @@ import {
 
 export { web_session_cookie_name };
 
-const first_run_setup_body_schema = z.object({
-  owner: z.object({
-    email: z.string().min(1),
-    password: z.string().min(1),
-    first_name: z.string().nullable().optional(),
-    last_name: z.string().nullable().optional(),
-  }),
-  organization: z.object({
-    name: z.string().min(1),
-  }),
-});
-
 export type FirstRunSetupRouteService = {
-  complete_first_run_setup: (input: {
-    owner: {
-      email: string;
-      password: string;
-      first_name?: string | null;
-      last_name?: string | null;
-    };
-    organization: {
-      name: string;
-    };
-  }) => Promise<{
+  complete_first_run_setup: (input: FirstRunSetupRequest) => Promise<{
     session_token: string;
     auth: unknown;
   }>;
@@ -46,20 +27,10 @@ export const build_first_run_setup_routes = (
 ): FastifyPluginAsync => {
   return async (fastify: FastifyInstance) => {
     fastify.post<{
-      Body: {
-        owner: {
-          email: string;
-          password: string;
-          first_name?: string | null;
-          last_name?: string | null;
-        };
-        organization: {
-          name: string;
-        };
-      };
+      Body: FirstRunSetupRequest;
     }>("/first-run", {
       schema: {
-        body: first_run_setup_body_schema,
+        body: FirstRunSetupRequestSchema,
       },
     }, async (request, reply) => {
       let result: Awaited<ReturnType<FirstRunSetupRouteService["complete_first_run_setup"]>>;

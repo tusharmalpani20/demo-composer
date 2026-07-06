@@ -1,6 +1,9 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
-import { PROJECT_STATUSES } from "@repo/constants";
-import { z } from "zod";
+import {
+  CreateProjectRequestSchema,
+  ProjectListQuerySchema,
+  UpdateProjectRequestSchema,
+} from "@repo/types/project";
 import {
   UnauthenticatedSessionError,
   type AuthContext,
@@ -46,29 +49,6 @@ export type ProjectRouteDependencies = {
     }) => Promise<void>;
   };
 };
-
-const project_body_schema = z.object({
-  name: z.string().trim().min(1),
-  description: z.string().nullable().optional(),
-  slug: z.string().nullable().optional(),
-  color: z.string().nullable().optional(),
-  icon: z.string().nullable().optional(),
-  metadata: z.unknown().optional(),
-}).passthrough();
-
-const update_project_body_schema = z.object({
-  name: z.string().trim().min(1).optional(),
-  description: z.string().nullable().optional(),
-  slug: z.string().nullable().optional(),
-  color: z.string().nullable().optional(),
-  icon: z.string().nullable().optional(),
-  metadata: z.unknown().optional(),
-  status: z.enum(PROJECT_STATUSES).optional(),
-}).passthrough();
-
-const list_query_schema = z.object({
-  status: z.enum(PROJECT_STATUSES).optional(),
-});
 
 const unauthorized_response = () => ({
   error: {
@@ -169,7 +149,7 @@ export const build_project_routes = (
       Body: CreateProjectInput;
     }>("/", {
       schema: {
-        body: project_body_schema,
+        body: CreateProjectRequestSchema,
       },
     }, async (request, reply) => {
       try {
@@ -190,7 +170,7 @@ export const build_project_routes = (
       };
     }>("/", {
       schema: {
-        querystring: list_query_schema,
+        querystring: ProjectListQuerySchema,
       },
     }, async (request, reply) => {
       try {
@@ -229,7 +209,7 @@ export const build_project_routes = (
       Body: UpdateProjectInput;
     }>("/:id", {
       schema: {
-        body: update_project_body_schema,
+        body: UpdateProjectRequestSchema,
       },
     }, async (request, reply) => {
       try {

@@ -1,9 +1,9 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
 import {
-  CAPTURE_SESSION_SOURCE_TYPES,
-  CAPTURE_SESSION_STATUSES,
-} from "@repo/constants";
-import { z } from "zod";
+  CaptureSessionListQuerySchema,
+  CreateCaptureSessionRequestSchema,
+  UpdateCaptureSessionRequestSchema,
+} from "@repo/types/capture";
 import {
   UnauthenticatedSessionError,
   type AuthContext,
@@ -68,45 +68,6 @@ export type CaptureSessionRouteDependencies = {
     }) => Promise<void>;
   };
 };
-
-const status_schema = z.enum(CAPTURE_SESSION_STATUSES);
-const source_type_schema = z.enum(CAPTURE_SESSION_SOURCE_TYPES);
-const positive_int_schema = z.number().int().positive();
-const positive_number_schema = z.number().positive();
-
-const create_capture_session_body_schema = z.object({
-  name: z.string().trim().min(1),
-  description: z.string().nullable().optional(),
-  source_type: source_type_schema.optional(),
-  start_url: z.string().nullable().optional(),
-  browser_name: z.string().nullable().optional(),
-  browser_version: z.string().nullable().optional(),
-  operating_system: z.string().nullable().optional(),
-  viewport_width: positive_int_schema.nullable().optional(),
-  viewport_height: positive_int_schema.nullable().optional(),
-  device_pixel_ratio: positive_number_schema.nullable().optional(),
-  user_agent: z.string().nullable().optional(),
-  metadata: z.unknown().optional(),
-}).passthrough();
-
-const update_capture_session_body_schema = z.object({
-  name: z.string().trim().min(1).optional(),
-  description: z.string().nullable().optional(),
-  status: status_schema.optional(),
-  start_url: z.string().nullable().optional(),
-  browser_name: z.string().nullable().optional(),
-  browser_version: z.string().nullable().optional(),
-  operating_system: z.string().nullable().optional(),
-  viewport_width: positive_int_schema.nullable().optional(),
-  viewport_height: positive_int_schema.nullable().optional(),
-  device_pixel_ratio: positive_number_schema.nullable().optional(),
-  user_agent: z.string().nullable().optional(),
-  metadata: z.unknown().optional(),
-}).passthrough();
-
-const list_query_schema = z.object({
-  status: status_schema.optional(),
-});
 
 const unauthorized_response = () => ({
   error: {
@@ -274,7 +235,7 @@ export const build_capture_session_routes = (
       Body: CreateCaptureSessionInput;
     }>("/:project_id/capture-sessions", {
       schema: {
-        body: create_capture_session_body_schema,
+        body: CreateCaptureSessionRequestSchema,
       },
     }, async (request, reply) => {
       try {
@@ -318,7 +279,7 @@ export const build_capture_session_routes = (
       };
     }>("/:project_id/capture-sessions", {
       schema: {
-        querystring: list_query_schema,
+        querystring: CaptureSessionListQuerySchema,
       },
     }, async (request, reply) => {
       try {
@@ -385,7 +346,7 @@ export const build_capture_session_routes = (
       Body: UpdateCaptureSessionInput;
     }>("/:project_id/capture-sessions/:id", {
       schema: {
-        body: update_capture_session_body_schema,
+        body: UpdateCaptureSessionRequestSchema,
       },
     }, async (request, reply) => {
       try {

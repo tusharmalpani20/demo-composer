@@ -1,32 +1,6 @@
-import type { ProjectStatus } from "@repo/constants";
-
-export type { ProjectStatus };
-
-export type Project = {
-  id: string;
-  organization_id: string;
-  name: string;
-  description: string | null;
-  slug: string | null;
-  color: string | null;
-  icon: string | null;
-  status: ProjectStatus;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type CreateProjectInput = {
-  name: string;
-  description?: string | null;
-  slug?: string | null;
-};
-
-export type UpdateProjectInput = Partial<{
-  name: string;
-  description: string | null;
-  slug: string | null;
-  status: ProjectStatus;
-}>;
+export type { ProjectStatus } from "@repo/constants";
+export type {
+  CreateProjectInput,
+  Project,
+  UpdateProjectInput,
+} from "@repo/types/project";

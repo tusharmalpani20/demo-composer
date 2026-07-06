@@ -1,16 +1,8 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
-import type {
-  DeploymentMode,
-  OnboardingMode,
-} from "@repo/constants";
+import type { PublicInstanceStatusResponse } from "@repo/types/instance";
 
 export type PublicInstanceRouteService = {
-  get_public_instance_status: () => Promise<{
-    deployment_mode: DeploymentMode;
-    onboarding_mode: OnboardingMode;
-    setup_required: boolean;
-    signup_enabled: boolean;
-  }>;
+  get_public_instance_status: () => Promise<PublicInstanceStatusResponse>;
 };
 
 export const build_public_instance_routes = (

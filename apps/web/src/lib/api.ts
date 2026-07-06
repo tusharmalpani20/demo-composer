@@ -1,7 +1,6 @@
-import type {
-  DeploymentMode,
-  OnboardingMode,
-} from "@repo/constants";
+import type { PublicInstanceStatus } from "@repo/types/instance";
+
+export type { PublicInstanceStatus } from "@repo/types/instance";
 import type {
   CaptureSession,
   CaptureSessionDetail,
@@ -69,13 +68,6 @@ type ApiErrorBody = {
 
 export type ProjectGuideListResponse = {
   guides: Guide[];
-};
-
-export type PublicInstanceStatus = {
-  deployment_mode: DeploymentMode;
-  onboarding_mode: OnboardingMode;
-  setup_required: boolean;
-  signup_enabled: boolean;
 };
 
 export type ProjectDetailResponse = {
