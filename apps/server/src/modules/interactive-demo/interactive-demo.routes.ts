@@ -1,9 +1,15 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply } from "fastify";
 import {
-  DEMO_HOTSPOT_TYPES,
-  INTERACTIVE_DEMO_STATUSES,
-} from "@repo/constants";
-import { z } from "zod";
+  CreateDemoHotspotRequestSchema,
+  CreateDemoSceneRequestSchema,
+  CreateInteractiveDemoFromCaptureRequestSchema,
+  CreateInteractiveDemoRequestSchema,
+  ReorderDemoHotspotsRequestSchema,
+  ReorderDemoScenesRequestSchema,
+  UpdateDemoHotspotRequestSchema,
+  UpdateDemoSceneRequestSchema,
+  UpdateInteractiveDemoRequestSchema,
+} from "@repo/types/demo";
 import {
   UnauthenticatedSessionError,
   type AuthContext,
@@ -146,64 +152,6 @@ export type InteractiveDemoRouteDependencies = {
     }) => Promise<void>;
   };
 };
-
-const create_demo_body_schema = z.object({
-  title: z.string().trim().min(1),
-  description: z.string().nullable().optional(),
-}).passthrough();
-
-const create_demo_from_capture_body_schema = z.object({
-  title: z.string().trim().min(1).optional(),
-  description: z.string().nullable().optional(),
-}).passthrough();
-
-const update_demo_body_schema = z.object({
-  title: z.string().trim().min(1).optional(),
-  description: z.string().nullable().optional(),
-  status: z.enum(INTERACTIVE_DEMO_STATUSES).optional(),
-}).passthrough();
-
-const create_scene_body_schema = z.object({
-  title: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
-  background_capture_asset_id: z.string().trim().min(1).nullable().optional(),
-}).passthrough();
-
-const update_scene_body_schema = z.object({
-  title: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
-  background_capture_asset_id: z.string().trim().min(1).nullable().optional(),
-}).passthrough();
-
-const reorder_scenes_body_schema = z.object({
-  scene_ids: z.array(z.string().trim().min(1)).min(1),
-}).passthrough();
-
-const create_hotspot_body_schema = z.object({
-  hotspot_type: z.enum(DEMO_HOTSPOT_TYPES),
-  label: z.string().nullable().optional(),
-  content: z.string().nullable().optional(),
-  x: z.number(),
-  y: z.number(),
-  width: z.number(),
-  height: z.number(),
-  target_scene_id: z.string().trim().min(1).nullable().optional(),
-}).passthrough();
-
-const update_hotspot_body_schema = z.object({
-  hotspot_type: z.enum(DEMO_HOTSPOT_TYPES).optional(),
-  label: z.string().nullable().optional(),
-  content: z.string().nullable().optional(),
-  x: z.number().optional(),
-  y: z.number().optional(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  target_scene_id: z.string().trim().min(1).nullable().optional(),
-}).passthrough();
-
-const reorder_hotspots_body_schema = z.object({
-  hotspot_ids: z.array(z.string().trim().min(1)).min(1),
-}).passthrough();
 
 const unauthorized_response = () => ({
   error: {
@@ -377,7 +325,7 @@ export const build_interactive_demo_routes = (
       Params: { project_id: string; capture_session_id: string };
       Body: CreateInteractiveDemoFromCaptureInput;
     }>("/:project_id/capture-sessions/:capture_session_id/interactive-demos", {
-      schema: { body: create_demo_from_capture_body_schema },
+      schema: { body: CreateInteractiveDemoFromCaptureRequestSchema },
     }, async (request, reply) => {
       try {
         const auth = await require_auth(session_token_from_request(request));
@@ -397,7 +345,7 @@ export const build_interactive_demo_routes = (
       Params: { project_id: string };
       Body: CreateInteractiveDemoInput;
     }>("/:project_id/interactive-demos", {
-      schema: { body: create_demo_body_schema },
+      schema: { body: CreateInteractiveDemoRequestSchema },
     }, async (request, reply) => {
       try {
         const auth = await require_auth(session_token_from_request(request));
@@ -447,7 +395,7 @@ export const build_interactive_demo_routes = (
       Params: { project_id: string; interactive_demo_id: string };
       Body: UpdateInteractiveDemoInput;
     }>("/:project_id/interactive-demos/:interactive_demo_id", {
-      schema: { body: update_demo_body_schema },
+      schema: { body: UpdateInteractiveDemoRequestSchema },
     }, async (request, reply) => {
       try {
         const auth = await require_auth(session_token_from_request(request));
@@ -483,7 +431,7 @@ export const build_interactive_demo_routes = (
       Params: { project_id: string; interactive_demo_id: string };
       Body: CreateDemoSceneInput;
     }>("/:project_id/interactive-demos/:interactive_demo_id/scenes", {
-      schema: { body: create_scene_body_schema },
+      schema: { body: CreateDemoSceneRequestSchema },
     }, async (request, reply) => {
       try {
         const auth = await require_auth(session_token_from_request(request));
@@ -519,7 +467,7 @@ export const build_interactive_demo_routes = (
       Params: { project_id: string; interactive_demo_id: string; scene_id: string };
       Body: UpdateDemoSceneInput;
     }>("/:project_id/interactive-demos/:interactive_demo_id/scenes/:scene_id", {
-      schema: { body: update_scene_body_schema },
+      schema: { body: UpdateDemoSceneRequestSchema },
     }, async (request, reply) => {
       try {
         const auth = await require_auth(session_token_from_request(request));
@@ -540,7 +488,7 @@ export const build_interactive_demo_routes = (
       Params: { project_id: string; interactive_demo_id: string };
       Body: { scene_ids: string[] };
     }>("/:project_id/interactive-demos/:interactive_demo_id/scenes/order", {
-      schema: { body: reorder_scenes_body_schema },
+      schema: { body: ReorderDemoScenesRequestSchema },
     }, async (request, reply) => {
       try {
         const auth = await require_auth(session_token_from_request(request));
@@ -577,7 +525,7 @@ export const build_interactive_demo_routes = (
       Params: { project_id: string; interactive_demo_id: string; scene_id: string };
       Body: CreateDemoHotspotInput;
     }>("/:project_id/interactive-demos/:interactive_demo_id/scenes/:scene_id/hotspots", {
-      schema: { body: create_hotspot_body_schema },
+      schema: { body: CreateDemoHotspotRequestSchema },
     }, async (request, reply) => {
       try {
         const auth = await require_auth(session_token_from_request(request));
@@ -615,7 +563,7 @@ export const build_interactive_demo_routes = (
       Params: { project_id: string; interactive_demo_id: string; scene_id: string; hotspot_id: string };
       Body: UpdateDemoHotspotInput;
     }>("/:project_id/interactive-demos/:interactive_demo_id/scenes/:scene_id/hotspots/:hotspot_id", {
-      schema: { body: update_hotspot_body_schema },
+      schema: { body: UpdateDemoHotspotRequestSchema },
     }, async (request, reply) => {
       try {
         const auth = await require_auth(session_token_from_request(request));
@@ -637,7 +585,7 @@ export const build_interactive_demo_routes = (
       Params: { project_id: string; interactive_demo_id: string; scene_id: string };
       Body: { hotspot_ids: string[] };
     }>("/:project_id/interactive-demos/:interactive_demo_id/scenes/:scene_id/hotspots/order", {
-      schema: { body: reorder_hotspots_body_schema },
+      schema: { body: ReorderDemoHotspotsRequestSchema },
     }, async (request, reply) => {
       try {
         const auth = await require_auth(session_token_from_request(request));

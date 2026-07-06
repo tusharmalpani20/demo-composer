@@ -3,10 +3,105 @@ import type {
   DemoHotspotType,
   InteractiveDemoStatus,
 } from "@repo/constants";
+import {
+  CaptureSessionNotFoundError,
+  DemoHotspotNotFoundError,
+  DemoSceneNotFoundError,
+  EmptyDemoHotspotOrderError,
+  EmptyDemoHotspotUpdateError,
+  EmptyDemoSceneOrderError,
+  EmptyDemoSceneUpdateError,
+  EmptyInteractiveDemoUpdateError,
+  InteractiveDemoNotFoundError,
+  InvalidDemoHotspotCoordinatesError,
+  InvalidDemoHotspotOrderError,
+  InvalidDemoHotspotTargetError,
+  InvalidDemoSceneOrderError,
+  InvalidDemoSceneReferenceError,
+  NoUsableCaptureEventsError,
+  ProjectNotFoundError,
+  assert_background_asset_exists,
+  assert_demo_hotspot_order_result,
+  assert_demo_scene_order_result,
+  assert_hotspot_target_scene_exists,
+  assert_valid_hotspot_box,
+  build_demo_from_capture_source,
+  demo_redirect_path,
+  normalize_create_demo_from_capture_source,
+  normalize_create_demo_input,
+  normalize_create_hotspot_input,
+  normalize_create_scene_input,
+  normalize_demo_hotspot_ids,
+  normalize_demo_scene_ids,
+  normalize_update_demo_input,
+  normalize_update_hotspot_input,
+  normalize_update_scene_input,
+  type InteractiveDemoSourceCaptureSession,
+  type InteractiveDemoSourceEvent,
+  type InteractiveDemoSourceEventType,
+  type NormalizedCreateDemoHotspotInput,
+  type NormalizedCreateDemoSceneInput,
+  type NormalizedCreateInteractiveDemoFromCaptureInput,
+  type NormalizedCreateInteractiveDemoInput,
+  type NormalizedUpdateDemoHotspotInput,
+  type NormalizedUpdateDemoSceneInput,
+  type NormalizedUpdateInteractiveDemoInput,
+} from "@repo/demo-domain";
+import type {
+  CreateDemoHotspotInput,
+  CreateDemoSceneInput,
+  CreateInteractiveDemoFromCaptureInput,
+  CreateInteractiveDemoInput,
+  DemoHotspot,
+  DemoScene,
+  InteractiveDemo,
+  UpdateDemoHotspotInput,
+  UpdateDemoSceneInput,
+  UpdateInteractiveDemoInput,
+} from "@repo/types/demo";
 
 export type {
+  CreateDemoHotspotInput,
+  CreateDemoSceneInput,
+  CreateInteractiveDemoFromCaptureInput,
+  CreateInteractiveDemoInput,
+  DemoHotspot,
   DemoHotspotType,
+  DemoScene,
+  InteractiveDemo,
+  InteractiveDemoSourceCaptureSession,
+  InteractiveDemoSourceEvent,
+  InteractiveDemoSourceEventType,
   InteractiveDemoStatus,
+  NormalizedCreateDemoHotspotInput,
+  NormalizedCreateDemoSceneInput,
+  NormalizedCreateInteractiveDemoFromCaptureInput,
+  NormalizedCreateInteractiveDemoInput,
+  NormalizedUpdateDemoHotspotInput,
+  NormalizedUpdateDemoSceneInput,
+  NormalizedUpdateInteractiveDemoInput,
+  UpdateDemoHotspotInput,
+  UpdateDemoSceneInput,
+  UpdateInteractiveDemoInput,
+};
+
+export {
+  CaptureSessionNotFoundError,
+  DemoHotspotNotFoundError,
+  DemoSceneNotFoundError,
+  EmptyDemoHotspotOrderError,
+  EmptyDemoHotspotUpdateError,
+  EmptyDemoSceneOrderError,
+  EmptyDemoSceneUpdateError,
+  EmptyInteractiveDemoUpdateError,
+  InteractiveDemoNotFoundError,
+  InvalidDemoHotspotCoordinatesError,
+  InvalidDemoHotspotOrderError,
+  InvalidDemoHotspotTargetError,
+  InvalidDemoSceneOrderError,
+  InvalidDemoSceneReferenceError,
+  NoUsableCaptureEventsError,
+  ProjectNotFoundError,
 };
 
 export type InteractiveDemoAuthContext = {
@@ -14,196 +109,7 @@ export type InteractiveDemoAuthContext = {
   actor_org_user_id: string;
 };
 
-export type InteractiveDemo = {
-  id: string;
-  organization_id: string;
-  project_id: string;
-  source_capture_session_id: string | null;
-  title: string;
-  description: string | null;
-  status: InteractiveDemoStatus;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type DemoScene = {
-  id: string;
-  organization_id: string;
-  project_id: string;
-  interactive_demo_id: string;
-  source_capture_session_id: string | null;
-  source_capture_event_id: string | null;
-  source_capture_asset_id: string | null;
-  scene_index: number;
-  title: string | null;
-  description: string | null;
-  background_capture_asset_id: string | null;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type DemoHotspot = {
-  id: string;
-  organization_id: string;
-  project_id: string;
-  interactive_demo_id: string;
-  demo_scene_id: string;
-  hotspot_type: DemoHotspotType;
-  label: string | null;
-  content: string | null;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  target_scene_id: string | null;
-  hotspot_index: number;
-  created_by_id: string;
-  updated_by_id: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-};
-
-export type InteractiveDemoSourceEventType = CaptureEventType;
-
-export type InteractiveDemoSourceEvent = {
-  id: string;
-  event_type: InteractiveDemoSourceEventType;
-  event_index: number;
-  capture_asset_id: string | null;
-  page_title: string | null;
-  target_label: string | null;
-  target_text: string | null;
-  note: string | null;
-};
-
-export type InteractiveDemoSourceCaptureSession = {
-  id: string;
-  name: string;
-  description: string | null;
-};
-
-export type CreateInteractiveDemoInput = {
-  title: string;
-  description?: string | null;
-  source_capture_session_id?: string | null;
-};
-
-export type CreateInteractiveDemoFromCaptureInput = {
-  title?: string;
-  description?: string | null;
-};
-
-export type UpdateInteractiveDemoInput = Partial<{
-  title: string;
-  description: string | null;
-  status: InteractiveDemoStatus;
-}>;
-
-export type CreateDemoSceneInput = {
-  title?: string | null;
-  description?: string | null;
-  background_capture_asset_id?: string | null;
-  source_capture_session_id?: string | null;
-  source_capture_event_id?: string | null;
-  source_capture_asset_id?: string | null;
-};
-
-export type UpdateDemoSceneInput = Partial<{
-  title: string | null;
-  description: string | null;
-  background_capture_asset_id: string | null;
-}>;
-
-export type CreateDemoHotspotInput = {
-  hotspot_type: string;
-  label?: string | null;
-  content?: string | null;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  target_scene_id?: string | null;
-};
-
-export type UpdateDemoHotspotInput = Partial<{
-  hotspot_type: string;
-  label: string | null;
-  content: string | null;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  target_scene_id: string | null;
-}>;
-
-export type NormalizedCreateInteractiveDemoInput = {
-  title: string;
-  description: string | null;
-  source_capture_session_id: string | null;
-};
-
-export type NormalizedUpdateInteractiveDemoInput = Partial<{
-  title: string;
-  description: string | null;
-  status: InteractiveDemoStatus;
-}>;
-
-export type NormalizedCreateDemoSceneInput = {
-  title: string | null;
-  description: string | null;
-  background_capture_asset_id: string | null;
-  source_capture_session_id: string | null;
-  source_capture_event_id: string | null;
-  source_capture_asset_id: string | null;
-};
-
-export type NormalizedCreateInteractiveDemoFromCaptureInput = {
-  title: string;
-  description: string | null;
-  scenes: Array<{
-    scene_index: number;
-    source_capture_event_id: string;
-    source_capture_asset_id: string;
-    background_capture_asset_id: string;
-    title: string;
-    description: string | null;
-  }>;
-};
-
-export type NormalizedUpdateDemoSceneInput = Partial<{
-  title: string | null;
-  description: string | null;
-  background_capture_asset_id: string | null;
-}>;
-
-export type NormalizedCreateDemoHotspotInput = {
-  hotspot_type: DemoHotspotType;
-  label: string | null;
-  content: string | null;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  target_scene_id: string | null;
-};
-
-export type NormalizedUpdateDemoHotspotInput = Partial<{
-  hotspot_type: DemoHotspotType;
-  label: string | null;
-  content: string | null;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  target_scene_id: string | null;
-}>;
+export type { CaptureEventType };
 
 export type InteractiveDemoRepository = {
   project_exists: (input: {
@@ -350,232 +256,6 @@ export type InteractiveDemoRepository = {
   }) => Promise<boolean>;
 };
 
-export class ProjectNotFoundError extends Error {
-  constructor() {
-    super("Project was not found");
-  }
-}
-
-export class InteractiveDemoNotFoundError extends Error {
-  constructor() {
-    super("Interactive demo was not found");
-  }
-}
-
-export class CaptureSessionNotFoundError extends Error {
-  constructor() {
-    super("Capture session was not found");
-  }
-}
-
-export class NoUsableCaptureEventsError extends Error {
-  constructor() {
-    super("Capture session has no screenshot-backed events");
-  }
-}
-
-export class DemoSceneNotFoundError extends Error {
-  constructor() {
-    super("Demo scene was not found");
-  }
-}
-
-export class DemoHotspotNotFoundError extends Error {
-  constructor() {
-    super("Demo hotspot was not found");
-  }
-}
-
-export class EmptyInteractiveDemoUpdateError extends Error {
-  constructor() {
-    super("At least one interactive demo field must be provided");
-  }
-}
-
-export class EmptyDemoSceneUpdateError extends Error {
-  constructor() {
-    super("At least one demo scene field must be provided");
-  }
-}
-
-export class EmptyDemoSceneOrderError extends Error {
-  constructor() {
-    super("At least one demo scene id must be provided");
-  }
-}
-
-export class InvalidDemoSceneOrderError extends Error {
-  constructor() {
-    super("Demo scene order is invalid");
-  }
-}
-
-export class InvalidDemoSceneReferenceError extends Error {
-  constructor() {
-    super("Demo scene references are invalid");
-  }
-}
-
-export class EmptyDemoHotspotUpdateError extends Error {
-  constructor() {
-    super("At least one demo hotspot field must be provided");
-  }
-}
-
-export class EmptyDemoHotspotOrderError extends Error {
-  constructor() {
-    super("At least one demo hotspot id must be provided");
-  }
-}
-
-export class InvalidDemoHotspotOrderError extends Error {
-  constructor() {
-    super("Demo hotspot order is invalid");
-  }
-}
-
-export class InvalidDemoHotspotCoordinatesError extends Error {
-  constructor() {
-    super("Demo hotspot coordinates are invalid");
-  }
-}
-
-export class InvalidDemoHotspotTargetError extends Error {
-  constructor() {
-    super("Demo hotspot target is invalid");
-  }
-}
-
-const compact_optional_string = (value: string | null | undefined) => {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (value === null) {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  return trimmed || null;
-};
-
-const normalize_create_demo = (
-  input: CreateInteractiveDemoInput
-): NormalizedCreateInteractiveDemoInput => ({
-  title: input.title.trim(),
-  description: compact_optional_string(input.description) ?? null,
-  source_capture_session_id: compact_optional_string(input.source_capture_session_id) ?? null,
-});
-
-const normalize_create_demo_from_capture = (
-  capture_session: InteractiveDemoSourceCaptureSession
-): Omit<NormalizedCreateInteractiveDemoFromCaptureInput, "scenes"> => ({
-  title: capture_session.name.trim(),
-  description: compact_optional_string(capture_session.description) ?? null,
-});
-
-const normalize_update_demo = (
-  input: UpdateInteractiveDemoInput
-): NormalizedUpdateInteractiveDemoInput => {
-  const normalized: NormalizedUpdateInteractiveDemoInput = {};
-
-  if (input.title !== undefined) {
-    normalized.title = input.title.trim();
-  }
-  if (input.description !== undefined) {
-    normalized.description = compact_optional_string(input.description) ?? null;
-  }
-  if (input.status !== undefined) {
-    normalized.status = input.status;
-  }
-
-  return normalized;
-};
-
-const normalize_create_scene = (
-  input: CreateDemoSceneInput
-): NormalizedCreateDemoSceneInput => ({
-  title: compact_optional_string(input.title) ?? null,
-  description: compact_optional_string(input.description) ?? null,
-  background_capture_asset_id: compact_optional_string(input.background_capture_asset_id) ?? null,
-  source_capture_session_id: compact_optional_string(input.source_capture_session_id) ?? null,
-  source_capture_event_id: compact_optional_string(input.source_capture_event_id) ?? null,
-  source_capture_asset_id: compact_optional_string(input.source_capture_asset_id) ?? null,
-});
-
-const normalize_update_scene = (
-  input: UpdateDemoSceneInput
-): NormalizedUpdateDemoSceneInput => {
-  const normalized: NormalizedUpdateDemoSceneInput = {};
-
-  if (input.title !== undefined) {
-    normalized.title = compact_optional_string(input.title) ?? null;
-  }
-  if (input.description !== undefined) {
-    normalized.description = compact_optional_string(input.description) ?? null;
-  }
-  if (input.background_capture_asset_id !== undefined) {
-    normalized.background_capture_asset_id = compact_optional_string(input.background_capture_asset_id) ?? null;
-  }
-
-  return normalized;
-};
-
-const normalize_hotspot_type = (value: string): DemoHotspotType => {
-  const normalized = value.trim();
-  if (normalized === "click" || normalized === "info" || normalized === "next") {
-    return normalized;
-  }
-
-  throw new InvalidDemoHotspotTargetError();
-};
-
-const normalize_create_hotspot = (
-  input: CreateDemoHotspotInput
-): NormalizedCreateDemoHotspotInput => ({
-  hotspot_type: normalize_hotspot_type(input.hotspot_type),
-  label: compact_optional_string(input.label) ?? null,
-  content: compact_optional_string(input.content) ?? null,
-  x: input.x,
-  y: input.y,
-  width: input.width,
-  height: input.height,
-  target_scene_id: compact_optional_string(input.target_scene_id) ?? null,
-});
-
-const normalize_update_hotspot = (
-  input: UpdateDemoHotspotInput
-): NormalizedUpdateDemoHotspotInput => {
-  const normalized: NormalizedUpdateDemoHotspotInput = {};
-
-  if (input.hotspot_type !== undefined) {
-    normalized.hotspot_type = normalize_hotspot_type(input.hotspot_type);
-  }
-  if (input.label !== undefined) {
-    normalized.label = compact_optional_string(input.label) ?? null;
-  }
-  if (input.content !== undefined) {
-    normalized.content = compact_optional_string(input.content) ?? null;
-  }
-  if (input.x !== undefined) {
-    normalized.x = input.x;
-  }
-  if (input.y !== undefined) {
-    normalized.y = input.y;
-  }
-  if (input.width !== undefined) {
-    normalized.width = input.width;
-  }
-  if (input.height !== undefined) {
-    normalized.height = input.height;
-  }
-  if (input.target_scene_id !== undefined) {
-    normalized.target_scene_id = compact_optional_string(input.target_scene_id) ?? null;
-  }
-
-  return normalized;
-};
-
 const ensure_project = async (
   repository: InteractiveDemoRepository,
   input: {
@@ -608,68 +288,7 @@ const ensure_background_asset = async (
     capture_asset_id: input.capture_asset_id,
   });
 
-  if (!exists) {
-    throw new InvalidDemoSceneReferenceError();
-  }
-};
-
-const assert_unique_scene_ids = (scene_ids: string[]) => {
-  if (scene_ids.length === 0) {
-    throw new EmptyDemoSceneOrderError();
-  }
-
-  if (new Set(scene_ids).size !== scene_ids.length) {
-    throw new InvalidDemoSceneOrderError();
-  }
-};
-
-const assert_unique_hotspot_ids = (hotspot_ids: string[]) => {
-  if (hotspot_ids.length === 0) {
-    throw new EmptyDemoHotspotOrderError();
-  }
-
-  if (new Set(hotspot_ids).size !== hotspot_ids.length) {
-    throw new InvalidDemoHotspotOrderError();
-  }
-};
-
-const assert_valid_coordinate = (value: number) => {
-  if (!Number.isFinite(value) || value < 0 || value > 1) {
-    throw new InvalidDemoHotspotCoordinatesError();
-  }
-};
-
-const assert_valid_hotspot_box = (input: {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-}) => {
-  if (input.x !== undefined) assert_valid_coordinate(input.x);
-  if (input.y !== undefined) assert_valid_coordinate(input.y);
-  if (input.width !== undefined) assert_valid_coordinate(input.width);
-  if (input.height !== undefined) assert_valid_coordinate(input.height);
-
-  if (input.width !== undefined && input.width <= 0) {
-    throw new InvalidDemoHotspotCoordinatesError();
-  }
-  if (input.height !== undefined && input.height <= 0) {
-    throw new InvalidDemoHotspotCoordinatesError();
-  }
-  if (
-    input.x !== undefined &&
-    input.width !== undefined &&
-    input.x + input.width > 1
-  ) {
-    throw new InvalidDemoHotspotCoordinatesError();
-  }
-  if (
-    input.y !== undefined &&
-    input.height !== undefined &&
-    input.y + input.height > 1
-  ) {
-    throw new InvalidDemoHotspotCoordinatesError();
-  }
+  assert_background_asset_exists(input.capture_asset_id, exists);
 };
 
 const ensure_scene = async (
@@ -710,38 +329,8 @@ const ensure_target_scene = async (
     demo_scene_id: input.target_scene_id,
   });
 
-  if (!target_scene) {
-    throw new InvalidDemoHotspotTargetError();
-  }
+  assert_hotspot_target_scene_exists(input.target_scene_id, Boolean(target_scene));
 };
-
-const scene_title_from_event = (event: InteractiveDemoSourceEvent) => {
-  const target_text = compact_optional_string(event.target_text);
-  if (event.event_type === "click" && target_text) {
-    return `Click ${target_text}`;
-  }
-
-  const target_label = compact_optional_string(event.target_label);
-  if (event.event_type === "click" && target_label) {
-    return `Click ${target_label}`;
-  }
-
-  const page_title = compact_optional_string(event.page_title);
-  if (page_title) {
-    return page_title;
-  }
-
-  const note = compact_optional_string(event.note);
-  if (note) {
-    return note;
-  }
-
-  return `Step ${event.event_index}`;
-};
-
-const demo_redirect_path = (project_id: string, interactive_demo_id: string) => (
-  `/projects/${encodeURIComponent(project_id)}/interactive-demos/${encodeURIComponent(interactive_demo_id)}`
-);
 
 export const build_interactive_demo_service = (repository: InteractiveDemoRepository) => {
   const create_interactive_demo_from_capture = async (input: {
@@ -765,7 +354,7 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
     if (!capture_session) {
       throw new CaptureSessionNotFoundError();
     }
-    const normalized = normalize_create_demo_from_capture(capture_session);
+    const normalized = normalize_create_demo_from_capture_source(capture_session);
 
     const source_events = await repository.list_capture_events_for_demo(scope);
     const capture_asset_ids = [
@@ -777,20 +366,10 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
         capture_asset_ids,
       })
     );
-    const scenes = source_events
-      .filter((event) => event.capture_asset_id && screenshot_capture_asset_ids.has(event.capture_asset_id))
-      .map((event, index) => ({
-        scene_index: index + 1,
-        source_capture_event_id: event.id,
-        source_capture_asset_id: event.capture_asset_id as string,
-        background_capture_asset_id: event.capture_asset_id as string,
-        title: scene_title_from_event(event),
-        description: null,
-      }));
-
-    if (scenes.length === 0) {
-      throw new NoUsableCaptureEventsError();
-    }
+    const scenes = build_demo_from_capture_source({
+      source_events,
+      screenshot_capture_asset_ids,
+    });
 
     const result = await repository.create_demo_from_capture({
       ...scope,
@@ -821,7 +400,7 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
       organization_id: input.auth.organization_id,
       project_id: input.project_id,
       actor_org_user_id: input.auth.actor_org_user_id,
-      data: normalize_create_demo(input.data),
+      data: normalize_create_demo_input(input.data),
     });
   };
 
@@ -864,11 +443,7 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
     interactive_demo_id: string;
     data: UpdateInteractiveDemoInput;
   }) => {
-    const data = normalize_update_demo(input.data);
-
-    if (Object.keys(data).length === 0) {
-      throw new EmptyInteractiveDemoUpdateError();
-    }
+    const data = normalize_update_demo_input(input.data);
 
     const demo = await repository.update_demo({
       organization_id: input.auth.organization_id,
@@ -909,7 +484,7 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
     data: CreateDemoSceneInput;
   }) => {
     await get_interactive_demo(input);
-    const data = normalize_create_scene(input.data);
+    const data = normalize_create_scene_input(input.data);
     await ensure_background_asset(repository, {
       organization_id: input.auth.organization_id,
       project_id: input.project_id,
@@ -946,11 +521,7 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
     data: UpdateDemoSceneInput;
   }) => {
     await get_interactive_demo(input);
-    const data = normalize_update_scene(input.data);
-
-    if (Object.keys(data).length === 0) {
-      throw new EmptyDemoSceneUpdateError();
-    }
+    const data = normalize_update_scene_input(input.data);
 
     await ensure_background_asset(repository, {
       organization_id: input.auth.organization_id,
@@ -981,19 +552,17 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
     scene_ids: string[];
   }) => {
     await get_interactive_demo(input);
-    assert_unique_scene_ids(input.scene_ids);
+    const scene_ids = normalize_demo_scene_ids(input.scene_ids);
 
     const scenes = await repository.reorder_scenes({
       organization_id: input.auth.organization_id,
       project_id: input.project_id,
       interactive_demo_id: input.interactive_demo_id,
       actor_org_user_id: input.auth.actor_org_user_id,
-      scene_ids: input.scene_ids,
+      scene_ids,
     });
 
-    if (scenes.length !== input.scene_ids.length) {
-      throw new InvalidDemoSceneOrderError();
-    }
+    assert_demo_scene_order_result(scene_ids, scenes);
 
     return scenes;
   };
@@ -1032,7 +601,7 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
       interactive_demo_id: input.interactive_demo_id,
       demo_scene_id: input.demo_scene_id,
     });
-    const data = normalize_create_hotspot(input.data);
+    const data = normalize_create_hotspot_input(input.data);
     assert_valid_hotspot_box(data);
     await ensure_target_scene(repository, {
       organization_id: input.auth.organization_id,
@@ -1088,11 +657,7 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
       interactive_demo_id: input.interactive_demo_id,
       demo_scene_id: input.demo_scene_id,
     });
-    const data = normalize_update_hotspot(input.data);
-
-    if (Object.keys(data).length === 0) {
-      throw new EmptyDemoHotspotUpdateError();
-    }
+    const data = normalize_update_hotspot_input(input.data);
 
     assert_valid_hotspot_box(data);
     await ensure_target_scene(repository, {
@@ -1133,7 +698,7 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
       interactive_demo_id: input.interactive_demo_id,
       demo_scene_id: input.demo_scene_id,
     });
-    assert_unique_hotspot_ids(input.hotspot_ids);
+    const hotspot_ids = normalize_demo_hotspot_ids(input.hotspot_ids);
 
     const hotspots = await repository.reorder_hotspots({
       organization_id: input.auth.organization_id,
@@ -1141,12 +706,10 @@ export const build_interactive_demo_service = (repository: InteractiveDemoReposi
       interactive_demo_id: input.interactive_demo_id,
       demo_scene_id: input.demo_scene_id,
       actor_org_user_id: input.auth.actor_org_user_id,
-      hotspot_ids: input.hotspot_ids,
+      hotspot_ids,
     });
 
-    if (hotspots.length !== input.hotspot_ids.length) {
-      throw new InvalidDemoHotspotOrderError();
-    }
+    assert_demo_hotspot_order_result(hotspot_ids, hotspots);
 
     return hotspots;
   };
