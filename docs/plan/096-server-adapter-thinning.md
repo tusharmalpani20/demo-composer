@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -30,7 +30,7 @@ After this phase, server modules should read as adapters:
 
 ## Completion Summary
 
-Completed on 2026-07-07.
+Completed on 2026-07-07. Post-implementation audit completed on 2026-07-07.
 
 Implemented changes:
 
@@ -45,6 +45,32 @@ Implemented changes:
 
 No route URL, method, route registration prefix, route parameter name, Fastify schema metadata, response envelope, status code, error `type`, SQL query, row mapping, transaction boundary, migration, cookie behavior, password/token hashing behavior, public URL, public viewer behavior, JSX, CSS, rendered text, web fetch path, or browser-visible behavior changed.
 
+Actual affected implementation files:
+
+```text
+apps/server/src/modules/capture-asset/capture-asset.routes.ts
+apps/server/src/modules/capture-event/capture-event.routes.ts
+apps/server/src/modules/capture-session/capture-session.routes.ts
+apps/server/src/modules/guide/guide.routes.ts
+apps/server/src/modules/interactive-demo/interactive-demo.routes.ts
+apps/server/src/modules/organization/organization-invites.routes.ts
+apps/server/src/modules/project/project.routes.ts
+apps/server/src/modules/publish/publish.app.integration.test.ts
+apps/server/src/modules/publish/publish.routes.test.ts
+apps/server/src/modules/publish/publish.routes.ts
+apps/server/src/modules/publish/publish.service.test.ts
+apps/server/src/modules/publish/publish.service.ts
+apps/server/src/modules/shared/http-errors.test.ts
+apps/server/src/modules/shared/http-errors.ts
+```
+
+Actual affected documentation files:
+
+```text
+docs/plan/096-server-adapter-thinning.md
+docs/plan/master/003-shared-contracts-domainization-master-plan.md
+```
+
 Verification passed:
 
 - `rtk pnpm --filter server test -- http-errors`
@@ -56,6 +82,13 @@ Verification passed:
 - `rtk pnpm --filter server lint`
 - `rtk git diff --check`
 
+Post-implementation audit findings:
+
+- No behavior, API, schema, UI, security, permission, migration, or backwards-compatibility mismatch was found in the implemented code.
+- No unrelated implementation files were included; the implementation touched only server route adapters, publish service/test type imports, the server-only shared error helper, and the plan docs.
+- The old server publish aliases `GuidePublishResult`, `InteractiveDemoPublishResult`, `RevokedGuidePublishResult`, and `RevokedInteractiveDemoPublishResult` no longer have server consumers.
+- The only remaining local `unauthorized_response` helper is intentionally kept in `apps/server/src/modules/authentication/session.routes.ts` because that route constructs both `unauthenticated` and `invalid_credentials` responses.
+
 Browser validation was not required because this phase was backend adapter cleanup only and did not change JSX, CSS, rendered copy, route paths used by the browser, fetch paths, form behavior, public viewer parsing behavior, or published link behavior.
 
 Database verification was not required because this phase did not change repositories, SQL, migrations, row mapping, transaction boundaries, persisted values, persisted snapshot JSON shape, cookie/session tables, or storage access SQL.
@@ -65,6 +98,11 @@ Leftovers for later phases:
 - Some service modules still intentionally expose server-owned not-found/storage/integration errors and DTOs used by route dependency interfaces.
 - Route-local multipart parsers in capture asset and guide routes remain server-owned because they handle file streams, multipart metadata JSON, timestamp parsing, and upload validation.
 - `apps/web/src/features/guide/types.ts` guide-named publish compatibility aliases remain for plan `097` or later web contract cleanup.
+
+Carry into `097-web-shared-contract-consumption.md`:
+
+- Web should consume shared publish DTOs directly where practical, but it should preserve the guide UI compatibility aliases until each import site is migrated safely.
+- No server route, fetch path, or browser-visible behavior changed in `096`; `097` should not assume any API behavior shift from this phase.
 
 ## Dependencies And Implemented Baseline
 
@@ -122,11 +160,11 @@ apps/server/src/modules/interactive-demo/interactive-demo.routes.ts
 apps/server/src/modules/publish/publish.routes.ts
 ```
 
-Remaining adapter-thinning opportunities seen in the current code:
+Pre-implementation adapter-thinning opportunities that drove this phase:
 
-- Service modules still re-export many domain errors and shared DTO types for route/test compatibility.
-- Several routes import domain errors through service modules instead of directly from domain packages.
-- Route modules each define local `unauthorized_response`, `error_response`, auth-context builders, and large `handle_domain_error` functions.
+- Service modules still re-exported many domain errors and shared DTO types for route/test compatibility.
+- Several routes imported domain errors through service modules instead of directly from domain packages.
+- Route modules each defined local `unauthorized_response`, `error_response`, auth-context builders, and large `handle_domain_error` functions.
 - Capture asset and guide multipart upload routes still need route-local JSON/form parsing because multipart parsing is transport-specific.
 - Publish route parsing already uses shared publish schemas and must keep the stricter non-null publish result/revoke result contracts from the `095` audit.
 - Repositories still own SQL, row mapping, transaction helpers, and DB conflict mapping; this is intentional and should remain server-owned.
