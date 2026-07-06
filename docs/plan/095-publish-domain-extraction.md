@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Implementation-ready. Do not implement until this plan is explicitly approved for execution.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -25,6 +25,59 @@ Publishing is a shared concern for both Guides and Interactive Demos:
 - Guide and Interactive Demo draft rows must never be read directly by public viewers.
 
 The server remains the application adapter that owns Fastify routes, auth/session context, SQL repositories, transactions, database migrations, row mapping, storage adapters, cookie plumbing, password hashing/checking implementation details, and error-to-HTTP mapping.
+
+## Completion Summary
+
+Completed on 2026-07-07.
+
+Implemented changes:
+
+- Added shared publish route/public snapshot contracts in `@repo/types/publish`.
+- Created `@repo/publish-domain` with pure snapshot, access, password, viewer-session, and publish-link helper policies.
+- Wired `apps/server/src/modules/publish/publish.service.ts` to use publish-domain policies while keeping repository orchestration, transactions, auth scope, SQL, storage reads, password hashing/checking, viewer-token hashing, cookie handling, and HTTP error mapping server-owned.
+- Replaced publish route body parsing for access, password, and public viewer-session requests with shared `@repo/types/publish` schemas while preserving existing error classes and response types.
+- Replaced guide and interactive demo web publish/public snapshot type definitions with shared `@repo/types/publish` imports/re-exports.
+- Removed guide-named publish type imports from `apps/web/src/features/interactive-demo/**`; guide feature compatibility aliases remain in `apps/web/src/features/guide/types.ts`.
+- Added no database migration and changed no route URL, public URL shape, response envelope, status code, persisted value, JSX, CSS, rendered copy, fetch path, cookie name, cookie options, password hashing algorithm, or public viewer behavior.
+
+Verification passed:
+
+- `rtk pnpm --filter @repo/types test -- publish`
+- `rtk pnpm --filter @repo/types check-types`
+- `rtk pnpm --filter @repo/types lint`
+- `rtk pnpm --filter @repo/types build`
+- `rtk pnpm --filter @repo/publish-domain test`
+- `rtk pnpm --filter @repo/publish-domain check-types`
+- `rtk pnpm --filter @repo/publish-domain lint`
+- `rtk pnpm --filter @repo/publish-domain build`
+- `rtk pnpm --filter server test -- publish.service publish.routes public-link-password publish.app`
+- `rtk pnpm --filter server check-types`
+- `rtk pnpm --filter server lint`
+- `rtk pnpm --filter web check-types`
+- `rtk pnpm --filter web test -- GuideEditorPage PublicGuideReaderPage InteractiveDemoEditorPage PublicInteractiveDemoViewerPage`
+- `rtk pnpm --filter web test -- api`
+
+Browser validation was not required because this phase changed shared types, route body schemas, and backend/domain wiring without changing JSX, CSS, rendered copy, navigation, fetch paths, form behavior, public viewer parsing behavior, or browser-visible publish behavior.
+
+Database verification was not required because this phase did not change migrations, SQL, row mapping, transaction boundaries, persisted snapshot JSON shape, persisted values, cookie/session tables, or storage access SQL.
+
+Completion checklist:
+
+- [x] Added shared publish contracts and tests.
+- [x] Added `@repo/publish-domain` package and pure policy tests.
+- [x] Kept server routes, auth/session, SQL repositories, transactions, storage adapters, password hashing/checking, viewer-token hashing, cookies, and HTTP error mapping server-owned.
+- [x] Preserved existing route URLs, public URL shapes, response envelopes, status codes, and error `type` strings.
+- [x] Preserved immutable Published Artifact snapshot behavior for guides and interactive demos.
+- [x] Preserved password-protected public access and public viewer session behavior.
+- [x] Kept web UI behavior stable and avoided adding a web dependency on `@repo/publish-domain`.
+- [x] Confirmed browser validation is not required.
+- [x] Confirmed DB validation is not required.
+
+Carry into `096-server-adapter-thinning.md`:
+
+- `apps/web/src/features/guide/types.ts` still intentionally keeps guide-named publish compatibility aliases for existing guide UI imports.
+- `apps/server/src/modules/publish/publish.service.ts` still re-exports publish types/errors for server route/repository/test compatibility.
+- Publish repository SQL and row mapping remain server-owned and can be revisited only by adapter-thinning work that preserves database behavior.
 
 ## Baseline From Completed 094
 
