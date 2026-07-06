@@ -1,0 +1,185 @@
+import { describe, expect, it } from "vitest";
+import {
+  CaptureAssetResponseSchema,
+  CaptureEventResponseSchema,
+  CaptureSessionDetailResponseSchema,
+  CompleteCaptureSessionResponseSchema,
+  CreateCaptureEventRequestSchema,
+  CreateCaptureSessionRequestSchema,
+  ProjectCaptureAssetListResponseSchema,
+  ReorderCaptureEventsRequestSchema,
+  UpdateCaptureEventRequestSchema,
+  UpdateCaptureSessionRequestSchema,
+} from "./capture";
+
+const captureSession = {
+  id: "capture_session_1",
+  organization_id: "org_1",
+  project_id: "project_1",
+  name: "Session",
+  description: null,
+  status: "capturing",
+  source_type: "extension",
+  started_at: null,
+  completed_at: null,
+  canceled_at: null,
+  start_url: "https://example.com",
+  browser_name: "Chrome",
+  browser_version: "126",
+  operating_system: "Linux",
+  viewport_width: 1440,
+  viewport_height: 900,
+  device_pixel_ratio: 1,
+  user_agent: "agent",
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-07-07T00:00:00.000Z",
+  updated_at: "2026-07-07T00:00:00.000Z",
+};
+
+const captureEvent = {
+  id: "capture_event_1",
+  organization_id: "org_1",
+  project_id: "project_1",
+  capture_session_id: "capture_session_1",
+  capture_asset_id: "capture_asset_1",
+  event_type: "click",
+  event_index: 1,
+  occurred_at: "2026-07-07T00:00:00.000Z",
+  page_url: "https://example.com",
+  page_title: "Example",
+  target_label: null,
+  target_selector: null,
+  target_role: null,
+  target_test_id: null,
+  target_text: null,
+  client_x: 10,
+  client_y: 20,
+  viewport_width: 1440,
+  viewport_height: 900,
+  device_pixel_ratio: 1,
+  input_intent: null,
+  input_value_redacted: true,
+  note: null,
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-07-07T00:00:00.000Z",
+  updated_at: "2026-07-07T00:00:00.000Z",
+};
+
+const captureAsset = {
+  id: "capture_asset_1",
+  organization_id: "org_1",
+  project_id: "project_1",
+  capture_session_id: "capture_session_1",
+  file: {
+    id: "file_1",
+    storage_provider: "local",
+    mime_type: "image/png",
+    size_bytes: 1024,
+    original_name: null,
+    checksum_sha256: null,
+  },
+  asset_type: "screenshot",
+  width: 1440,
+  height: 900,
+  device_pixel_ratio: 1,
+  page_url: "https://example.com",
+  page_title: "Example",
+  captured_at: "2026-07-07T00:00:00.000Z",
+  created_by_id: "org_user_1",
+  updated_by_id: "org_user_1",
+  version: 1,
+  created_at: "2026-07-07T00:00:00.000Z",
+  updated_at: "2026-07-07T00:00:00.000Z",
+};
+
+describe("capture contracts", () => {
+  it("preserves capture session request passthrough and response shapes", () => {
+    expect(CreateCaptureSessionRequestSchema.parse({
+      name: " Session ",
+      source_type: "extension",
+      metadata: {
+        mode: "automatic",
+      },
+      ignored_but_allowed: true,
+    })).toEqual({
+      name: "Session",
+      source_type: "extension",
+      metadata: {
+        mode: "automatic",
+      },
+      ignored_but_allowed: true,
+    });
+
+    expect(UpdateCaptureSessionRequestSchema.parse({
+      status: "completed",
+      ignored_but_allowed: true,
+    })).toEqual({
+      status: "completed",
+      ignored_but_allowed: true,
+    });
+
+    expect(CompleteCaptureSessionResponseSchema.parse({
+      capture_session: captureSession,
+      redirect: {
+        path: "/projects/project_1/capture-sessions/capture_session_1",
+        reason: "capture_session_completed",
+      },
+    }).redirect.reason).toBe("capture_session_completed");
+  });
+
+  it("validates capture event create, update, reorder, and response shapes", () => {
+    expect(CreateCaptureEventRequestSchema.parse({
+      event_type: "click",
+      event_index: 1,
+      capture_asset_id: " capture_asset_1 ",
+      input_value_redacted: true,
+      raw_extra_is_allowed_until_privacy_check: "x",
+    })).toEqual({
+      event_type: "click",
+      event_index: 1,
+      capture_asset_id: "capture_asset_1",
+      input_value_redacted: true,
+      raw_extra_is_allowed_until_privacy_check: "x",
+    });
+
+    expect(UpdateCaptureEventRequestSchema.safeParse({}).success).toBe(false);
+    expect(UpdateCaptureEventRequestSchema.safeParse({
+      note: "Updated",
+      unexpected: true,
+    }).success).toBe(false);
+    expect(ReorderCaptureEventsRequestSchema.parse({
+      event_ids: [" event_1 "],
+    })).toEqual({
+      event_ids: ["event_1"],
+    });
+    expect(CaptureEventResponseSchema.parse({ capture_event: captureEvent })).toEqual({
+      capture_event: captureEvent,
+    });
+  });
+
+  it("validates capture asset response variants and detail responses", () => {
+    expect(CaptureAssetResponseSchema.parse({ capture_asset: captureAsset })).toEqual({
+      capture_asset: captureAsset,
+    });
+
+    expect(ProjectCaptureAssetListResponseSchema.parse({
+      capture_assets: [{
+        ...captureAsset,
+        file_url: "/api/v1/projects/project_1/capture-assets/capture_asset_1/file",
+      }],
+    }).capture_assets[0]?.file_url).toContain("/file");
+
+    expect(CaptureSessionDetailResponseSchema.parse({
+      capture_session: captureSession,
+      capture_events: [captureEvent],
+      capture_assets: [{
+        ...captureAsset,
+        file_url: "/api/v1/projects/project_1/capture-assets/capture_asset_1/file",
+      }],
+    }).capture_assets).toHaveLength(1);
+  });
+});
