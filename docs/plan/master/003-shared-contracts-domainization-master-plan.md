@@ -669,7 +669,7 @@ Acceptance:
 
 ### 093: Guide Domain Extraction
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 File:
 
@@ -698,6 +698,7 @@ Acceptance:
 - Existing guide output shapes remain stable.
 - Guide UI renders the same data as before.
 - Guide routes, response envelopes, auth behavior, SQL repositories, multipart upload parsing, file storage, and ZIP stream creation remain server-owned.
+- Post-audit contract cleanup aligned web guide screenshot list/upload response types with shared route contracts while keeping editor UI behavior unchanged.
 - Browser validation was not required because there were no JSX, CSS, route path, fetch path, or browser-visible behavior changes.
 - DB verification was not required because repositories, migrations, transactions, persisted values, and row mapping were unchanged.
 

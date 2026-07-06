@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -26,6 +26,8 @@ This phase should extract reusable guide domain policies and pure rendering deci
 
 Completed on 2026-07-07.
 
+Post-implementation audit completed on 2026-07-07.
+
 Implemented changes:
 
 - Created `@repo/guide-domain` with focused guide generation, update, block, annotation, markdown export, and HTML export policies.
@@ -35,8 +37,9 @@ Implemented changes:
 - Replaced guide route-local JSON body schemas with shared `@repo/types/guide` schemas while preserving route picker behavior and multipart upload parsing.
 - Converted `apps/server/src/modules/guide/guide-html-export.ts` into a compatibility re-export of the pure guide-domain HTML renderer.
 - Replaced duplicated web guide DTO/request types with shared guide type imports where the runtime shape matched.
+- Post-audit fix aligned the web screenshot picker response type with `ProjectCaptureAssetListResponse` from `@repo/types/capture` and the screenshot upload response type with `UploadGuideBlockScreenshotResponse` from `@repo/types/guide`.
+- Updated guide editor test fixtures to return full `CaptureAssetWithFileUrl` route responses while preserving the editor's existing UI behavior, which consumes the guide-source asset subset.
 - Kept web publish-specific guide/public snapshot types local for `095-publish-domain-and-public-contract-cleanup.md`.
-- Kept the web screenshot picker response and upload response feature types narrowed to `GuideSourceCaptureAsset` because the editor state consumes the guide-source asset shape; the route-level full capture asset upload contract is still represented in `@repo/types/guide`.
 - Added no database migration and changed no UI behavior, route URL, response envelope, status code, persisted value, or public viewer behavior.
 
 Verification passed:
@@ -60,17 +63,26 @@ Browser validation was not required because this phase changed shared type impor
 
 Database verification was not required because this phase did not change repository SQL, migrations, transaction boundaries, persisted data shapes, or row mapping.
 
+Post-audit checklist:
+
+- [x] Rechecked implemented work against this plan and the master plan.
+- [x] Confirmed guide routes, response envelopes, auth/session ownership, SQL repositories, multipart upload parsing, file storage, and ZIP stream creation remain adapter-owned.
+- [x] Fixed the only contract ownership gap found: web guide screenshot list/upload response types now use the shared route contracts.
+- [x] Reran focused verification after the fix.
+- [x] Confirmed no browser validation is required because the fix changed type ownership and test fixtures only, with no rendered UI changes.
+- [x] Confirmed no DB verification is required because repositories, migrations, transactions, persisted values, and row mapping were unchanged.
+
 Carry into `094-demo-domain-extraction.md`:
 
 - Use the same adapter-first extraction shape: pure generation/update policies in a domain package; server keeps routes, SQL, transactions, auth, and file/storage integration.
 - Keep Interactive Demo Scene/Hotspot/Transition concepts separate from Guide Block/Step/Annotation.
 - Capture source records should remain immutable for demo generation too.
+- Keep route-level web response types aligned with shared `@repo/types` contracts even when UI state consumes a narrower structural subset.
 
 Carry into `095-publish-domain-and-public-contract-cleanup.md`:
 
 - Publish-specific guide/public snapshot/link/access/password types remain in the web feature for now.
 - Published guide snapshot preparation and public access policy were intentionally not moved into guide-domain.
-- Decide whether the web feature's narrowed screenshot upload response type should remain UI-local or align fully with shared route response parsing once publish/public contracts are centralized.
 
 ## Baseline From Completed 092
 
