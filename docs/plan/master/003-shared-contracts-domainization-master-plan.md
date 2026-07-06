@@ -578,6 +578,7 @@ Tests:
 Acceptance:
 
 - File metadata and screenshot upload policy are in `@repo/file-domain`.
+- File metadata validation includes supported storage-provider and non-negative integer size checks.
 - Storage behavior and existing file records remain compatible.
 - Existing capture asset API behavior remains compatible.
 

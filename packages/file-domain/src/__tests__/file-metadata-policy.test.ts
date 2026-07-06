@@ -64,4 +64,27 @@ describe("file metadata policy", () => {
       size_bytes: 1,
     })).toThrow(InvalidFileMetadataError);
   });
+
+  it("rejects unsupported storage providers", () => {
+    expect(() => normalize_file_metadata({
+      storage_provider: "s3" as never,
+      storage_key: "capture.png",
+      mime_type: "image/png",
+      size_bytes: 1,
+    })).toThrow(InvalidFileMetadataError);
+  });
+
+  it("rejects negative or non-integer size bytes", () => {
+    expect(() => normalize_file_metadata({
+      storage_key: "capture.png",
+      mime_type: "image/png",
+      size_bytes: -1,
+    })).toThrow(InvalidFileMetadataError);
+
+    expect(() => normalize_file_metadata({
+      storage_key: "capture.png",
+      mime_type: "image/png",
+      size_bytes: 1.5,
+    })).toThrow(InvalidFileMetadataError);
+  });
 });

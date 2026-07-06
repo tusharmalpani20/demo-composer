@@ -39,7 +39,7 @@ Implementation commit:
 What changed:
 
 - Created `@repo/file-domain` with framework-agnostic file metadata and screenshot upload policy.
-- Added file-domain tests for metadata normalization, required string validation, optional string compaction, image metadata validation, supported screenshot MIME types, and upload size limits.
+- Added file-domain tests for metadata normalization, required string validation, optional string compaction, supported storage-provider validation, non-negative integer size validation, image metadata validation, supported screenshot MIME types, and upload size limits.
 - Added file-domain package scripts, package config, TypeScript config, ESLint config, README, and workspace lockfile wiring.
 - Added `@repo/file-domain` as a server dependency.
 - Updated capture asset service to delegate file metadata normalization and screenshot upload MIME/size checks to `@repo/file-domain`.
@@ -70,6 +70,7 @@ Leftovers for later plans:
 - `093-guide-domain-extraction.md` should decide whether duplicated multipart field parsing in guide screenshot upload should be shared or stay route-local.
 - `097-web-shared-contract-consumption.md` and `098-extension-shared-contract-consumption.md` can decide whether screenshot MIME constants should become cross-app constants. This phase kept the screenshot MIME allow-list domain-local because no frontend/extension imports were introduced.
 - Future file storage provider work should keep local filesystem/object-storage adapter details outside `@repo/file-domain`.
+- `091-project-identity-setup-organization-contract-cleanup.md` has no direct file-domain implementation dependency. If that phase touches capture asset ownership, project scoping, organization scoping, or setup-created ownership records, keep auth/session/org-user permission context in server or the relevant identity/project domain and keep `@repo/file-domain` limited to file metadata and upload policy.
 
 ## Completion Checklist
 
@@ -77,6 +78,7 @@ Leftovers for later plans:
 - [x] Baseline searches run.
 - [x] `@repo/file-domain` created with real moved policy behavior.
 - [x] File metadata normalization/validation moved into file-domain policy.
+- [x] File storage provider and file size validation moved into file-domain policy.
 - [x] Screenshot upload MIME and declared-size policy moved into file-domain policy.
 - [x] Capture asset service delegates to file-domain policy helpers.
 - [x] Existing capture asset API error codes/statuses preserved through server error translation.
@@ -96,6 +98,9 @@ Leftovers for later plans:
 - 2026-07-07: Wired capture asset service to call file-domain policy helpers while keeping route-facing server error classes stable.
 - 2026-07-07: Added server dependency and lockfile wiring for `@repo/file-domain`.
 - 2026-07-07: Ran focused package/server verification and workspace typecheck.
+- 2026-07-07: Post-implementation audit found missing domain-side validation for unsupported `storage_provider` values and invalid `size_bytes`.
+- 2026-07-07: Added failing file-domain tests for unsupported storage providers and negative/non-integer sizes, verified they failed, then updated file metadata policy to reject those inputs with `InvalidFileMetadataError`.
+- 2026-07-07: Relabeled the original codebase baseline as pre-implementation context so the completed plan does not claim domain packages are still absent.
 
 ## Baseline From Completed 089
 
@@ -119,11 +124,11 @@ Carryover from `089` for this phase:
 - Keep raw storage adapters in `apps/server`.
 - Expose only file-domain repository interfaces/policies from any domain package.
 
-## Current Codebase Baseline
+## Pre-Implementation Codebase Baseline
 
-No domain packages currently exist.
+At implementation start, no domain packages existed. After this phase, `packages/file-domain` exists and owns pure file metadata normalization/validation plus screenshot upload MIME/declared-size policy.
 
-Current file/capture implementation lives in:
+At implementation start, file/capture implementation lived in:
 
 ```text
 apps/server/src/modules/file-storage/local-file-storage.provider.ts
@@ -139,7 +144,7 @@ apps/server/src/db/migrations/003_capture_asset_metadata_schema.sql
 apps/server/src/db/foundation-schema.db.integration.test.ts
 ```
 
-Guide screenshot upload also delegates to capture asset upload and duplicates multipart field parsing in:
+Guide screenshot upload delegated, and still delegates, to capture asset upload and duplicates multipart field parsing in:
 
 ```text
 apps/server/src/modules/guide/guide.routes.ts
@@ -147,26 +152,26 @@ apps/server/src/modules/guide/guide.routes.test.ts
 apps/server/src/modules/guide/guide.db.integration.test.ts
 ```
 
-Current shared packages already include:
+Shared packages already included at implementation start:
 
 ```text
 packages/constants/src/file.ts
 packages/types/src/capture.ts
 ```
 
-Current file constants:
+File constants already present before implementation:
 
 - `CAPTURE_ASSET_TYPES`
 - `FILE_STORAGE_PROVIDERS`
 
-Current shared API contracts:
+Shared API contracts already present before implementation:
 
 - `CaptureAssetFileSchema`
 - `CaptureAssetSchema`
 - `CaptureAssetWithFileUrlSchema`
 - capture asset response/list response schemas in `packages/types/src/capture.ts`
 
-Current server-only file policies in `capture-asset.service.ts`:
+Pre-implementation server-only file policies in `capture-asset.service.ts` that this phase moved or preserved:
 
 - create JSON capture assets currently only support `asset_type: "screenshot"`;
 - create JSON capture asset file `mime_type` must be non-empty and start with `image/`;
@@ -177,7 +182,7 @@ Current server-only file policies in `capture-asset.service.ts`:
 - unsupported stored file provider during file read raises `UnsupportedFileStorageProviderError`;
 - duplicate active storage key per organization raises `FileStorageKeyConflictError` from repository unique constraint handling.
 
-Current raw storage behavior in `local-file-storage.provider.ts`:
+Raw storage behavior in `local-file-storage.provider.ts` that remains server-owned:
 
 - only local storage provider writes bytes;
 - storage keys are generated under organization/project/capture-session paths;
