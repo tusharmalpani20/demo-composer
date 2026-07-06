@@ -225,31 +225,33 @@ Does not own:
 
 ### `packages/types`
 
-Currently a placeholder package after the OSS hardening cleanup.
+Owns shared runtime API contracts that pass the reuse gate.
 
-Do not add product-domain contracts here by default.
+Current role:
 
-Current rule:
-
-- Keep API request/response schemas close to the owning backend or frontend feature until a real cross-app reuse case exists.
-- Keep DB-shaped row types inside the backend module that owns the table/query.
-- Extract a shared contract package only when the same contract is actively consumed by the server, web app, extension, or future desktop app.
+- Export Zod schemas plus inferred TypeScript types for selected public/shared API contracts.
+- Keep server-only route schemas local until another active app/package needs them or the contract defines public API behavior.
+- Keep domain command/query inputs in domain packages when they differ from HTTP requests.
+- Keep DB-shaped row types inside the backend module or adapter that owns the table/query.
 - Avoid recreating the old broad shared package surface with contact, OTP, signup, user-asset, or unrelated product-domain schemas.
 
-If this package becomes active again, it should expose only current Demo Composer contracts.
+Active contract areas include common API primitives, public instance status, first-run setup, project, capture session, capture event, and selected capture asset response DTOs.
+
+Do not put React component props, Fastify request types, database row types, storage adapter inputs, or auth/session internals in this package.
 
 ### `packages/constants`
 
-Currently a placeholder package after the OSS hardening cleanup.
+Owns shared product constants that pass the reuse gate.
 
-Do not put backend table names, old validation messages, or broad product-domain enums here by default.
+Current role:
 
-Current rule:
-
+- Export stable domain-grouped arrays/objects for values reused by active apps/packages or public contracts.
 - Keep module-specific constants inside the owning app/module.
-- Extract shared constants only when multiple active apps/packages need the same value.
 - Prefer product-current names such as capture, guide, publish, and interactive demo.
+- Do not put backend table names, old validation messages, broad product-domain enums, or behavior functions here by default.
 - Avoid legacy constants for OTP, contacts, profile pictures, user assets, and unrelated organization role surfaces.
+
+Active constant areas include project status, capture session status/source type, capture event type, capture asset/file storage values, guide values, interactive demo values, publish values, organization values, and setup/instance mode values.
 
 ### `packages/ui`
 
@@ -374,19 +376,17 @@ packages/<domain>-domain/
   README.md
   src/
     index.ts
-    command/
-      <domain>.command.ts
-    query/
-      <domain>.query.ts
-    repository/
-      <domain>.repository.ts
-    error/
-      <domain>.error.ts
+    commands/
+    queries/
+    repositories/
+    policies/
+    errors/
+    schemas/
     types/
-      index.ts
+    __tests__/
 ```
 
-Add `policy/` only when the domain has real deterministic rules.
+Add folders only when the domain has real behavior for them.
 
 Examples:
 
@@ -448,7 +448,7 @@ The server service should:
 - convert request context into a domain actor
 - call domain commands/queries
 - normalize dates or response details if needed
-- map typed domain errors into the common API response shape
+- map typed domain errors into the existing API response shape for that route
 
 The controller should stay thin:
 

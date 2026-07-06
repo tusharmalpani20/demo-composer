@@ -515,6 +515,8 @@ Acceptance:
 
 ### 089: Domain Package Conventions And Error Mapping
 
+Status: Completed and post-implementation audited on 2026-07-07.
+
 File:
 
 - `docs/plan/089-domain-package-conventions-and-error-mapping.md`
@@ -530,17 +532,18 @@ Scope:
 - Define repository interface conventions.
 - Define command/query naming conventions.
 - Define test fixture conventions.
-- Add small shared helpers only if they reduce real duplication.
+- Record durable conventions in `docs/system-design-pattern.md` and `docs/adr/0020-domain-package-conventions-and-error-mapping.md`.
+- Skip small shared helpers because no real domain package extraction exists yet to prove the call sites.
 
 Tests:
 
-- Unit tests for error creation and HTTP mapping.
-- Compile checks across packages.
+- `rtk git diff --check`
+- `rtk pnpm check-types`
 
 Acceptance:
 
 - Future domain child plans have a consistent template.
-- Server can translate domain errors without each route inventing its own shape.
+- Server/domain error mapping conventions are documented without changing runtime route behavior.
 
 ### 090: File Domain Extraction
 
@@ -905,11 +908,11 @@ Known focused app commands:
 
 Database-backed server suites must be treated carefully. When a child plan uses DB integration or smoke tests, it must document the reset/setup sequence and whether the suite needs an isolated test database state.
 
-Current shared-package script gaps to account for:
+Historical shared-package script gaps that were resolved by child plans `087` and `088`:
 
-- `@repo/types` has `build`, `lint`, and `clean`, but no `check-types` or `test` script yet.
-- `@repo/constants` has `build`, `lint`, and `clean`, but its current `test` script is a placeholder that exits with failure.
-- Child plans `087` and `088` must fix or explicitly route around those gaps before claiming shared-package tests as verification.
+- `@repo/types` now has `build`, `lint`, `check-types`, `test`, `dev`, and `clean` scripts.
+- `@repo/constants` now has a real `test` script.
+- Later child plans should trust the current package manifests and completed child-plan closeouts over the original pre-087/pre-088 baseline notes.
 
 ## 12. Behavior Preservation Rules
 

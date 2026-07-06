@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Planned. Expanded for implementation on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -19,6 +19,60 @@ This is child plan `089` of the shared contracts and domainization track.
 Define the conventions future domain package extraction plans must follow before moving business logic out of `apps/server`.
 
 This phase should create clear, practical documentation and decision records. It should not extract a full domain, create empty package scaffolds, or introduce a broad framework before a real domain extraction needs it.
+
+## Completion Summary
+
+Completed on 2026-07-07.
+
+Implementation result:
+
+- Kept this phase documentation-only.
+- Updated `docs/system-design-pattern.md` so `@repo/constants` and `@repo/types` are described as active foundation packages after plans `087` and `088`.
+- Added `docs/adr/0020-domain-package-conventions-and-error-mapping.md` to record durable domain package, ownership, and error mapping conventions.
+- Did not create domain packages, placeholder folders, runtime helpers, route changes, API changes, UI changes, browser behavior changes, database changes, auth changes, or permission changes.
+- Preserved the existing API error response boundary: domain-like route errors continue to use `{ error: { type, message } }`, and global Fastify/Zod validation errors keep the legacy validation envelope.
+
+Verification passed:
+
+- `rtk git diff --check`
+- `rtk pnpm check-types`
+
+Browser validation:
+
+- Not run. This phase changed documentation and ADR content only. No frontend, extension, public viewer, route, or runtime API behavior changed.
+
+Leftovers for later plans:
+
+- Plan `090` should use these conventions when deciding whether file-domain needs a package immediately or can start with documentation plus targeted extraction.
+- Plan `090` must preserve existing capture asset/file upload error codes and statuses, especially `upload_too_large`, `file_bytes_not_found`, `unsupported_file_storage_provider`, `file_storage_write_failed`, and `file_storage_key_conflict`.
+- Plan `090` should keep raw storage adapters in `apps/server` and expose only file-domain repository interfaces/policies from any domain package.
+- Later guide/demo plans must inventory their full route error mappings before moving those domains because this phase intentionally recorded only the larger-domain carryover requirement, not every guide/demo code.
+- Later auth-domain work must decide whether `unauthenticated` remains server-owned or moves into a domain/auth convention.
+
+## Completion Checklist
+
+- [x] Baseline context from completed `087` and `088` recorded.
+- [x] Domain package naming and folder conventions documented.
+- [x] Command/query naming conventions documented.
+- [x] Actor/context conventions documented.
+- [x] Repository interface conventions documented.
+- [x] Test fixture conventions documented.
+- [x] Type/schema ownership rules documented.
+- [x] Domain error shape and status-hint mapping documented.
+- [x] Existing selected error-code inventory recorded.
+- [x] Route/API contract non-change rules documented.
+- [x] Security, permission, migration, and backwards-compatibility rules documented.
+- [x] Agent-browser validation requirements documented.
+- [x] `docs/system-design-pattern.md` updated for active shared foundation packages and domain package structure.
+- [x] ADR `0020` added for durable conventions.
+- [x] Parent master plan updated for the completed `089` phase.
+- [x] Focused verification completed.
+
+## Implementation Log
+
+- 2026-07-07: Expanded this plan into implementation-ready conventions based on the completed `087` and `088` work.
+- 2026-07-07: Closeout audit found missing implementation status, stale `docs/system-design-pattern.md` placeholder text, missing ADR `0020`, and missing master-plan `089` completion status.
+- 2026-07-07: Updated architecture docs, added ADR `0020`, updated this plan with closeout status/checklist/log/verification/leftovers, and updated the master plan for phase completion.
 
 ## Baseline From Completed Plans 087 And 088
 
@@ -38,8 +92,6 @@ Carryover from `088` that this phase must explicitly address:
 - `@repo/types` owns public/shared API DTOs; domain packages should not duplicate those DTOs unless they need domain-local command/input shapes.
 - Response envelopes and API error shapes must remain unchanged.
 - Auth/session plumbing remains server-owned until a later auth-domain plan explicitly extracts it.
-
-Master plan section 11 still contains historical notes that `@repo/types` lacked `test`/`check-types` scripts and `@repo/constants` had a placeholder failing `test` script. Those notes are stale after the implemented `087` and `088` work. When executing this plan, trust the current package manifests and the completed child-plan closeouts over those stale baseline notes.
 
 ## Current Codebase Baseline
 
@@ -195,9 +247,9 @@ apps/server/src/common/domain-error-mapping.test.ts
 
 Do not touch route files, service files, repository files, web files, or extension files in this phase unless the plan is amended first with a specific reason and targeted verification.
 
-## Planned Implementation Mode
+## Implemented Mode
 
-Default implementation mode: documentation-only.
+Implementation mode: documentation-only.
 
 Reason:
 
