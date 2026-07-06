@@ -28,6 +28,7 @@
   "dependencies": {
     "@repo/constants": "workspace:*",
     "@repo/capture-domain": "workspace:*",
+    "@repo/demo-domain": "workspace:*",
     "@repo/file-domain": "workspace:*",
     "@repo/guide-domain": "workspace:*",
     "@repo/types": "workspace:*",
