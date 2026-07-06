@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -28,6 +28,8 @@ Current implementation note: there is no persisted `demo_transition` table, rout
 
 Completed on 2026-07-07.
 
+Post-implementation audit completed on 2026-07-07. No code, schema, API, UI, security, migration, or backwards-compatibility gaps were found against this plan and the master plan. The only cleanup was correcting the carry-forward filename for the next child plan.
+
 Implemented changes:
 
 - Added shared interactive demo DTO, request, and response schemas in `@repo/types/demo`.
@@ -35,7 +37,7 @@ Implemented changes:
 - Wired `apps/server/src/modules/interactive-demo/interactive-demo.service.ts` to use demo-domain policies while keeping auth scope, repository orchestration, SQL, transaction behavior, and existence checks in the server adapter.
 - Replaced route-local interactive demo JSON body schemas with shared `@repo/types/demo` schemas while preserving route picker behavior and response envelopes.
 - Replaced duplicated web interactive demo route types with shared `@repo/types/demo` imports/re-exports.
-- Kept published interactive demo snapshot/public viewer types local for `095-publish-domain-and-public-contract-cleanup.md`.
+- Kept published interactive demo snapshot/public viewer types local for `095-publish-domain-extraction.md`.
 - Added no database migration and changed no route URL, response envelope, status code, persisted value, JSX, CSS, rendered copy, fetch path, or public viewer behavior.
 
 Verification passed:
@@ -72,8 +74,9 @@ Completion checklist:
 - [x] Kept web behavior stable and avoided adding a web dependency on `@repo/demo-domain`.
 - [x] Confirmed browser validation is not required.
 - [x] Confirmed DB validation is not required.
+- [x] Completed post-implementation audit against this plan and the master plan.
 
-Carry into `095-publish-domain-and-public-contract-cleanup.md`:
+Carry into `095-publish-domain-extraction.md`:
 
 - `apps/server/src/modules/publish/publish.service.ts` still owns `PublishedInteractiveDemoSnapshot` and public demo snapshot preparation.
 - `apps/web/src/features/interactive-demo/types.ts` still owns `PublishedInteractiveDemoSnapshot*` public viewer types.
@@ -89,7 +92,7 @@ Rules carried into this phase:
 - Capture remains source material only. Creating or mutating capture records must not automatically create or mutate interactive demos.
 - Interactive Demo generation must happen only through the existing explicit user action that calls the current create-from-capture route.
 - Keep route-level web response types aligned with shared `@repo/types` contracts even when component state consumes a narrower subset.
-- Do not move publish-specific snapshot/access/password types or policy in this phase. That is reserved for `095-publish-domain-and-public-contract-cleanup.md`.
+- Do not move publish-specific snapshot/access/password types or policy in this phase. That is reserved for `095-publish-domain-extraction.md`.
 - Do not add browser-visible behavior changes unless a discovered bug is explicitly documented and accepted.
 
 Existing shared/package state after `093`:
@@ -717,7 +720,7 @@ Agent-browser verification is conditional as described in the web section.
   - docs/status updates.
 - If implementation uncovers a behavioral bug, document it in this plan and stop before changing behavior unless the bug fix is clearly necessary to preserve safety.
 - If route-level shared contracts force stricter web fixtures, update fixtures to the real route response shape rather than narrowing shared types locally.
-- Carry into `095-publish-domain-and-public-contract-cleanup.md`:
+- Carry into `095-publish-domain-extraction.md`:
   - `apps/server/src/modules/publish/publish.service.ts` still owns `PublishedInteractiveDemoSnapshot` and public demo snapshot preparation.
   - `apps/web/src/features/interactive-demo/types.ts` still owns `PublishedInteractiveDemoSnapshot*` public viewer types.
   - Publish/access/password types are still shared through guide-named compatibility types in parts of the web UI and should be cleaned up in the publish phase.
