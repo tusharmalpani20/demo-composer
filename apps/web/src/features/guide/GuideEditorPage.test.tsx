@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { CaptureAssetWithFileUrl } from "@repo/types/capture";
 import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import { GuideEditorPage } from "./GuideEditorPage";
@@ -169,6 +170,22 @@ const guideDetail: GuideDetail = {
   ],
 };
 
+const toProjectCaptureAsset = (asset: GuideSourceCaptureAsset): CaptureAssetWithFileUrl => ({
+  ...asset,
+  organization_id: guideDetail.guide.organization_id,
+  project_id: guideDetail.guide.project_id,
+  created_by_id: guideDetail.guide.created_by_id,
+  updated_by_id: guideDetail.guide.updated_by_id,
+  version: 1,
+  created_at: asset.captured_at,
+  updated_at: asset.captured_at,
+  file: {
+    ...asset.file,
+    storage_provider: "local",
+    checksum_sha256: null,
+  },
+});
+
 const unpublishedStatus: GuidePublishStatusResponse = {
   publish_link: null,
   published_artifact: null,
@@ -323,7 +340,7 @@ const renderPage = (overrides: {
     },
   }));
   const loadScreenshotAssets = overrides.loadScreenshotAssets ?? vi.fn(async () => ({
-    capture_assets: guideDetail.source_capture_assets as GuideSourceCaptureAsset[],
+    capture_assets: guideDetail.source_capture_assets.map(toProjectCaptureAsset),
   }));
   const saveBlockScreenshot = overrides.saveBlockScreenshot ?? vi.fn(async (_projectId, _guideId, blockId, data) => {
     const block = guideDetail.guide_blocks.find((candidate) => candidate.id === blockId);
@@ -366,7 +383,7 @@ const renderPage = (overrides: {
   });
   const uploadBlockScreenshot = overrides.uploadBlockScreenshot ?? vi.fn(async (_projectId, _guideId, blockId) => {
     const block = guideDetail.guide_blocks.find((candidate) => candidate.id === blockId);
-    const capture_asset: GuideSourceCaptureAsset = {
+    const capture_asset = toProjectCaptureAsset({
       id: "asset_uploaded",
       capture_session_id: "capture_session_1",
       asset_type: "screenshot",
@@ -383,7 +400,7 @@ const renderPage = (overrides: {
         mime_type: "image/png",
         size_bytes: 456789,
       },
-    };
+    });
 
     if (!block) {
       throw new Error("missing block fixture");
@@ -1172,7 +1189,7 @@ describe("GuideEditorPage", () => {
     const loadScreenshotAssets = vi.fn()
       .mockRejectedValueOnce(new Error("network down"))
       .mockResolvedValueOnce({
-        capture_assets: guideDetail.source_capture_assets as GuideSourceCaptureAsset[],
+        capture_assets: guideDetail.source_capture_assets.map(toProjectCaptureAsset),
       });
 
     renderPage({ loadScreenshotAssets });
@@ -1294,7 +1311,7 @@ describe("GuideEditorPage", () => {
   it("uploads a replacement screenshot from the editor", async () => {
     const uploadBlockScreenshot = vi.fn(async (_projectId, _guideId, blockId, input) => {
       const block = guideDetail.guide_blocks.find((candidate) => candidate.id === blockId)!;
-      const capture_asset: GuideSourceCaptureAsset = {
+      const capture_asset = toProjectCaptureAsset({
         id: "asset_uploaded",
         capture_session_id: "capture_session_1",
         asset_type: "screenshot",
@@ -1311,7 +1328,7 @@ describe("GuideEditorPage", () => {
           mime_type: input.file.type,
           size_bytes: input.file.size,
         },
-      };
+      });
 
       return {
         guide_block: {
@@ -1353,7 +1370,7 @@ describe("GuideEditorPage", () => {
       .mockRejectedValueOnce(new Error("upload failed"))
       .mockImplementationOnce(async (_projectId, _guideId, blockId, input) => {
         const block = guideDetail.guide_blocks.find((candidate) => candidate.id === blockId)!;
-        const capture_asset: GuideSourceCaptureAsset = {
+        const capture_asset = toProjectCaptureAsset({
           id: "asset_uploaded_retry",
           capture_session_id: "capture_session_1",
           asset_type: "screenshot",
@@ -1370,7 +1387,7 @@ describe("GuideEditorPage", () => {
             mime_type: input.file.type,
             size_bytes: input.file.size,
           },
-        };
+        });
 
         return {
           guide_block: {

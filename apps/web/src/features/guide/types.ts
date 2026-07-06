@@ -5,6 +5,7 @@ import type {
   PublishLinkStatus,
   PublishVisibility,
 } from "@repo/constants";
+import type { ProjectCaptureAssetListResponse } from "@repo/types/capture";
 import type {
   CreateGuideBlockInput,
   Guide,
@@ -19,6 +20,7 @@ import type {
   UpdateGuideBlockAnnotationsInput,
   UpdateGuideBlockInput,
   UpdateGuideBlockScreenshotInput,
+  UploadGuideBlockScreenshotResponse,
 } from "@repo/types/guide";
 
 export type {
@@ -36,6 +38,7 @@ export type {
   UpdateGuideBlockAnnotationsInput,
   UpdateGuideBlockInput,
   UpdateGuideBlockScreenshotInput,
+  UploadGuideBlockScreenshotResponse,
 };
 
 export type PublishedGuideSnapshotAsset = {
@@ -67,9 +70,7 @@ export type PublishedGuideSnapshotBlock = {
   source_asset: PublishedGuideSnapshotAsset | null;
 };
 
-export type ProjectScreenshotAssetListResponse = {
-  capture_assets: GuideSourceCaptureAsset[];
-};
+export type ProjectScreenshotAssetListResponse = ProjectCaptureAssetListResponse;
 
 export type UploadGuideBlockScreenshotInput = {
   file: File;
@@ -80,11 +81,6 @@ export type UploadGuideBlockScreenshotInput = {
   pageTitle?: string;
   capturedAt?: string;
   metadata?: Record<string, unknown>;
-};
-
-export type UploadGuideBlockScreenshotResponse = {
-  guide_block: GuideBlock;
-  capture_asset: GuideSourceCaptureAsset;
 };
 
 export type PublishedGuideSnapshot = {
