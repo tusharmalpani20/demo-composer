@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Planned. Expanded for implementation on 2026-07-07.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -19,6 +19,68 @@ This is child plan `088` of the shared contracts and domainization track.
 Activate `@repo/types` as the canonical home for shared Zod API contracts that pass the reuse gate.
 
 This is a backend/shared-contract refactor phase. It must preserve the current UI, routes, request shapes, response shapes, permission behavior, persisted values, and runtime behavior. The outcome should make later domain-package work safer by replacing duplicated request/response types with runtime schemas and inferred TypeScript types.
+
+## Completion Summary
+
+Completed on 2026-07-07.
+
+Implementation commits:
+
+- `e94b682 feat(types): add shared API contract schemas`
+- `b7e2f7c refactor(apps): consume shared API contract types`
+
+What changed:
+
+- Activated `@repo/types` with direct `zod` and `@repo/constants` dependencies plus `test` and `check-types` scripts.
+- Added shared Zod schemas and inferred types for common primitives, public instance status, first-run setup, project, capture session, capture event, and capture asset response DTOs.
+- Added focused package schema tests for the selected contracts.
+- Switched selected server route body/query schemas to shared schemas for setup, project, capture session, and capture event.
+- Switched selected web/extension compile-time DTOs to shared inferred types or local compatibility aliases.
+- Preserved extension-local narrowed capture session/event request DTOs where widening would have changed caller contracts.
+- Kept multipart upload request construction and capture asset JSON create request validation local.
+- Did not add new Fastify params validation or response validation.
+- Did not change frontend/browser runtime behavior or UI.
+
+Verification passed:
+
+- `rtk pnpm --filter @repo/types test`
+- `rtk pnpm --filter @repo/types lint`
+- `rtk pnpm --filter @repo/types check-types`
+- `rtk pnpm --filter @repo/types build`
+- `rtk pnpm --filter server check-types`
+- `rtk pnpm --filter web check-types`
+- `rtk pnpm --filter extension check-types`
+- `rtk pnpm --filter server test -- public-instance setup project capture-session capture-event capture-asset`
+- `rtk pnpm --filter web test`
+- `rtk pnpm --filter extension test`
+- `rtk pnpm check-types`
+
+Browser validation:
+
+- Not run. This phase stayed within schemas, route validation imports, API helper type exports, and non-rendered TypeScript type files. No frontend or extension runtime behavior was changed.
+
+Leftovers for later plans:
+
+- Plan `091` should tighten auth/identity/setup/organization DTOs beyond the permissive first-run setup `auth: unknown` response.
+- Plan `091` should decide whether project contracts move beyond API DTOs into project-domain behavior.
+- Plan `092` should own capture lifecycle policy, privacy/redaction policy, extension capture request narrowing, and capture-domain behavior extraction.
+- File-domain work should own MIME allow-lists, upload limits, storage paths, storage adapter contracts, and JSON create-capture-asset request centralization if another real consumer appears.
+- Capture asset extension response subsets remain local because the extension currently models only the fields it consumes.
+
+## Completion Checklist
+
+- [x] `@repo/types` activated with runtime dependencies and package scripts.
+- [x] Common API primitive schemas added.
+- [x] Public instance and first-run setup contracts added.
+- [x] Project contracts added.
+- [x] Capture session and capture event contracts added.
+- [x] Capture asset response contracts added.
+- [x] Focused schema tests added and passing.
+- [x] Selected server request/query route schemas switched to shared imports.
+- [x] Selected web and extension DTO types switched to shared imports or compatibility aliases.
+- [x] Multipart upload request construction left local.
+- [x] No new params validation, response validation, UI behavior, route URL, database, auth, permission, or privacy behavior changes introduced.
+- [x] Focused verification completed.
 
 ## Baseline From Completed Plan 087
 

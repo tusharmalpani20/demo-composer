@@ -482,6 +482,8 @@ Acceptance:
 
 ### 088: Shared Types And API Contract Foundation
 
+Status: Completed on 2026-07-07.
+
 File:
 
 - `docs/plan/088-shared-types-contract-foundation.md`
