@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -23,6 +23,61 @@ The package name must be `@repo/demo-domain` to match `docs/system-design-patter
 This phase should extract reusable pure policies and shared route contracts. The server remains the application adapter that owns Fastify routes, auth/session context, SQL repositories, transactions, database migrations, row mapping, response envelopes, and error-to-HTTP mapping.
 
 Current implementation note: there is no persisted `demo_transition` table, route, DTO, or standalone transition type today. The current MVP transition behavior is represented by `DemoHotspot.target_scene_id`. This plan must preserve that representation and extract target-scene transition validation as hotspot policy. Do not introduce a new transition entity, table, route, or response shape in this phase.
+
+## Completion Summary
+
+Completed on 2026-07-07.
+
+Implemented changes:
+
+- Added shared interactive demo DTO, request, and response schemas in `@repo/types/demo`.
+- Created `@repo/demo-domain` with pure input normalization, capture-to-scene generation, scene order/reference, and hotspot order/coordinate/target policies.
+- Wired `apps/server/src/modules/interactive-demo/interactive-demo.service.ts` to use demo-domain policies while keeping auth scope, repository orchestration, SQL, transaction behavior, and existence checks in the server adapter.
+- Replaced route-local interactive demo JSON body schemas with shared `@repo/types/demo` schemas while preserving route picker behavior and response envelopes.
+- Replaced duplicated web interactive demo route types with shared `@repo/types/demo` imports/re-exports.
+- Kept published interactive demo snapshot/public viewer types local for `095-publish-domain-and-public-contract-cleanup.md`.
+- Added no database migration and changed no route URL, response envelope, status code, persisted value, JSX, CSS, rendered copy, fetch path, or public viewer behavior.
+
+Verification passed:
+
+- `rtk pnpm --filter @repo/types test -- demo`
+- `rtk pnpm --filter @repo/types check-types`
+- `rtk pnpm --filter @repo/types lint`
+- `rtk pnpm --filter @repo/types build`
+- `rtk pnpm --filter @repo/demo-domain test`
+- `rtk pnpm --filter @repo/demo-domain check-types`
+- `rtk pnpm --filter @repo/demo-domain lint`
+- `rtk pnpm --filter @repo/demo-domain build`
+- `rtk pnpm --filter server test -- interactive-demo`
+- `rtk pnpm --filter server test -- publish.service publish.routes`
+- `rtk pnpm --filter server check-types`
+- `rtk pnpm --filter server lint`
+- `rtk pnpm --filter web check-types`
+- `rtk pnpm --filter web test -- InteractiveDemoEditorPage ProjectInteractiveDemoListPage PublicInteractiveDemoViewerPage`
+- `rtk pnpm --filter web test -- api`
+- `rtk pnpm check-types`
+- `rtk git diff --check`
+
+Browser validation was not required because this phase changed shared type imports, route schemas, and backend/domain wiring without changing JSX, CSS, rendered copy, navigation, fetch paths, or browser-visible demo behavior.
+
+Database verification was not required because this phase did not change repository SQL, migrations, transaction boundaries, persisted data shapes, target-scope trigger behavior, or row mapping.
+
+Completion checklist:
+
+- [x] Added shared demo contracts and tests.
+- [x] Added `@repo/demo-domain` package and pure policy tests.
+- [x] Kept server routes, auth/session, SQL repositories, transactions, and HTTP error mapping server-owned.
+- [x] Preserved existing route URLs, response envelopes, status codes, and error `type` strings.
+- [x] Kept current transition representation as `DemoHotspot.target_scene_id`; added no transition entity/table/route.
+- [x] Kept web behavior stable and avoided adding a web dependency on `@repo/demo-domain`.
+- [x] Confirmed browser validation is not required.
+- [x] Confirmed DB validation is not required.
+
+Carry into `095-publish-domain-and-public-contract-cleanup.md`:
+
+- `apps/server/src/modules/publish/publish.service.ts` still owns `PublishedInteractiveDemoSnapshot` and public demo snapshot preparation.
+- `apps/web/src/features/interactive-demo/types.ts` still owns `PublishedInteractiveDemoSnapshot*` public viewer types.
+- Publish/access/password types are still shared through guide-named compatibility types in parts of the web UI and should be centralized in the publish phase.
 
 ## Baseline From Completed 093
 

@@ -704,6 +704,8 @@ Acceptance:
 
 ### 094: Demo Domain Extraction
 
+Status: Completed on 2026-07-07.
+
 File:
 
 - `docs/plan/094-demo-domain-extraction.md`
@@ -724,12 +726,17 @@ Tests:
 - Domain tests for demo generation and validation.
 - Server tests for demo create/update routes.
 - Web typecheck for shared demo contracts.
+- Additional verification passed for `@repo/types` demo schemas, `@repo/demo-domain` test/check-types/lint/build, server interactive-demo and publish regression tests/check-types/lint, focused web interactive-demo/API tests, and repo-wide `pnpm check-types`.
 
 Acceptance:
 
 - Existing demo response shapes remain stable.
 - Hotspot and scene behavior remains unchanged.
 - Package naming follows `@repo/demo-domain` while preserving Interactive Demo domain language.
+- Demo routes, response envelopes, auth behavior, SQL repositories, transactions, target-scene DB trigger behavior, and HTTP error mapping remain server-owned.
+- Current transition behavior remains represented by `DemoHotspot.target_scene_id`; no standalone transition entity, table, route, or response shape was added.
+- Browser validation was not required because there were no JSX, CSS, route path, fetch path, or browser-visible behavior changes.
+- DB verification was not required because repositories, migrations, transactions, persisted values, target-scope trigger behavior, and row mapping were unchanged.
 
 ### 095: Publish Domain Extraction
 
