@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -28,6 +28,114 @@ The desired end state is:
 - server, web, and extension contract consumption remain behaviorally stable;
 - any documentation drift is corrected;
 - any known leftover work is explicitly carried forward instead of hidden in comments.
+
+## Completion Summary
+
+Completed on 2026-07-07.
+
+This closeout was implemented as a documentation and verification phase. No product code, route behavior, schemas, database migrations, UI files, extension manifest, package manifests, or lockfiles were changed.
+
+Actual affected documentation files:
+
+```text
+docs/plan/097-web-shared-contract-consumption.md
+docs/plan/099-contract-regression-docs-sync-and-architecture-closeout.md
+docs/plan/master/003-shared-contracts-domainization-master-plan.md
+```
+
+Implementation checklist:
+
+- [x] Re-read this plan, the master plan, and completed `098` notes before execution.
+- [x] Confirmed the worktree was clean before closeout edits.
+- [x] Audited child plan statuses for `087` through `098`.
+- [x] Corrected stale `097` child-plan status wording to match the master plan's post-implementation audit status.
+- [x] Audited shared/domain package import direction and framework boundaries.
+- [x] Audited route modules against the closeout route inventory.
+- [x] Audited shared exports/import usage for the active apps and packages.
+- [x] Audited durable docs listed in this plan and found no architecture-doc drift requiring broader rewrites.
+- [x] Ran the strongest practical verification suite, including DB-backed integration and smoke checks.
+- [x] Documented the initial DB smoke deadlock as a command-ordering issue and reran DB-backed checks serially after resetting the test database.
+- [x] Confirmed browser validation was not required because this closeout made docs-only changes.
+
+Audit findings:
+
+- Child plans `087` through `098` are completed, and after the `097` status correction they consistently show completed/audited or completed-with-evidence status where applicable.
+- `098` had no implementation leftover to resolve in `099` beyond normal regression and documentation closeout.
+- Package import direction remained valid: shared/domain packages do not import from `apps/*`.
+- Domain packages remained framework-agnostic; no Fastify, React, browser, or Chrome extension dependencies were found in `packages/constants`, `packages/types`, `packages/file-domain`, `packages/capture-domain`, `packages/guide-domain`, `packages/demo-domain`, or `packages/publish-domain`.
+- The accidental package name `@repo/interactive-demo-domain` was not present in active package/app code.
+- Current server routes match the closeout route families recorded in this plan.
+- `docs/backend-route-inventory.md` already reflected current publish public paths under `/api/v1/public/publish-links/:slug*`.
+- `CONTEXT.md`, `docs/system-design-pattern.md`, `docs/project-zoomout-status.md`, `docs/roadmap.md`, and existing ADRs did not require changes for this closeout.
+- No route/API contract, schema/type behavior, shared export, security, permission, migration, backwards-compatibility, public viewer, extension, or UI behavior change was introduced.
+
+Verification passed:
+
+- `rtk pnpm --filter @repo/constants lint`
+- `rtk pnpm --filter @repo/constants test` - 1 file, 3 tests passed.
+- `rtk pnpm --filter @repo/constants build`
+- `rtk pnpm --filter @repo/types lint`
+- `rtk pnpm --filter @repo/types test` - 10 files, 37 tests passed.
+- `rtk pnpm --filter @repo/types check-types`
+- `rtk pnpm --filter @repo/types build`
+- `rtk pnpm --filter @repo/file-domain lint`
+- `rtk pnpm --filter @repo/file-domain test` - 2 files, 10 tests passed.
+- `rtk pnpm --filter @repo/file-domain check-types`
+- `rtk pnpm --filter @repo/file-domain build`
+- `rtk pnpm --filter @repo/capture-domain lint`
+- `rtk pnpm --filter @repo/capture-domain test` - 3 files, 11 tests passed.
+- `rtk pnpm --filter @repo/capture-domain check-types`
+- `rtk pnpm --filter @repo/capture-domain build`
+- `rtk pnpm --filter @repo/guide-domain lint`
+- `rtk pnpm --filter @repo/guide-domain test` - 4 files, 10 tests passed.
+- `rtk pnpm --filter @repo/guide-domain check-types`
+- `rtk pnpm --filter @repo/guide-domain build`
+- `rtk pnpm --filter @repo/demo-domain lint`
+- `rtk pnpm --filter @repo/demo-domain test` - 4 files, 14 tests passed.
+- `rtk pnpm --filter @repo/demo-domain check-types`
+- `rtk pnpm --filter @repo/demo-domain build`
+- `rtk pnpm --filter @repo/publish-domain lint`
+- `rtk pnpm --filter @repo/publish-domain test` - 4 files, 11 tests passed.
+- `rtk pnpm --filter @repo/publish-domain check-types`
+- `rtk pnpm --filter @repo/publish-domain build`
+- `rtk pnpm --filter server check-types`
+- `rtk pnpm --filter server lint`
+- `rtk pnpm --filter server test` - 43 files, 255 tests passed.
+- `rtk pnpm --filter server build`
+- `rtk pnpm --filter web check-types`
+- `rtk pnpm --filter web lint`
+- `rtk pnpm --filter web test` - 23 files, 298 tests passed.
+- `rtk pnpm --filter web build`
+- `rtk pnpm --filter extension check-types`
+- `rtk pnpm --filter extension lint`
+- `rtk pnpm --filter extension test` - 9 files, 82 tests passed.
+- `rtk pnpm --filter extension build`
+- `rtk pnpm --filter docs check-types`
+- `rtk pnpm --filter docs lint`
+- `rtk pnpm --filter docs test` - 3 files, 8 tests passed.
+- `rtk pnpm --filter docs build`
+- `rtk pnpm check-types`
+- `rtk pnpm lint`
+- `rtk pnpm build`
+- `rtk pnpm --filter server run test:db:drop`
+- `rtk pnpm --filter server run test:db:create`
+- `rtk pnpm --filter server run test:migrate` - applied 14 migrations.
+- `rtk pnpm --filter server run test:db` - 11 files, 46 tests passed after reset.
+- `rtk pnpm --filter server run test:smoke` - 1 file, 1 test passed after reset.
+- `rtk git diff --check`
+
+Verification note:
+
+- An early `rtk pnpm --filter server run test:smoke` was started while `rtk pnpm --filter server run test:db` was still running and failed with a PostgreSQL deadlock during smoke table truncation. This was a test command-ordering problem, not a product regression. After the documented test DB reset sequence, `test:db` and `test:smoke` both passed serially.
+
+Browser validation:
+
+- Not required. This closeout changed documentation only and did not change `apps/web` UI/runtime code, public viewer runtime behavior, extension UI/runtime/content scripts/background scripts, browser navigation, fetch paths, CSS, rendered copy, or extension permissions.
+
+Leftovers and follow-ups:
+
+- No implementation leftover remains for this shared-contracts and domainization track.
+- Existing product roadmap deferrals remain outside this closeout: HTML replay, AI behavior, broader analytics/lead-capture work, and manual extension dogfood reliability follow-ups already documented in status/roadmap docs.
 
 ## Implemented Baseline From 098
 

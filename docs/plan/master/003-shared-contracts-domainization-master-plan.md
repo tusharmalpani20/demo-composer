@@ -891,6 +891,8 @@ Acceptance:
 
 ### 099: Contract Regression, Docs Sync, And Architecture Closeout
 
+Status: Completed and post-implementation audited on 2026-07-07.
+
 File:
 
 - `docs/plan/099-contract-regression-docs-sync-and-architecture-closeout.md`
@@ -904,22 +906,28 @@ Scope:
 - Run full workspace verification.
 - Review package boundaries for accidental cycles.
 - Review shared exports for stability and naming consistency.
-- Update `CONTEXT.md`, architecture docs, and ADR follow-ups if needed.
-- Record any intentionally deferred cleanup.
+- Review durable docs for drift and update only where needed.
+- Record intentionally deferred cleanup and roadmap leftovers.
 
 Tests:
 
-- Full workspace typecheck.
-- Full backend tests.
-- Web tests/typecheck.
-- Extension tests/typecheck.
-- Build checks where configured.
+- Full shared package lint/test/typecheck/build checks passed where scripts exist.
+- Full domain package lint/test/typecheck/build checks passed for file, capture, guide, demo, and publish domain packages.
+- Server typecheck, lint, non-DB tests, build, DB integration tests, and smoke test passed.
+- Web typecheck, lint, tests, and build passed.
+- Extension typecheck, lint, tests, and build passed.
+- Docs app typecheck, lint, tests, and build passed.
+- Workspace `check-types`, `lint`, and `build` passed.
+- `git diff --check` passed.
 
 Acceptance:
 
 - The repo has a documented shared-contract and domain-package architecture.
-- No known regressions remain from this track.
-- Deferred work is explicitly listed instead of being hidden in code comments.
+- No route/API contract, schema/type behavior, shared export, security, permission, migration, backwards-compatibility, public viewer, extension, or UI behavior change was introduced by closeout.
+- Package boundary audits found no shared/domain package imports from `apps/*`, no active `@repo/interactive-demo-domain` package naming, and no Fastify/React/browser/Chrome dependencies in the shared/domain packages audited by this track.
+- Durable docs did not require broader architecture rewrites; `097` child-plan status was corrected to align with its completed audit status.
+- `099` records the full verification log, the serial DB reset/rerun evidence, browser-validation rationale, and remaining product roadmap deferrals.
+- No implementation leftover remains for the shared-contracts and domainization track.
 
 ## 10. Required Child Plan Template
 
