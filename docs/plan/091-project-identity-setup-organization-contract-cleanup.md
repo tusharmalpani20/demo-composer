@@ -4,7 +4,7 @@ Date: 2026-07-06
 
 Last reviewed: 2026-07-07
 
-Status: Completed on 2026-07-07.
+Status: Completed and post-implementation audited on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -25,6 +25,8 @@ This phase should not create a domain package. The parent master plan allows mov
 ## Completion Summary
 
 Completed on 2026-07-07 in implementation commit `e075169 feat(types): share auth and organization contracts`.
+
+Post-implementation audit completed on 2026-07-07. One leftover local extension test helper type duplicated the extension login response as `AuthResponse & { session_token: string }`; it was replaced with the shared `LoginRequest` and `LoginResponse` aliases from `apps/extension/src/lib/api.ts`.
 
 Implemented changes:
 
@@ -57,6 +59,16 @@ Verification passed:
 - `rtk pnpm --filter @repo/constants test`
 - `rtk pnpm --filter @repo/constants lint`
 - `rtk pnpm --filter @repo/constants build`
+- `rtk pnpm check-types`
+- `rtk git diff --check`
+
+Post-audit verification passed:
+
+- `rtk pnpm --filter extension test -- App api`
+- `rtk pnpm --filter extension check-types`
+- `rtk pnpm --filter extension lint`
+- `rtk pnpm --filter @repo/types test`
+- `rtk pnpm --filter @repo/types check-types`
 - `rtk pnpm check-types`
 - `rtk git diff --check`
 
@@ -778,6 +790,16 @@ Do not make visual assertions beyond confirming behavior remains stable and ther
 - Left server `AuthContext` server-local after inspection because replacing it globally would require broad server auth fixture and permission-context churn outside this contract cleanup phase.
 - Preserved server-local password hashes, token hashes, token generation, cookies, request auth parsing, invite auth permission context, repositories, and persistence behavior.
 - Ran the focused verification listed in the completion summary, including package tests, typechecks, lint, builds where relevant, full repo typecheck, and whitespace checks.
+
+2026-07-07 post-implementation audit:
+
+- Rechecked the implementation against this child plan and the master plan.
+- Confirmed route validation behavior stayed compatible with the previous route-local login and organization invite schemas.
+- Confirmed web auth responses still omit `session_token`, extension login responses still include `session_token`, and setup responses remain setup-specific.
+- Confirmed no unrelated files were included in the original implementation commit.
+- Found one remaining extension test helper type that duplicated the extension login response as `AuthResponse & { session_token: string }`.
+- Replaced that helper type with shared `LoginRequest` and `LoginResponse` aliases.
+- Reran focused extension/shared type verification and full repo typecheck.
 
 ## Handoff Notes
 

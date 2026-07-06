@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ApiClientError, type AuthResponse, type CaptureAssetResponse, type CaptureEventResponse, type CompleteCaptureSessionResponse, type CreateCaptureEventInput, type Project } from "./lib/api";
+import { ApiClientError, type AuthResponse, type CaptureAssetResponse, type CaptureEventResponse, type CompleteCaptureSessionResponse, type CreateCaptureEventInput, type LoginRequest, type LoginResponse, type Project } from "./lib/api";
 import { App } from "./App";
 import type { ExtensionSettings } from "./lib/settings";
 import type { ScreenshotCapture } from "./lib/screenshot";
@@ -156,7 +156,7 @@ const renderApp = (overrides: {
   settings?: ExtensionSettings;
   getCurrentAuth?: (instanceUrl: string, sessionToken: string) => Promise<AuthResponse>;
   listProjects?: (instanceUrl: string, sessionToken: string) => Promise<{ projects: Project[] }>;
-  login?: (instanceUrl: string, data: { email: string; password: string }) => Promise<AuthResponse & { session_token: string }>;
+  login?: (instanceUrl: string, data: LoginRequest) => Promise<LoginResponse>;
   createCaptureSession?: (
     instanceUrl: string,
     sessionToken: string,
