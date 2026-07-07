@@ -330,7 +330,7 @@ Completed result:
 
 ### 104: Docs Architecture Sync After Domainization
 
-Status: Planned
+Status: Completed on 2026-07-07
 
 File:
 
@@ -365,6 +365,12 @@ Acceptance:
 - Docs no longer say shared packages are placeholders.
 - Docs accurately describe the post-003 architecture.
 - No feature or UI behavior changes.
+
+Completed result:
+
+- `README.md` and `docs/contributor-guide.md` now describe active shared constants, shared Zod API contracts, domain policies, UI primitives, and tooling/config packages instead of placeholder shared packages.
+- The docs preserve the post-plan-103 extension status: automatic-click captured-workflow evidence is current, while true toolbar-popup manual validation remains pending.
+- No runtime code, package exports, dependencies, lockfiles, migrations, screenshots, or generated assets changed.
 
 ### 105: CI Smoke Workflow Coverage
 
@@ -534,8 +540,8 @@ Acceptance:
 - [x] Implement and close child plan `102`.
 - [x] Expand and recheck child plan `103`.
 - [x] Implement and close child plan `103`.
-- [ ] Expand and recheck child plan `104`.
-- [ ] Implement and close child plan `104`.
+- [x] Expand and recheck child plan `104`.
+- [x] Implement and close child plan `104`.
 - [ ] Expand and recheck child plan `105`.
 - [ ] Implement and close child plan `105`.
 - [ ] Expand and recheck child plan `106`.

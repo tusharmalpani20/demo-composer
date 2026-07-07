@@ -4,7 +4,7 @@ Date: 2026-07-07
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -375,32 +375,71 @@ If only Markdown files outside `apps/docs` are changed, explicitly record that b
 
 ## Completion Checklist
 
-- [ ] Worktree checked before edits.
-- [ ] Completed plan `103`, master plan `004`, master plan `003`, and plan `099` reread.
-- [ ] Current package names/responsibilities verified from package files.
-- [ ] Stale shared-package placeholder wording removed or corrected from current docs.
-- [ ] `README.md` reflects active shared constants, shared types, UI primitives, tooling packages, and domain packages.
-- [ ] `README.md` does not overstate package extraction or production readiness.
-- [ ] `docs/contributor-guide.md` reflects the current monorepo layout.
-- [ ] Related architecture/status docs checked for contradictions.
-- [ ] Extension status from plan `103` preserved accurately.
-- [ ] No runtime code, package exports, dependencies, lockfiles, migrations, screenshots, or generated assets touched.
-- [ ] Focused verification commands run and recorded.
-- [ ] Browser validation marked not required, or completed only if rendered docs app pages changed.
-- [ ] Plan `104` updated with status, checklist, implementation log, verification notes, leftovers, and handoff notes.
-- [ ] Parent master plan updated only for completed phase status.
+- [x] Worktree checked before edits.
+- [x] Completed plan `103`, master plan `004`, master plan `003`, and plan `099` reread.
+- [x] Current package names/responsibilities verified from package files.
+- [x] Stale shared-package placeholder wording removed or corrected from current docs.
+- [x] `README.md` reflects active shared constants, shared types, UI primitives, tooling packages, and domain packages.
+- [x] `README.md` does not overstate package extraction or production readiness.
+- [x] `docs/contributor-guide.md` reflects the current monorepo layout.
+- [x] Related architecture/status docs checked for contradictions.
+- [x] Extension status from plan `103` preserved accurately.
+- [x] No runtime code, package exports, dependencies, lockfiles, migrations, screenshots, or generated assets touched.
+- [x] Focused verification commands run and recorded.
+- [x] Browser validation marked not required, or completed only if rendered docs app pages changed.
+- [x] Plan `104` updated with status, checklist, implementation log, verification notes, leftovers, and handoff notes.
+- [x] Parent master plan updated only for completed phase status.
 
 ## Implementation Log
 
-To be completed during implementation.
+Completed on 2026-07-07.
+
+- Confirmed the worktree was clean before implementation.
+- Reread this plan, master plan `004`, completed plan `103`, master plan `003`, and plan `099`.
+- Verified package names and responsibilities from package metadata for:
+  - `@repo/constants`
+  - `@repo/types`
+  - `@repo/ui`
+  - `@repo/file-domain`
+  - `@repo/capture-domain`
+  - `@repo/guide-domain`
+  - `@repo/demo-domain`
+  - `@repo/publish-domain`
+- Checked current architecture/status docs before editing:
+  - `docs/system-design-pattern.md`
+  - `docs/project-zoomout-status.md`
+  - `docs/roadmap.md`
+  - `docs/oss-alpha-summary.md`
+  - `CONTEXT.md`
+- Updated `README.md` `Architecture At A Glance` to replace the stale placeholder package row with active shared constants, Zod API contracts, domain policies, UI primitives, and tooling responsibilities.
+- Updated the README architecture paragraph to describe server modules as HTTP/persistence/auth/storage adapters that consume shared contracts and domain packages where those boundaries exist, while preserving app-local ownership for contracts that do not pass the reuse gate.
+- Updated `docs/contributor-guide.md` repo layout to describe current package responsibilities.
+- Added a concise contributor-guide planning note that shared package changes should stay behind focused plans/tests and app-local contracts should remain local until they pass the reuse gate.
+- Did not edit conditional docs because the checked architecture/status docs did not contain current contradictions introduced by this phase.
+- Did not touch runtime code, package source, package metadata, dependencies, lockfiles, migrations, screenshots, generated assets, or `apps/docs`.
 
 ## Verification Notes
 
-To be completed during implementation.
+Passed:
+
+```bash
+rtk rg -n "shared tooling placeholders|product contracts stay near owners|mostly a placeholder|packages/\\*.*placeholder|packages/.*placeholder" README.md docs/contributor-guide.md docs/system-design-pattern.md docs/project-zoomout-status.md docs/roadmap.md docs/oss-alpha-summary.md CONTEXT.md
+rtk rg -n "@repo/interactive-demo-domain" apps packages README.md docs/contributor-guide.md docs/system-design-pattern.md docs/project-zoomout-status.md docs/roadmap.md docs/oss-alpha-summary.md CONTEXT.md
+rtk git diff --check
+rtk git status --short
+```
+
+The two `rg` commands exited with no matches, which is the expected passing result. `rtk git status --short` showed only the scoped docs files before commit.
+
+Browser validation:
+
+- Not required. This phase changed only `README.md`, `docs/contributor-guide.md`, this plan, and the master plan. It did not change rendered app code, `apps/docs`, browser behavior, screenshots, CSS, app copy, or screenshot references.
 
 ## Leftovers
 
-To be completed during implementation.
+- No implementation leftovers for this docs sync phase.
+- Historical plan documents still record earlier placeholder/package states as history. They were intentionally not rewritten.
+- CI smoke workflow coverage remains for child plan `105`.
 
 ## Handoff Notes
 

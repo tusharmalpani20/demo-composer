@@ -10,7 +10,7 @@ apps/web        React/Vite portal and public readers
 apps/extension  Chrome extension popup and capture behavior
 apps/docs       Compact alpha docs hub; canonical deep-dive docs live under docs/
 docs/           product decisions, plans, ADRs, operations, and roadmap
-packages/       shared tooling placeholders
+packages/       shared constants, API contracts, domain policies, UI primitives, and tooling config
 ```
 
 ## Planning Flow
@@ -19,6 +19,7 @@ packages/       shared tooling placeholders
 - Durable architecture decisions go in `docs/adr/`.
 - Product/domain stress tests go in `docs/grill/`.
 - Update docs when code behavior, setup, security posture, or product scope changes.
+- Keep shared package changes behind focused plans and tests; app-local contracts should stay near their owners until they pass the reuse gate.
 
 ## Test Commands
 

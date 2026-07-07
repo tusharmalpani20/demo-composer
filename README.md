@@ -146,10 +146,10 @@ apps/server     Fastify REST API, PostgreSQL, local file storage
 apps/web        React/Vite portal plus public guide/demo readers
 apps/extension  React/Vite Chrome extension popup and capture worker
 apps/docs       Compact alpha docs hub for overview, source-doc links, and screenshot evidence
-packages/*      Shared repo tooling placeholders; product contracts stay near owners for now
+packages/*      Shared constants, Zod API contracts, domain policies, UI primitives, and repo tooling
 ```
 
-The backend is organized as domain modules under `apps/server/src/modules/*` with routes, services, repositories, and focused tests. The portal uses a lightweight custom route parser for now.
+The backend is organized as domain modules under `apps/server/src/modules/*` with routes, services, repositories, and focused tests. Those modules adapt HTTP, persistence, auth context, and local storage to shared `@repo/types` contracts and framework-agnostic domain packages where those boundaries already exist. App-local types still stay near their owners when they do not pass the shared-package reuse gate. The portal uses a lightweight custom route parser for now.
 
 ## Documentation
 
