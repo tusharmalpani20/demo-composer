@@ -47,7 +47,9 @@ Plan `102` completed on 2026-07-07 and formally closed split-origin portal navig
 
 ## Current Evidence Gap
 
-The repo now has code/tests and direct extension-page browser evidence for extension capture, but public/docs status still intentionally withholds captured-workflow extension screenshots because the final evidence pass has not been recorded.
+At planning time, the repo had code/tests and direct extension-page browser evidence for extension capture, but public/docs status still intentionally withheld captured-workflow extension screenshots because the final evidence pass had not been recorded.
+
+This phase closed the automatic captured-workflow evidence gap on 2026-07-07 by recording a real browser run with two screenshot-backed extension `click` events, portal capture-detail rendering, generated guide source material, generated interactive demo source material, and committed public screenshots. The remaining evidence gap is narrower: true Chrome toolbar-popup manual capture is still unvalidated, and direct extension-page manual capture after automatic clicks needs a duplicate event-index follow-up.
 
 This phase must answer:
 
@@ -624,6 +626,21 @@ Final docs verification:
 - Pause/resume controls were visible on the active direct extension page; this phase did not re-run a dedicated pause/resume assertion because plan `100` had already validated that behavior and this plan prioritized final artifact evidence.
 
 ## Handoff Notes
+
+Close-previous recheck on 2026-07-07:
+
+- Rechecked this completed phase against the child plan, master plan `004`, current worktree, public docs, committed screenshot assets, and the scoped commit `ba577c9`.
+- Fixed the stale planned-state evidence-gap wording in this plan so it no longer says captured-workflow screenshots are unrecorded.
+- Confirmed the committed files are scoped to docs/status/screenshot evidence and do not include runtime source, manifest, schema, migration, lockfile, storage, or build-output changes.
+- Confirmed the master plan marks only child plan `103` implementation complete and leaves future child plans `104` through `108` planned.
+- Re-ran docs-focused verification after the close-previous edit with `rtk git diff --check`.
+
+Carry into child plan `104`:
+
+- Treat extension captured-workflow screenshots as current for the automatic-click path as of 2026-07-07.
+- Preserve the documented limitation that true Chrome toolbar-popup manual capture remains unvalidated.
+- Preserve the follow-up that direct extension-page manual capture after automatic clicks can hit a duplicate event-index failure.
+- Plan `104` should focus on architecture documentation sync after domainization; it should not fix extension behavior or broaden extension validation scope.
 
 If validation uncovers a new functional bug, do not fold a broad fix into this evidence phase. Create or update the next appropriate child plan with:
 
