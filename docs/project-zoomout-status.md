@@ -41,7 +41,7 @@ The automated DB-backed smoke test for that workflow lives in `apps/server/src/s
 rtk pnpm --filter server test:smoke
 ```
 
-Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-22 and is recorded in `docs/v1-dogfood-smoke-suite.md`. Portal alpha screenshots from safe synthetic data are committed under `docs/assets/alpha/` and linked from `README.md`. Public guide/demo screenshots and the extension setup popup screenshot were refreshed on 2026-06-30 during the modern UI browser QA pass. Chrome extension capture dogfood remains blocked by capture failures, so captured-workflow extension screenshots remain pending.
+Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-22 and is recorded in `docs/v1-dogfood-smoke-suite.md`. Portal alpha screenshots from safe synthetic data are committed under `docs/assets/alpha/` and linked from `README.md`. Public guide/demo screenshots and the extension setup popup screenshot were refreshed on 2026-06-30 during the modern UI browser QA pass. Plan 101 browser validation on 2026-07-07 proved screenshot-backed automatic capture and direct extension-page manual capture can create server assets/events; true toolbar-popup manual validation and captured-workflow extension screenshots remain pending.
 
 ## Built So Far
 
@@ -120,7 +120,7 @@ Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-2
 
 The next phase should finish public alpha readiness:
 
-1. Fix or bound the extension capture failures from manual dogfood.
+1. Finish the remaining extension validation follow-ups: split-origin portal closeout, true toolbar-popup manual capture evidence, and final captured-workflow screenshots.
 2. Feed the manual portal dogfood findings into guide/editor hardening.
 3. Keep alpha screenshots refreshed as portal/editor hardening changes the UI.
 4. Continue usability hardening for guide editing, interactive demo editing, and extension capture reliability.

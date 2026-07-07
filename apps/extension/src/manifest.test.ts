@@ -17,8 +17,8 @@ const manifest = JSON.parse(
 
 describe("extension manifest", () => {
   it("declares the persistent host permission required by background screenshot capture", () => {
-    expect(manifest.host_permissions).toContain("<all_urls>");
-    expect(manifest.permissions).toEqual(expect.arrayContaining(["storage", "tabs"]));
+    expect(manifest.host_permissions).toEqual(["<all_urls>"]);
+    expect([...(manifest.permissions ?? [])].sort()).toEqual(["activeTab", "storage", "tabs"]);
   });
 
   it("keeps automatic content script injection scoped to supported web pages", () => {

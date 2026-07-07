@@ -281,8 +281,9 @@ Failure order:
 - Do not log bearer tokens, cookies, passwords, or screenshot binary data.
 - Do not include bearer/session tokens in portal URLs.
 - Keep `input_value_redacted: true` on extension-created events.
-- Do not broaden host permissions beyond the current `http://*/*` and `https://*/*`.
-- Do not add new Chrome permissions unless the screenshot capture failure proves they are necessary. If a permission is added, document the minimum needed permission, why existing permissions failed, user-facing impact, Chrome behavior being relied on, and exact validation evidence.
+- The 2026-07-07 implementation intentionally broadened `host_permissions` to `"<all_urls>"` because Chrome rejected background visible-tab screenshot capture with only `http://*/*`, `https://*/*`, and `activeTab`.
+- Keep content script injection scoped to `http://*/*` and `https://*/*`; the broader host permission is for `chrome.tabs.captureVisibleTab`, not for DOM scraping or raw input collection.
+- Do not add any further Chrome or host permissions unless a focused browser failure proves they are necessary. If a permission is added, document the minimum needed permission, why existing permissions failed, user-facing impact, Chrome behavior being relied on, and exact validation evidence.
 - API calls must continue to use only the configured API instance origin and extension bearer session token.
 
 ## Migration And Backwards Compatibility
@@ -539,6 +540,7 @@ Completed on 2026-07-07.
 - Confirmed the first observed browser failure from plan `100`: automatic click capture reached `chrome.tabs.captureVisibleTab`, then Chrome rejected the call with `Either the '<all_urls>' or 'activeTab' permission is required.` No upload/event route was reached in plan `100`.
 - Added `apps/extension/src/manifest.test.ts` to lock the Manifest V3 permission boundary:
   - `host_permissions` must contain `"<all_urls>"` for persistent background visible-tab screenshot capture;
+  - Chrome permissions must remain exactly `activeTab`, `storage`, and `tabs`;
   - content script injection must stay scoped to `http://*/*` and `https://*/*`.
 - Observed the expected red test before changing the manifest:
   - `rtk pnpm --filter extension test -- src/manifest.test.ts` failed because `host_permissions` only contained `http://*/*` and `https://*/*`.
@@ -615,11 +617,24 @@ Security/privacy verification:
 - Extension-created events preserved `input_value_redacted: true`.
 - Content script injection remained limited to HTTP/HTTPS match patterns even though visible-tab screenshot permission now uses `"<all_urls>"`.
 
+Closeout recheck on 2026-07-07:
+
+- Fixed stale security-plan wording that still prohibited broadening beyond `http://*/*` and `https://*/*` after this phase had intentionally moved `host_permissions` to `"<all_urls>"`.
+- Tightened `apps/extension/src/manifest.test.ts` so it now asserts the exact host permission set and exact Chrome permission set, preventing accidental permission creep.
+- Confirmed generated `apps/extension/dist/manifest.json` contains `host_permissions: ["<all_urls>"]`, permissions `["activeTab", "storage", "tabs"]`, and HTTP/HTTPS-only content script matches.
+- Re-ran focused closeout verification:
+  - `rtk pnpm --filter extension test -- src/manifest.test.ts src/lib/screenshot.test.ts src/lib/automatic-capture.test.ts src/lib/content-click-capture.test.ts src/lib/api.test.ts src/App.test.tsx` passed with 6 files and 61 tests;
+  - `rtk pnpm --filter extension check-types` passed;
+  - `rtk pnpm --filter extension lint` passed;
+  - `rtk pnpm --filter extension build` passed;
+  - generated manifest inspection passed;
+  - `rtk pnpm --filter extension test` passed with 10 files and 85 tests.
+
 ## Leftovers
 
 - True Chrome toolbar-popup manual capture still needs an explicit human or browser-driver path that can operate the real extension action popup. Agent-browser direct extension-page automation cannot prove the toolbar-popup context by itself.
+- Child plan `102` should inherit the reminder that plan `100` already validated configured split-origin portal URLs once, while formal finish/open portal closeout remains unstarted. This phase did not change portal URL logic.
 - Child plan `103` should use the working screenshot-backed event path to refresh final extension evidence/screenshots if that plan still requires user-facing artifacts.
-- Child plan `102` should continue to verify split-origin portal open/finish behavior. This phase did not change portal URL logic.
 
 ## Handoff Notes
 
