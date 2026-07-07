@@ -188,7 +188,7 @@ Acceptance:
 
 ### 101: Extension Capture Upload And Event Fix
 
-Status: Planned
+Status: Completed on 2026-07-07
 
 File:
 
@@ -523,7 +523,7 @@ Acceptance:
 - [x] Expand and recheck child plan `100`.
 - [x] Implement and close child plan `100`.
 - [x] Expand and recheck child plan `101`.
-- [ ] Implement and close child plan `101`.
+- [x] Implement and close child plan `101`.
 - [ ] Expand and recheck child plan `102`.
 - [ ] Implement and close child plan `102`.
 - [ ] Expand and recheck child plan `103`.

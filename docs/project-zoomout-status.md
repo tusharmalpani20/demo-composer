@@ -95,17 +95,17 @@ Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-2
 - Capture session creation with active-tab metadata.
 - Active capture restoration.
 - Visible-tab screenshot upload.
-- Automatic click capture MVP exists in code/tests, but manual dogfood currently failed to produce browser events/files.
-- Manual screenshot fallback exists in code/tests, but manual dogfood currently failed to upload or create an event.
+- Automatic click capture MVP exists in code/tests and produced a screenshot-backed `click` event in plan 101 browser validation on 2026-07-07.
+- Manual screenshot fallback exists in code/tests and produced a screenshot-backed `capture` event from direct extension-page automation in plan 101 browser validation on 2026-07-07; true toolbar-popup manual validation remains pending.
 - Pause/resume and finish behavior; finish completed the backend session in dogfood.
-- Finish-to-portal flow exists, but split API/web dogfood opened API-origin URLs instead of the web portal.
+- Finish-to-portal flow exists; plan 100 validated the configured portal origin in the tested split API/web path, with plan 102 owning formal closeout.
 - Focused popup/content/background tests.
 
 ## Known Gaps
 
 - Manual portal dogfood found non-blocking guide editor and local dev URL friction that should feed the next hardening phases.
-- Manual Chrome extension dogfood smoke is blocked by automatic capture and manual fallback failures.
-- Captured-workflow extension screenshots are pending until extension dogfood has a passing or explicitly bounded capture path.
+- Chrome extension dogfood is no longer blocked at upload/event creation for the validated automatic click path; true toolbar-popup manual validation and final captured-workflow screenshots are still pending.
+- Captured-workflow extension screenshots are pending until the final extension evidence pass records the full workflow from a validated browser path.
 - HTML capture/replay is deferred.
 - AI/BYO-key authoring is deferred.
 - Analytics, lead capture, sales tracking, and custom branding are deferred.

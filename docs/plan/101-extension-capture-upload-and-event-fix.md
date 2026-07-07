@@ -4,7 +4,7 @@ Date: 2026-07-07
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -514,39 +514,117 @@ Do not update README screenshots or broader product dogfood evidence in this pha
 
 ## Completion Checklist
 
-- [ ] Plan `100` findings used as the implementation source of truth.
-- [ ] Worktree state checked before edits.
-- [ ] Screenshot permission/context failure reproduced or clearly explained before fixing.
-- [ ] Automatic click capture failure fixed or explicitly bounded with current evidence.
-- [ ] Manual screenshot fallback failure fixed or explicitly bounded with current evidence.
-- [ ] No raw input values, DOM HTML, or screenshot binaries are logged/committed.
-- [ ] Extension permissions are unchanged or any permission change is minimal, documented, and tested.
-- [ ] Focused tests cover screenshot capture, automatic capture, manual capture, sensitive-field skipping, API payload privacy, and failure behavior as relevant.
-- [ ] Extension typecheck, lint, test, and build completed.
-- [ ] Browser validation proves at least one automatic screenshot-backed `click` event.
-- [ ] Browser validation proves at least one manual screenshot-backed `capture` event from the real toolbar popup or documents an exact blocker.
-- [ ] Browser validation proves sensitive-field clicks do not create assets/events.
-- [ ] Server-side asset/event evidence recorded.
-- [ ] README/status docs updated only where behavior/status changed.
-- [ ] Plan `101` updated with status, implementation log, verification notes, leftovers, and handoff notes.
-- [ ] Parent master plan updated only for completed phase status.
+- [x] Plan `100` findings used as the implementation source of truth.
+- [x] Worktree state checked before edits.
+- [x] Screenshot permission/context failure reproduced or clearly explained before fixing.
+- [x] Automatic click capture failure fixed or explicitly bounded with current evidence.
+- [x] Manual screenshot fallback failure fixed or explicitly bounded with current evidence.
+- [x] No raw input values, DOM HTML, or screenshot binaries are logged/committed.
+- [x] Extension permissions are unchanged or any permission change is minimal, documented, and tested.
+- [x] Focused tests cover screenshot capture, automatic capture, manual capture, sensitive-field skipping, API payload privacy, and failure behavior as relevant.
+- [x] Extension typecheck, lint, test, and build completed.
+- [x] Browser validation proves at least one automatic screenshot-backed `click` event.
+- [x] Browser validation proves at least one manual screenshot-backed `capture` event from the real toolbar popup or documents an exact blocker.
+- [x] Browser validation proves sensitive-field clicks do not create assets/events.
+- [x] Server-side asset/event evidence recorded.
+- [x] README/status docs updated only where behavior/status changed.
+- [x] Plan `101` updated with status, implementation log, verification notes, leftovers, and handoff notes.
+- [x] Parent master plan updated only for completed phase status.
 
 ## Implementation Log
 
-To be completed during implementation.
+Completed on 2026-07-07.
+
+- Re-read this plan, master plan `004`, and plan `100` evidence before editing.
+- Confirmed the first observed browser failure from plan `100`: automatic click capture reached `chrome.tabs.captureVisibleTab`, then Chrome rejected the call with `Either the '<all_urls>' or 'activeTab' permission is required.` No upload/event route was reached in plan `100`.
+- Added `apps/extension/src/manifest.test.ts` to lock the Manifest V3 permission boundary:
+  - `host_permissions` must contain `"<all_urls>"` for persistent background visible-tab screenshot capture;
+  - content script injection must stay scoped to `http://*/*` and `https://*/*`.
+- Observed the expected red test before changing the manifest:
+  - `rtk pnpm --filter extension test -- src/manifest.test.ts` failed because `host_permissions` only contained `http://*/*` and `https://*/*`.
+- Updated `apps/extension/public/manifest.json` so `host_permissions` uses `"<all_urls>"`.
+- Updated `apps/extension/README.md` to document the deliberate permission expansion and to clarify that content scripts still run only on HTTP/HTTPS pages and do not collect DOM HTML or raw input values.
+- During browser validation, the direct extension-page manual screenshot path exposed a secondary reliability issue: `chrome.tabs.captureVisibleTab` could remain pending and leave the popup stuck in `Capturing...`.
+- Added a focused timeout regression test in `apps/extension/src/lib/screenshot.test.ts`, observed the red behavior, then updated `apps/extension/src/lib/screenshot.ts` to bound visible-tab capture with a 10-second timeout and a retryable `Screenshot capture timed out.` error.
+- No server, shared-package, route, schema, database, or visible UI changes were required.
 
 ## Verification Notes
 
-To be completed during implementation.
+Required static/focused verification:
+
+```bash
+rtk pnpm --filter extension test -- src/manifest.test.ts
+```
+
+Result: passed after the manifest change; failed before the change for the intended missing `"<all_urls>"` assertion.
+
+```bash
+rtk pnpm --filter extension test -- src/lib/screenshot.test.ts
+```
+
+Result: passed after adding the capture timeout.
+
+```bash
+rtk pnpm --filter extension test -- src/manifest.test.ts src/lib/screenshot.test.ts src/lib/automatic-capture.test.ts src/lib/content-click-capture.test.ts src/lib/api.test.ts src/App.test.tsx
+```
+
+Result: passed, 6 files and 61 tests.
+
+```bash
+rtk pnpm --filter extension check-types
+rtk pnpm --filter extension lint
+rtk pnpm --filter extension build
+rtk pnpm --filter extension test
+```
+
+Result: all passed. Full extension suite passed with 10 files and 85 tests.
+
+Testing DB/browser setup:
+
+- API origin: `http://localhost:4021`, using the server testing environment and a disposable testing DB reset with `test:db:drop`, `test:db:create`, and `test:migrate`.
+- Safe test page: `http://127.0.0.1:4177/`, served from a temporary in-memory local HTTP server with one button, one input, one textarea, and one contenteditable element.
+- Extension build path: `apps/extension/dist`.
+- Browser driver: `agent-browser` with unpacked extension path `/home/tm/Desktop/work/demo_composer_v2/apps/extension/dist`.
+- Extension ID observed: `cohepadogfeidambknedbdflmcjepaam`.
+- Project: `Plan 101 Extension Project`, project ID `01KWX86YDZ7FNV7GVW33ASEFP7`.
+
+Browser validation evidence:
+
+- Fresh rebuilt-extension capture session: `01KWX8QVJPWRX93CA55HSBNYJ2`.
+- Automatic supported safe-page click created:
+  - `asset_count: 1`;
+  - `event_count: 1`;
+  - `event_type: "click"`;
+  - `event_index: 1`;
+  - linked asset present;
+  - `input_value_redacted: true`;
+  - `page_url: "http://127.0.0.1:4177/"`.
+- Sensitive-field clicks on the input and contenteditable safe-page elements did not create additional events in the first browser run; event count stayed at `1` with only the `click` event.
+- Paused automatic capture suppressed a supported button click in the first browser run; event count stayed at `1`.
+- Manual screenshot capture from the direct extension-page automation path created:
+  - final `asset_count: 2`;
+  - final `event_count: 2`;
+  - ordered events `click` step `1` and `capture` step `2`;
+  - linked asset present for both events;
+  - `input_value_redacted: true` for both events.
+- Direct extension-page manual evidence is not the same as a true toolbar-popup validation. The environment did not expose Chrome toolbar popup automation through agent-browser, so this phase records direct extension-page success plus the exact remaining toolbar-popup validation carry-forward.
+
+Security/privacy verification:
+
+- No bearer token, cookie, screenshot binary, raw DOM HTML, or raw input value was committed.
+- Extension-created events preserved `input_value_redacted: true`.
+- Content script injection remained limited to HTTP/HTTPS match patterns even though visible-tab screenshot permission now uses `"<all_urls>"`.
 
 ## Leftovers
 
-To be completed during implementation.
+- True Chrome toolbar-popup manual capture still needs an explicit human or browser-driver path that can operate the real extension action popup. Agent-browser direct extension-page automation cannot prove the toolbar-popup context by itself.
+- Child plan `103` should use the working screenshot-backed event path to refresh final extension evidence/screenshots if that plan still requires user-facing artifacts.
+- Child plan `102` should continue to verify split-origin portal open/finish behavior. This phase did not change portal URL logic.
 
 ## Handoff Notes
 
 Child plan `102` owns split-origin finish/open portal verification and should consume any portal-origin regression observed while validating this capture fix. Current plan `100` evidence says split-origin active open and finish already use `portalUrl` in the tested path.
 
-Child plan `103` owns final extension browser evidence and screenshots after this phase proves screenshot-backed automatic and manual capture events, or after this phase documents a deliberately bounded limitation.
+Child plan `103` owns final extension browser evidence and screenshots after this phase proved screenshot-backed automatic and direct extension-page manual capture events. If true toolbar-popup manual capture remains required, it should be run with a driver or manual path that can operate the actual Chrome extension action popup.
 
 Child plan `107` owns extension popup refactoring. Do not do broad popup restructuring in this phase unless it is the smallest reliable way to fix the capture failure.
