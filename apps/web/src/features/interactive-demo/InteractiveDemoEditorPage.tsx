@@ -3,7 +3,6 @@ import {
   DEMO_HOTSPOT_TYPES,
   INTERACTIVE_DEMO_STATUSES,
   PUBLISH_VISIBILITIES,
-  type PublishVisibility,
 } from "@repo/constants";
 import { Badge } from "@repo/ui/badge";
 import { Button } from "@repo/ui/button";
@@ -41,6 +40,27 @@ import {
 } from "../../lib/api";
 import { currentBrowserPath, signInUrl } from "../auth/navigation";
 import { PortalTopbar } from "../portal/PortalTopbar";
+import {
+  absolutePortalUrl,
+  demoDraftFromDemo,
+  embedUrlFromPublicUrl,
+  expiryInputToIso,
+  hotspotDraftFromHotspot,
+  hotspotDraftsFromHotspots,
+  iframeEmbedCode,
+  publishDraftFromStatus,
+  sceneAssetFileUrl,
+  sceneDraftsFromScenes,
+  sortedHotspots,
+  sortedScenes,
+  sourceCaptureUrl,
+  unpublishedStatus,
+  validHotspotBox,
+  type DemoDraft,
+  type HotspotDraft,
+  type PublishDraft,
+  type SceneDraft,
+} from "./interactiveDemoEditorHelpers";
 import type {
   CreateDemoHotspotInput,
   DemoHotspot,
@@ -68,34 +88,6 @@ type LoadState =
   | { status: "unauthenticated" }
   | { status: "not_found" }
   | { status: "error" };
-
-type DemoDraft = {
-  title: string;
-  description: string;
-  status: InteractiveDemo["status"];
-};
-
-type SceneDraft = {
-  title: string;
-  description: string;
-};
-
-type HotspotDraft = {
-  hotspot_type: DemoHotspotType;
-  label: string;
-  content: string;
-  x: string;
-  y: string;
-  width: string;
-  height: string;
-  target_scene_id: string;
-};
-
-type PublishDraft = {
-  visibility: PublishVisibility;
-  expires_at: string;
-  password: string;
-};
 
 export type InteractiveDemoEditorPageProps = {
   projectId: string;
@@ -177,134 +169,6 @@ const loadStateFromError = (error: unknown): LoadState => {
 
   return { status: "error" };
 };
-
-const sortedScenes = (scenes: DemoScene[]) => (
-  [...scenes].sort((left, right) => left.scene_index - right.scene_index)
-);
-
-const demoDraftFromDemo = (demo: InteractiveDemo): DemoDraft => ({
-  title: demo.title,
-  description: demo.description ?? "",
-  status: demo.status,
-});
-
-const sceneDraftsFromScenes = (scenes: DemoScene[]) => scenes.reduce<Record<string, SceneDraft>>((drafts, scene) => {
-  drafts[scene.id] = {
-    title: scene.title ?? "",
-    description: scene.description ?? "",
-  };
-  return drafts;
-}, {});
-
-const sortedHotspots = (hotspots: DemoHotspot[]) => (
-  [...hotspots].sort((left, right) => left.hotspot_index - right.hotspot_index)
-);
-
-const hotspotDraftFromHotspot = (hotspot: DemoHotspot): HotspotDraft => ({
-  hotspot_type: hotspot.hotspot_type,
-  label: hotspot.label ?? "",
-  content: hotspot.content ?? "",
-  x: String(hotspot.x),
-  y: String(hotspot.y),
-  width: String(hotspot.width),
-  height: String(hotspot.height),
-  target_scene_id: hotspot.target_scene_id ?? "",
-});
-
-const hotspotDraftsFromHotspots = (hotspotsBySceneId: Record<string, DemoHotspot[]>) => (
-  Object.values(hotspotsBySceneId).flat().reduce<Record<string, HotspotDraft>>((drafts, hotspot) => {
-    drafts[hotspot.id] = hotspotDraftFromHotspot(hotspot);
-    return drafts;
-  }, {})
-);
-
-const validHotspotBox = (input: Pick<CreateDemoHotspotInput, "x" | "y" | "width" | "height">) => (
-  Number.isFinite(input.x)
-    && Number.isFinite(input.y)
-    && Number.isFinite(input.width)
-    && Number.isFinite(input.height)
-    && input.x >= 0
-    && input.y >= 0
-    && input.width > 0
-    && input.height > 0
-    && input.x + input.width <= 1
-    && input.y + input.height <= 1
-);
-
-const sourceCaptureUrl = (projectId: string, captureSessionId: string) => (
-  `/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(captureSessionId)}`
-);
-
-const sceneAssetFileUrl = (projectId: string, scene: DemoScene) => {
-  if (!scene.source_capture_session_id || !scene.background_capture_asset_id) {
-    return null;
-  }
-
-  return `/api/v1/projects/${encodeURIComponent(projectId)}/capture-sessions/${encodeURIComponent(scene.source_capture_session_id)}/assets/${encodeURIComponent(scene.background_capture_asset_id)}/file`;
-};
-
-const unpublishedStatus = (): InteractiveDemoPublishStatusResponse => ({
-  publish_link: null,
-  published_artifact: null,
-});
-
-const publishDraftFromStatus = (publishStatus: InteractiveDemoPublishStatusResponse): PublishDraft => ({
-  visibility: publishStatus.publish_link?.visibility ?? "public",
-  expires_at: formatExpiryInputValue(publishStatus.publish_link?.expires_at ?? null),
-  password: "",
-});
-
-const formatExpiryInputValue = (expiresAt: string | null) => {
-  if (!expiresAt) {
-    return "";
-  }
-
-  const date = new Date(expiresAt);
-  if (!Number.isFinite(date.getTime())) {
-    return "";
-  }
-
-  const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60_000));
-  return localDate.toISOString().slice(0, 16);
-};
-
-const expiryInputToIso = (value: string) => {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) {
-    return null;
-  }
-
-  return date.toISOString();
-};
-
-const absolutePortalUrl = (pathOrUrl: string) => {
-  if (/^https?:\/\//i.test(pathOrUrl)) {
-    return pathOrUrl;
-  }
-
-  const origin = typeof window === "undefined" ? "" : window.location.origin;
-  return `${origin}${pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`}`;
-};
-
-const embedUrlFromPublicUrl = (pathOrUrl: string) => (
-  `${absolutePortalUrl(pathOrUrl).replace(/\/$/, "")}/embed`
-);
-
-const escapeHtmlAttribute = (value: string) => (
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-);
-
-const iframeEmbedCode = (embedUrl: string, title: string) => (
-  `<iframe src="${escapeHtmlAttribute(embedUrl)}" title="${escapeHtmlAttribute(title)}" loading="lazy"></iframe>`
-);
 
 const defaultCopyText = async (text: string) => {
   if (!navigator.clipboard?.writeText) {
