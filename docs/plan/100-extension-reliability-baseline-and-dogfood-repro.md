@@ -499,6 +499,27 @@ Leftovers for 103:
 
 - Guide/demo artifact redogfood remains blocked until child plan `101` produces an extension-created screenshot-backed event or documents a deliberate limitation.
 
+## Close-Previous Recheck: 2026-07-07
+
+Rechecked after implementation against this child plan, the parent master plan, and the current codebase state.
+
+Result:
+
+- The implemented work is correctly scoped to documentation/status closure for this evidence-first phase.
+- No schema, shared type, route contract, database migration, extension permission, or visible UI change was required or made.
+- The focused extension test/typecheck/lint/build results from implementation remain the relevant verification for the current docs-only closeout.
+- Browser evidence did identify the first failing boundary for automatic capture and manual direct-extension-page capture: screenshot capture fails before upload/event creation.
+- Split-origin active open and finish behavior was browser-validated with the configured `portalUrl`.
+
+Precision gaps found and closed in this recheck:
+
+- The implementation evidence used the direct extension page, not the exact Chrome toolbar popup. This was already mentioned in the evidence, but this recheck makes it an explicit carry-forward item for child plan `101`.
+- The browser run used `https://example.com/` for a supported click and did not include a local safe page with an input field. Existing `content-click-capture` tests cover form/editable skips, but true browser validation of input skipping should be included in child plan `101`.
+- Changing the instance, stale project cleanup, unsafe redirect fallback, and no-portal same-origin fallback are covered by existing extension tests, but were not re-exercised in the browser run. These should be treated as targeted regression checks in child plans `101` and `102` rather than as new plan `100` implementation work.
+- Because screenshot capture failed before upload/event creation, extension-created event privacy semantics were not observed in browser. Existing unit tests cover `input_value_redacted: true`; child plan `101` must revalidate it with a real created event.
+
+No code changes were needed for this recheck.
+
 ## Implementation Steps
 
 1. Re-read this plan and the parent master plan.
@@ -690,6 +711,14 @@ Evidence must state:
 - Queried server-side capture asset/event/detail APIs to classify record creation and session completion.
 - Updated this plan and the parent master plan with completed phase status.
 
+2026-07-07 close-previous recheck:
+
+- Rechecked plan `100` against the parent master plan and current codebase state.
+- Found no required implementation changes, schema changes, API contract changes, UI changes, security changes, permission changes, or migration changes.
+- Clarified that direct extension-page browser automation is not identical to true toolbar-popup validation.
+- Clarified that content-script sensitive-field skipping, change-instance clearing, same-origin portal fallback, and unsafe redirect fallback remain test-covered but should be included as focused follow-up validation in child plans `101` and `102`.
+- Re-ran focused extension tests for the assumptions referenced by this closeout.
+
 ## Verification Notes
 
 Required extension verification:
@@ -736,6 +765,14 @@ rtk agent-browser --session demo-composer-plan-100 --extension /home/tm/Desktop/
 
 Result: passed. Chrome loaded the extension as enabled. Direct extension page automation reached setup, login, project selection, capture start, diagnostics, pause/resume, open portal, and finish capture.
 
+Close-previous focused verification:
+
+```bash
+rtk pnpm --filter extension test -- src/App.test.tsx src/lib/content-click-capture.test.ts src/lib/automatic-capture.test.ts src/lib/api.test.ts
+```
+
+Result: passed, 4 files and 53 tests.
+
 Final handoff verification:
 
 ```bash
@@ -749,14 +786,17 @@ Result: passed. `rtk git status --short` showed only scoped edits to this child 
 
 - Child plan `101` should fix the screenshot capture permission/context failure. The browser failure happens before upload/event creation.
 - Child plan `101` should re-run the capture flow from the actual toolbar popup, because this phase used the direct extension page for popup-app automation.
+- Child plan `101` should use a local safe page with at least one clickable non-input element and one input/editable element, so content-script capture and sensitive-field skipping are both browser-validated.
+- Child plan `101` should confirm `input_value_redacted: true` on a real extension-created event after screenshot capture is fixed.
 - Child plan `102` should treat split-origin portal URLs as passing in the tested path and focus on true toolbar-popup verification/docs closeout unless a new issue appears.
+- Child plan `102` should include focused regression coverage for the no-portal same-origin fallback and unsafe redirect fallback if those paths are not already covered by tests at implementation time.
 - Child plan `103` remains blocked until an extension-created screenshot-backed event exists.
 
 ## Handoff Notes
 
-Child plan `101` should consume automatic click and manual screenshot classifications from this plan. If either path is inconclusive because browser validation was blocked, `101` should start with the missing validation harness before attempting a code fix.
+Child plan `101` should consume automatic click and manual screenshot classifications from this plan. It should start with a true toolbar-popup validation harness and a local safe page that includes both a supported click target and an input/editable field, then fix the screenshot permission/context failure before revalidating upload, event creation, event ordering, and `input_value_redacted: true`.
 
-Child plan `102` should consume split-origin open/finish portal evidence from this plan. If current `portalUrl` support already works in browser validation, `102` should become a verification/docs-close phase rather than a code fix.
+Child plan `102` should consume split-origin open/finish portal evidence from this plan. Current `portalUrl` support worked in browser validation, so `102` should become a verification/docs-close phase unless true toolbar-popup validation finds a new issue. It should still cover same-origin/no-portal fallback and unsafe redirect fallback through tests or browser steps.
 
 Child plan `103` should not start until this plan and any required `101`/`102` fixes produce either a passing extension-created screenshot-backed event or a deliberately bounded limitation with dated evidence.
 
