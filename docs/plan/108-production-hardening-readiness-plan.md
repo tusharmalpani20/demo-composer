@@ -4,7 +4,7 @@ Date: 2026-07-07
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Recheck Notes
 
@@ -575,47 +575,94 @@ This plan should not require browser validation if it stays within the intended 
 
 ## Completion Checklist
 
-- [ ] Worktree checked before edits.
-- [ ] Master plan `004` and completed plan `107` reread.
-- [ ] Production checklist rechecked against current code.
-- [ ] Operations docs rechecked against current scripts and env report behavior.
-- [ ] Self-hosting docs rechecked against current production env expectations.
-- [ ] README, roadmap, project status, backend route inventory, and OSS summary checked for production-readiness consistency.
-- [ ] Rate-limit status documented truthfully as in-memory and not multi-instance safe.
-- [ ] Storage provider status documented truthfully as local-only.
-- [ ] Storage cleanup/retention status documented truthfully as manual/deferred.
-- [ ] Backup/restore rehearsal status documented truthfully as operator-owned unless actually rehearsed.
-- [ ] Dependency audit status documented truthfully.
-- [ ] Extension leftovers from `107` preserved as future work, not hidden as production readiness.
-- [ ] Narrow implemented fixes tested, if any.
-- [ ] Broad leftovers converted into explicit follow-up plan candidates with owner, scope, non-scope, and verification notes.
-- [ ] Browser validation completed or explicitly skipped with a valid reason.
-- [ ] Parent master plan updated only for completed phase status.
+- [x] Worktree checked before edits.
+- [x] Master plan `004` and completed plan `107` reread.
+- [x] Production checklist rechecked against current code.
+- [x] Operations docs rechecked against current scripts and env report behavior.
+- [x] Self-hosting docs rechecked against current production env expectations.
+- [x] README, roadmap, project status, backend route inventory, and OSS summary checked for production-readiness consistency.
+- [x] Rate-limit status documented truthfully as in-memory and not multi-instance safe.
+- [x] Storage provider status documented truthfully as local-only.
+- [x] Storage cleanup/retention status documented truthfully as manual/deferred.
+- [x] Backup/restore rehearsal status documented truthfully as operator-owned unless actually rehearsed.
+- [x] Dependency audit status documented truthfully.
+- [x] Extension leftovers from `107` preserved as future work, not hidden as production readiness.
+- [x] Narrow implemented fixes tested, if any.
+- [x] Broad leftovers converted into explicit follow-up plan candidates with owner, scope, non-scope, and verification notes.
+- [x] Browser validation completed or explicitly skipped with a valid reason.
+- [x] Parent master plan updated only for completed phase status.
 
 ## Implementation Log
 
-To be completed during implementation.
+- Confirmed the pre-edit worktree was clean.
+- Reread this plan, master plan `004`, and completed plan `107` before implementation.
+- Audited the production-readiness docs:
+  - `docs/production-readiness-checklist.md`
+  - `docs/operations.md`
+  - `docs/self-hosting.md`
+  - `docs/roadmap.md`
+  - `docs/project-zoomout-status.md`
+  - `README.md`
+  - `docs/backend-route-inventory.md`
+  - `docs/oss-alpha-summary.md`
+  - `docs/v1-dogfood-smoke-suite.md`
+- Audited the production-hardening server surfaces:
+  - `apps/server/src/app.ts`
+  - `apps/server/src/app.test.ts`
+  - `apps/server/src/config/startup.config.ts`
+  - `apps/server/src/config/production-hardening.config.ts`
+  - `apps/server/src/config/production-env-report.ts`
+  - `apps/server/src/config/production-env-report.test.ts`
+  - `apps/server/src/config/public-web-url.config.ts`
+  - `apps/server/src/config/cors.config.ts`
+  - `apps/server/src/config/cookie.config.ts`
+  - `apps/server/src/ops/production-env-report.ts`
+  - `apps/server/src/modules/file-storage/local-file-storage.provider.ts`
+  - `apps/server/src/modules/file-storage/local-file-storage.provider.test.ts`
+  - `apps/server/src/modules/capture-asset/capture-asset.routes.ts`
+  - `apps/server/src/modules/capture-asset/capture-asset.routes.test.ts`
+  - `apps/server/src/modules/publish/*`
+  - `apps/server/package.json`
+- Audited `.github/workflows/ci.yml` only to confirm it still matches completed child plan `105`: CI runs DB integration tests and the server smoke workflow after separate drop/create/migrate sequences.
+- Determined this implementation is docs-only. The code already matches the intended readiness posture:
+  - production startup validation enforces high-risk production env settings;
+  - health and readiness endpoints are implemented and tested without leaking DB details;
+  - sensitive route families are rate-limited in memory and tests explicitly prove buckets are not shared across app instances;
+  - production env report is server-local and tested to avoid secrets, URL credentials/query values, URL paths, and the raw local storage root;
+  - local file storage validates safe storage keys, upload size, missing bytes, and best-effort deletion behavior;
+  - published asset access is constrained through publish service/routes and covered by publish tests.
+- Left production checklist items unchecked because they are operator/environment-specific and were not verified against a real production deployment during this phase.
+- Did not run DB-backed smoke because this implementation did not change smoke behavior or add new smoke-status claims beyond the already completed child plan `105` wording.
+- Did not run `rtk pnpm audit` because dependency-advisory remediation was not implemented in this phase; dependency review remains an operator/future hardening item.
+- Updated this plan with completed status, audit notes, verification notes, browser-validation notes, explicit follow-up plan candidates, and handoff notes.
+- Updated master plan `004` only for completed child plan `108` status/checklist.
 
 ## Verification Notes
 
-To be completed during implementation.
+- Docs-only verification:
+  - `rtk git diff --check` passed.
+- Repo sanity:
+  - `rtk pnpm check-types` passed.
+- Browser validation was not required because this phase changed only planning/status documentation and did not change browser-visible behavior.
+- Server tests were not required because no server code, config, route behavior, package scripts, storage behavior, production env report output, or API contracts changed.
+- DB-backed smoke was not rerun because no smoke behavior or new smoke-status claim changed in this phase.
 
 ## Browser Validation Notes
 
-To be completed during implementation. Expected outcome: not required if this phase stays docs-only or server-only.
+Browser validation was not required. This phase was a docs-only production-readiness audit and did not change web UI, public viewer behavior, invite acceptance browser behavior, login/session browser behavior, capture upload/browser flows, extension behavior, or portal URL behavior.
 
 ## Leftovers
 
-Expected leftovers unless implementation explicitly creates follow-up plans:
+The audit closed the child plan by making the remaining production-readiness gaps explicit. These are follow-up plan candidates, not completed work:
 
-- Multi-instance/shared rate limiting.
-- Object storage provider support.
-- Dry-run storage inventory and retention cleanup tooling.
-- Automated backup/restore verification.
-- One-command production packaging.
-- Dependency advisory remediation beyond command/status documentation.
-- True Chrome toolbar-popup manual validation.
-- Direct extension-page duplicate event-index follow-up.
+- Owner: server/platform. Scope: replace in-memory rate limiting with shared rate-limit state for multi-instance deployments. Non-scope: changing sensitive route response envelopes or weakening current single-process limits. Verification: focused app/rate-limit tests plus deployment docs for the selected shared backend.
+- Owner: server/storage. Scope: add an object storage provider or provider adapter suitable for production. Non-scope: changing existing local storage keys, published asset URLs, or capture asset contracts without a dedicated migration plan. Verification: storage provider tests, capture asset upload/read tests, publish asset streaming tests, and backup/restore docs.
+- Owner: server/ops. Scope: add dry-run storage inventory and retention cleanup tooling. Non-scope: automatic deletion without explicit destructive opt-in, reference checks, and backup requirements. Verification: dry-run tests across capture assets, guide blocks/snapshots, and interactive demo scenes before any destructive mode is considered.
+- Owner: ops/docs. Scope: automate or script backup/restore rehearsal evidence for PostgreSQL plus local storage. Non-scope: running against live production data or printing credentials. Verification: isolated restore run that checks project access, a capture asset, guide preview, published guide, and interactive demo when present.
+- Owner: platform/release. Scope: one-command production packaging/deployment path. Non-scope: hosted SaaS signup, Kubernetes/Terraform-only deployment assumptions, or changing app runtime behavior. Verification: build, migrate, start, health/readiness, smoke workflow, and rollback/backup notes.
+- Owner: security/maintenance. Scope: recurring dependency audit triage and remediation process. Non-scope: unplanned package upgrades without focused tests. Verification: `rtk pnpm audit`, advisory notes, accepted-risk records, and relevant package test suites.
+- Owner: extension. Scope: true Chrome toolbar-popup manual capture validation. Non-scope: claiming direct extension-page automation as equivalent evidence. Verification: real toolbar/action popup path with screenshot-backed manual `capture` event evidence.
+- Owner: extension. Scope: direct extension-page duplicate event-index follow-up after automatic clicks. Non-scope: broader popup refactor or unrelated extension UX changes. Verification: focused extension tests plus bounded browser validation if runtime capture ordering changes.
 
 ## Handoff Notes
 
@@ -624,3 +671,4 @@ Expected leftovers unless implementation explicitly creates follow-up plans:
 - If the audit finds that current docs already tell the truth, make only the minimum docs/status updates needed and close the plan.
 - If the audit finds a real code gap, keep the fix small, server-local, and test-first.
 - Broad hardening work should become separate future plans instead of being partially implemented here.
+- This phase intentionally did not mark Demo Composer production-ready. It converted the remaining hardening gaps into explicit future plan candidates and preserved the current alpha production warnings.
