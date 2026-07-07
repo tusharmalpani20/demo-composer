@@ -2,7 +2,7 @@
 
 Date: 2026-07-07
 
-Status: Planned.
+Status: Completed and final-audited on 2026-07-07.
 
 Master plan number: 004.
 
@@ -587,7 +587,7 @@ Completed result:
 - [x] Implement and close child plan `107`.
 - [x] Expand and recheck child plan `108`.
 - [x] Implement and close child plan `108`.
-- [ ] Run final track closure against this master plan.
+- [x] Run final track closure against this master plan.
 
 ## 9. Final Closure Requirements
 
@@ -600,3 +600,13 @@ Before this master plan can be marked complete:
 - Docs must reflect the real shared package/domain architecture.
 - Remaining production readiness gaps must be explicit.
 - `rtk git status --short` must be clean after scoped commits.
+
+Final closure result on 2026-07-07:
+
+- Child plans `100` through `108` are all marked completed and include completion checklists, implementation logs, verification notes, leftovers, and handoff notes.
+- Master checklist items are marked complete only for phases that have completed implementation and close-previous review.
+- Extension dogfood and browser-validation evidence remains current in child plans `100`, `101`, `102`, and `103`; true Chrome toolbar-popup manual capture is still documented as an explicit future validation leftover rather than claimed as complete.
+- CI smoke workflow coverage is current in child plan `105` and the CI/docs updates completed there.
+- Architecture docs were synced in child plan `104`; production readiness leftovers are explicit in child plan `108`.
+- The legacy server error-handler TODO remains a documented cleanup note from the baseline and was not treated as completed work in this alpha hardening track.
+- Final closure verification used `rtk git status --short`, child-plan completion-marker review, `rtk git diff --check`, and `rtk pnpm check-types`.
