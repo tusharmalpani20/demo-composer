@@ -14,6 +14,7 @@ type ChromeCaptureApi = {
 };
 
 const png_data_url_pattern = /^data:(image\/png);base64,(.*)$/;
+const screenshot_capture_timeout_ms = 10_000;
 
 const pngBlobFromDataUrl = (dataUrl: string) => {
   const match = png_data_url_pattern.exec(dataUrl);
@@ -63,6 +64,27 @@ const currentDevicePixelRatio = () => (
     : null
 );
 
+const captureVisibleTabWithTimeout = async (
+  captureVisibleTab: NonNullable<NonNullable<ChromeCaptureApi["tabs"]>["captureVisibleTab"]>
+) => {
+  let timeout_id: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      captureVisibleTab({ format: "png" }),
+      new Promise<never>((_resolve, reject) => {
+        timeout_id = setTimeout(() => {
+          reject(new Error("Screenshot capture timed out."));
+        }, screenshot_capture_timeout_ms);
+      }),
+    ]);
+  } finally {
+    if (timeout_id !== undefined) {
+      clearTimeout(timeout_id);
+    }
+  }
+};
+
 export const captureVisibleTabScreenshot = async (): Promise<ScreenshotCapture> => {
   const captureVisibleTab = (globalThis as { chrome?: ChromeCaptureApi }).chrome?.tabs?.captureVisibleTab;
 
@@ -70,7 +92,7 @@ export const captureVisibleTabScreenshot = async (): Promise<ScreenshotCapture> 
     throw new Error("Screenshot capture is unavailable.");
   }
 
-  const dataUrl = await captureVisibleTab({ format: "png" });
+  const dataUrl = await captureVisibleTabWithTimeout(captureVisibleTab);
   const capturedAt = new Date().toISOString();
   const blob = pngBlobFromDataUrl(dataUrl);
   const dimensions = await imageDimensions(blob);

@@ -86,4 +86,19 @@ describe("visible tab screenshot capture", () => {
 
     await expect(captureVisibleTabScreenshot()).rejects.toThrow("Cannot capture this page");
   });
+
+  it("times out when the browser never resolves visible tab capture", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("chrome", {
+      tabs: {
+        captureVisibleTab: vi.fn(() => new Promise<string>(() => undefined)),
+      },
+    });
+
+    const pending_capture = captureVisibleTabScreenshot();
+    const expectation = expect(pending_capture).rejects.toThrow("Screenshot capture timed out.");
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await expectation;
+  });
 });

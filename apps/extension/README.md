@@ -229,6 +229,8 @@ The extension currently requests:
 - `storage` for instance, session, selected project, active capture state, and the latest automatic capture diagnostic
 - `tabs` for active tab URL/title metadata and opening the portal capture detail page after finishing
 - `activeTab` for visible tab screenshot capture
-- `host_permissions` for `http://*/*` and `https://*/*` so the content script can observe supported page clicks
+- `host_permissions` for `<all_urls>` because Chrome requires persistent all-URLs host access for `chrome.tabs.captureVisibleTab` when automatic capture runs from the background worker outside a fresh extension-action invocation
+
+Content script injection is still scoped to `http://*/*` and `https://*/*` pages. The broader host permission is for visible-tab screenshot capture, not for collecting DOM HTML or raw input values.
 
 It does not request `scripting` and does not run on browser-restricted pages such as `chrome://` URLs.
