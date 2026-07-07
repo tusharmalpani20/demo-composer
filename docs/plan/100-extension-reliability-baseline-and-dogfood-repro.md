@@ -4,7 +4,7 @@ Date: 2026-07-07
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -415,6 +415,90 @@ Leftovers for 103:
 
 Use concise evidence. Do not paste secrets or large logs.
 
+## Baseline Evidence: 2026-07-07
+
+Date: 2026-07-07.
+
+Browser: `agent-browser` with Chromium, launched with `--extension /home/tm/Desktop/work/demo_composer_v2/apps/extension/dist`. Chrome reported the unpacked `Demo Composer` extension as enabled at extension ID `cohepadogfeidambknedbdflmcjepaam`.
+
+Extension build: `rtk pnpm --filter extension build` produced `apps/extension/dist` successfully on 2026-07-07.
+
+API origin: `http://localhost:4021`, using the repo's `testing` environment and a disposable `test-dc` database reset through `rtk pnpm --filter server run test:db:drop`, `test:db:create`, and `test:migrate`.
+
+Portal origin: `http://localhost:3000`, using `rtk pnpm --filter web dev`.
+
+Safe test page: `https://example.com/` for a supported non-input click. The current run also used the direct extension page at `chrome-extension://cohepadogfeidambknedbdflmcjepaam/index.html` because `agent-browser` can open the extension page directly. That is close enough for popup-app storage/API behavior, but not identical to a real toolbar popup for screenshot permissions.
+
+Project: disposable project `Plan 100 Extension Project` in the testing database.
+
+Capture session: disposable extension capture session `01KWX73SSPPF4V5WDVPE1SXHGQ`.
+
+Setup/auth:
+
+- result: Passed through the extension UI against the testing API.
+- evidence: the extension saved `instanceUrl: "http://localhost:4021"` and `portalUrl: "http://localhost:3000"`, moved from connect screen to sign-in, signed in with `x-demo-composer-client: extension`, loaded the disposable project, and persisted selected project state. Session token values were intentionally not copied into this plan.
+
+Capture session start and state:
+
+- result: Passed through the extension UI.
+- evidence: `Start automatic capture` created session `01KWX73SSPPF4V5WDVPE1SXHGQ` with local storage fields `activeCaptureProjectId`, `activeCaptureSessionId`, `activeCaptureMode: "automatic"`, `activeCapturePaused: false`, and `activeCaptureEventIndex: 0`.
+
+Automatic click capture:
+
+- content script: Reached the automatic capture path from a supported click on `https://example.com/`.
+- message delivery: Classified as passed enough to reach background screenshot capture.
+- background handling: Classified as passed enough to store an automatic failure diagnostic.
+- screenshot: Failed at `chrome.tabs.captureVisibleTab`.
+- upload: Not reached.
+- event creation: Not reached.
+- diagnostic: `automaticCaptureDiagnostic.status: "failed"` with message `Either the '<all_urls>' or 'activeTab' permission is required.`
+- server records: `GET /assets` returned `200` with `0` assets; `GET /events` returned `200` with `0` events.
+- classification: Reproduced. The first failing boundary is screenshot capture permission/context, not multipart upload or event creation.
+
+Manual screenshot fallback:
+
+- popup context: Exercised through the direct extension page, not the real toolbar popup. This validates popup-app behavior and storage/API wiring, but permission behavior may differ from a pinned toolbar popup.
+- screenshot: Failed before upload with user-facing diagnostic `Could not capture screenshot.`
+- upload: Not reached.
+- event creation: Not reached.
+- diagnostic: `manualCaptureDiagnostic.status: "failed"` with `eventIndex: null`.
+- server records: `GET /assets` returned `200` with `0` assets; `GET /events` returned `200` with `0` events.
+- classification: Reproduced for the automated direct-extension-page path. Child plan `101` must still verify the exact real toolbar popup context after fixing or working around screenshot permissions.
+
+Pause/resume:
+
+- result: Passed.
+- evidence: `Pause automatic capture` set `activeCapturePaused: true` while preserving mode and index; `Resume automatic capture` restored `activeCapturePaused: false` with `activeCaptureMode: "automatic"` and `activeCaptureEventIndex: 0`.
+
+Open/finish portal:
+
+- open active capture: Passed.
+- finish capture: Passed.
+- origin used: both `Open in portal` and `Finish capture` opened `http://localhost:3000/projects/01KWX72MSSX4WG5Z3VHX7D1J9B/capture-sessions/01KWX73SSPPF4V5WDVPE1SXHGQ`, using the configured portal origin rather than the API origin.
+- backend state: the capture session detail route returned `status: "completed"` after finish.
+- local state: finish cleared `activeCaptureSessionId`, `activeCaptureProjectId`, `activeCaptureEventIndex`, and `activeCaptureMode`, preserved `selectedProjectId`, and reset `activeCapturePaused` to `false`.
+- classification: Fixed by current code for the tested split-origin path. Child plan `102` should become verification/docs closeout unless a true toolbar-popup run proves a different failure.
+
+Security/privacy:
+
+- result: Passed for this phase.
+- evidence: no raw input values, DOM HTML, bearer tokens, cookies, screenshots, or binary upload contents were committed. Extension-created event privacy semantics could not be observed in browser because event creation was not reached; existing unit tests still cover `input_value_redacted: true`.
+
+Leftovers for 101:
+
+- Fix or work around the screenshot-capture permission/context failure in the automatic background path.
+- Revalidate automatic capture from a real toolbar-launched capture session after the fix.
+- Revalidate manual capture from the actual toolbar popup, because the direct extension page is not identical for `activeTab` permission behavior.
+- Confirm at least one screenshot asset and one linked event are created server-side for automatic and manual paths.
+
+Leftovers for 102:
+
+- Treat split-origin portal behavior as code-complete in the current tested path. Re-run a focused browser verification from the true toolbar popup and update docs/status rather than changing URL code unless that validation finds a new issue.
+
+Leftovers for 103:
+
+- Guide/demo artifact redogfood remains blocked until child plan `101` produces an extension-created screenshot-backed event or documents a deliberate limitation.
+
 ## Implementation Steps
 
 1. Re-read this plan and the parent master plan.
@@ -574,34 +658,99 @@ Evidence must state:
 
 ## Completion Checklist
 
-- [ ] Current worktree state recorded before execution.
-- [ ] Current extension flow map documented.
-- [ ] Historical dogfood findings revalidated against current code.
-- [ ] Setup/auth/project selection classified.
-- [ ] Capture session start and active state restoration classified.
-- [ ] Automatic click path classified by boundary.
-- [ ] Manual screenshot fallback path classified by boundary.
-- [ ] Pause/resume behavior classified.
-- [ ] Open active capture portal behavior classified.
-- [ ] Finish capture portal behavior classified.
-- [ ] Server-side asset/event evidence recorded or precise absence explained.
-- [ ] Focused verification commands run and recorded.
-- [ ] Browser validation completed or blocker documented.
-- [ ] Security/privacy constraints confirmed.
-- [ ] Follow-up notes carried into child plans `101`, `102`, or `103` as needed.
-- [ ] Parent master plan updated only for completed phase status.
+- [x] Current worktree state recorded before execution.
+- [x] Current extension flow map documented.
+- [x] Historical dogfood findings revalidated against current code.
+- [x] Setup/auth/project selection classified.
+- [x] Capture session start and active state restoration classified.
+- [x] Automatic click path classified by boundary.
+- [x] Manual screenshot fallback path classified by boundary.
+- [x] Pause/resume behavior classified.
+- [x] Open active capture portal behavior classified.
+- [x] Finish capture portal behavior classified.
+- [x] Server-side asset/event evidence recorded or precise absence explained.
+- [x] Focused verification commands run and recorded.
+- [x] Browser validation completed or blocker documented.
+- [x] Security/privacy constraints confirmed.
+- [x] Follow-up notes carried into child plans `101`, `102`, or `103` as needed.
+- [x] Parent master plan updated only for completed phase status.
 
 ## Implementation Log
 
-To be completed during implementation.
+2026-07-07:
+
+- Re-read this plan, the parent master plan, extension README/status docs, prior extension dogfood plans, extension runtime/test files, and relevant server/shared contract files.
+- Confirmed the worktree was clean before scoped changes.
+- Ran required extension verification and build commands.
+- Launched `agent-browser` with the unpacked extension build and confirmed Chrome recognized the `Demo Composer` extension as enabled.
+- Started a disposable testing API on `http://localhost:4021` after resetting only the testing database.
+- Started the web portal on `http://localhost:3000`.
+- Seeded first-run setup and one disposable project through HTTP APIs.
+- Exercised the extension setup, extension login, project selection, automatic capture start, automatic click capture, manual screenshot action, pause/resume, open portal, and finish capture paths.
+- Queried server-side capture asset/event/detail APIs to classify record creation and session completion.
+- Updated this plan and the parent master plan with completed phase status.
 
 ## Verification Notes
 
-To be completed during implementation.
+Required extension verification:
+
+```bash
+rtk pnpm --filter extension test
+```
+
+Result: passed, 9 files and 82 tests.
+
+```bash
+rtk pnpm --filter extension check-types
+```
+
+Result: passed.
+
+```bash
+rtk pnpm --filter extension lint
+```
+
+Result: passed.
+
+```bash
+rtk pnpm --filter extension build
+```
+
+Result: passed and generated `apps/extension/dist`.
+
+Testing database preparation:
+
+```bash
+rtk pnpm --filter server run test:db:drop
+rtk pnpm --filter server run test:db:create
+rtk pnpm --filter server run test:migrate
+```
+
+Result: passed against the testing database (`test-dc` in the local env).
+
+Browser validation:
+
+```bash
+rtk agent-browser --session demo-composer-plan-100 --extension /home/tm/Desktop/work/demo_composer_v2/apps/extension/dist open https://example.com
+```
+
+Result: passed. Chrome loaded the extension as enabled. Direct extension page automation reached setup, login, project selection, capture start, diagnostics, pause/resume, open portal, and finish capture.
+
+Final handoff verification:
+
+```bash
+rtk git diff --check
+rtk git status --short
+```
+
+Result: passed. `rtk git status --short` showed only scoped edits to this child plan and the parent master plan.
 
 ## Leftovers
 
-To be completed during implementation.
+- Child plan `101` should fix the screenshot capture permission/context failure. The browser failure happens before upload/event creation.
+- Child plan `101` should re-run the capture flow from the actual toolbar popup, because this phase used the direct extension page for popup-app automation.
+- Child plan `102` should treat split-origin portal URLs as passing in the tested path and focus on true toolbar-popup verification/docs closeout unless a new issue appears.
+- Child plan `103` remains blocked until an extension-created screenshot-backed event exists.
 
 ## Handoff Notes
 

@@ -147,7 +147,7 @@ New child plans for this track should start at `100`.
 
 ### 100: Extension Reliability Baseline And Dogfood Repro
 
-Status: Planned
+Status: Completed on 2026-07-07
 
 File:
 
@@ -520,8 +520,8 @@ Acceptance:
 
 - [x] Create master plan.
 - [x] Create child plan files `100` through `108`.
-- [ ] Expand and recheck child plan `100`.
-- [ ] Implement and close child plan `100`.
+- [x] Expand and recheck child plan `100`.
+- [x] Implement and close child plan `100`.
 - [ ] Expand and recheck child plan `101`.
 - [ ] Implement and close child plan `101`.
 - [ ] Expand and recheck child plan `102`.
