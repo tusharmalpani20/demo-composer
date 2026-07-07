@@ -2,7 +2,7 @@
 
 Date: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -379,33 +379,87 @@ Likely docs handling:
 
 ## Completion Checklist
 
-- [ ] Current CI workflow inspected.
-- [ ] Current server smoke script and smoke test inspected.
-- [ ] Worktree checked for unrelated changes before editing.
-- [ ] CI smoke placement chosen with reasoning.
-- [ ] CI updated to run `test:smoke` or blocker documented with exact evidence.
-- [ ] DB ordering avoids dirty or concurrent smoke state.
-- [ ] Existing CI coverage preserved.
-- [ ] Focused verification run and recorded.
-- [ ] Any skipped verification has a concrete reason.
-- [ ] Docs updated only where needed.
-- [ ] Parent master plan updated only for completed phase status.
+- [x] Current CI workflow inspected.
+- [x] Current server smoke script and smoke test inspected.
+- [x] Worktree checked for unrelated changes before editing.
+- [x] CI smoke placement chosen with reasoning.
+- [x] CI updated to run `test:smoke` or blocker documented with exact evidence.
+- [x] DB ordering avoids dirty or concurrent smoke state.
+- [x] Existing CI coverage preserved.
+- [x] Focused verification run and recorded.
+- [x] Any skipped verification has a concrete reason.
+- [x] Docs updated only where needed.
+- [x] Parent master plan updated only for completed phase status.
 
 ## Implementation Log
 
-To be completed during implementation.
+Completed on 2026-07-07.
+
+- Confirmed the worktree was clean before implementation.
+- Reread this plan, master plan `004`, and completed plan `104`.
+- Inspected `.github/workflows/ci.yml`, `apps/server/package.json`, the v1 smoke workflow test, DB create/drop/migrate scripts, and development setup notes.
+- Confirmed the current CI workflow had one `verify` job with a Postgres service, test env generation, DB integration tests, typecheck, build, lint, and whitespace checks, but no `test:smoke` execution.
+- Chose to keep smoke coverage in the existing `verify` job rather than creating a separate job because the workflow is already serial and has a dedicated Postgres service.
+- Added an explicit `test:db:drop` before DB integration tests so the DB-backed phase starts from a deterministic database.
+- Added a new `Server smoke workflow` CI step after DB integration tests with its own `test:db:drop`, `test:db:create`, `test:migrate`, and `test:smoke` sequence.
+- Preserved existing server, web, extension, typecheck, build, lint, and whitespace checks.
+- Did not change server product code, routes, schemas, migrations, shared packages, web code, extension code, package scripts, dependencies, lockfiles, or browser-facing UI.
 
 ## Verification Notes
 
-To be completed during implementation.
+Passed before CI edit:
+
+```bash
+rtk pnpm --filter server run test:db:drop
+rtk pnpm --filter server run test:db:create
+rtk pnpm --filter server run test:migrate
+rtk pnpm --filter server run test:smoke
+```
+
+Result:
+
+- The test database was dropped, created, and migrated successfully.
+- `src/smoke/v1-workflows.db.integration.test.ts` passed: 1 test file, 1 test.
+
+Passed after CI edit:
+
+```bash
+rtk pnpm --filter server run test:db:drop
+rtk pnpm --filter server run test:db:create
+rtk pnpm --filter server run test:migrate
+rtk pnpm --filter server run test:db
+rtk pnpm --filter server run test:db:drop
+rtk pnpm --filter server run test:db:create
+rtk pnpm --filter server run test:migrate
+rtk pnpm --filter server run test:smoke
+```
+
+Result:
+
+- DB integration tests passed: 11 test files, 46 tests.
+- V1 smoke workflow passed: 1 test file, 1 test.
+
+Passed:
+
+```bash
+rtk pnpm --filter server check-types
+rtk pnpm check-types
+rtk git diff --check
+rtk ruby -e 'require "yaml"; YAML.load_file(".github/workflows/ci.yml"); puts "workflow yaml parsed"'
+```
+
+Browser validation:
+
+- Not required. This phase changed CI/test infrastructure and plan docs only. The smoke workflow uses Fastify `app.inject`, not browser automation.
 
 ## Leftovers
 
-To be completed during implementation.
+- No implementation leftovers for this phase.
+- CI now runs the existing full server smoke workflow in the main `verify` job after an explicit DB reset.
+- The CI workflow syntax was validated locally with Ruby YAML parsing; GitHub Actions execution will provide the final hosted CI confirmation after push/PR.
 
 ## Handoff Notes
 
-- Prefer the serial reset sequence inside the existing `verify` job unless a separate isolated `server-smoke` job is clearer after inspecting the final workflow.
-- Do not mark this phase complete merely because local smoke passes. The goal is CI coverage, unless a concrete CI blocker is documented and accepted by the master plan.
-- If local Postgres is unavailable during implementation, still update CI only after reasoning from the existing workflow and record the unavailable local infrastructure clearly in verification notes.
-- The next phase after this plan should be able to trust whether CI covers the full server smoke workflow.
+- The CI smoke coverage was implemented in `.github/workflows/ci.yml` using the serial reset sequence inside the existing `verify` job.
+- The next phase can assume CI is configured to exercise first-run setup, project creation, capture, guide/demo generation, publish/public snapshot behavior, invites, and teammate project access through the existing v1 server smoke workflow.
+- If hosted CI later reports a GitHub Actions environment-specific issue, keep that as a CI-environment follow-up rather than reopening product route behavior unless the failure proves a product bug.

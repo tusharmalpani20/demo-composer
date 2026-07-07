@@ -80,9 +80,17 @@ jobs:
 
       - name: Database tests
         run: |
+          pnpm --filter server test:db:drop
           pnpm --filter server test:db:create
           pnpm --filter server test:migrate
           pnpm --filter server test:db
+
+      - name: Server smoke workflow
+        run: |
+          pnpm --filter server test:db:drop
+          pnpm --filter server test:db:create
+          pnpm --filter server test:migrate
+          pnpm --filter server test:smoke
 
       - name: Typecheck
         run: pnpm check-types

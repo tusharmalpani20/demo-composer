@@ -374,7 +374,7 @@ Completed result:
 
 ### 105: CI Smoke Workflow Coverage
 
-Status: Planned
+Status: Completed on 2026-07-07
 
 File:
 
@@ -410,6 +410,12 @@ Acceptance:
 - CI includes full workflow smoke coverage or documents a concrete blocker.
 - The smoke path proves first-run setup, project, capture, guide/demo, publish, and invite behavior.
 - CI remains deterministic.
+
+Completed result:
+
+- `.github/workflows/ci.yml` now runs the existing server `test:smoke` workflow in the main `verify` job.
+- DB-backed CI checks are serial and deterministic: DB integration tests run after an explicit drop/create/migrate sequence, and the smoke workflow runs after a second drop/create/migrate sequence.
+- Focused local verification passed for the serial DB integration plus smoke sequence, server typecheck, repo typecheck, whitespace check, and workflow YAML parsing.
 
 ### 106: Web Large-File Refactor Plan
 
@@ -542,8 +548,8 @@ Acceptance:
 - [x] Implement and close child plan `103`.
 - [x] Expand and recheck child plan `104`.
 - [x] Implement and close child plan `104`.
-- [ ] Expand and recheck child plan `105`.
-- [ ] Implement and close child plan `105`.
+- [x] Expand and recheck child plan `105`.
+- [x] Implement and close child plan `105`.
 - [ ] Expand and recheck child plan `106`.
 - [ ] Implement and close child plan `106`.
 - [ ] Expand and recheck child plan `107`.
