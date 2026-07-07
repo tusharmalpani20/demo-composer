@@ -522,7 +522,7 @@ Acceptance:
 - [x] Create child plan files `100` through `108`.
 - [x] Expand and recheck child plan `100`.
 - [x] Implement and close child plan `100`.
-- [ ] Expand and recheck child plan `101`.
+- [x] Expand and recheck child plan `101`.
 - [ ] Implement and close child plan `101`.
 - [ ] Expand and recheck child plan `102`.
 - [ ] Implement and close child plan `102`.
