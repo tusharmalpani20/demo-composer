@@ -70,6 +70,17 @@ describe("popup helpers", () => {
     });
   });
 
+  it("preserves an explicit null user agent override", () => {
+    expect(buildCaptureSessionInput({
+      project: null,
+      tab: tab({ title: "Example Page", url: "https://example.com/path" }),
+      userAgent: null,
+    })).toMatchObject({
+      browser_name: null,
+      user_agent: null,
+    });
+  });
+
   it("formats screenshot filenames and browser names", () => {
     expect(screenshotFileName("2026-06-05T10:00:00.000Z")).toBe(
       "screenshot-2026-06-05T10-00-00-000Z.png",

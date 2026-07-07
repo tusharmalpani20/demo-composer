@@ -49,7 +49,9 @@ export const buildCaptureSessionInput = (input: {
   tab: CurrentTabSnapshot;
   userAgent?: string | null;
 }): CreateCaptureSessionInput => {
-  const userAgent = input.userAgent ?? (typeof navigator === "undefined" ? null : navigator.userAgent);
+  const userAgent = Object.hasOwn(input, "userAgent")
+    ? input.userAgent ?? null
+    : typeof navigator === "undefined" ? null : navigator.userAgent;
 
   return {
     name: buildCaptureName(input),
