@@ -4,7 +4,7 @@ Date: 2026-07-07
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -590,40 +590,96 @@ Validate enough mocked/local API calls to prove the split did not break app load
 
 ## Completion Checklist
 
-- [ ] Worktree checked before edits.
-- [ ] Current 105 result, plan 097, and master 004 reread.
-- [ ] Refactor slices selected and documented.
-- [ ] API client compatibility preserved if touched.
-- [ ] Guide editor behavior preserved if touched.
-- [ ] Interactive demo editor behavior preserved if touched.
-- [ ] Route behavior preserved.
-- [ ] CSS modules/classes unchanged or mechanically preserved.
-- [ ] Focused tests run for every touched slice.
-- [ ] Web typecheck, lint, and whitespace verification run.
-- [ ] Web build run if imports/CSS/component boundaries changed.
-- [ ] Browser validation completed or explicitly skipped with a valid reason.
-- [ ] Parent master plan updated only for completed phase status.
-- [ ] Leftovers and next-phase handoff documented.
+- [x] Worktree checked before edits.
+- [x] Current 105 result, plan 097, and master 004 reread.
+- [x] Refactor slices selected and documented.
+- [x] API client compatibility preserved if touched.
+- [x] Guide editor behavior preserved if touched.
+- [x] Interactive demo editor behavior preserved if touched.
+- [x] Route behavior preserved.
+- [x] CSS modules/classes unchanged or mechanically preserved.
+- [x] Focused tests run for every touched slice.
+- [x] Web typecheck, lint, and whitespace verification run.
+- [x] Web build run if imports/CSS/component boundaries changed.
+- [x] Browser validation completed or explicitly skipped with a valid reason.
+- [x] Parent master plan updated only for completed phase status.
+- [x] Leftovers and next-phase handoff documented.
 
 ## Implementation Log
 
-To be completed during implementation.
+- Confirmed the pre-edit worktree contained only the two newly added red helper tests for this phase.
+- Ran the focused baseline before implementation:
+  - `rtk pnpm --filter web test -- api GuideEditorPage InteractiveDemoEditorPage routes`
+  - `rtk pnpm --filter web check-types`
+- Chose the lowest-risk slice from the plan: pure helper extraction from the guide and interactive demo editor pages. This avoided rendered JSX, event handler, route, CSS, API client, and API orchestration changes.
+- Added red tests for the new helper module contracts:
+  - `apps/web/src/features/guide/guideEditorHelpers.test.ts`
+  - `apps/web/src/features/interactive-demo/interactiveDemoEditorHelpers.test.ts`
+- Confirmed the red state with `rtk pnpm --filter web test -- guideEditorHelpers interactiveDemoEditorHelpers`; Vite failed to resolve the missing helper modules as expected.
+- Added `apps/web/src/features/guide/guideEditorHelpers.ts` and moved guide editor pure helpers/types into it:
+  - block sorting
+  - asset display/alt labels
+  - captured-at formatting
+  - screenshot viewer IDs
+  - block asset lookup
+  - step/content draft derivation
+  - immutable step/block replacement helpers
+  - annotation helpers
+  - percent formatting
+  - selected asset merge helper
+  - default block input creation
+- Updated `apps/web/src/features/guide/GuideEditorPage.tsx` to import the extracted helpers while leaving rendering, mutation handlers, API calls, route behavior, copy, CSS classes, and page props unchanged.
+- Added `apps/web/src/features/interactive-demo/interactiveDemoEditorHelpers.ts` and moved interactive demo pure helpers/types into it:
+  - scene and hotspot sorting
+  - demo/scene/hotspot/publish draft derivation
+  - hotspot box validation
+  - source capture and scene asset URL helpers
+  - unpublished publish status fallback
+  - expiry input formatting/parsing
+  - portal URL, embed URL, HTML attribute escaping, and iframe embed code helpers
+- Updated `apps/web/src/features/interactive-demo/InteractiveDemoEditorPage.tsx` to import the extracted helpers while leaving rendering, mutation handlers, API calls, route behavior, copy, CSS classes, and page props unchanged.
+- Tightened helper test fixtures to match the current shared `@repo/types` guide/demo contracts instead of using partial object casts.
+- Resulting file-size movement:
+  - `GuideEditorPage.tsx`: from the planned baseline of 2059 lines to 1909 lines.
+  - `guideEditorHelpers.ts`: 177 lines.
+  - `InteractiveDemoEditorPage.tsx`: from the planned baseline of 1369 lines to 1233 lines.
+  - `interactiveDemoEditorHelpers.ts`: 165 lines.
+- Did not split `apps/web/src/lib/api.ts` in this pass because the pure helper slice was coherent, low risk, and independently valuable. API client splitting remains documented as follow-up work.
 
 ## Verification Notes
 
-To be completed during implementation.
+- Baseline before implementation:
+  - `rtk pnpm --filter web test -- api GuideEditorPage InteractiveDemoEditorPage routes` passed: 4 test files, 124 tests.
+  - `rtk pnpm --filter web check-types` passed.
+- Red test confirmation:
+  - `rtk pnpm --filter web test -- guideEditorHelpers interactiveDemoEditorHelpers` failed before helper modules existed, as expected.
+- Focused helper tests after implementation:
+  - `rtk pnpm --filter web test -- guideEditorHelpers interactiveDemoEditorHelpers` passed: 2 test files, 8 tests.
+- Focused editor tests:
+  - `rtk pnpm --filter web test -- GuideEditorPage InteractiveDemoEditorPage GuideScreenshotViewer publishLinks` passed: 4 test files, 55 tests.
+- Final focused combined test run:
+  - `rtk pnpm --filter web test -- guideEditorHelpers interactiveDemoEditorHelpers GuideEditorPage InteractiveDemoEditorPage GuideScreenshotViewer publishLinks` passed: 6 test files, 63 tests.
+- Typecheck:
+  - `rtk pnpm --filter web check-types` passed.
+- Lint:
+  - `rtk pnpm --filter web lint` passed.
+- Build:
+  - `rtk pnpm --filter web build` passed.
+- Whitespace:
+  - `rtk git diff --check` passed.
 
 ## Browser Validation Notes
 
-To be completed during implementation.
+Browser validation was intentionally skipped for this phase because the implementation was limited to pure helper extraction and local helper tests. It did not move or change rendered JSX, event handlers, route navigation behavior, CSS module imports/classes, API client functions, or API orchestration.
 
 ## Leftovers
 
-To be completed during implementation.
+- `apps/web/src/lib/api.ts` is still large and can be split in a later focused plan or continuation slice with `api.test.ts` coverage and barrel compatibility checks.
+- `GuideEditorPage.tsx` and `InteractiveDemoEditorPage.tsx` are still large route-level orchestrators. Deeper panel/component extraction remains possible, but it should be done in smaller follow-up slices with browser validation because rendered JSX and interaction boundaries would move.
+- Existing large tests remain large. Splitting test fixtures/builders can be considered later if it does not weaken coverage or obscure user-facing assertions.
 
 ## Handoff Notes
 
-- Keep this phase behavior-preserving. The point is smaller files and clearer local boundaries, not new UX.
-- Start with `apps/web/src/lib/api.ts` or pure helpers before moving rendered editor markup.
-- Use the completed 105 CI smoke workflow as backend safety coverage, but do not treat it as a substitute for focused web tests or browser validation when frontend behavior moves.
-- If the first implementation pass cannot safely cover all three target areas, stop after the API client plus one editor or after helper extraction only, then document remaining file-size/refactor work as leftovers for a follow-up plan.
+- This phase completed the pure helper extraction slice only. Future work should treat API client splitting and rendered panel/component extraction as separate, explicitly tested slices.
+- If future work moves JSX, event handlers, CSS imports/classes, or editor API orchestration, run agent-browser validation for the affected guide/demo editor paths and record desktop plus narrow viewport results.
+- Preserve the current pattern: shared API DTOs/constants stay in `@repo/types` and `@repo/constants`; browser/page-local drafts and React props stay local to `apps/web`.

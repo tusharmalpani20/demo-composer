@@ -421,7 +421,7 @@ Completed result:
 
 ### 106: Web Large-File Refactor Plan
 
-Status: Planned
+Status: Completed on 2026-07-07
 
 File:
 
@@ -457,6 +457,15 @@ Acceptance:
 - Files are smaller or responsibilities are clearer.
 - No visible UI redesign.
 - Existing guide/demo authoring behavior is preserved.
+
+Completed result:
+
+- Extracted pure guide editor helpers into `apps/web/src/features/guide/guideEditorHelpers.ts` with focused helper tests.
+- Extracted pure interactive demo editor helpers into `apps/web/src/features/interactive-demo/interactiveDemoEditorHelpers.ts` with focused helper tests.
+- Kept rendered JSX, event handlers, CSS classes, routes, API calls, API contracts, and page props unchanged.
+- Reduced `GuideEditorPage.tsx` from the planned baseline of 2059 lines to 1909 lines and `InteractiveDemoEditorPage.tsx` from 1369 lines to 1233 lines.
+- Focused web tests, typecheck, lint, build, and whitespace verification passed.
+- Browser validation was not required because this slice was pure helper extraction only.
 
 ### 107: Extension Popup Refactor Plan
 
@@ -552,8 +561,8 @@ Acceptance:
 - [x] Implement and close child plan `104`.
 - [x] Expand and recheck child plan `105`.
 - [x] Implement and close child plan `105`.
-- [ ] Expand and recheck child plan `106`.
-- [ ] Implement and close child plan `106`.
+- [x] Expand and recheck child plan `106`.
+- [x] Implement and close child plan `106`.
 - [ ] Expand and recheck child plan `107`.
 - [ ] Implement and close child plan `107`.
 - [ ] Expand and recheck child plan `108`.
