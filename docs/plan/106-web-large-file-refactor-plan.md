@@ -2,6 +2,8 @@
 
 Date: 2026-07-07
 
+Last reviewed: 2026-07-07
+
 Status: Planned.
 
 ## Parent Master Plan
@@ -14,179 +16,558 @@ This is child plan `106` of the alpha hardening and extension reliability track.
 
 ## Objective
 
-Reduce risk in the largest web files by splitting responsibilities without changing UI behavior, visual design, route behavior, or API contracts.
+Reduce risk in the largest web authoring and API client files by splitting responsibilities into smaller local modules without changing UI behavior, visual design, route behavior, API contracts, shared package contracts, or browser-visible workflows.
 
-This plan should improve maintainability after the shared contracts/domainization track, not redesign the product.
+This is a maintainability/refactor phase after:
 
-## Current Baseline
+- the shared contracts/domainization track from master plan `003`;
+- web shared contract consumption in child plan `097`;
+- CI server smoke workflow coverage in child plan `105`.
 
-Large web surfaces identified during repo analysis:
+This phase must not redesign the product or add authoring features.
 
-```text
-apps/web/src/features/guide/GuideEditorPage.tsx
-apps/web/src/features/interactive-demo/InteractiveDemoEditorPage.tsx
-apps/web/src/lib/api.ts
+## Source Of Truth From Completed Plan 105
+
+Plan `105` completed on 2026-07-07.
+
+Relevant carry-forward:
+
+- `.github/workflows/ci.yml` now runs the existing server `test:smoke` workflow in the main `verify` job.
+- DB-backed CI checks are serial and deterministic: DB integration tests run after an explicit drop/create/migrate sequence, and the smoke workflow runs after a second drop/create/migrate sequence.
+- Focused local verification passed for the serial DB integration plus smoke sequence, server typecheck, repo typecheck, whitespace check, and workflow YAML parsing.
+- For this phase, web large-file refactors can rely on CI having server smoke coverage, but they still need focused web tests and browser validation if guide/demo editor behavior paths move.
+
+Do not edit server CI or server smoke tests in this phase.
+
+## Recheck Notes
+
+Rechecked on 2026-07-07 against completed plan `105`, master plan `004`, and the current web codebase.
+
+Findings:
+
+- The plan remains aligned with the completed `105` result: CI server smoke coverage is available as backend safety coverage, but web-specific focused tests and browser validation remain required when editor behavior moves.
+- The plan matches master plan `004` by keeping the phase behavior-preserving, local to web internals, and explicitly avoiding UI redesign, API contract changes, shared package expansion, extension changes, and CI changes.
+- No stale assumptions were found that would make implementation unsafe.
+
+## Current Codebase Baseline
+
+Current worktree expectation before implementation:
+
+```bash
+rtk git status --short
 ```
 
-These files have substantial tests and should be refactored only in small, behavior-preserving slices.
+The implementation agent must stop and inspect any uncommitted changes before editing. Do not overwrite user or other-agent changes.
 
-## Exact Files To Read Before Work
+Current largest web files identified for this phase:
 
 ```text
+apps/web/src/features/guide/GuideEditorPage.tsx                    2059 lines
+apps/web/src/features/guide/GuideEditorPage.test.tsx               1939 lines
+apps/web/src/features/interactive-demo/InteractiveDemoEditorPage.tsx 1369 lines
+apps/web/src/lib/api.ts                                            1123 lines
+apps/web/src/lib/api.test.ts                                       2592 lines
+```
+
+Existing relevant tests:
+
+```text
+apps/web/src/features/guide/GuideEditorPage.test.tsx
+apps/web/src/features/interactive-demo/InteractiveDemoEditorPage.test.tsx
+apps/web/src/lib/api.test.ts
+apps/web/src/lib/routes.test.ts
+apps/web/src/App.test.tsx
+```
+
+Current web scripts:
+
+```text
+apps/web/package.json
+
+test        -> vitest run
+check-types -> tsc --noEmit
+lint        -> eslint --max-warnings 0
+build       -> vite build
+dev         -> vite
+```
+
+Current route entry points:
+
+```text
+apps/web/src/App.tsx
+apps/web/src/lib/routes.ts
+```
+
+Editor routes:
+
+```text
+/projects/:projectId/guides/:guideId
+/projects/:projectId/interactive-demos/:interactiveDemoId
+```
+
+Current architecture facts from plan `097`:
+
+- `apps/web/src/lib/api.ts` already imports shared API DTOs directly from `@repo/types/*` for active shared API contracts.
+- `apps/web` already depends on `@repo/constants`, `@repo/types`, and `@repo/ui`.
+- `apps/web` must not depend on backend-only domain packages.
+- Browser-only upload inputs, UI draft state, local route state, and public viewer defensive parsing remain app-local.
+- Guide-named publish aliases in `apps/web/src/features/guide/types.ts` are intentional compatibility aliases and should not be removed mechanically.
+
+## Exact Files To Read Before Implementation
+
+Required:
+
+```text
+docs/plan/106-web-large-file-refactor-plan.md
 docs/plan/master/004-alpha-hardening-and-extension-reliability-master-plan.md
+docs/plan/105-ci-smoke-workflow-coverage.md
 docs/plan/097-web-shared-contract-consumption.md
+apps/web/package.json
+apps/web/src/App.tsx
+apps/web/src/lib/routes.ts
+apps/web/src/lib/routes.test.ts
+apps/web/src/lib/api.ts
+apps/web/src/lib/api.test.ts
 apps/web/src/features/guide/GuideEditorPage.tsx
 apps/web/src/features/guide/GuideEditorPage.test.tsx
 apps/web/src/features/guide/GuideEditorPage.module.css
+apps/web/src/features/guide/GuideScreenshotViewer.tsx
+apps/web/src/features/guide/publishLinks.ts
+apps/web/src/features/guide/types.ts
 apps/web/src/features/interactive-demo/InteractiveDemoEditorPage.tsx
 apps/web/src/features/interactive-demo/InteractiveDemoEditorPage.test.tsx
 apps/web/src/features/interactive-demo/InteractiveDemoEditorPage.module.css
+apps/web/src/features/interactive-demo/types.ts
+```
+
+Read only if an implementation slice touches adjacent behavior:
+
+```text
+apps/web/src/App.test.tsx
+apps/web/src/features/guide/GuidePreviewPage.tsx
+apps/web/src/features/guide/GuidePreviewPage.test.tsx
+apps/web/src/features/guide/ProjectGuideListPage.tsx
+apps/web/src/features/guide/ProjectGuideListPage.test.tsx
+apps/web/src/features/interactive-demo/ProjectInteractiveDemoListPage.tsx
+apps/web/src/features/interactive-demo/ProjectInteractiveDemoListPage.test.tsx
+apps/web/src/features/interactive-demo/PublicInteractiveDemoViewerPage.tsx
+apps/web/src/features/interactive-demo/PublicInteractiveDemoViewerPage.test.tsx
+packages/types/src/**/*
+packages/constants/src/**/*
+```
+
+## Exact Affected Files
+
+Expected implementation files:
+
+```text
 apps/web/src/lib/api.ts
 apps/web/src/lib/api.test.ts
-apps/web/src/lib/routes.ts
-apps/web/src/lib/routes.test.ts
-```
-
-Shared contracts to inspect only when API client code moves:
-
-```text
-packages/types/src/
-packages/constants/src/
-```
-
-## Expected Affected Files
-
-Likely:
-
-```text
 apps/web/src/features/guide/GuideEditorPage.tsx
 apps/web/src/features/guide/GuideEditorPage.test.tsx
 apps/web/src/features/interactive-demo/InteractiveDemoEditorPage.tsx
 apps/web/src/features/interactive-demo/InteractiveDemoEditorPage.test.tsx
-apps/web/src/lib/api.ts
-apps/web/src/lib/api.test.ts
 docs/plan/106-web-large-file-refactor-plan.md
 docs/plan/master/004-alpha-hardening-and-extension-reliability-master-plan.md
 ```
 
-Possible new local modules:
+Likely new local modules, only if the matching slice is implemented:
 
 ```text
-apps/web/src/features/guide/
-apps/web/src/features/interactive-demo/
-apps/web/src/lib/
+apps/web/src/lib/api/core.ts
+apps/web/src/lib/api/auth.ts
+apps/web/src/lib/api/organization.ts
+apps/web/src/lib/api/project.ts
+apps/web/src/lib/api/capture.ts
+apps/web/src/lib/api/guide.ts
+apps/web/src/lib/api/demo.ts
+apps/web/src/lib/api/publish.ts
+apps/web/src/features/guide/guideEditorHelpers.ts
+apps/web/src/features/guide/GuideEditorPublishingPanel.tsx
+apps/web/src/features/guide/GuideEditorBlocks.tsx
+apps/web/src/features/guide/GuideEditorExports.tsx
+apps/web/src/features/guide/GuideEditorScreenshots.tsx
+apps/web/src/features/interactive-demo/interactiveDemoEditorHelpers.ts
+apps/web/src/features/interactive-demo/InteractiveDemoPublishingPanel.tsx
+apps/web/src/features/interactive-demo/InteractiveDemoScenesPanel.tsx
+apps/web/src/features/interactive-demo/InteractiveDemoHotspotsPanel.tsx
 ```
 
-Conditional:
+The exact names may differ, but new files must stay local to `apps/web/src/lib/`, `apps/web/src/features/guide/`, or `apps/web/src/features/interactive-demo/`. Do not create shared packages for React props or page-local state.
+
+Conditional files:
 
 ```text
+apps/web/src/App.tsx
+apps/web/src/App.test.tsx
+apps/web/src/lib/routes.ts
+apps/web/src/lib/routes.test.ts
 apps/web/src/features/guide/GuideEditorPage.module.css
 apps/web/src/features/interactive-demo/InteractiveDemoEditorPage.module.css
+apps/web/src/features/guide/types.ts
+apps/web/src/features/interactive-demo/types.ts
 ```
 
-CSS files should be touched only if moving markup requires class colocation or test selectors. Do not change visual styles.
+CSS modules should be touched only if markup is split into local child components and class imports need to move. Do not change CSS declarations, class names, spacing, colors, layout rules, or visual styling.
+
+Files out of scope unless this plan is revised first:
+
+```text
+apps/server/**/*
+apps/extension/**/*
+apps/docs/**/*
+packages/**/*
+pnpm-lock.yaml
+package.json
+turbo.json
+.github/workflows/**/*
+docs/assets/**/*
+```
 
 ## Routes And API Contracts
 
-No server route changes are in scope.
+No server route, HTTP method, request body, response envelope, public URL, error response, cookie behavior, or route parser behavior change is in scope.
 
-The web API client must continue to call the same API routes and return compatible data for existing callers.
+The API client split must preserve current exported function names and fetch behavior from `apps/web/src/lib/api.ts`, including but not limited to:
 
-If `apps/web/src/lib/api.ts` is split, preserve existing exported function names or provide compatibility re-exports so current feature imports keep working unless a narrow mechanical import update is part of the slice.
+```text
+getPublicInstanceStatus
+completeFirstRunSetup
+getCurrentAuth
+login
+logout
+listOrganizationMembers
+listOrganizationInvites
+createOrganizationInvite
+revokeOrganizationInvite
+getPublicOrganizationInvite
+acceptPublicOrganizationInvite
+listProjects
+createProject
+getProject
+updateProject
+getCaptureSessionDetail
+listProjectCaptureSessions
+createProjectCaptureSession
+uploadCaptureSessionAsset
+createCaptureSessionEvent
+reorderCaptureSessionEvents
+updateCaptureSessionEvent
+getGuideDetail
+exportGuideMarkdown
+exportGuideHtmlZip
+getGuidePublishStatus
+publishGuide
+revokeGuidePublishLink
+updateGuidePublishAccess
+updateGuidePublishPassword
+getPublicPublishLink
+createPublicPublishViewerSession
+listProjectGuides
+listProjectScreenshotAssets
+createGuideFromCaptureSession
+updateGuide
+updateGuideStep
+createGuideBlock
+updateGuideBlock
+updateGuideBlockScreenshot
+updateGuideBlockAnnotations
+uploadGuideBlockScreenshot
+reorderGuideBlocks
+deleteGuideBlock
+createInteractiveDemoFromCaptureSession
+listProjectInteractiveDemos
+getInteractiveDemo
+updateInteractiveDemo
+archiveInteractiveDemo
+listInteractiveDemoScenes
+updateInteractiveDemoScene
+reorderInteractiveDemoScenes
+deleteInteractiveDemoScene
+createInteractiveDemoHotspot
+listInteractiveDemoHotspots
+updateInteractiveDemoHotspot
+reorderInteractiveDemoHotspots
+deleteInteractiveDemoHotspot
+getInteractiveDemoPublishStatus
+publishInteractiveDemo
+revokeInteractiveDemoPublishLink
+updateInteractiveDemoPublishAccess
+updateInteractiveDemoPublishPassword
+resolveApiAssetUrl
+ApiClientError
+```
+
+If `apps/web/src/lib/api.ts` is split, keep it as a compatibility barrel unless every import site is updated in the same slice. Existing callers should continue importing from `../../lib/api` or `./api` unless a slice explicitly documents and verifies a mechanical import update.
+
+Routes currently parsed in `apps/web/src/lib/routes.ts` must remain compatible:
+
+```text
+/projects/:projectId/guides/:guideId
+/projects/:projectId/guides/:guideId/preview
+/projects/:projectId/guides
+/projects/:projectId/interactive-demos/:interactiveDemoId
+/projects/:projectId/interactive-demos
+/p/:slug
+/p/:slug/embed
+/d/:slug
+/d/:slug/embed
+```
+
+Do not touch route parsing unless a split import forces a mechanical move. If route parsing changes, run `routes.test.ts`, `App.test.tsx`, and browser validation for affected routes.
 
 ## Schemas And Types
 
-- Keep public API DTO usage aligned with `@repo/types`.
+No shared schema, Zod contract, domain package, or API DTO change is expected.
+
+Rules:
+
+- Keep API DTO imports aligned with `@repo/types/*` as established by plan `097`.
+- Keep `@repo/constants` usage for current domain constants already consumed by web.
 - Do not move React component props into `@repo/types`.
-- Do not add new shared package exports unless a real cross-package reuse need is proven.
-- Prefer feature-local types for guide/demo editor state.
-- Preserve current inferred DTO imports and response handling.
+- Do not add `@repo/*-domain` dependencies to `apps/web`.
+- Keep page-local load states, draft states, pending action strings, modal state, and browser-only helper types local.
+- Keep browser `File`, `Blob`, `FormData`, clipboard, object URL, and download helper inputs local to web.
+- Keep public guide/demo snapshot defensive parsing local unless a separate plan adds shared runtime schemas and public-viewer tests.
+- Avoid `any` and broad casts. If a cast is needed for DOM/browser APIs or public snapshot parsing, keep it narrow and documented by surrounding code/tests.
+
+Current local type areas to preserve:
+
+```text
+GuideEditorPageProps
+LoadState / PublishState / GuideDraft / StepDraft / BlockContentDraft
+InteractiveDemoEditorPageProps
+DemoDraft / SceneDraft / HotspotDraft / PublishDraft
+UploadCaptureAssetInput
+UploadGuideBlockScreenshotInput
+ProjectScreenshotAssetListResponse
+guide publish compatibility aliases in apps/web/src/features/guide/types.ts
+```
 
 ## Behavior Rules
 
+Preserve all visible and workflow behavior:
+
 - No UI redesign.
-- No visible layout, copy, color, spacing, icon, or interaction changes.
-- No route/navigation behavior changes.
-- No API behavior changes.
-- No change to guide block editing semantics.
-- No change to interactive demo scene/hotspot/transition editing semantics.
-- Refactor one file or feature area at a time.
-- Keep PR/commit slices small enough to review.
+- No visible layout, copy, color, spacing, icon, class name, keyboard behavior, or navigation changes.
+- No route parser or browser URL changes.
+- No API path, method, request body, response parsing, or error classification changes.
+- No change to `credentials: "include"` on JSON/blob API requests.
+- No change to auth, setup gate, login `nextPath`, logout, organization invite, or public viewer flows.
+- No change to guide editor metadata saving, step/block editing, block ordering, block deletion, screenshot picker, screenshot upload, screenshot annotations, screenshot viewer, markdown/HTML export, publish, revoke, access, password, copy-link, or embed behavior.
+- No change to interactive demo metadata saving, scene editing, scene ordering, scene deletion, hotspot editing, hotspot ordering, publish, revoke, access, password, copy-link, or embed behavior.
+- No change to archived/read-only behavior for guide or demo editors.
+- No change to error messages, loading messages, empty states, or retry controls.
+- Do not add new UI components from `@repo/ui` unless extracting existing markup requires moving existing imports.
+- Keep slices small: one API client domain split or one editor responsibility split per commit.
 
 ## Security And Permission Rules
 
-- Do not weaken auth handling in the API client.
-- Preserve credential/cookie behavior.
-- Do not expose public/private publish state incorrectly.
-- Do not remove validation or error handling that protects destructive actions.
+Do not weaken:
 
-## Migration And Backwards Compatibility
+- same-origin credential handling;
+- auth error classification for `unauthenticated`;
+- not-found handling;
+- project/capture/guide/demo/publish ID URL encoding;
+- organization invite token URL encoding;
+- login `nextPath` handling;
+- public publish viewer password/session handling;
+- multipart upload field names and metadata handling;
+- public asset URL resolution via `resolveApiAssetUrl`;
+- public guide/demo snapshot defensive parsing.
+
+Do not log tokens, cookies, invite tokens, published private data, passwords, raw file contents, screenshot bytes, or API response bodies during browser validation.
+
+## Migration And Backwards Compatibility Notes
 
 No database migration is expected.
 
-Backwards compatibility expectations:
+No backend migration is expected.
 
-- Existing component tests should keep asserting the same user-facing behavior.
-- Existing imports should either keep working or be updated mechanically in the same small slice.
-- Existing CSS class behavior should remain visually identical.
+No package dependency or lockfile change is expected.
+
+Backwards compatibility requirements:
+
+- Existing `apps/web/src/lib/api.ts` exports remain available.
+- Existing page component props remain stable unless tests prove every caller changed safely.
+- Existing feature barrel exports remain stable.
+- Existing CSS module class names remain stable.
+- Existing route paths remain stable.
+- Existing tests should continue asserting the same user-facing behavior.
 
 ## Implementation Strategy
 
-This plan should be expanded into smaller implementation slices before code changes.
+This phase is allowed to refactor more than one target file, but it must be done in small logical commits. Do not move all large files in one edit.
 
 Recommended order:
 
-1. API client split:
-   - separate capture, guide, demo, publish, project, auth, and organization clients if local patterns support it;
-   - keep `apps/web/src/lib/api.ts` as a compatibility barrel if useful.
-2. Guide editor split:
-   - extract pure helpers first;
-   - then local hooks;
-   - then presentational subcomponents only where tests can protect behavior.
-3. Interactive demo editor split:
-   - extract geometry/state helpers first;
-   - then local hooks;
-   - then presentational subcomponents.
+1. API client split first:
+   - Extract low-level request helpers into a local `apps/web/src/lib/api/core.ts` or equivalent.
+   - Extract domain-specific API functions into local modules by active domain: auth/setup/instance, organization, project, capture, guide, demo, publish.
+   - Keep `apps/web/src/lib/api.ts` as a compatibility barrel exporting the same names.
+   - Keep `api.test.ts` passing against the public barrel unless tests are intentionally split by domain.
+2. Guide editor helper split:
+   - Extract pure helper functions first, such as sorting, draft derivation, asset labels, date formatting, publish error mapping, screenshot viewer IDs, annotation formatting, and default block input creation.
+   - Add focused helper tests only where behavior is not already covered by `GuideEditorPage.test.tsx`.
+3. Guide editor UI/state split:
+   - Extract small local child components or hooks only after helper extraction is green.
+   - Prefer boundaries around publishing panel, export controls, block list/block editor, screenshot picker/upload/annotation UI, and screenshot viewer orchestration.
+   - Keep `GuideEditorPage.tsx` as the route-level orchestrator.
+4. Interactive demo helper split:
+   - Extract pure helper functions such as scene sorting, hotspot sorting, draft derivation, hotspot box validation, source capture URL creation, scene asset URL creation, expiry input formatting, portal URL/embed code helpers, and HTML attribute escaping.
+   - Add focused helper tests only where behavior is not already covered.
+5. Interactive demo UI/state split:
+   - Extract publishing panel, scene list/editor, and hotspot editor panels only after helper extraction is green.
+   - Keep `InteractiveDemoEditorPage.tsx` as the route-level orchestrator.
 
-Do not do all three in one commit unless the edits are trivial.
+Stop after a coherent maintainability improvement if a later slice becomes risky. Document leftovers rather than forcing a large refactor.
+
+## Required Implementation Steps
+
+1. Reread this plan, completed plan `105`, completed plan `097`, and master plan `004`.
+2. Run `rtk git status --short` and inspect any unrelated changes.
+3. Run baseline focused tests before editing if practical:
+
+   ```bash
+   rtk pnpm --filter web test -- api GuideEditorPage InteractiveDemoEditorPage routes
+   rtk pnpm --filter web check-types
+   ```
+
+4. Pick one small slice and write/adjust tests before moving behavior when the slice creates a new helper or component contract.
+5. Move code without changing rendered markup/copy/CSS classes.
+6. Preserve API barrel compatibility and page prop compatibility.
+7. Run focused tests for the touched slice.
+8. Repeat only if the next slice remains low risk.
+9. Run required final verification.
+10. If editor rendering/interactions or API orchestration moved, run agent-browser validation and record paths/steps/results.
+11. Update this plan with status, checklist, implementation log, verification notes, browser validation notes, leftovers, and handoff notes.
+12. Update master plan `004` only for completed phase status and concise completed result.
+13. Commit only scoped work in small logical commits.
 
 ## Test And Verification Plan
 
-Required for any web refactor:
+Required after any implementation:
 
 ```bash
-rtk pnpm --filter web test
 rtk pnpm --filter web check-types
 rtk pnpm --filter web lint
 rtk git diff --check
 ```
 
-Required if build-sensitive imports or CSS modules change:
+Required if `apps/web/src/lib/api.ts` or new API modules are touched:
+
+```bash
+rtk pnpm --filter web test -- api
+```
+
+Required if guide editor files are touched:
+
+```bash
+rtk pnpm --filter web test -- GuideEditorPage GuideScreenshotViewer publishLinks
+```
+
+Required if interactive demo editor files are touched:
+
+```bash
+rtk pnpm --filter web test -- InteractiveDemoEditorPage
+```
+
+Required if route parsing or app routing is touched:
+
+```bash
+rtk pnpm --filter web test -- routes App
+```
+
+Required if imports, CSS modules, component boundaries, or Vite build behavior are touched:
 
 ```bash
 rtk pnpm --filter web build
 ```
 
-Recommended repo sanity:
+Recommended final repo sanity:
 
 ```bash
 rtk pnpm check-types
 ```
 
-## Browser Validation Requirements
+Recommended when time permits:
 
-Browser validation is required if editor rendering, interactions, route navigation, or API call orchestration changes.
+```bash
+rtk pnpm --filter web test
+```
+
+Do not run server DB/smoke tests for docs-only or web-only refactor changes unless the web refactor changes API contracts, which is out of scope.
+
+## Agent-Browser Validation Requirements
+
+Agent-browser validation is required if the implementation moves or changes any of:
+
+- editor rendered JSX;
+- editor child component boundaries;
+- editor event handlers;
+- editor API call orchestration;
+- route navigation behavior;
+- CSS module imports/classes;
+- publish/copy/export controls;
+- screenshot viewer/picker/upload/annotation controls;
+- scene/hotspot editor controls.
+
+Browser validation may be skipped only if the implementation is limited to:
+
+- API client module extraction with `api.test.ts` coverage and no feature imports changed beyond compatibility barrel internals;
+- pure helper extraction with no rendered JSX, event handler, route, CSS, or API orchestration changes.
+
+If browser validation is required, use agent-browser and record:
+
+- dev server command and URL;
+- mocked API setup or local backend setup used;
+- exact paths visited;
+- desktop viewport result;
+- mobile/narrow viewport result if touched layouts are rendered;
+- screenshots or notes for any layout/text-overflow issue.
+
+Minimum browser paths when guide editor behavior moves:
+
+```text
+/projects/project_1/guides/guide_1
+```
 
 Validate:
 
-- guide editor loads;
-- guide step/block editing still works;
-- guide preview/publish paths still work if touched;
-- interactive demo editor loads;
-- scene/hotspot editing still works if touched;
-- no text overflow or layout break was introduced at desktop and mobile widths for touched pages.
+- editor loads;
+- guide title/description fields render;
+- at least one block/step renders;
+- save guide or save step path works with mocked/stubbed API or local backend;
+- publish panel renders if touched;
+- screenshot viewer/picker/upload/annotation path works if touched;
+- no visible layout regression at desktop width;
+- no text overlap/overflow at a narrow/mobile width if touched markup is responsive.
 
-If only pure helpers or API client internals change and tests cover the behavior, document why browser validation was not required.
+Minimum browser paths when interactive demo editor behavior moves:
+
+```text
+/projects/project_1/interactive-demos/interactive_demo_1
+```
+
+Validate:
+
+- editor loads;
+- demo title/status controls render;
+- scenes render in order;
+- hotspot controls render and can be edited if touched;
+- publish panel renders if touched;
+- no visible layout regression at desktop width;
+- no text overlap/overflow at a narrow/mobile width if touched markup is responsive.
+
+Minimum browser paths when API client split only changes API orchestration:
+
+```text
+/projects
+/projects/project_1/guides/guide_1
+/projects/project_1/interactive-demos/interactive_demo_1
+```
+
+Validate enough mocked/local API calls to prove the split did not break app loading.
 
 ## Explicit Non-Scope
 
@@ -194,21 +575,35 @@ If only pure helpers or API client internals change and tests cover the behavior
 - New guide editor features.
 - New interactive demo features.
 - Public viewer redesign.
-- Server API changes.
-- Database changes.
-- Shared package expansion unless real reuse is proven.
-- Extension changes.
+- Server route or API changes.
+- Database schema or migration changes.
+- Shared package expansion.
+- Adding web dependencies.
+- Moving React component props or UI draft state into shared packages.
+- Replacing public viewer defensive parsing with blind casts.
+- Extension code changes.
+- CI workflow changes.
+- Docs app changes.
+- Screenshot asset refreshes.
+- Large visual/CSS rewrites.
+- Accessibility copy changes unless required to preserve existing accessible names after extraction.
 
 ## Completion Checklist
 
+- [ ] Worktree checked before edits.
+- [ ] Current 105 result, plan 097, and master 004 reread.
 - [ ] Refactor slices selected and documented.
-- [ ] Tests protect each moved behavior.
-- [ ] API client compatibility preserved.
+- [ ] API client compatibility preserved if touched.
 - [ ] Guide editor behavior preserved if touched.
 - [ ] Interactive demo editor behavior preserved if touched.
-- [ ] Browser validation completed or explicitly not required with reason.
-- [ ] Verification commands run and recorded.
+- [ ] Route behavior preserved.
+- [ ] CSS modules/classes unchanged or mechanically preserved.
+- [ ] Focused tests run for every touched slice.
+- [ ] Web typecheck, lint, and whitespace verification run.
+- [ ] Web build run if imports/CSS/component boundaries changed.
+- [ ] Browser validation completed or explicitly skipped with a valid reason.
 - [ ] Parent master plan updated only for completed phase status.
+- [ ] Leftovers and next-phase handoff documented.
 
 ## Implementation Log
 
@@ -218,12 +613,17 @@ To be completed during implementation.
 
 To be completed during implementation.
 
+## Browser Validation Notes
+
+To be completed during implementation.
+
 ## Leftovers
 
 To be completed during implementation.
 
 ## Handoff Notes
 
-This plan may be too large for a single implementation pass. If expansion shows high risk, split it into follow-up child plans for API client, guide editor, and interactive demo editor.
-
-Do not start this refactor until extension reliability work has either passed or been explicitly bounded, unless the user chooses to reorder the track.
+- Keep this phase behavior-preserving. The point is smaller files and clearer local boundaries, not new UX.
+- Start with `apps/web/src/lib/api.ts` or pure helpers before moving rendered editor markup.
+- Use the completed 105 CI smoke workflow as backend safety coverage, but do not treat it as a substitute for focused web tests or browser validation when frontend behavior moves.
+- If the first implementation pass cannot safely cover all three target areas, stop after the API client plus one editor or after helper extraction only, then document remaining file-size/refactor work as leftovers for a follow-up plan.
