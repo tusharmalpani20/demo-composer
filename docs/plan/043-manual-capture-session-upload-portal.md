@@ -2,6 +2,8 @@
 
 Date: 2026-06-12
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let authenticated portal users add screenshot source material to a manual capture session from the capture session detail page.

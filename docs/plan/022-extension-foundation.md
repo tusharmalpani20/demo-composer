@@ -2,6 +2,8 @@
 
 Date: 2026-06-05
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Create the first Chrome extension app shell so a self-hosted or hosted Demo Composer instance can be connected from the browser.

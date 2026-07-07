@@ -2,6 +2,8 @@
 
 Date: 2026-06-11
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Make the guide publishing workflow easier to understand and use after the basic portal controls from `033` are in place.

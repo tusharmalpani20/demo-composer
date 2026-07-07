@@ -53,7 +53,7 @@ Relevant carry-forward:
 Baseline checked while expanding this plan on 2026-07-07:
 
 - `rtk git status --short` was clean before editing this plan.
-- Master plan `004` has child plans `100` through `107` completed and child plan `108` still planned.
+- At expansion time, master plan `004` had child plans `100` through `107` completed and this plan had not been implemented yet.
 - `README.md`, `docs/production-readiness-checklist.md`, `docs/operations.md`, `docs/self-hosting.md`, `docs/roadmap.md`, and `docs/project-zoomout-status.md` already document alpha limitations around:
   - local file storage only;
   - manual backup/restore responsibility;

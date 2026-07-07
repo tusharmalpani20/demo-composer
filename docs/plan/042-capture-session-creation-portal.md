@@ -2,6 +2,8 @@
 
 Date: 2026-06-12
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let authenticated portal users create a capture session inside a project from the portal.

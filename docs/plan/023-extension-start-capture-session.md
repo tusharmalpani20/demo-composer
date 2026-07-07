@@ -2,6 +2,8 @@
 
 Date: 2026-06-05
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let the Chrome extension start a capture session for the selected project and persist that active session locally.

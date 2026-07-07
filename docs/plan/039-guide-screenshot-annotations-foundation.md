@@ -2,6 +2,8 @@
 
 Date: 2026-06-11
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let users add simple visual callouts to guide step screenshots so Scribe-style docs can clearly point readers to the important area of a screen.

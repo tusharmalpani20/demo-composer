@@ -2,6 +2,8 @@
 
 Date: 2026-06-11
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let users add simple explanatory paragraphs and visual section dividers while authoring Scribe-style guides.

@@ -2,6 +2,8 @@
 
 Date: 2026-06-05
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Prove that web first-run setup works against a real Postgres database:

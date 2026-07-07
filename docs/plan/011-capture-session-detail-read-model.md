@@ -2,6 +2,8 @@
 
 Date: 2026-06-05
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Add a backend read model that loads a capture session with the source material needed by the portal after capture completion:

@@ -2,6 +2,8 @@
 
 Date: 2026-06-11
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let users manually shape a generated guide by inserting basic guide blocks in the editor.

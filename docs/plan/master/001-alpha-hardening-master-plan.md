@@ -134,7 +134,7 @@ When expanding a phase into a numbered plan under `docs/plan/`, use this minimum
 
 Date: YYYY-MM-DD
 
-Status: Planned.
+Status: <Planned|Completed|Completed with follow-up notes>
 
 ## Parent Master Plan
 

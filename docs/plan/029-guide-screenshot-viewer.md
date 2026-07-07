@@ -2,6 +2,8 @@
 
 Date: 2026-06-10
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Add a private screenshot viewer/lightbox for guide screenshots so users can inspect captured screens at a larger size from the guide preview experience.

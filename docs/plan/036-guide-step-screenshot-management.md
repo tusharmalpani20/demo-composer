@@ -2,6 +2,8 @@
 
 Date: 2026-06-11
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let users fix guide screenshots after a guide has been generated from a capture session.

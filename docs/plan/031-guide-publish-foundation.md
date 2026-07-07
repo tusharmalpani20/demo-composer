@@ -2,6 +2,8 @@
 
 Date: 2026-06-10
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Create the backend foundation for publishing a guide as a stable, shareable artifact.

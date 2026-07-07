@@ -2,7 +2,7 @@
 
 Date: 2026-06-30
 
-Status: In progress.
+Status: Completed on 2026-06-30; status normalized on 2026-07-07.
 
 Branch:
 

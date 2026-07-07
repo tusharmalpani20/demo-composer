@@ -2,6 +2,8 @@
 
 Date: 2026-06-12
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let authenticated portal users create a project from the project home page without seed data, direct API calls, or manually known project IDs.

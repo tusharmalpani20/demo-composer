@@ -2,6 +2,8 @@
 
 Date: 2026-06-12
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let authenticated portal users add multiple screenshots to a manual capture session in one workflow, creating one linked `capture` event per uploaded screenshot.

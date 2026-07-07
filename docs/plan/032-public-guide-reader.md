@@ -2,6 +2,8 @@
 
 Date: 2026-06-10
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Build the public web reader for published guide links.

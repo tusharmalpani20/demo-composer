@@ -2,6 +2,8 @@
 
 Date: 2026-06-06
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Turn each manual screenshot captured by the Chrome extension into ordered capture source material by creating a `capture` event linked to the uploaded screenshot asset.

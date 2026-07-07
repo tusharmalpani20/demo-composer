@@ -2,6 +2,8 @@
 
 Date: 2026-06-06
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let a user finish an active Chrome extension capture session and land directly on the portal capture session detail page.

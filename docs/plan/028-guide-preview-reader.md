@@ -2,6 +2,8 @@
 
 Date: 2026-06-06
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Add an authenticated, read-only, Scribe-style guide preview page so internal users can review generated and edited guides as actual documentation, not only as editable form fields.

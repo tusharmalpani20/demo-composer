@@ -2,6 +2,8 @@
 
 Date: 2026-06-11
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Add authenticated portal controls so an internal user can publish, republish, open, copy, and revoke a guide's public link from the web UI.

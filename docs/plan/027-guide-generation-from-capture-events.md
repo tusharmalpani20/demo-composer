@@ -2,6 +2,8 @@
 
 Date: 2026-06-06
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Improve guide creation so completed extension captures become useful Scribe-style draft guides, with screenshot-backed `capture` events producing ordered guide steps that carry the right source asset and better default text.

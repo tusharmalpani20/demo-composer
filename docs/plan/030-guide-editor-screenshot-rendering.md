@@ -2,6 +2,8 @@
 
 Date: 2026-06-10
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Render source screenshots inside the guide editor so users can edit step copy while seeing the screenshot the step came from.

@@ -2,6 +2,8 @@
 
 Date: 2026-06-06
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let the Chrome extension capture the visible browser tab as a screenshot and upload it to the active capture session.

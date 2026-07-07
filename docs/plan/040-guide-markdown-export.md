@@ -2,6 +2,8 @@
 
 Date: 2026-06-12
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let users export a Scribe-style guide as portable Markdown so internal docs can move outside Demo Composer into tools like GitHub, Notion, Confluence, Slack, or a plain `.md` file.

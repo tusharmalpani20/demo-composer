@@ -2,6 +2,8 @@
 
 Date: 2026-06-11
 
+Status: Implemented; legacy status normalized on 2026-07-07.
+
 ## Goal
 
 Let users upload a brand-new replacement screenshot directly from the guide editor and attach it to a guide step in one flow.
