@@ -470,7 +470,7 @@ Completed result:
 
 ### 107: Extension Popup Refactor Plan
 
-Status: Planned
+Status: Completed on 2026-07-07
 
 File:
 
@@ -504,6 +504,14 @@ Acceptance:
 - Popup code is easier to reason about.
 - Reliability fixes remain intact.
 - No extension UI redesign.
+
+Completed result:
+
+- Extracted pure popup helpers from `apps/extension/src/App.tsx` into `apps/extension/src/popup/helpers.ts` with focused helper tests.
+- Kept rendered JSX, popup event handlers, dependency construction, Chrome API boundaries, extension API request construction, storage behavior, portal URL behavior, capture lifecycle orchestration, popup copy, CSS classes, and public `App` dependency-injection props unchanged.
+- Reduced `App.tsx` from 1083 lines to 1024 lines.
+- Focused extension tests, full extension tests, typecheck, lint, build, workspace typecheck, and whitespace verification passed.
+- Browser validation was not required because this slice was pure helper extraction only.
 
 ### 108: Production Hardening Readiness Plan
 
@@ -565,7 +573,7 @@ Acceptance:
 - [x] Expand and recheck child plan `106`.
 - [x] Implement and close child plan `106`.
 - [x] Expand and recheck child plan `107`.
-- [ ] Implement and close child plan `107`.
+- [x] Implement and close child plan `107`.
 - [ ] Expand and recheck child plan `108`.
 - [ ] Implement and close child plan `108`.
 - [ ] Run final track closure against this master plan.

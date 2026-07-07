@@ -4,7 +4,7 @@ Date: 2026-07-07
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -636,39 +636,79 @@ Do not claim true toolbar-popup manual validation succeeded unless the actual to
 
 ## Completion Checklist
 
-- [ ] Worktree checked before edits.
-- [ ] Completed plans `100` through `106` and master `004` reread.
-- [ ] Refactor slices selected and documented.
-- [ ] `App.tsx` responsibilities reduced by at least one coherent slice.
-- [ ] Existing popup UI appearance, copy, labels, disabled states, and class names preserved.
-- [ ] Existing extension storage compatibility preserved.
-- [ ] Existing extension API contracts preserved.
-- [ ] Automatic capture behavior preserved if touched.
-- [ ] Manual screenshot behavior preserved if touched.
-- [ ] Portal open/finish behavior preserved if touched.
-- [ ] Existing known limitations preserved and not overstated.
-- [ ] Focused tests run for every touched slice.
-- [ ] Extension typecheck, lint, and whitespace verification run.
-- [ ] Extension build run if imports/build/runtime boundaries changed.
-- [ ] Browser validation completed or explicitly skipped with a valid reason.
-- [ ] Parent master plan updated only for completed phase status.
-- [ ] Leftovers and next-phase handoff documented.
+- [x] Worktree checked before edits.
+- [x] Completed plans `100` through `106` and master `004` reread.
+- [x] Refactor slices selected and documented.
+- [x] `App.tsx` responsibilities reduced by at least one coherent slice.
+- [x] Existing popup UI appearance, copy, labels, disabled states, and class names preserved.
+- [x] Existing extension storage compatibility preserved.
+- [x] Existing extension API contracts preserved.
+- [x] Automatic capture behavior preserved if touched.
+- [x] Manual screenshot behavior preserved if touched.
+- [x] Portal open/finish behavior preserved if touched.
+- [x] Existing known limitations preserved and not overstated.
+- [x] Focused tests run for every touched slice.
+- [x] Extension typecheck, lint, and whitespace verification run.
+- [x] Extension build run if imports/build/runtime boundaries changed.
+- [x] Browser validation completed or explicitly skipped with a valid reason.
+- [x] Parent master plan updated only for completed phase status.
+- [x] Leftovers and next-phase handoff documented.
 
 ## Implementation Log
 
-To be completed during implementation.
+- Confirmed the pre-edit worktree was clean.
+- Reread this plan, master plan `004`, and completed plan `106` before implementation.
+- Ran baseline focused checks before editing:
+  - `rtk pnpm --filter extension test -- src/App.test.tsx src/lib/settings.test.ts src/lib/url.test.ts src/lib/screenshot.test.ts src/lib/automatic-capture.test.ts src/lib/content-click-capture.test.ts`
+  - `rtk pnpm --filter extension check-types`
+- Selected the lowest-risk refactor slice from this plan: pure popup helper extraction from `apps/extension/src/App.tsx`.
+- Added a red helper test first:
+  - `apps/extension/src/popup/helpers.test.ts`
+- Confirmed the red state with `rtk pnpm --filter extension test -- src/popup/helpers.test.ts`; Vite failed to resolve the missing `./helpers` module as expected.
+- Added `apps/extension/src/popup/helpers.ts` and moved these pure helpers from `App.tsx`:
+  - `errorMessage`
+  - `persistManualCaptureDiagnostic`
+  - `buildCaptureName`
+  - `browserNameFromUserAgent`
+  - `buildCaptureSessionInput`
+  - `screenshotFileName`
+- Updated `apps/extension/src/App.tsx` to import those helpers.
+- Kept rendered JSX, event handlers, dependency construction, Chrome API boundaries, extension API request construction, storage behavior, portal URL behavior, capture lifecycle orchestration, popup copy, CSS classes, and public `App` dependency-injection props unchanged.
+- Resulting file-size movement:
+  - `apps/extension/src/App.tsx`: from 1083 lines to 1024 lines.
+  - `apps/extension/src/popup/helpers.ts`: 69 lines.
+  - `apps/extension/src/popup/helpers.test.ts`: 101 lines.
 
 ## Verification Notes
 
-To be completed during implementation.
+- Baseline before implementation:
+  - `rtk pnpm --filter extension test -- src/App.test.tsx src/lib/settings.test.ts src/lib/url.test.ts src/lib/screenshot.test.ts src/lib/automatic-capture.test.ts src/lib/content-click-capture.test.ts` passed: 6 test files, 67 tests.
+  - `rtk pnpm --filter extension check-types` passed.
+- Red test confirmation:
+  - `rtk pnpm --filter extension test -- src/popup/helpers.test.ts` failed before `src/popup/helpers.ts` existed, as expected.
+- Focused helper and popup tests after implementation:
+  - `rtk pnpm --filter extension test -- src/popup/helpers.test.ts` passed: 1 test file, 5 tests.
+  - `rtk pnpm --filter extension test -- src/App.test.tsx` passed: 1 test file, 35 tests.
+- Final extension verification:
+  - `rtk pnpm --filter extension test` passed: 11 test files, 91 tests.
+  - `rtk pnpm --filter extension check-types` passed.
+  - `rtk pnpm --filter extension lint` passed.
+  - `rtk pnpm --filter extension build` passed.
+  - `rtk git diff --check` passed.
+- Repo sanity:
+  - `rtk pnpm check-types` passed.
 
 ## Browser Validation Notes
 
-To be completed during implementation.
+Browser validation was intentionally skipped for this phase because the implementation was limited to pure helper extraction with focused helper and popup tests. It did not move or change rendered JSX, popup event handlers, dependency construction, Chrome API boundaries, extension API request construction, storage behavior, portal URL behavior, capture lifecycle orchestration, popup copy, or CSS classes.
 
 ## Leftovers
 
-To be completed during implementation.
+- `apps/extension/src/App.tsx` is still a large route-level/popup composition root at 1024 lines. Further dependency construction, manual capture orchestration, portal finish/open orchestration, and component extraction remain possible in separate slices.
+- `apps/extension/src/App.test.tsx` remains large at the plan baseline of 1297 lines. Test fixture/builder extraction can be considered later if it does not weaken behavior coverage.
+- `apps/extension/src/lib/api.ts`, `settings.ts`, and `content-click-capture.ts` remain moderate-sized local modules. They were not touched because this phase stayed scoped to popup pure helper extraction.
+- True Chrome toolbar-popup manual capture remains unvalidated, preserving the plan `103` limitation.
+- The direct extension-page duplicate event-index follow-up after automatic clicks remains out of scope for this refactor.
 
 ## Handoff Notes
 
@@ -677,3 +717,4 @@ To be completed during implementation.
 - If the first implementation pass cannot safely cover every target area, stop after the coherent slice and document remaining `App.tsx` or `App.test.tsx` size work as leftovers.
 - If a real toolbar-popup/manual-capture or event-index bug appears during validation, do not hide it in this refactor. Record it as a leftover or open a focused reliability plan.
 - Preserve the plan `103` limitation wording: true Chrome toolbar-popup manual capture remains unvalidated unless this phase actually validates it through the real popup path.
+- This implementation completed only the pure helper extraction slice. If a future pass moves dependency construction, JSX, event handlers, capture lifecycle orchestration, or browser adapter boundaries, run agent-browser validation as required by this plan.
