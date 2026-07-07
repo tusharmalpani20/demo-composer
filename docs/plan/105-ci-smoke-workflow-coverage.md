@@ -53,7 +53,7 @@ Carry-forward item from plan `104`:
 - CI smoke workflow coverage remained intentionally open for this child plan.
 - This phase must inspect `.github/workflows/ci.yml`, DB setup ordering, and `apps/server` smoke execution before changing CI.
 
-## Current Codebase Baseline
+## Pre-Implementation Codebase Baseline
 
 Current worktree expectation before implementation:
 
@@ -63,13 +63,13 @@ rtk git status --short
 
 The implementation agent must stop and inspect any uncommitted changes before editing. Do not overwrite user or other-agent changes.
 
-Current CI workflow:
+Pre-implementation CI workflow:
 
 ```text
 .github/workflows/ci.yml
 ```
 
-Important current CI facts:
+Important pre-implementation CI facts:
 
 - The workflow has one `verify` job on `ubuntu-latest`.
 - The job starts a `postgres:16` service with test credentials.
@@ -85,9 +85,9 @@ Important current CI facts:
   - `pnpm build`
   - `pnpm lint`
   - `git diff --check`
-- The workflow does not currently run `pnpm --filter server test:smoke`.
+- The workflow did not run `pnpm --filter server test:smoke` before this phase.
 
-Current server scripts:
+Server scripts before this phase:
 
 ```text
 apps/server/package.json
@@ -103,7 +103,7 @@ test:db        -> env-cmd -f .env-cmdrc -e testing -- vitest run --no-file-paral
 test:smoke     -> env-cmd -f .env-cmdrc -e testing -- vitest run --no-file-parallelism src/smoke/v1-workflows.db.integration.test.ts
 ```
 
-Current smoke test behavior:
+Smoke test behavior before this phase:
 
 - Uses `app.inject`, not a browser.
 - Uses the real PostgreSQL test database through the server DB pool.
@@ -404,6 +404,9 @@ Completed on 2026-07-07.
 - Added a new `Server smoke workflow` CI step after DB integration tests with its own `test:db:drop`, `test:db:create`, `test:migrate`, and `test:smoke` sequence.
 - Preserved existing server, web, extension, typecheck, build, lint, and whitespace checks.
 - Did not change server product code, routes, schemas, migrations, shared packages, web code, extension code, package scripts, dependencies, lockfiles, or browser-facing UI.
+- Closeout recheck on 2026-07-07 confirmed the CI implementation still matches this plan and master plan `004`.
+- Clarified that the baseline CI facts in this document are pre-implementation facts so future agents do not read old CI state as current.
+- Added an explicit carry-forward note for child plan `106`.
 
 ## Verification Notes
 
@@ -452,6 +455,15 @@ Browser validation:
 
 - Not required. This phase changed CI/test infrastructure and plan docs only. The smoke workflow uses Fastify `app.inject`, not browser automation.
 
+Closeout recheck passed:
+
+```bash
+rtk git diff --check
+rtk ruby -e 'require "yaml"; YAML.load_file(".github/workflows/ci.yml"); puts "workflow yaml parsed"'
+```
+
+The closeout recheck did not rerun DB integration or smoke tests because the closeout fixes were documentation-only. The DB integration and smoke commands listed above remain the focused verification for the CI implementation itself.
+
 ## Leftovers
 
 - No implementation leftovers for this phase.
@@ -462,4 +474,5 @@ Browser validation:
 
 - The CI smoke coverage was implemented in `.github/workflows/ci.yml` using the serial reset sequence inside the existing `verify` job.
 - The next phase can assume CI is configured to exercise first-run setup, project creation, capture, guide/demo generation, publish/public snapshot behavior, invites, and teammate project access through the existing v1 server smoke workflow.
+- Carry into child plan `106`: web large-file refactors can rely on CI having server smoke coverage, but they still need focused web tests and browser validation if guide/demo editor behavior paths move.
 - If hosted CI later reports a GitHub Actions environment-specific issue, keep that as a CI-environment follow-up rather than reopening product route behavior unless the failure proves a product bug.

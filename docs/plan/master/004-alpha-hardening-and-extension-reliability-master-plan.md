@@ -41,6 +41,8 @@ Important known gaps from current docs and code:
 - `apps/server/package.json` has `test:smoke`, but `.github/workflows/ci.yml` does not appear to run it.
 - Large files remain in authoring/editor/client surfaces and should be split only after behavior is covered.
 
+This list records the starting baseline for master plan `004`. The child-plan status and completed-result sections below are the current source of truth for items closed during this track.
+
 ## 3. Source Documents To Preserve
 
 This plan must preserve the product and architecture decisions already documented in:
