@@ -4,7 +4,7 @@ Date: 2026-07-07
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -539,37 +539,68 @@ Do not refresh product screenshots in this phase. Child plan `103` owns final ex
 
 ## Completion Checklist
 
-- [ ] Plan `100` and completed plan `101` evidence used as source of truth.
-- [ ] Current worktree state checked before edits.
-- [ ] Current portal URL storage and URL builder behavior audited.
-- [ ] Current server/web origin exposure and public instance status behavior reviewed.
-- [ ] Existing tests inventoried for split-origin open/finish coverage.
-- [ ] Coverage gaps filled with focused tests or explicitly documented as already covered.
-- [ ] Split-origin `Open in portal` verified or fixed.
-- [ ] Split-origin `Finish capture` verified or fixed.
-- [ ] Single-origin compatibility preserved.
-- [ ] Unsafe redirect handling preserved.
-- [ ] No session tokens are included in portal URLs.
-- [ ] No extension permissions changed.
-- [ ] Focused extension tests run.
-- [ ] Extension typecheck and lint run.
-- [ ] Extension build run if browser validation or runtime changes are involved.
-- [ ] Browser validation completed or precise blocker documented.
-- [ ] Docs/status updated only where evidence changed.
-- [ ] Plan `102` updated with status, checklist, implementation log, verification notes, leftovers, and handoff notes.
-- [ ] Parent master plan updated only for completed phase status.
+- [x] Plan `100` and completed plan `101` evidence used as source of truth.
+- [x] Current worktree state checked before edits.
+- [x] Current portal URL storage and URL builder behavior audited.
+- [x] Current server/web origin exposure and public instance status behavior reviewed.
+- [x] Existing tests inventoried for split-origin open/finish coverage.
+- [x] Coverage gaps filled with focused tests or explicitly documented as already covered.
+- [x] Split-origin `Open in portal` verified or fixed.
+- [x] Split-origin `Finish capture` verified or fixed.
+- [x] Single-origin compatibility preserved.
+- [x] Unsafe redirect handling preserved.
+- [x] No session tokens are included in portal URLs.
+- [x] No extension permissions changed.
+- [x] Focused extension tests run.
+- [x] Extension typecheck and lint run.
+- [x] Extension build run if browser validation or runtime changes are involved.
+- [x] Browser validation completed or precise blocker documented.
+- [x] Docs/status updated only where evidence changed.
+- [x] Plan `102` updated with status, checklist, implementation log, verification notes, leftovers, and handoff notes.
+- [x] Parent master plan updated only for completed phase status.
 
 ## Implementation Log
 
-To be completed during implementation.
+- Re-read the master plan, child plan `102`, and completed plan `101` closeout before edits.
+- Audited the current extension portal URL path:
+  - `apps/extension/src/lib/url.ts` already uses `portalUrl ?? instanceUrl`, rejects absolute/protocol-relative redirect paths, and falls back to encoded local project/session routes.
+  - `apps/extension/src/lib/settings.ts` already persists optional `portalUrl`; changing the instance clears portal URL, auth, selected project, active capture state, and diagnostics.
+  - `apps/extension/src/App.tsx` already uses `portalUrl` for both open-active and finish navigation, and does not call complete during open-active navigation.
+  - `apps/extension/src/lib/api.ts` already sends complete requests to the API origin with bearer auth and without putting tokens in URL parameters.
+- Audited the server/web/public instance surface read-only. No new public web-origin discovery contract was needed because the existing explicit extension `portalUrl` setting safely supports split API/web deployments.
+- Added a focused test in `apps/extension/src/lib/navigation.test.ts` covering `chrome.runtime.lastError` during `chrome.tabs.create` so portal-tab failures remain surfaced to the app.
+- No production code, API contract, schema, permission, or manifest change was required.
+- Updated current status wording in `apps/extension/README.md`, `docs/project-zoomout-status.md`, `README.md`, `docs/roadmap.md`, and `docs/oss-alpha-summary.md` so docs no longer describe split-origin portal navigation as an open failure.
 
 ## Verification Notes
 
-To be completed during implementation.
+- Focused extension tests passed:
+  - `rtk pnpm --filter extension test -- src/lib/url.test.ts src/lib/settings.test.ts src/lib/navigation.test.ts src/lib/api.test.ts src/App.test.tsx`
+  - Result: 5 test files passed, 66 tests passed.
+- Full extension verification passed:
+  - `rtk pnpm --filter extension check-types`
+  - `rtk pnpm --filter extension lint`
+  - `rtk pnpm --filter extension build`
+  - `rtk pnpm --filter extension test`
+  - Result: typecheck passed, lint passed, build passed, 10 test files passed, 86 tests passed.
+- Browser validation passed with agent-browser using the built extension:
+  - API origin: `http://localhost:4021`
+  - Portal origin: `http://localhost:3000`
+  - Extension page: `chrome-extension://cohepadogfeidambknedbdflmcjepaam/index.html`
+  - Seed project: `01KWX9HN9BWVKT3BSP302N2RS7`
+  - Capture session: `01KWX9JRV2WTWC5E6GWP66S2CH`
+  - `Open in portal` opened `http://localhost:3000/projects/01KWX9HN9BWVKT3BSP302N2RS7/capture-sessions/01KWX9JRV2WTWC5E6GWP66S2CH`.
+  - After `Open in portal`, the backend session stayed `draft`, and the extension still showed `Capture active`.
+  - `Finish capture` opened `http://localhost:3000/projects/01KWX9HN9BWVKT3BSP302N2RS7/capture-sessions/01KWX9JRV2WTWC5E6GWP66S2CH`.
+  - After `Finish capture`, the backend session was `completed`, and the extension returned to `Ready to capture`.
+  - Validation used direct extension-page automation; true Chrome toolbar-popup manual capture evidence remains owned by plan `103`.
 
 ## Leftovers
 
-To be completed during implementation.
+- No portal-origin implementation leftovers remain for this phase.
+- Child plan `103` still owns true toolbar-popup manual capture evidence and refreshed captured-workflow extension screenshots.
+- Child plan `103` should keep using this phase's split-origin evidence rather than reopening the old API-origin portal-link failure unless a new regression is observed.
+- Broader extension popup refactoring remains out of scope and is still owned by child plan `107`.
 
 ## Handoff Notes
 

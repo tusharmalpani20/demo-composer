@@ -10,8 +10,8 @@ Demo Composer is an alpha-stage, self-hosted open-source tool for turning browse
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Setup and auth    | Web first-run setup, password login, cookie-backed portal sessions, and organization-scoped users.                                                                                       |
 | Projects          | Project creation, project workspace, settings, archive/unarchive, and project-scoped artifacts.                                                                                          |
-| Capture           | Manual portal capture sessions, screenshot upload, ordered capture events, and event editing; Chrome extension capture exists but is blocked in manual dogfood.                          |
-| Extension         | Instance URL setup, login, project selection, manual screenshot fallback, automatic click capture MVP, and finish-and-open portal flow exist in code/tests; manual dogfood found capture and split-origin link failures. |
+| Capture           | Manual portal capture sessions, screenshot upload, ordered capture events, and event editing; Chrome extension capture has validated automatic-click and direct manual fallback paths, with true toolbar-popup manual validation still pending. |
+| Extension         | Instance URL setup, login, project selection, manual screenshot fallback, automatic click capture MVP, and finish/open-active portal flow exist in code/tests; 2026-07-07 dogfood closed the split-origin portal link path. |
 | Guides            | Generate guides from capture sessions, edit blocks and steps, manage screenshots, annotate screenshots, preview, publish, password-protect, embed, export Markdown, and export HTML ZIP. |
 | Interactive demos | Generate demos from capture sessions, edit scenes, add hotspots, publish, password-protect, embed, and view public demos.                                                                |
 | Sharing           | Immutable publish snapshots for guides and demos with public/restricted access controls.                                                                                                 |
@@ -62,7 +62,7 @@ The product intentionally keeps guides and interactive demos separate. A capture
 - Local file storage is the only storage provider.
 - Rate limiting is in-memory and should be replaced before multi-instance production deployments.
 - Operators are responsible for database and local file storage backup/restore.
-- Extension capture dogfood is still blocked, so captured-workflow extension screenshots remain pending; the setup popup screenshot is current.
+- Captured-workflow extension screenshots remain pending until the final extension evidence pass; the setup popup screenshot is current.
 
 ## Quick Local Path
 

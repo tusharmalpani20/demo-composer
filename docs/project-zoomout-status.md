@@ -98,7 +98,7 @@ Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-2
 - Automatic click capture MVP exists in code/tests and produced a screenshot-backed `click` event in plan 101 browser validation on 2026-07-07.
 - Manual screenshot fallback exists in code/tests and produced a screenshot-backed `capture` event from direct extension-page automation in plan 101 browser validation on 2026-07-07; true toolbar-popup manual validation remains pending.
 - Pause/resume and finish behavior; finish completed the backend session in dogfood.
-- Finish-to-portal flow exists; plan 100 validated the configured portal origin in the tested split API/web path, with plan 102 owning formal closeout.
+- Finish-to-portal and open-active portal flows use the configured portal origin in the tested split API/web path; plan 102 formally closed this on 2026-07-07 with browser validation against API `http://localhost:4021` and portal `http://localhost:3000`.
 - Focused popup/content/background tests.
 
 ## Known Gaps
@@ -120,7 +120,7 @@ Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-2
 
 The next phase should finish public alpha readiness:
 
-1. Finish the remaining extension validation follow-ups: split-origin portal closeout, true toolbar-popup manual capture evidence, and final captured-workflow screenshots.
+1. Finish the remaining extension validation follow-ups: true toolbar-popup manual capture evidence and final captured-workflow screenshots.
 2. Feed the manual portal dogfood findings into guide/editor hardening.
 3. Keep alpha screenshots refreshed as portal/editor hardening changes the UI.
 4. Continue usability hardening for guide editing, interactive demo editing, and extension capture reliability.
