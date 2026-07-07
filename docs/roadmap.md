@@ -11,7 +11,7 @@ Demo Composer is alpha software. This roadmap describes product direction, not a
 - Projects and project workspaces.
 - Screenshot-first capture sessions.
 - Manual portal screenshot upload and capture event ordering/editing.
-- Chrome extension capture with instance URL setup, login, project selection, automatic click capture MVP, manual screenshot fallback, and finish-to-portal flow in code/tests; 2026-07-07 dogfood closed the split-origin portal link path, while true toolbar-popup manual validation and final captured-workflow screenshots remain pending.
+- Chrome extension capture with instance URL setup, login, project selection, automatic click capture MVP, manual screenshot fallback, and finish-to-portal flow in code/tests; 2026-07-07 dogfood closed the split-origin portal link path and refreshed automatic-click captured-workflow screenshots, while true toolbar-popup manual validation remains pending.
 - Scribe-style guide generation from capture sessions.
 - Guide editor, preview, screenshot management, rectangle annotations, Markdown export, HTML ZIP export, publish controls, password access, and embeds.
 - Storylane-style interactive demo generation from capture sessions.
@@ -24,7 +24,7 @@ Demo Composer is alpha software. This roadmap describes product direction, not a
 ## V1 Hardening
 
 - Address manual portal dogfood findings from the 2026-06-22 smoke run.
-- Address manual Chrome extension dogfood failures from the 2026-06-22 smoke run.
+- Address remaining Chrome extension dogfood follow-ups: true toolbar-popup manual validation and direct extension-page manual event-ordering after automatic clicks.
 - Keep alpha screenshots current as portal/editor/extension UI hardening changes the product.
 - Improve guide editor ergonomics for repeated authoring.
 - Improve interactive demo editor usability and hotspot positioning polish.

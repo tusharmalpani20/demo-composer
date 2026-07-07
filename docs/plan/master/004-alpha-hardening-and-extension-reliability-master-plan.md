@@ -285,7 +285,7 @@ Acceptance:
 
 ### 103: Extension Browser Validation And Screenshots
 
-Status: Planned
+Status: Completed on 2026-07-07
 
 File:
 
@@ -321,6 +321,12 @@ Acceptance:
 - Extension dogfood is no longer generically blocked.
 - Captured-workflow extension screenshots are refreshed or explicitly marked impossible with a clear reason.
 - Docs state the current extension reliability status accurately.
+
+Completed result:
+
+- Browser validation on 2026-07-07 proved the automatic-click extension path can create two ordered screenshot-backed `click` events and two screenshot assets from safe synthetic local data.
+- Public alpha screenshots were refreshed for active extension capture, portal capture-session detail, generated guide source, and generated interactive demo source.
+- True Chrome toolbar-popup manual capture remains a bounded limitation; direct extension-page manual fallback after automatic clicks exposed a duplicate event-index follow-up.
 
 ### 104: Docs Architecture Sync After Domainization
 
@@ -527,7 +533,7 @@ Acceptance:
 - [x] Expand and recheck child plan `102`.
 - [x] Implement and close child plan `102`.
 - [x] Expand and recheck child plan `103`.
-- [ ] Implement and close child plan `103`.
+- [x] Implement and close child plan `103`.
 - [ ] Expand and recheck child plan `104`.
 - [ ] Implement and close child plan `104`.
 - [ ] Expand and recheck child plan `105`.

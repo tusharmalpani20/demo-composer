@@ -23,7 +23,7 @@ Workflow captures often contain internal product screens, operational processes,
 
 - first-run setup, auth, projects, and org membership basics
 - screenshot-first capture sessions
-- Chrome extension capture with automatic click capture MVP in code/tests; automatic click capture, direct extension-page manual fallback, and split-origin portal navigation have passing 2026-07-07 browser evidence, while true toolbar-popup manual validation remains pending
+- Chrome extension capture with automatic click capture MVP in code/tests; automatic click capture now has screenshot-backed 2026-07-07 browser evidence through generated guide/demo source material, split-origin portal navigation is closed, and true toolbar-popup manual validation remains pending
 - manual portal capture and screenshot upload
 - guide generation, editing, preview, publishing, password access, embeds, Markdown export, and HTML ZIP export
 - interactive demo generation, editing, hotspots, publishing, password access, embeds, and public viewer
@@ -37,7 +37,7 @@ Workflow captures often contain internal product screens, operational processes,
 
 - alpha quality
 - true toolbar-popup manual Chrome extension dogfood evidence remains pending
-- captured-workflow extension screenshots remain pending until extension capture has a passing or explicitly bounded path
+- direct extension-page manual fallback after automatic clicks needs duplicate event-index follow-up
 - no HTML replay
 - no analytics or lead capture
 - no custom branding

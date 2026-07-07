@@ -134,6 +134,50 @@ Do not use production accounts, customer systems, private URLs, or private scree
 
 ## Result Log
 
+### 2026-07-07 Extension Browser Validation And Screenshots
+
+- Plan: `docs/plan/103-extension-browser-validation-and-screenshots.md`
+- Environment: `.env-cmdrc` `testing`; API `http://localhost:4021`; web portal `http://localhost:3000`; safe target page `http://127.0.0.1:4179/`; extension build path `apps/extension/dist`
+- Browser: Chrome via `agent-browser`; unpacked extension id `cohepadogfeidambknedbdflmcjepaam`
+- Synthetic evidence data:
+  - owner: `plan103-owner@example.com`
+  - organization: `Plan 103 Evidence Org`
+  - project: `Plan 103 Extension Evidence` (`01KWXA62DVEWHGZT8DKBMS06E4`)
+  - capture session: `01KWXAYPZQ3J85PY5D331DH7G9`
+  - guide: `Plan 103 Extension Guide` (`01KWXB0FH2ES1QBTDCH2GRJP8X`)
+  - interactive demo: `01KWXB0FT47JDE7MA3C8VGPKYG`
+- Automated verification:
+  - `rtk pnpm --filter extension test` passed
+  - `rtk pnpm --filter extension check-types` passed
+  - `rtk pnpm --filter extension lint` passed
+  - `rtk pnpm --filter extension build` passed
+  - testing DB was reset and migrated before the browser run
+- Browser evidence passed:
+  - extension loaded unpacked from `apps/extension/dist`
+  - API instance URL `http://localhost:4021` and portal URL `http://localhost:3000` were configured separately
+  - synthetic owner sign-in returned the project list
+  - project selection worked
+  - starting automatic capture created an extension-sourced backend capture session
+  - supported clicks on the safe HTTP target created two ordered screenshot-backed `click` events
+  - event 1 captured target text `Create onboarding checklist`, test id `primary-workflow-action`, `event_index: 1`, and `input_value_redacted: true`
+  - event 2 captured target text `Approve checklist`, test id `secondary-workflow-action`, `event_index: 2`, and `input_value_redacted: true`
+  - the capture session completed through the existing complete route and rendered in the portal with `2 events` and `2 assets`
+  - guide generation from the extension capture produced two source blocks and two source capture assets
+  - interactive demo generation from the extension capture produced two scenes linked to the two extension screenshot assets
+- Screenshots added:
+  - `docs/assets/alpha/alpha-extension-active-capture.png`
+  - `docs/assets/alpha/alpha-extension-capture-session-detail.png`
+  - `docs/assets/alpha/alpha-extension-guide-source.png`
+  - `docs/assets/alpha/alpha-extension-demo-source.png`
+- Flows limited or deferred:
+  - true Chrome toolbar-popup manual capture remains unvalidated because `agent-browser` did not provide a reliable Chrome toolbar/extension-action popup control path in this run
+  - direct extension-page manual fallback after automatic clicks uploaded a screenshot asset in an earlier bounded run but failed event creation with `A capture event with this index already exists`
+  - plan `102` remains the formal evidence source for direct extension-page `Open in portal` and `Finish capture` split-origin behavior
+  - if a capture session is completed outside the extension UI, extension local active-capture state can remain in that browser profile, so portal screenshots were taken from a separate browser session without the extension loaded
+- Follow-up plans/issues:
+  - Keep true toolbar-popup manual capture validation open.
+  - Feed the direct extension-page manual duplicate event-index finding into child plan `107` or a focused reliability bugfix plan.
+
 ### 2026-06-30 Extension Evidence And Artifact Re-Dogfood
 
 - Plan: `docs/plan/081-extension-evidence-and-artifact-redogfood.md`

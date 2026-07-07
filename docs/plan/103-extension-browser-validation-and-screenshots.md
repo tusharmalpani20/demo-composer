@@ -4,7 +4,7 @@ Date: 2026-07-07
 
 Last reviewed: 2026-07-07
 
-Status: Planned.
+Status: Completed on 2026-07-07.
 
 ## Parent Master Plan
 
@@ -43,7 +43,7 @@ Plan `102` completed on 2026-07-07 and formally closed split-origin portal navig
 - `Open in portal` opened the portal origin, kept the backend capture session in `draft`, and kept local active capture state.
 - `Finish capture` opened the portal origin, completed the backend capture session, and cleared local active capture state while preserving the selected project.
 - No production extension code, API contract, schema, permission, or manifest changes were needed.
-- Current docs now say split-origin portal link handling is closed, while true toolbar-popup manual capture evidence and captured-workflow extension screenshots remain pending.
+- Before this phase, docs said split-origin portal link handling was closed, while true toolbar-popup manual capture evidence and captured-workflow extension screenshots remained pending.
 
 ## Current Evidence Gap
 
@@ -528,37 +528,100 @@ README screenshot updates should be conservative:
 
 ## Completion Checklist
 
-- [ ] Completed plans `101` and `102` reread and used as source of truth.
-- [ ] Current worktree state checked before edits.
-- [ ] Extension browser workflow validated or precise blocker documented.
-- [ ] Automatic click capture evidence recorded.
-- [ ] Manual screenshot fallback evidence recorded.
-- [ ] True toolbar-popup manual capture validated or exact blocker documented.
-- [ ] Pause/resume checked or explicitly documented as not reachable in the chosen validation surface.
-- [ ] Open-active portal evidence recorded.
-- [ ] Finish portal evidence recorded.
-- [ ] Backend asset/event/status evidence recorded.
-- [ ] Portal capture session detail rendering checked.
-- [ ] Guide/demo source generation checked or explicitly deferred with reason.
-- [ ] Screenshots refreshed or explicitly deferred with reason.
-- [ ] Screenshots use safe synthetic data and do not expose secrets/private data.
-- [ ] Docs updated with dated status only where evidence changed.
-- [ ] Focused verification commands run and recorded.
-- [ ] `docs/v1-dogfood-smoke-suite.md` updated with validation evidence.
-- [ ] Plan `103` updated with status, checklist, implementation log, verification notes, leftovers, and handoff notes.
-- [ ] Parent master plan updated only for completed phase status.
+- [x] Completed plans `101` and `102` reread and used as source of truth.
+- [x] Current worktree state checked before edits.
+- [x] Extension browser workflow validated or precise blocker documented.
+- [x] Automatic click capture evidence recorded.
+- [x] Manual screenshot fallback evidence recorded.
+- [x] True toolbar-popup manual capture validated or exact blocker documented.
+- [x] Pause/resume checked or explicitly documented as not reachable in the chosen validation surface.
+- [x] Open-active portal evidence recorded.
+- [x] Finish portal evidence recorded.
+- [x] Backend asset/event/status evidence recorded.
+- [x] Portal capture session detail rendering checked.
+- [x] Guide/demo source generation checked or explicitly deferred with reason.
+- [x] Screenshots refreshed or explicitly deferred with reason.
+- [x] Screenshots use safe synthetic data and do not expose secrets/private data.
+- [x] Docs updated with dated status only where evidence changed.
+- [x] Focused verification commands run and recorded.
+- [x] `docs/v1-dogfood-smoke-suite.md` updated with validation evidence.
+- [x] Plan `103` updated with status, checklist, implementation log, verification notes, leftovers, and handoff notes.
+- [x] Parent master plan updated only for completed phase status.
 
 ## Implementation Log
 
-To be completed during implementation.
+Completed on 2026-07-07.
+
+- Reread this plan, master plan `004`, and completed plan `102` before running browser validation.
+- Confirmed the initial worktree was clean except for evidence screenshots created during this phase.
+- Ran extension focused verification before browser validation:
+  - `rtk pnpm --filter extension test`
+  - `rtk pnpm --filter extension check-types`
+  - `rtk pnpm --filter extension lint`
+  - `rtk pnpm --filter extension build`
+- Reset and migrated the local testing database, then ran:
+  - API origin: `http://localhost:4021`
+  - portal origin: `http://localhost:3000`
+  - safe target page: `http://127.0.0.1:4179/`
+  - extension build path: `apps/extension/dist`
+  - observed unpacked extension id: `cohepadogfeidambknedbdflmcjepaam`
+- Created disposable synthetic evidence data:
+  - owner email: `plan103-owner@example.com`
+  - organization: `Plan 103 Evidence Org`
+  - project id: `01KWXA62DVEWHGZT8DKBMS06E4`
+  - project name: `Plan 103 Extension Evidence`
+- Used a loaded unpacked extension browser session to configure instance and portal origins, sign in, select the project, and start automatic capture.
+- Captured the active extension state screenshot at `360x420`:
+  - `docs/assets/alpha/alpha-extension-active-capture.png`
+- Ran the final clean automatic capture on the safe target page:
+  - capture session id: `01KWXAYPZQ3J85PY5D331DH7G9`
+  - event `1`: `click`, target text `Create onboarding checklist`, target test id `primary-workflow-action`, page `http://127.0.0.1:4179/`, linked asset `01KWXAZEJH1GHHPSM9HKJQWP99`, `input_value_redacted: true`
+  - event `2`: `click`, target text `Approve checklist`, target test id `secondary-workflow-action`, page `http://127.0.0.1:4179/`, linked asset `01KWXAZG4MRDN1W0979K2K4EAV`, `input_value_redacted: true`
+  - both assets were `1800x1125` PNG screenshots.
+- Completed the capture session through the existing complete API route, then generated source artifacts without clicking portal buttons while the extension session was active:
+  - guide id: `01KWXB0FH2ES1QBTDCH2GRJP8X`
+  - interactive demo id: `01KWXB0FT47JDE7MA3C8VGPKYG`
+- Verified the guide detail endpoint had two guide blocks and two source capture assets.
+- Verified the interactive demo scenes endpoint had two scenes linked to the two extension screenshot assets.
+- Closed the extension-loaded browser and used a portal-only browser session for public evidence screenshots to avoid polluting capture events.
+- Captured these portal/editor screenshots at `1440x900`:
+  - `docs/assets/alpha/alpha-extension-capture-session-detail.png`
+  - `docs/assets/alpha/alpha-extension-guide-source.png`
+  - `docs/assets/alpha/alpha-extension-demo-source.png`
+- Updated docs to reflect that automatic captured-workflow extension evidence is no longer pending, while true toolbar-popup manual capture remains unvalidated.
+- No runtime source files, API contracts, schemas, manifest permissions, or UI behavior were changed in this phase.
 
 ## Verification Notes
 
-To be completed during implementation.
+Passed:
+
+```bash
+rtk pnpm --filter extension test
+rtk pnpm --filter extension check-types
+rtk pnpm --filter extension lint
+rtk pnpm --filter extension build
+```
+
+Browser validation:
+
+- Chrome extension loaded from `apps/extension/dist` with id `cohepadogfeidambknedbdflmcjepaam`.
+- API origin `http://localhost:4021` and portal origin `http://localhost:3000` were configured separately.
+- Automatic click capture produced two ordered screenshot-backed `click` events and two screenshot assets from safe synthetic target page `http://127.0.0.1:4179/`.
+- Portal capture detail rendered the completed extension-sourced session with `2 events` and `2 assets`.
+- Generated guide rendered two source blocks from the extension capture.
+- Generated interactive demo rendered two scenes from the extension capture.
+- Plan `102` remains the source of truth for successful direct extension-page `Open in portal` and `Finish capture` split-origin behavior. This phase also completed the final evidence capture through the same complete route, but did not re-close the extension UI finish button because the evidence pass intentionally avoided portal clicks while extension local active state was still present.
+
+Final docs verification:
+
+- `rtk git diff --check` passed after docs and screenshot updates.
 
 ## Leftovers
 
-To be completed during implementation.
+- True Chrome toolbar-popup manual capture remains unvalidated because `agent-browser` can load the unpacked extension and operate direct extension pages, but does not expose a reliable Chrome toolbar/extension-action popup control path in this run.
+- Direct extension-page manual fallback after automatic clicks was not used as public passing evidence in this phase. An earlier bounded run uploaded a screenshot asset but failed event creation with `A capture event with this index already exists`, leaving a manual fallback event-ordering follow-up for child plan `107` or a focused reliability bugfix plan.
+- If a capture session is completed through the API outside the extension UI, extension local active-capture state can remain present in that browser profile. This phase avoided follow-on event pollution by closing the extension-loaded browser before taking portal screenshots.
+- Pause/resume controls were visible on the active direct extension page; this phase did not re-run a dedicated pause/resume assertion because plan `100` had already validated that behavior and this plan prioritized final artifact evidence.
 
 ## Handoff Notes
 

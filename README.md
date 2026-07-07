@@ -10,8 +10,8 @@ Demo Composer is an alpha-stage, self-hosted open-source tool for turning browse
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Setup and auth    | Web first-run setup, password login, cookie-backed portal sessions, and organization-scoped users.                                                                                       |
 | Projects          | Project creation, project workspace, settings, archive/unarchive, and project-scoped artifacts.                                                                                          |
-| Capture           | Manual portal capture sessions, screenshot upload, ordered capture events, and event editing; Chrome extension capture has validated automatic-click and direct manual fallback paths, with true toolbar-popup manual validation still pending. |
-| Extension         | Instance URL setup, login, project selection, manual screenshot fallback, automatic click capture MVP, and finish/open-active portal flow exist in code/tests; 2026-07-07 dogfood closed the split-origin portal link path. |
+| Capture           | Manual portal capture sessions, screenshot upload, ordered capture events, and event editing; Chrome extension automatic-click capture now has screenshot-backed browser evidence, with true toolbar-popup manual validation still pending. |
+| Extension         | Instance URL setup, login, project selection, manual screenshot fallback, automatic click capture MVP, and finish/open-active portal flow exist in code/tests; 2026-07-07 dogfood closed the split-origin portal link path and refreshed captured-workflow evidence. |
 | Guides            | Generate guides from capture sessions, edit blocks and steps, manage screenshots, annotate screenshots, preview, publish, password-protect, embed, export Markdown, and export HTML ZIP. |
 | Interactive demos | Generate demos from capture sessions, edit scenes, add hotspots, publish, password-protect, embed, and view public demos.                                                                |
 | Sharing           | Immutable publish snapshots for guides and demos with public/restricted access controls.                                                                                                 |
@@ -22,7 +22,7 @@ The DB-backed v1 smoke workflow now proves the main backend path from first-run 
 
 ## Alpha Screenshots
 
-These screenshots use safe synthetic data. Portal/editor screenshots come from the [2026-06-22 portal dogfood smoke](docs/v1-dogfood-smoke-suite.md). The public guide, public demo, and extension setup screenshots were refreshed on 2026-06-30 during the modern UI browser QA pass with local fixture data.
+These screenshots use safe synthetic data. Portal/editor screenshots come from the [2026-06-22 portal dogfood smoke](docs/v1-dogfood-smoke-suite.md). The public guide, public demo, and extension setup screenshots were refreshed on 2026-06-30 during the modern UI browser QA pass with local fixture data. Extension captured-workflow screenshots were refreshed on 2026-07-07 from an automatic-click browser validation run.
 
 | Project and capture | Guide authoring |
 | --- | --- |
@@ -33,9 +33,17 @@ These screenshots use safe synthetic data. Portal/editor screenshots come from t
 | --- | --- |
 | ![Interactive demo editor with scenes, hotspot controls, and publishing controls](docs/assets/alpha/alpha-demo-editor.png) | ![Published public interactive demo viewer with a highlighted hotspot](docs/assets/alpha/alpha-public-demo-viewer.png) |
 
-| Chrome extension setup |
+| Chrome extension setup | Extension active capture |
+| --- | --- |
+| ![Chrome extension popup connect instance screen](docs/assets/alpha/alpha-extension-connect.png) | ![Chrome extension active capture state with capture controls](docs/assets/alpha/alpha-extension-active-capture.png) |
+
+| Extension capture detail | Extension-generated guide |
+| --- | --- |
+| ![Portal capture session detail showing extension-created click events and screenshot assets](docs/assets/alpha/alpha-extension-capture-session-detail.png) | ![Guide editor generated from extension-created capture source material](docs/assets/alpha/alpha-extension-guide-source.png) |
+
+| Extension-generated interactive demo |
 | --- |
-| ![Chrome extension popup connect instance screen](docs/assets/alpha/alpha-extension-connect.png) |
+| ![Interactive demo editor generated from extension-created capture source material](docs/assets/alpha/alpha-extension-demo-source.png) |
 
 ## Product Shape
 
@@ -62,7 +70,7 @@ The product intentionally keeps guides and interactive demos separate. A capture
 - Local file storage is the only storage provider.
 - Rate limiting is in-memory and should be replaced before multi-instance production deployments.
 - Operators are responsible for database and local file storage backup/restore.
-- Captured-workflow extension screenshots remain pending until the final extension evidence pass; the setup popup screenshot is current.
+- True Chrome toolbar-popup manual screenshot validation is still pending; automatic-click extension captured-workflow screenshots are current as of the 2026-07-07 evidence pass.
 
 ## Quick Local Path
 
