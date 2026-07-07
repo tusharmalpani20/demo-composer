@@ -237,7 +237,7 @@ Acceptance:
 
 ### 102: Extension Finish Portal Origin Verification And Fix
 
-Status: Planned
+Status: Completed on 2026-07-07
 
 File:
 
