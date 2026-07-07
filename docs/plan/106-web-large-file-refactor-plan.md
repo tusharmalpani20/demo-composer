@@ -672,6 +672,20 @@ Validate enough mocked/local API calls to prove the split did not break app load
 
 Browser validation was intentionally skipped for this phase because the implementation was limited to pure helper extraction and local helper tests. It did not move or change rendered JSX, event handlers, route navigation behavior, CSS module imports/classes, API client functions, or API orchestration.
 
+## Post-Implementation Recheck
+
+Rechecked after implementation on 2026-07-07 against this child plan, master plan `004`, the current worktree, and the scoped commits for this phase.
+
+Findings:
+
+- No behavior mismatch was found. The implementation kept the slice limited to pure helper extraction and left rendered JSX, event handlers, CSS modules/classes, routes, API calls, API contracts, shared contracts, and page props unchanged.
+- No missing schema, type, API, UI, security, permission, migration, or backwards-compatibility update was found. No shared package, backend, extension, CI, lockfile, or route parser changes were introduced.
+- The browser-validation skip remains valid because no browser-visible behavior or browser interaction boundary moved.
+- The phase is represented by scoped commits only:
+  - `7f41b97 refactor(web): extract editor helper modules`
+  - `0a57b0b docs: close web large-file refactor plan`
+- Leftover work is intentional and documented below rather than hidden as completed.
+
 ## Leftovers
 
 - `apps/web/src/lib/api.ts` is still large and can be split in a later focused plan or continuation slice with `api.test.ts` coverage and barrel compatibility checks.
@@ -683,3 +697,4 @@ Browser validation was intentionally skipped for this phase because the implemen
 - This phase completed the pure helper extraction slice only. Future work should treat API client splitting and rendered panel/component extraction as separate, explicitly tested slices.
 - If future work moves JSX, event handlers, CSS imports/classes, or editor API orchestration, run agent-browser validation for the affected guide/demo editor paths and record desktop plus narrow viewport results.
 - Preserve the current pattern: shared API DTOs/constants stay in `@repo/types` and `@repo/constants`; browser/page-local drafts and React props stay local to `apps/web`.
+- Carry into `107-extension-popup-refactor-plan.md`: follow the same small-slice pattern for the extension popup. Prefer extracting pure helpers/adapters first, keep extension browser/runtime message shapes app-local, preserve the popup UI wording/layout, and require browser validation if popup JSX, events, capture lifecycle orchestration, or extension API boundaries move.
