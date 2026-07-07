@@ -564,7 +564,7 @@ Acceptance:
 - [x] Implement and close child plan `105`.
 - [x] Expand and recheck child plan `106`.
 - [x] Implement and close child plan `106`.
-- [ ] Expand and recheck child plan `107`.
+- [x] Expand and recheck child plan `107`.
 - [ ] Implement and close child plan `107`.
 - [ ] Expand and recheck child plan `108`.
 - [ ] Implement and close child plan `108`.
