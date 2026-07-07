@@ -68,6 +68,13 @@ Findings:
 - The plan explicitly preserves the completed extension reliability evidence from plans `100` through `103`, including split-origin portal behavior and the known true-toolbar-popup manual validation limitation.
 - No contradictions, stale assumptions, unclear ownership, missing API/security/storage compatibility rules, or unsafe implementation gaps were found after this recheck.
 
+Post-implementation close-previous recheck on 2026-07-07:
+
+- Rechecked the implemented helper extraction against this plan, master plan `004`, current extension code, the committed code diff, and the plan closeout notes.
+- Found one narrow helper-contract gap introduced by the test seam for `buildCaptureSessionInput`: passing `userAgent: null` fell back to `navigator.userAgent` because the helper used nullish coalescing. Production popup calls omit `userAgent`, so runtime behavior was not changed, but deterministic null testing was unsafe.
+- Fixed the gap with a red helper test first, then updated `buildCaptureSessionInput` to distinguish an omitted `userAgent` override from an explicit `null`.
+- No behavior, schema, API, UI, security, permission, migration, browser-validation, unrelated-change, or master-plan completion gaps remain after the fix and rerun verification.
+
 ## Current Codebase Baseline
 
 Current worktree expectation before implementation:
@@ -674,10 +681,11 @@ Do not claim true toolbar-popup manual validation succeeded unless the actual to
   - `screenshotFileName`
 - Updated `apps/extension/src/App.tsx` to import those helpers.
 - Kept rendered JSX, event handlers, dependency construction, Chrome API boundaries, extension API request construction, storage behavior, portal URL behavior, capture lifecycle orchestration, popup copy, CSS classes, and public `App` dependency-injection props unchanged.
+- During the close-previous recheck, added a red test for an explicit `userAgent: null` override and fixed `buildCaptureSessionInput` so only omitted overrides fall back to `navigator.userAgent`.
 - Resulting file-size movement:
   - `apps/extension/src/App.tsx`: from 1083 lines to 1024 lines.
-  - `apps/extension/src/popup/helpers.ts`: 69 lines.
-  - `apps/extension/src/popup/helpers.test.ts`: 101 lines.
+  - `apps/extension/src/popup/helpers.ts`: 71 lines.
+  - `apps/extension/src/popup/helpers.test.ts`: 112 lines.
 
 ## Verification Notes
 
@@ -689,8 +697,12 @@ Do not claim true toolbar-popup manual validation succeeded unless the actual to
 - Focused helper and popup tests after implementation:
   - `rtk pnpm --filter extension test -- src/popup/helpers.test.ts` passed: 1 test file, 5 tests.
   - `rtk pnpm --filter extension test -- src/App.test.tsx` passed: 1 test file, 35 tests.
+- Close-previous recheck edge-case fix:
+  - `rtk pnpm --filter extension test -- src/popup/helpers.test.ts` failed before the fix because `userAgent: null` fell back to jsdom's `navigator.userAgent`, as expected.
+  - `rtk pnpm --filter extension test -- src/popup/helpers.test.ts src/App.test.tsx` passed: 2 test files, 41 tests.
+  - `rtk pnpm --filter extension check-types` passed.
 - Final extension verification:
-  - `rtk pnpm --filter extension test` passed: 11 test files, 91 tests.
+  - `rtk pnpm --filter extension test` passed: 11 test files, 92 tests.
   - `rtk pnpm --filter extension check-types` passed.
   - `rtk pnpm --filter extension lint` passed.
   - `rtk pnpm --filter extension build` passed.
@@ -709,6 +721,7 @@ Browser validation was intentionally skipped for this phase because the implemen
 - `apps/extension/src/lib/api.ts`, `settings.ts`, and `content-click-capture.ts` remain moderate-sized local modules. They were not touched because this phase stayed scoped to popup pure helper extraction.
 - True Chrome toolbar-popup manual capture remains unvalidated, preserving the plan `103` limitation.
 - The direct extension-page duplicate event-index follow-up after automatic clicks remains out of scope for this refactor.
+- Carry into child plan `108`: keep the production-readiness review focused on operational gaps such as rate limiting, storage cleanup, backup/restore rehearsal, dependency audit expectations, and local-only storage/deployment notes. The remaining extension-specific carry-forward is documentation-only unless plan `108` intentionally opens a production hardening fix: true Chrome toolbar-popup manual capture is still unvalidated, and the duplicate event-index follow-up remains outside this refactor.
 
 ## Handoff Notes
 

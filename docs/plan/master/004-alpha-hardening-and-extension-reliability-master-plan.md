@@ -510,8 +510,10 @@ Completed result:
 - Extracted pure popup helpers from `apps/extension/src/App.tsx` into `apps/extension/src/popup/helpers.ts` with focused helper tests.
 - Kept rendered JSX, popup event handlers, dependency construction, Chrome API boundaries, extension API request construction, storage behavior, portal URL behavior, capture lifecycle orchestration, popup copy, CSS classes, and public `App` dependency-injection props unchanged.
 - Reduced `App.tsx` from 1083 lines to 1024 lines.
+- Post-implementation recheck found and fixed one narrow helper-contract test seam: explicit `userAgent: null` now remains null instead of falling back to `navigator.userAgent`; production popup calls still omit the override and preserve runtime behavior.
 - Focused extension tests, full extension tests, typecheck, lint, build, workspace typecheck, and whitespace verification passed.
 - Browser validation was not required because this slice was pure helper extraction only.
+- Carry-forward into child plan `108`: keep production readiness focused on operational hardening gaps, while preserving the existing extension leftovers that true Chrome toolbar-popup manual capture remains unvalidated and the direct extension-page duplicate event-index follow-up is still out of scope.
 
 ### 108: Production Hardening Readiness Plan
 
