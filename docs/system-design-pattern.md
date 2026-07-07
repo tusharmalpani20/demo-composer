@@ -88,7 +88,7 @@ Demo Composer may eventually need background workers for thumbnails, HTML snapsh
 
 ## Initial Monorepo Shape
 
-Recommended initial structure:
+Current core structure:
 
 ```text
 apps/
@@ -103,7 +103,7 @@ packages/
   typescript-config/
   eslint-config/
 
-  project-domain/
+  file-domain/
   capture-domain/
   guide-domain/
   demo-domain/
@@ -118,6 +118,10 @@ apps/
   desktop/
 
 packages/
+  project-domain/
+  organization-domain/
+  auth-domain/
+  instance-domain/
   asset-domain/
   analytics-domain/
   export-domain/
@@ -235,7 +239,7 @@ Current role:
 - Keep DB-shaped row types inside the backend module or adapter that owns the table/query.
 - Avoid recreating the old broad shared package surface with contact, OTP, signup, user-asset, or unrelated product-domain schemas.
 
-Active contract areas include common API primitives, public instance status, first-run setup, project, capture session, capture event, and selected capture asset response DTOs.
+Active contract areas include common API primitives, public instance status, first-run setup, auth, organization, project, capture session/event/asset DTOs, guide DTOs, interactive demo DTOs, and publish/public snapshot DTOs.
 
 Do not put React component props, Fastify request types, database row types, storage adapter inputs, or auth/session internals in this package.
 
@@ -271,9 +275,22 @@ Examples:
 
 Product-specific editor components should stay in `apps/web/src/features/*` until they are genuinely reusable.
 
-### `packages/project-domain`
+### `packages/file-domain`
 
-Owns project-level behavior.
+Owns reusable file and storage metadata decisions that are safe outside the server adapter.
+
+Current responsibilities:
+
+- file metadata validation
+- storage provider validation
+- non-negative file size policy
+- screenshot upload policy inputs shared by capture asset handling
+
+Does not own raw storage adapters, SQL repositories, multipart parsing, or API response DTOs.
+
+### Future `packages/project-domain`
+
+Project behavior is not currently extracted into a package. If it becomes complex enough to justify a domain package, it should own project-level behavior.
 
 Likely responsibilities:
 

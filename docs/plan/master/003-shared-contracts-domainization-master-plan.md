@@ -925,7 +925,7 @@ Acceptance:
 - The repo has a documented shared-contract and domain-package architecture.
 - No route/API contract, schema/type behavior, shared export, security, permission, migration, backwards-compatibility, public viewer, extension, or UI behavior change was introduced by closeout.
 - Package boundary audits found no shared/domain package imports from `apps/*`, no active `@repo/interactive-demo-domain` package naming, and no Fastify/React/browser/Chrome dependencies in the shared/domain packages audited by this track.
-- Durable docs did not require broader architecture rewrites; `097` child-plan status was corrected to align with its completed audit status.
+- Durable docs did not require broader architecture rewrites; `docs/system-design-pattern.md` received a focused package/type surface sync, and `097` child-plan status was corrected to align with its completed audit status.
 - `099` records the full verification log, the serial DB reset/rerun evidence, browser-validation rationale, and remaining product roadmap deferrals.
 - No implementation leftover remains for the shared-contracts and domainization track.
 

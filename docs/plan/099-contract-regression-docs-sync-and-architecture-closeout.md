@@ -41,6 +41,7 @@ Actual affected documentation files:
 docs/plan/097-web-shared-contract-consumption.md
 docs/plan/099-contract-regression-docs-sync-and-architecture-closeout.md
 docs/plan/master/003-shared-contracts-domainization-master-plan.md
+docs/system-design-pattern.md
 ```
 
 Implementation checklist:
@@ -52,7 +53,7 @@ Implementation checklist:
 - [x] Audited shared/domain package import direction and framework boundaries.
 - [x] Audited route modules against the closeout route inventory.
 - [x] Audited shared exports/import usage for the active apps and packages.
-- [x] Audited durable docs listed in this plan and found no architecture-doc drift requiring broader rewrites.
+- [x] Audited durable docs listed in this plan and corrected focused system-design drift in the final package/type surface notes.
 - [x] Ran the strongest practical verification suite, including DB-backed integration and smoke checks.
 - [x] Documented the initial DB smoke deadlock as a command-ordering issue and reran DB-backed checks serially after resetting the test database.
 - [x] Confirmed browser validation was not required because this closeout made docs-only changes.
@@ -66,7 +67,8 @@ Audit findings:
 - The accidental package name `@repo/interactive-demo-domain` was not present in active package/app code.
 - Current server routes match the closeout route families recorded in this plan.
 - `docs/backend-route-inventory.md` already reflected current publish public paths under `/api/v1/public/publish-links/:slug*`.
-- `CONTEXT.md`, `docs/system-design-pattern.md`, `docs/project-zoomout-status.md`, `docs/roadmap.md`, and existing ADRs did not require changes for this closeout.
+- `docs/system-design-pattern.md` required a focused sync for the implemented package surface: `file-domain` exists, `project-domain` remains future work, and `@repo/types` now covers auth, organization, guide, demo, and publish contracts in addition to the earlier setup/project/capture contracts.
+- `CONTEXT.md`, `docs/project-zoomout-status.md`, `docs/roadmap.md`, and existing ADRs did not require changes for this closeout.
 - The final TODO/FIXME scan found one pre-existing `TODO` in `apps/server/src/common/helper_function/error_handler.helper.ts` inside the generic Fastify response-serialization error branch. It was not introduced by this track, does not represent a shared-contract/domainization leftover, and was left unchanged because this closeout is docs/verification scoped.
 - No route/API contract, schema/type behavior, shared export, security, permission, migration, backwards-compatibility, public viewer, extension, or UI behavior change was introduced.
 
