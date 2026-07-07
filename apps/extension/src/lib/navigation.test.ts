@@ -26,6 +26,30 @@ describe("openPortalUrl", () => {
     }, expect.any(Function));
   });
 
+  it("rejects when chrome tabs reports a runtime error", async () => {
+    const create = vi.fn((input: { url: string }, callback?: () => void) => {
+      callback?.();
+    });
+    vi.stubGlobal("chrome", {
+      tabs: {
+        create,
+      },
+      runtime: {
+        lastError: {
+          message: "Tabs cannot be edited right now.",
+        },
+      },
+    });
+
+    await expect(openPortalUrl("https://demo.example.com/projects/project_1")).rejects.toThrow(
+      "Tabs cannot be edited right now."
+    );
+
+    expect(create).toHaveBeenCalledWith({
+      url: "https://demo.example.com/projects/project_1",
+    }, expect.any(Function));
+  });
+
   it("falls back to window open when chrome tabs are unavailable", async () => {
     const open = vi.fn(() => ({}));
     vi.stubGlobal("open", open);
