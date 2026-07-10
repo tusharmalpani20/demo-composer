@@ -1,8 +1,13 @@
-# Demo Composer Docs App
+# Ossie Docs App
 
-`apps/docs` is the compact alpha documentation hub for Demo Composer.
+`apps/docs` is the compact repository documentation hub for Ossie.
 
-It is intentionally not a full documentation system yet. The markdown files under the repo root and `docs/` remain the source of truth for setup, operations, roadmap, dogfood evidence, and contribution flow.
+It is not the future customer-authored Product Documentation artifact family. The markdown files under the repo root and `docs/` remain the source of truth for setup, operations, roadmap, dogfood evidence, and contribution flow.
+
+The rendered site separates `What Works Today` from the accepted `Next Platform
+Direction`. Future-direction copy must never imply that Project Versions,
+Editions/Revisions/Publications, Product Documentation, or Video is already
+implemented.
 
 ## Run Locally
 
@@ -26,4 +31,6 @@ rtk pnpm --filter docs build
 - Keep alpha limitations visible.
 - Link to source markdown docs instead of copying every doc into the app.
 - Use only safe synthetic screenshots from `docs/assets/alpha/`.
-- Do not position Demo Composer as hosted SaaS.
+- Do not position Ossie as hosted SaaS.
+- Keep Product Documentation distinct from Guides and from this Docs App.
+- Keep Loom-style Video visibly deferred and unmodeled.

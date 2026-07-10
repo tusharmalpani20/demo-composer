@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ApiClientError } from "../../lib/api";
 import { PublicGuideReaderPage } from "./PublicGuideReaderPage";
@@ -116,13 +122,20 @@ const publicGuideResponse: PublicPublishLinkResponse = {
   },
 };
 
-const renderPage = (overrides: {
-  response?: PublicPublishLinkResponse;
-  loadPublishLink?: (slug: string) => Promise<PublicPublishLinkResponse>;
-  createViewerSession?: (slug: string, input: { password: string }) => Promise<void>;
-  mode?: "page" | "embed";
-} = {}) => {
-  const loadPublishLink = overrides.loadPublishLink ?? vi.fn(async () => overrides.response ?? publicGuideResponse);
+const renderPage = (
+  overrides: {
+    response?: PublicPublishLinkResponse;
+    loadPublishLink?: (slug: string) => Promise<PublicPublishLinkResponse>;
+    createViewerSession?: (
+      slug: string,
+      input: { password: string },
+    ) => Promise<void>;
+    mode?: "page" | "embed";
+  } = {},
+) => {
+  const loadPublishLink =
+    overrides.loadPublishLink ??
+    vi.fn(async () => overrides.response ?? publicGuideResponse);
 
   render(
     <PublicGuideReaderPage
@@ -130,7 +143,7 @@ const renderPage = (overrides: {
       loadPublishLink={loadPublishLink}
       createViewerSession={overrides.createViewerSession}
       mode={overrides.mode}
-    />
+    />,
   );
 
   return { loadPublishLink };
@@ -141,28 +154,54 @@ describe("PublicGuideReaderPage", () => {
     const { loadPublishLink } = renderPage();
 
     expect(screen.getByText("Loading published guide...")).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
-    expect(screen.getByText("Set up departments from the list view.")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Department guide" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Set up departments from the list view."),
+    ).toBeInTheDocument();
     expect(screen.getByText("Published version 1")).toBeInTheDocument();
-    expect(screen.getByText("Published Jun 10, 2026, 12:00 AM")).toBeInTheDocument();
-    expect(screen.getAllByText(/^[12]$/).map((node) => node.textContent)).toEqual(["1", "2"]);
-    expect(screen.getByRole("heading", { name: "Navigate to Department List" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Published Jun 10, 2026, 12:00 AM"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/^[12]$/).map((node) => node.textContent),
+    ).toEqual(["1", "2"]);
+    expect(
+      screen.getByRole("heading", { name: "Navigate to Department List" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Open the Department module.")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Click Add Department" })).toBeInTheDocument();
-    expect(screen.getByText("Use the primary action in the list view.")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Department fields" })).toBeInTheDocument();
-    expect(screen.getByText("Choose the right department settings before saving.")).toBeInTheDocument();
-    expect(screen.getByRole("separator", { name: "Guide section divider" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Department List" })).toHaveAttribute(
+    expect(
+      screen.getByRole("heading", { name: "Click Add Department" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Use the primary action in the list view."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Department fields" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Choose the right department settings before saving."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("separator", { name: "Guide section divider" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Department List" }),
+    ).toHaveAttribute(
       "src",
-      "/api/v1/public/publish-links/abc123/assets/asset_1/file"
+      "/api/v1/public/publish-links/abc123/assets/asset_1/file",
     );
     expect(screen.getByRole("img", { name: "Add Department" })).toHaveAttribute(
       "src",
-      "/api/v1/public/publish-links/abc123/assets/asset_2/file"
+      "/api/v1/public/publish-links/abc123/assets/asset_2/file",
     );
-    expect(screen.getByRole("button", { name: "Open screenshot for step 1" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Open screenshot for step 2" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Open screenshot for step 1" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Open screenshot for step 2" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
     expect(screen.queryByText("file_1")).not.toBeInTheDocument();
     expect(screen.queryByText("organization_1")).not.toBeInTheDocument();
@@ -174,41 +213,60 @@ describe("PublicGuideReaderPage", () => {
     const { loadPublishLink } = renderPage({ mode: "embed" });
 
     expect(screen.getByText("Loading published guide...")).toBeInTheDocument();
-    expect(await screen.findByRole("main", { name: "Embedded published guide" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Department guide" })).toBeInTheDocument();
-    expect(screen.getByText("Set up departments from the list view.")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("main", { name: "Embedded published guide" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Department guide" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Set up departments from the list view."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Published guide")).not.toBeInTheDocument();
     expect(screen.queryByText("Published version 1")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Navigate to Department List" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Department List" })).toHaveAttribute(
+    expect(
+      screen.getByRole("heading", { name: "Navigate to Department List" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Department List" }),
+    ).toHaveAttribute(
       "src",
-      "/api/v1/public/publish-links/abc123/assets/asset_1/file"
+      "/api/v1/public/publish-links/abc123/assets/asset_1/file",
     );
     expect(loadPublishLink).toHaveBeenCalledWith("abc123");
   });
 
   it("unlocks password protected public guides and reloads the snapshot", async () => {
-    const loadPublishLink = vi.fn()
-      .mockRejectedValueOnce(new ApiClientError({
-        kind: "unauthenticated",
-        status: 401,
-        type: "publish_link_password_required",
-        message: "Publish link password is required",
-      }))
+    const loadPublishLink = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new ApiClientError({
+          kind: "unauthenticated",
+          status: 401,
+          type: "publish_link_password_required",
+          message: "Publish link password is required",
+        }),
+      )
       .mockResolvedValueOnce(publicGuideResponse);
     const createViewerSession = vi.fn(async () => undefined);
     renderPage({ loadPublishLink, createViewerSession });
 
-    expect(await screen.findByText("This guide is password protected.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("This guide is password protected."),
+    ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Password"), {
       target: { value: "shared password" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Unlock guide" }));
 
-    await waitFor(() => expect(createViewerSession).toHaveBeenCalledWith("abc123", {
-      password: "shared password",
-    }));
-    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(createViewerSession).toHaveBeenCalledWith("abc123", {
+        password: "shared password",
+      }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Department guide" }),
+    ).toBeInTheDocument();
     expect(loadPublishLink).toHaveBeenCalledTimes(2);
   });
 
@@ -232,21 +290,37 @@ describe("PublicGuideReaderPage", () => {
   it("opens and navigates public guide screenshots", async () => {
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Open screenshot for step 1" }));
+    expect(
+      await screen.findByRole("heading", { name: "Department guide" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open screenshot for step 1" }),
+    );
 
-    const firstDialog = screen.getByRole("dialog", { name: "Navigate to Department List" });
-    expect(within(firstDialog).getByRole("img", { name: "Department List" })).toHaveAttribute(
+    const firstDialog = screen.getByRole("dialog", {
+      name: "Navigate to Department List",
+    });
+    expect(
+      within(firstDialog).getByRole("img", { name: "Department List" }),
+    ).toHaveAttribute(
       "src",
-      "/api/v1/public/publish-links/abc123/assets/asset_1/file"
+      "/api/v1/public/publish-links/abc123/assets/asset_1/file",
     );
     expect(within(firstDialog).getByText("1 / 2")).toBeInTheDocument();
 
-    fireEvent.click(within(firstDialog).getByRole("button", { name: "Next screenshot" }));
-    const secondDialog = screen.getByRole("dialog", { name: "Click Add Department" });
+    fireEvent.click(
+      within(firstDialog).getByRole("button", { name: "Next screenshot" }),
+    );
+    const secondDialog = screen.getByRole("dialog", {
+      name: "Click Add Department",
+    });
     expect(within(secondDialog).getByText("2 / 2")).toBeInTheDocument();
 
-    fireEvent.click(within(secondDialog).getByRole("button", { name: "Close screenshot viewer" }));
+    fireEvent.click(
+      within(secondDialog).getByRole("button", {
+        name: "Close screenshot viewer",
+      }),
+    );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -257,28 +331,34 @@ describe("PublicGuideReaderPage", () => {
         published_artifact: {
           ...publicGuideResponse.published_artifact,
           snapshot: {
-            ...(publicGuideResponse.published_artifact.snapshot as Record<string, unknown>),
+            ...(publicGuideResponse.published_artifact.snapshot as Record<
+              string,
+              unknown
+            >),
             blocks: [
               {
                 id: "block_1",
                 block_type: "step",
                 block_index: 1,
                 content: {
-                  annotations: [{
-                    id: "ann_public",
-                    type: "highlight",
-                    x: 0.12,
-                    y: 0.22,
-                    width: 0.32,
-                    height: 0.14,
-                  }, {
-                    id: "",
-                    type: "highlight",
-                    x: 0.2,
-                    y: 0.2,
-                    width: 0,
-                    height: 0.1,
-                  }],
+                  annotations: [
+                    {
+                      id: "ann_public",
+                      type: "highlight",
+                      x: 0.12,
+                      y: 0.22,
+                      width: 0.32,
+                      height: 0.14,
+                    },
+                    {
+                      id: "",
+                      type: "highlight",
+                      x: 0.2,
+                      y: 0.2,
+                      width: 0,
+                      height: 0.1,
+                    },
+                  ],
                 },
                 step: {
                   id: "step_1",
@@ -292,7 +372,8 @@ describe("PublicGuideReaderPage", () => {
                   height: 900,
                   page_title: "Department List",
                   page_url: "https://example.test/departments",
-                  file_url: "/api/v1/public/publish-links/abc123/assets/asset_1/file",
+                  file_url:
+                    "/api/v1/public/publish-links/abc123/assets/asset_1/file",
                   file: {
                     id: "file_1",
                     original_name: "departments.png",
@@ -307,7 +388,9 @@ describe("PublicGuideReaderPage", () => {
       },
     });
 
-    expect(await screen.findByRole("heading", { name: "Department guide" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Department guide" }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("guide-highlight-ann_public")).toHaveStyle({
       left: "12%",
       top: "22%",
@@ -329,9 +412,13 @@ describe("PublicGuideReaderPage", () => {
       },
     });
 
-    expect(await screen.findByText("Published guide was not found.")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Demo Composer portal")).not.toBeInTheDocument();
+    expect(
+      await screen.findByText("Published guide was not found."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Sign in" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Ossie portal")).not.toBeInTheDocument();
   });
 
   it("renders restricted and expired public guide access states", async () => {
@@ -346,10 +433,12 @@ describe("PublicGuideReaderPage", () => {
             message: "Publish link is not public",
           });
         }}
-      />
+      />,
     );
 
-    expect(await screen.findByText("This guide is not publicly accessible.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("This guide is not publicly accessible."),
+    ).toBeInTheDocument();
 
     rerender(
       <PublicGuideReaderPage
@@ -362,10 +451,12 @@ describe("PublicGuideReaderPage", () => {
             message: "Publish link has expired",
           });
         }}
-      />
+      />,
     );
 
-    expect(await screen.findByText("This guide link has expired.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("This guide link has expired."),
+    ).toBeInTheDocument();
   });
 
   it.each([
@@ -396,17 +487,22 @@ describe("PublicGuideReaderPage", () => {
       }),
       message: "Published guide was not found.",
     },
-  ])("uses public access errors in embed mode: $message", async ({ error, message }) => {
-    renderPage({
-      mode: "embed",
-      loadPublishLink: async () => {
-        throw error;
-      },
-    });
+  ])(
+    "uses public access errors in embed mode: $message",
+    async ({ error, message }) => {
+      renderPage({
+        mode: "embed",
+        loadPublishLink: async () => {
+          throw error;
+        },
+      });
 
-    expect(await screen.findByText(message)).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
-  });
+      expect(await screen.findByText(message)).toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "Sign in" }),
+      ).not.toBeInTheDocument();
+    },
+  );
 
   it("renders empty and metadata-light public guide snapshots", async () => {
     renderPage({
@@ -430,8 +526,12 @@ describe("PublicGuideReaderPage", () => {
       },
     });
 
-    expect(await screen.findByRole("heading", { name: "Text-only guide" })).toBeInTheDocument();
-    expect(screen.getByText("This published guide does not have any blocks yet.")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Text-only guide" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("This published guide does not have any blocks yet."),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Published Jun/)).not.toBeInTheDocument();
   });
 
@@ -447,7 +547,9 @@ describe("PublicGuideReaderPage", () => {
       },
     });
 
-    expect(await screen.findByText("Published artifact cannot be displayed.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Published artifact cannot be displayed."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("interactive_demo")).not.toBeInTheDocument();
   });
 
@@ -489,8 +591,12 @@ describe("PublicGuideReaderPage", () => {
       } as unknown as PublicPublishLinkResponse,
     });
 
-    expect(await screen.findByRole("heading", { name: "Defensive guide" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Valid step" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Defensive guide" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Valid step" }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.queryByText("asset_1")).not.toBeInTheDocument();
   });

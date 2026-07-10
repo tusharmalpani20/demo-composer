@@ -2,7 +2,7 @@
 
 Date: 2026-06-15
 
-This guide covers the operational basics for a self-hosted Demo Composer v1 instance. It does not cover one-command packaging, Kubernetes, Terraform, managed object storage, or external observability stacks.
+This guide covers the operational basics for a self-hosted Ossie alpha instance. It does not cover one-command packaging, Kubernetes, Terraform, managed object storage, or external observability stacks.
 
 ## Health Checks
 
@@ -96,7 +96,7 @@ Recommended production defaults:
 
 ## Retention And Cleanup
 
-Demo Composer does not yet include automated retention cleanup. Treat storage growth as an operator responsibility for v1.
+Ossie does not yet include automated retention cleanup. Treat storage growth as an operator responsibility for the alpha.
 
 Before deleting local files manually:
 

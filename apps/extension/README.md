@@ -1,6 +1,6 @@
-# Demo Composer Extension
+# Ossie Extension
 
-Chrome extension popup for connecting a browser to a hosted or self-hosted Demo Composer instance.
+Chrome extension popup for connecting a browser to a hosted or self-hosted Ossie instance.
 
 ## Product Positioning
 
@@ -24,7 +24,7 @@ start capture
 
 This app currently supports in code and focused tests:
 
-- configuring a Demo Composer instance URL
+- configuring an Ossie instance URL
 - signing in against that instance
 - storing the extension session token in extension storage
 - checking current auth

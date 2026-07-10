@@ -1,6 +1,6 @@
 # Contributing
 
-Demo Composer is an alpha-stage open-source project for screenshot-first browser workflow capture, Scribe-style guide publishing, and Storylane-style interactive demos.
+Ossie is an alpha-stage open-source project for screenshot-first browser workflow capture, Scribe-style Guide publishing, and Storylane-style Interactive Demos. Master Plan `005` accepts a broader version-aware knowledge-platform direction, but contributors must not describe planned behavior as shipped.
 
 ## Workflow
 
@@ -9,6 +9,11 @@ Demo Composer is an alpha-stage open-source project for screenshot-first browser
 - Keep docs updated when behavior, setup, security posture, or product scope changes.
 - Use ADRs in `docs/adr/` for durable architecture decisions.
 - Prefer changes that fit the existing domain-module style before adding new abstractions.
+
+Start consequential work with `AGENTS.md`, then read `CONTEXT.md`, relevant
+accepted ADRs, and the active plan. Optional agent guidance and provenance are
+documented in `docs/agent-workflow.md`; agent tooling is never a contributor or
+runtime prerequisite.
 
 ## Development
 
@@ -88,3 +93,11 @@ Deferred:
 - Chrome Web Store packaging
 - one-command production deployment packaging
 - advanced editor/demo polish
+- Product Documentation runtime until the post-foundation domain grill is accepted
+- Loom-style Video recording and library behavior
+
+The accepted target also includes Audit/Access Evidence, Project Membership,
+Project Versions, and version-aware Guide/Demo Editions, Revisions, and
+Publications. Those remain unimplemented until their ordered Master Plan `005`
+children close. Do not start Documentation or Video runtime work outside those
+gates.

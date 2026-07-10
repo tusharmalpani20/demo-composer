@@ -4,7 +4,7 @@ Date: 2026-06-16
 
 ## Purpose
 
-This document records the current backend route surface so future work lands in the active Demo Composer modules instead of removed legacy ORCA-style paths.
+This document records the current backend route surface so future work lands in the active Ossie modules instead of removed legacy ORCA-style paths.
 
 ## Current Runtime Path
 
@@ -68,7 +68,7 @@ apps/server/src/module/*
 apps/server/src/config/passport.config.ts
 ```
 
-Removed surfaces included old authentication signup/signin routes, OTP routes, user asset routes, organization role routes, and contact routes. They are not part of the current Demo Composer product path.
+Removed surfaces included old authentication signup/signin routes, OTP routes, user asset routes, organization role routes, and contact routes. They are not part of the current Ossie product path.
 
 ## Current Backend Boundary
 

@@ -12,8 +12,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Demo Composer Docs",
-  description: "Alpha documentation hub for self-hosted Demo Composer.",
+  title: "Ossie Docs",
+  description: "Alpha repository documentation hub for self-hosted Ossie.",
 };
 
 export default function RootLayout({

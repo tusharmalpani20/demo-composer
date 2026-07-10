@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report broken behavior in Demo Composer
+about: Report broken behavior in Ossie
 title: "[Bug]: "
 labels: bug
 assignees: ""

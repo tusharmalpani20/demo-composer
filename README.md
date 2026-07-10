@@ -1,51 +1,51 @@
-# Demo Composer
+# Ossie
 
-Demo Composer is an alpha-stage, self-hosted open-source tool for turning browser workflows into two reusable outputs: Scribe-style step-by-step guides and Storylane-style interactive demos. It is built for internal documentation, onboarding, support, and sales enablement teams that want screenshot-first workflow capture without depending on a closed SaaS product.
+Ossie is an alpha-stage, self-hosted open-source tool for turning browser workflows into two currently implemented outputs: Scribe-style step-by-step Guides and Storylane-style Interactive Demos. It is growing toward a project-organized internal knowledge platform, but the broader version, governance, Documentation, and Video direction described below is not shipped yet.
 
 > Alpha status: the core capture-to-guide and capture-to-demo paths exist, but the project still needs more dogfooding, packaging, editor polish, and extension reliability work before it should be treated as production-ready.
 
 ## What Works Today
 
-| Area              | Current alpha capability                                                                                                                                                                 |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Setup and auth    | Web first-run setup, password login, cookie-backed portal sessions, and organization-scoped users.                                                                                       |
-| Projects          | Project creation, project workspace, settings, archive/unarchive, and project-scoped artifacts.                                                                                          |
-| Capture           | Manual portal capture sessions, screenshot upload, ordered capture events, and event editing; Chrome extension automatic-click capture now has screenshot-backed browser evidence, with true toolbar-popup manual validation still pending. |
+| Area              | Current alpha capability                                                                                                                                                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Setup and auth    | Web first-run setup, password login, cookie-backed portal sessions, and organization-scoped users.                                                                                                                                                                   |
+| Projects          | Project creation, project workspace, settings, archive/unarchive, and project-scoped artifacts.                                                                                                                                                                      |
+| Capture           | Manual portal capture sessions, screenshot upload, ordered capture events, and event editing; Chrome extension automatic-click capture now has screenshot-backed browser evidence, with true toolbar-popup manual validation still pending.                          |
 | Extension         | Instance URL setup, login, project selection, manual screenshot fallback, automatic click capture MVP, and finish/open-active portal flow exist in code/tests; 2026-07-07 dogfood closed the split-origin portal link path and refreshed captured-workflow evidence. |
-| Guides            | Generate guides from capture sessions, edit blocks and steps, manage screenshots, annotate screenshots, preview, publish, password-protect, embed, export Markdown, and export HTML ZIP. |
-| Interactive demos | Generate demos from capture sessions, edit scenes, add hotspots, publish, password-protect, embed, and view public demos.                                                                |
-| Sharing           | Immutable publish snapshots for guides and demos with public/restricted access controls.                                                                                                 |
-| Team basics       | Organization invite creation, invite acceptance, and member access to shared projects.                                                                                                   |
-| Operations        | Local PostgreSQL, local file storage, health/readiness endpoints, CORS/cookie hardening, rate limits, and documented backup/restore expectations.                                        |
+| Guides            | Generate guides from capture sessions, edit blocks and steps, manage screenshots, annotate screenshots, preview, publish, password-protect, embed, export Markdown, and export HTML ZIP.                                                                             |
+| Interactive demos | Generate demos from capture sessions, edit scenes, add hotspots, publish, password-protect, embed, and view public demos.                                                                                                                                            |
+| Sharing           | Immutable publish snapshots for guides and demos with public/restricted access controls.                                                                                                                                                                             |
+| Team basics       | Organization invite creation, invite acceptance, and member access to shared projects.                                                                                                                                                                               |
+| Operations        | Local PostgreSQL, local file storage, health/readiness endpoints, CORS/cookie hardening, rate limits, and documented backup/restore expectations.                                                                                                                    |
 
 The DB-backed v1 smoke workflow now proves the main backend path from first-run setup to published guide/demo and accepted teammate invite. See [V1 dogfood smoke suite](docs/v1-dogfood-smoke-suite.md).
 
 ## Alpha Screenshots
 
-These screenshots use safe synthetic data. Portal/editor screenshots come from the [2026-06-22 portal dogfood smoke](docs/v1-dogfood-smoke-suite.md). The public guide, public demo, and extension setup screenshots were refreshed on 2026-06-30 during the modern UI browser QA pass with local fixture data. Extension captured-workflow screenshots were refreshed on 2026-07-07 from an automatic-click browser validation run.
+These screenshots use safe synthetic data. They are pre-rename alpha evidence and may still display the former Demo Composer name until the relevant UI modernization child refreshes them. Portal/editor screenshots come from the [2026-06-22 portal dogfood smoke](docs/v1-dogfood-smoke-suite.md). The public guide, public demo, and extension setup screenshots were refreshed on 2026-06-30 during the modern UI browser QA pass with local fixture data. Extension captured-workflow screenshots were refreshed on 2026-07-07 from an automatic-click browser validation run.
 
-| Project and capture | Guide authoring |
-| --- | --- |
-| ![Project workspace showing capture, guide, and interactive demo entry points](docs/assets/alpha/alpha-project-workspace.png) | ![Guide editor showing a generated department setup guide with screenshot annotation and publishing controls](docs/assets/alpha/alpha-guide-editor.png) |
-| ![Capture session detail with ordered screenshot-backed events and captured assets](docs/assets/alpha/alpha-capture-session-detail.png) | ![Published public guide reader for the department setup guide](docs/assets/alpha/alpha-public-guide-reader.png) |
+| Project and capture                                                                                                                     | Guide authoring                                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Project workspace showing capture, guide, and interactive demo entry points](docs/assets/alpha/alpha-project-workspace.png)           | ![Guide editor showing a generated department setup guide with screenshot annotation and publishing controls](docs/assets/alpha/alpha-guide-editor.png) |
+| ![Capture session detail with ordered screenshot-backed events and captured assets](docs/assets/alpha/alpha-capture-session-detail.png) | ![Published public guide reader for the department setup guide](docs/assets/alpha/alpha-public-guide-reader.png)                                        |
 
-| Interactive demo editor | Public demo viewer |
-| --- | --- |
+| Interactive demo editor                                                                                                    | Public demo viewer                                                                                                     |
+| -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | ![Interactive demo editor with scenes, hotspot controls, and publishing controls](docs/assets/alpha/alpha-demo-editor.png) | ![Published public interactive demo viewer with a highlighted hotspot](docs/assets/alpha/alpha-public-demo-viewer.png) |
 
-| Chrome extension setup | Extension active capture |
-| --- | --- |
+| Chrome extension setup                                                                           | Extension active capture                                                                                             |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
 | ![Chrome extension popup connect instance screen](docs/assets/alpha/alpha-extension-connect.png) | ![Chrome extension active capture state with capture controls](docs/assets/alpha/alpha-extension-active-capture.png) |
 
-| Extension capture detail | Extension-generated guide |
-| --- | --- |
+| Extension capture detail                                                                                                                                    | Extension-generated guide                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | ![Portal capture session detail showing extension-created click events and screenshot assets](docs/assets/alpha/alpha-extension-capture-session-detail.png) | ![Guide editor generated from extension-created capture source material](docs/assets/alpha/alpha-extension-guide-source.png) |
 
-| Extension-generated interactive demo |
-| --- |
+| Extension-generated interactive demo                                                                                                   |
+| -------------------------------------------------------------------------------------------------------------------------------------- |
 | ![Interactive demo editor generated from extension-created capture source material](docs/assets/alpha/alpha-extension-demo-source.png) |
 
-## Product Shape
+## Current Alpha Flow
 
 ```text
 browser workflow
@@ -57,6 +57,25 @@ browser workflow
 ```
 
 The product intentionally keeps guides and interactive demos separate. A capture session is source material; guides and demos are authored outputs created from that source.
+
+## Next Platform Direction
+
+Master Plan `005` accepts the following target; it is planned work, not current runtime behavior:
+
+```text
+Organization
+  -> Projects
+    -> Project Version context (Main first)
+      -> Capture Sessions
+      -> Guide Editions
+      -> Interactive Demo Editions
+      -> Product Documentation (after its domain grill)
+      -> Video (later and not yet modeled)
+```
+
+This diagram is navigation context, not a database ownership tree. Stable Guide and Interactive Demo Artifact identities remain Project-owned, while each Artifact Edition belongs to one Project Version. Working Drafts are mutable; Artifact Revisions and Publications are immutable. Project Membership and comprehensive Audit and Access Evidence are prerequisites for the new version-domain mutations. See [the canonical glossary](CONTEXT.md) and [Master Plan 005](docs/plan/master/005-knowledge-platform-and-ui-foundation-master-plan.md).
+
+Product Documentation means future customer-authored documentation sites and knowledge bases. It is different from `apps/docs`, which is this repository's contributor/operator documentation hub. The Documentation model will be decided by child `131` only after the platform foundation closes.
 
 ## Intentionally Deferred
 
@@ -71,6 +90,8 @@ The product intentionally keeps guides and interactive demos separate. A capture
 - Rate limiting is in-memory and should be replaced before multi-instance production deployments.
 - Operators are responsible for database and local file storage backup/restore.
 - True Chrome toolbar-popup manual screenshot validation is still pending; automatic-click extension captured-workflow screenshots are current as of the 2026-07-07 evidence pass.
+- Product Documentation authoring is not implemented; its domain grill occurs after the current foundation track.
+- Loom-style Video recording, storage, playback, transcription, and collaboration are later work and have no accepted runtime model yet.
 
 ## Quick Local Path
 
@@ -145,7 +166,7 @@ DB checks require a real PostgreSQL testing database configured through `apps/se
 apps/server     Fastify REST API, PostgreSQL, local file storage
 apps/web        React/Vite portal plus public guide/demo readers
 apps/extension  React/Vite Chrome extension popup and capture worker
-apps/docs       Compact alpha docs hub for overview, source-doc links, and screenshot evidence
+apps/docs       Compact repository docs hub for overview, source-doc links, and alpha evidence
 packages/*      Shared constants, Zod API contracts, domain policies, UI primitives, and repo tooling
 ```
 
@@ -173,4 +194,4 @@ Security reports should follow [SECURITY.md](SECURITY.md).
 
 ## License
 
-Demo Composer is licensed under the GNU Affero General Public License v3.0 only. See [LICENSE](LICENSE).
+Ossie is licensed under the GNU Affero General Public License v3.0 only. See [LICENSE](LICENSE). The existing license attribution remains unchanged as legal/historical text pending separate review.

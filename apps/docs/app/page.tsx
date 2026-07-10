@@ -3,6 +3,7 @@ import {
   docsLinks,
   evidenceItems,
   knownLimitations,
+  nextPlatformDirection,
   productCapabilities,
   siteSummary,
 } from "./docs-content";
@@ -18,8 +19,15 @@ export default function Home() {
           <p className={styles.status}>{siteSummary.status}</p>
           <p className={styles.lede}>{siteSummary.positioning}</p>
           <div className={styles.heroActions}>
-            <a className={styles.primaryLink} href={siteSummary.readmeHref}>Start with README</a>
-            <a className={styles.secondaryLink} href={siteSummary.selfHostingHref}>Self-hosting quickstart</a>
+            <a className={styles.primaryLink} href={siteSummary.readmeHref}>
+              Start with README
+            </a>
+            <a
+              className={styles.secondaryLink}
+              href={siteSummary.selfHostingHref}
+            >
+              Self-hosting quickstart
+            </a>
           </div>
         </div>
         <div className={styles.heroPreview} aria-label="Current alpha evidence">
@@ -34,7 +42,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={styles.section} aria-labelledby="capabilities-heading">
+      <section
+        className={styles.section}
+        aria-labelledby="capabilities-heading"
+      >
         <div className={styles.sectionHeader}>
           <p className={styles.eyebrow}>Current alpha</p>
           <h2 id="capabilities-heading">What Works Today</h2>
@@ -48,13 +59,33 @@ export default function Home() {
         </div>
       </section>
 
+      <section
+        className={`${styles.section} ${styles.directionBand}`}
+        aria-labelledby="direction-heading"
+      >
+        <div className={styles.sectionHeader}>
+          <p className={styles.eyebrow}>Accepted target</p>
+          <h2 id="direction-heading">Next Platform Direction</h2>
+          <p>{nextPlatformDirection.status}</p>
+        </div>
+        <ul className={styles.directionGrid}>
+          {nextPlatformDirection.items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <p className={styles.boundaryNote}>
+          {nextPlatformDirection.docsAppBoundary}
+        </p>
+      </section>
+
       <section className={styles.section} aria-labelledby="docs-heading">
         <div className={styles.sectionHeader}>
           <p className={styles.eyebrow}>Source docs</p>
           <h2 id="docs-heading">Use Markdown Docs For Deep Dives</h2>
           <p>
-            This site is a compact navigation surface. The linked markdown files remain the
-            source of truth for setup, operations, roadmap, dogfood evidence, and contribution flow.
+            This site is a compact navigation surface. The linked markdown files
+            remain the source of truth for setup, operations, roadmap, dogfood
+            evidence, and contribution flow.
           </p>
         </div>
         <div className={styles.linkGrid}>
@@ -72,8 +103,8 @@ export default function Home() {
           <p className={styles.eyebrow}>Dogfood evidence</p>
           <h2 id="evidence-heading">Safe Alpha Screenshots</h2>
           <p>
-            Screenshots use synthetic dogfood data and show the portal surfaces that currently
-            have trustworthy visual evidence.
+            Screenshots use synthetic dogfood data and show the portal surfaces
+            that currently have trustworthy visual evidence.
           </p>
         </div>
         <div className={styles.evidenceGrid}>

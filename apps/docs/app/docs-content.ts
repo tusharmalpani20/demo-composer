@@ -1,10 +1,13 @@
-const repositoryBaseUrl = "https://github.com/tusharmalpani20/demo-composer/blob/main";
-const alphaAssetBaseUrl = "https://raw.githubusercontent.com/tusharmalpani20/demo-composer/main/docs/assets/alpha";
+const repositoryBaseUrl =
+  "https://github.com/tusharmalpani20/demo-composer/blob/main";
+const alphaAssetBaseUrl =
+  "https://raw.githubusercontent.com/tusharmalpani20/demo-composer/main/docs/assets/alpha";
 
 export const siteSummary = {
-  name: "Demo Composer",
+  name: "Ossie",
   status: "alpha-stage, self-hosted open-source software",
-  positioning: "Self-hosted teams can turn browser workflows into Scribe-style guides and Storylane-style interactive demos from screenshot-first capture sessions.",
+  positioning:
+    "Self-hosted teams can turn browser workflows into Scribe-style guides and Storylane-style interactive demos from screenshot-first capture sessions.",
   readmeHref: `${repositoryBaseUrl}/README.md`,
   selfHostingHref: `${repositoryBaseUrl}/docs/self-hosting.md`,
 };
@@ -16,36 +19,56 @@ export const productCapabilities = [
   "Self-hosted setup with PostgreSQL, local file storage, health checks, readiness checks, and production env validation.",
 ];
 
+export const nextPlatformDirection = {
+  status:
+    "Accepted direction under Master Plan 005; these capabilities are not implemented yet.",
+  items: [
+    "Projects organized by explicit Project Versions, beginning with Main.",
+    "Project Membership plus comprehensive relational Audit and Access Evidence.",
+    "Stable Guide and Interactive Demo identities with version-scoped Editions, Working Drafts, immutable Revisions, and Publications.",
+    "Product Documentation as the next artifact family after the foundation and its dedicated domain grill.",
+    "Loom-style Video later; its recording, storage, playback, and collaboration model remains deliberately unplanned.",
+  ],
+  docsAppBoundary:
+    "This Docs App is repository documentation for contributors and operators. It is not the future customer-authored Product Documentation experience.",
+};
+
 export const docsLinks = [
   {
     label: "Self-hosting quickstart",
     href: `${repositoryBaseUrl}/docs/self-hosting.md`,
-    description: "Local and production-oriented setup notes for self-hosted evaluators.",
+    description:
+      "Local and production-oriented setup notes for self-hosted evaluators.",
   },
   {
     label: "Operations guide",
     href: `${repositoryBaseUrl}/docs/operations.md`,
-    description: "Health checks, backups, restore expectations, storage, proxy, and env-report guidance.",
+    description:
+      "Health checks, backups, restore expectations, storage, proxy, and env-report guidance.",
   },
   {
     label: "Production readiness checklist",
     href: `${repositoryBaseUrl}/docs/production-readiness-checklist.md`,
-    description: "Preflight checklist before exposing a self-hosted instance beyond local development.",
+    description:
+      "Preflight checklist before exposing a self-hosted instance beyond local development.",
   },
   {
     label: "Roadmap",
     href: `${repositoryBaseUrl}/docs/roadmap.md`,
-    description: "Current alpha, V1 hardening, later work, and intentionally deferred product areas.",
+    description:
+      "Current alpha, the accepted platform foundation, Documentation next, and intentionally deferred areas.",
   },
   {
     label: "Contributor guide",
     href: `${repositoryBaseUrl}/docs/contributor-guide.md`,
-    description: "Repo layout, planning flow, quality bar, and good first contribution areas.",
+    description:
+      "Repo layout, planning flow, quality bar, and good first contribution areas.",
   },
   {
     label: "V1 dogfood smoke suite",
     href: `${repositoryBaseUrl}/docs/v1-dogfood-smoke-suite.md`,
-    description: "Recorded alpha smoke evidence and known manual dogfood limitations.",
+    description:
+      "Recorded alpha smoke evidence and known manual dogfood limitations.",
   },
 ];
 
@@ -68,9 +91,9 @@ export const evidenceItems = [
 ];
 
 export const knownLimitations = [
-  "Chrome extension screenshots are pending until extension dogfood has a passing or bounded capture path.",
+  "Automatic-click extension capture has screenshot-backed evidence; true toolbar-popup manual validation and one direct-page event-ordering follow-up remain open.",
   "Storage inventory and cleanup tooling are still future self-host operations work.",
   "Backup/restore rehearsal, one-command packaging, shared rate limiting, and object storage remain deferred.",
-  "HTML capture/replay, AI authoring, analytics, lead capture, and custom branding are not planned for V1.",
+  "HTML capture/replay, required AI authoring, analytics, lead capture, and custom branding remain deferred.",
   "Markdown docs remain the source of truth; this site is a compact navigation surface for the alpha.",
 ];

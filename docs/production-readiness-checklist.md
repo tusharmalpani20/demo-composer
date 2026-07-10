@@ -2,7 +2,7 @@
 
 Date: 2026-06-13
 
-Use this before deploying a self-hosted Demo Composer instance.
+Use this before deploying a self-hosted Ossie instance.
 
 Start with [self-hosting.md](self-hosting.md), then use this checklist before exposing the instance beyond local development.
 

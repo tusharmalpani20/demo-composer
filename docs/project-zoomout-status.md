@@ -1,14 +1,14 @@
 # Project Zoom-Out Status
 
-Date: 2026-06-22
+Last reviewed: 2026-07-10
 
 ## Product Intent
 
-Demo Composer is an open-source product for capturing browser workflows and turning them into polished walkthrough artifacts.
+Ossie is a self-hosted open-source product for capturing browser workflows and turning them into polished walkthrough artifacts. Its accepted direction is a project-organized internal knowledge platform, but that broader foundation is not yet runtime behavior.
 
-The product has two output families:
+The current alpha has two authored output families:
 
-- Scribe-style guides/docs: vertical process documentation with ordered steps, screenshots, instructions, tips, alerts, headers, paragraphs, dividers, and screenshot annotations.
+- Scribe-style Guides: vertical process documentation with ordered steps, screenshots, instructions, tips, alerts, headers, paragraphs, dividers, and screenshot annotations.
 - Storylane-style interactive demos: screen-by-screen walkthroughs with scenes, screenshots, hotspots, publishable links, and embeddable public viewers.
 
 The current direction remains:
@@ -23,7 +23,7 @@ The current direction remains:
 
 ## Current Alpha Status
 
-Demo Composer can now complete the first usable alpha workflow:
+Ossie can now complete the first usable alpha workflow:
 
 ```text
 self-hosted first-run setup
@@ -118,10 +118,16 @@ Manual portal dogfood smoke completed with non-blocking limitations on 2026-06-2
 
 ## Recommended Next Direction
 
-The next phase should finish public alpha readiness:
+Master Plan `005` is the accepted next track:
 
-1. Finish the remaining extension validation follow-ups: true toolbar-popup manual capture evidence and the direct extension-page manual duplicate event-index follow-up.
-2. Feed the manual portal dogfood findings into guide/editor hardening.
-3. Keep alpha screenshots refreshed as portal/editor hardening changes the UI.
-4. Continue usability hardening for guide editing, interactive demo editing, and extension capture reliability.
-5. Keep public docs synchronized with recorded smoke evidence.
+1. Complete the naming/documentation truth foundation in child `110` using the accepted Ossie display brand while retaining technical compatibility identifiers.
+2. Build relational append-only Audit and Access Evidence before adding new version-domain mutations.
+3. Establish Project Membership authorization.
+4. Add Project Versions and scope Capture source to one Project Version.
+5. Introduce Project-owned Guide/Demo Artifacts with version-scoped Editions, mutable Working Drafts, immutable Revisions, Carry-Forward, protected assets, revision-backed Publications, and multi-version Publish Links.
+6. Establish the design system and modernize each existing workflow with browser, accessibility, motion, and responsive evidence.
+7. Close the foundation at child `130`, then conduct the mandatory Product Documentation domain grill at child `131`.
+
+The accepted Project Version and Artifact Edition decisions are recorded in `CONTEXT.md`, ADRs `0021` through `0026`, the completed grill record, and `docs/plan/111-project-version-and-artifact-edition-grill.md`. Their presence in canonical documentation does not mean they are implemented.
+
+Product Documentation implementation begins only after child `131` and new `132+` plans. Loom-style Video remains a later direction with no accepted runtime model.

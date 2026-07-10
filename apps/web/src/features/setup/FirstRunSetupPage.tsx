@@ -47,12 +47,12 @@ const setupErrorMessage = (error: unknown) => {
 const Shell = ({ children }: { children: React.ReactNode }) => (
   <div className={styles.page}>
     <header className={styles.topbar}>
-      <a className={styles.brand} href="/projects">Demo Composer</a>
+      <a className={styles.brand} href="/projects">
+        Ossie
+      </a>
     </header>
     <main className={styles.main}>
-      <Card className={styles.panel}>
-        {children}
-      </Card>
+      <Card className={styles.panel}>{children}</Card>
     </main>
   </div>
 );
@@ -84,7 +84,9 @@ export const FirstRunSetupPage = ({
           return;
         }
 
-        setPageState(status.setup_required ? { status: "ready" } : { status: "complete" });
+        setPageState(
+          status.setup_required ? { status: "ready" } : { status: "complete" },
+        );
       })
       .catch(() => {
         if (active) {
@@ -144,10 +146,14 @@ export const FirstRunSetupPage = ({
       <Shell>
         <CardHeader>
           <h1 className={styles.title}>This instance is already set up.</h1>
-          <p className={styles.copy}>Sign in with an existing owner account to continue.</p>
+          <p className={styles.copy}>
+            Sign in with an existing owner account to continue.
+          </p>
         </CardHeader>
         <CardContent>
-          <a className={styles.link} href="/login">Go to sign in</a>
+          <a className={styles.link} href="/login">
+            Go to sign in
+          </a>
         </CardContent>
       </Shell>
     );
@@ -157,8 +163,12 @@ export const FirstRunSetupPage = ({
     return (
       <Shell>
         <CardHeader>
-          <h1 className={styles.title}>First-run setup is not available for this instance.</h1>
-          <p className={styles.copy}>Use the configured onboarding flow for this deployment.</p>
+          <h1 className={styles.title}>
+            First-run setup is not available for this instance.
+          </h1>
+          <p className={styles.copy}>
+            Use the configured onboarding flow for this deployment.
+          </p>
         </CardHeader>
       </Shell>
     );
@@ -180,8 +190,10 @@ export const FirstRunSetupPage = ({
   return (
     <Shell>
       <CardHeader>
-        <h1 className={styles.title}>Set up Demo Composer</h1>
-        <p className={styles.copy}>Create the owner account and organization for this instance.</p>
+        <h1 className={styles.title}>Set up Ossie</h1>
+        <p className={styles.copy}>
+          Create the owner account and organization for this instance.
+        </p>
       </CardHeader>
       <CardContent>
         <form className={styles.form} onSubmit={handleSubmit}>
@@ -238,7 +250,9 @@ export const FirstRunSetupPage = ({
               onChange={(event) => setPassword(event.target.value)}
             />
           </Label>
-          {submitError ? <Alert variant="destructive">{submitError}</Alert> : null}
+          {submitError ? (
+            <Alert variant="destructive">{submitError}</Alert>
+          ) : null}
           <Button type="submit" disabled={submitting}>
             {submitting ? "Creating owner account..." : "Create owner account"}
           </Button>

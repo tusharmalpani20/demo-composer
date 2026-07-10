@@ -2,7 +2,7 @@
 
 This document defines the optional repository agent workflow, skill registry,
 and decision policy. It does not make Codex or any skill a prerequisite for
-building, testing, running, or contributing to Demo Composer.
+building, testing, running, or contributing to Ossie.
 
 ## Instruction Precedence
 

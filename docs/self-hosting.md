@@ -1,6 +1,6 @@
 # Self-Hosting Quickstart
 
-Demo Composer is currently alpha. This guide describes a practical single-machine self-host path for evaluation and internal use.
+Ossie is currently alpha. This guide describes a practical single-machine self-host path for evaluation and internal use.
 
 ## Prerequisites
 

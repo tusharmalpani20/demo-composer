@@ -1,6 +1,12 @@
 # Contributor Guide
 
-Demo Composer is organized as a product monorepo. The project is alpha, so clear plans, focused tests, and truthful docs matter more than broad rewrites.
+Ossie is organized as a product monorepo. The project is alpha, so clear plans, focused tests, and truthful docs matter more than broad rewrites.
+
+Current runtime behavior ends at screenshot-first Capture Sessions, Guides,
+Interactive Demos, and current immutable publish snapshots. `CONTEXT.md` also
+contains accepted target language for Audit/Access Evidence, Project Membership,
+Project Versions, Editions, Revisions, and Publications; those terms are not a
+claim that the runtime implementation exists.
 
 ## Repo Layout
 
@@ -69,6 +75,11 @@ Avoid reintroducing removed legacy ORCA-style routing.
 - Small route inventory or operations doc updates.
 
 Avoid starting with deep auth, publish access, password security, storage, or migration rewrites unless there is a specific plan and test strategy.
+
+Product Documentation runtime is blocked until Master Plan `005` closes and the
+child `131` Documentation domain grill is accepted. Loom-style Video is later
+and has no accepted model. `apps/docs` remains repository documentation rather
+than either artifact family.
 
 ## Privacy And Safety
 

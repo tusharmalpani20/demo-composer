@@ -1,54 +1,81 @@
 # Roadmap
 
-Date: 2026-06-22
+Last reviewed: 2026-07-10
 
-Demo Composer is alpha software. This roadmap describes product direction, not a guarantee of dates.
+Ossie is alpha software. This roadmap separates shipped behavior from accepted
+direction and intentionally deferred work; it does not promise dates.
 
-## Alpha Now
+## Available Today
 
-- Web first-run setup for self-hosted instances.
-- Password auth and organization-scoped portal users.
-- Projects and project workspaces.
-- Screenshot-first capture sessions.
-- Manual portal screenshot upload and capture event ordering/editing.
-- Chrome extension capture with instance URL setup, login, project selection, automatic click capture MVP, manual screenshot fallback, and finish-to-portal flow in code/tests; 2026-07-07 dogfood closed the split-origin portal link path and refreshed automatic-click captured-workflow screenshots, while true toolbar-popup manual validation remains pending.
-- Scribe-style guide generation from capture sessions.
-- Guide editor, preview, screenshot management, rectangle annotations, Markdown export, HTML ZIP export, publish controls, password access, and embeds.
-- Storylane-style interactive demo generation from capture sessions.
-- Interactive demo editor, scenes, hotspots, publish controls, password access, public viewer, and embeds.
-- README portal screenshots from safe synthetic dogfood data.
-- Compact `apps/docs` alpha docs hub linking to source markdown docs and safe screenshot evidence.
-- Organization invite and member basics.
-- Health/readiness endpoints, production config hardening, and DB-backed v1 smoke coverage.
+- Self-hosted first-run setup, password authentication, and Organization member
+  and invite basics.
+- Projects and Project workspaces without Project Version runtime records.
+- Screenshot-first portal and Chrome extension Capture Sessions.
+- Automatic-click extension capture with screenshot-backed browser evidence;
+  true toolbar-popup manual validation and one direct-page ordering follow-up
+  remain open.
+- Scribe-style Guide generation, editing, annotations, preview, immutable
+  current publishing, password access, embeds, Markdown export, and HTML ZIP
+  export.
+- Storylane-style Interactive Demo generation, scene/hotspot editing, immutable
+  current publishing, password access, embeds, and public viewing.
+- Local PostgreSQL/file storage operations, health/readiness endpoints,
+  production configuration validation, and DB-backed alpha smoke coverage.
+- A compact `apps/docs` repository documentation hub with safe historical alpha
+  screenshots.
 
-## V1 Hardening
+## Next Platform Foundation
 
-- Address manual portal dogfood findings from the 2026-06-22 smoke run.
-- Address remaining Chrome extension dogfood follow-ups: true toolbar-popup manual validation and direct extension-page manual event-ordering after automatic clicks.
-- Keep alpha screenshots current as portal/editor/extension UI hardening changes the product.
-- Improve guide editor ergonomics for repeated authoring.
-- Improve interactive demo editor usability and hotspot positioning polish.
-- Improve extension reliability around tab permissions, page changes, and capture failures.
-- Add clearer failure recovery for upload/storage edge cases.
-- Keep README, project status, route inventory, and smoke docs synchronized with behavior.
-- Strengthen storage cleanup and operational maintenance guidance.
+Master Plan `005` is the accepted implementation track:
+
+1. Repository workflow and the Ossie display-name/documentation truth foundation.
+2. Relational append-only Audit Events, Audit Change Items, and Access Events.
+3. Comprehensive evidence coverage for existing mutations and meaningful access.
+4. Project Membership with Project Admin, Editor, and Viewer authorization.
+5. Project Versions, beginning with a real default `Main` record.
+6. Project Version-scoped Capture Sessions across portal and extension.
+7. Project-owned Guide/Demo Artifacts with version-scoped Editions and Working
+   Drafts.
+8. Immutable Revisions, Carry-Forward, protected shared assets, revision-backed
+   Publications, and multi-version Publish Links.
+9. Design-system and workflow-by-workflow portal, extension, authoring, reader,
+   accessibility, motion, and browser modernization.
+10. Cross-workflow closeout before new artifact-family design.
+
+These capabilities are accepted target behavior, not current runtime behavior.
+See `docs/plan/master/005-knowledge-platform-and-ui-foundation-master-plan.md`
+for gates and exact child ordering.
+
+## Documentation Next
+
+Product Documentation is the next artifact family. Child `131` will grill its
+identity, hierarchy, navigation, authoring, rendering, Project Version,
+Publication, access, and site-configuration semantics after the foundation
+closes. Implementation planning begins at `132+` only after that grill is
+accepted.
+
+Product Documentation is not another name for Guides and is not `apps/docs`,
+which remains repository documentation for contributors and operators.
 
 ## Later
 
+- Loom-style Video recording/library behavior.
+- Desktop recording.
 - HTML capture/replay.
-- Analytics and view tracking.
-- Lead capture and sales-demo workflows.
-- Custom branding controls.
-- Optional AI/BYO-key authoring assistance.
-- Additional export destinations such as PDF, DOCX, Confluence, Notion, or GitHub.
-- Object storage provider support beyond local files.
-- Multi-instance production rate limiting.
-- One-command production deployment packaging.
+- Optional AI/BYO-key authoring and search assistance.
+- Analytics, view tracking, lead capture, sales workflows, and custom branding.
+- Additional export destinations such as PDF, DOCX, Confluence, Notion, or
+  GitHub.
+- Object storage, shared multi-instance rate limiting, and one-command
+  production packaging.
 - Chrome Web Store distribution.
 
-## Not Planned For V1
+Video is compatible with the umbrella but has no accepted recorder, upload,
+storage, playback, transcript, comment, permission, retention, or version model.
 
-- Hosted SaaS billing.
-- Heavy analytics-first sales platform behavior.
-- AI as a required product dependency.
+## Intentionally Not Required
+
+- Hosted SaaS billing for the current foundation.
+- AI as a required runtime dependency.
 - Automatic access to private/customer systems for examples or screenshots.
+- Product Documentation or Video implementation inside Master Plan `005`.

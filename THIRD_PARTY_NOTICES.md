@@ -1,7 +1,7 @@
 # Third-Party Notices
 
 The repository includes optional development-agent guidance under
-`.agents/skills/`. It is not part of the Demo Composer application runtime.
+`.agents/skills/`. It is not part of the Ossie application runtime.
 
 ## Apache-2.0 Material
 

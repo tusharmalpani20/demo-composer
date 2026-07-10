@@ -1,6 +1,6 @@
 # OSS Alpha Summary
 
-Demo Composer is a self-hosted open-source tool for creating product walkthrough artifacts from browser workflows.
+Ossie is a self-hosted open-source tool for creating product walkthrough artifacts from browser workflows.
 
 ## Short Description
 
@@ -8,12 +8,18 @@ Self-hosted screenshot-first workflow capture for Scribe-style guides and Storyl
 
 ## What It Does
 
-Demo Composer lets a team capture browser workflow source material, reuse that source as a capture session, and create two separate outputs:
+Ossie lets a team capture browser workflow source material, reuse that source as a Capture Session, and create two separate outputs:
 
 - step-by-step guides for internal documentation, onboarding, support, and enablement
 - interactive demos with scenes and hotspots for walkthrough-style sharing
 
 Both guides and demos can be published as immutable snapshots behind public/restricted links, password gates, and embeds.
+
+## Next Platform Direction
+
+Master Plan `005` will add relational Audit and Access Evidence, Project Membership, Project Versions, version-scoped Capture source, and Guide/Demo Editions, Working Drafts, Revisions, Publications, protected assets, and multi-version Publish Links. These are accepted targets, not alpha capabilities.
+
+Product Documentation is the next artifact family to grill after the foundation. It is distinct from Guides and from `apps/docs`, the repository documentation hub. Loom-style Video is later and does not yet have an accepted runtime model.
 
 ## Why Open Source Matters
 
@@ -47,6 +53,7 @@ Workflow captures often contain internal product screens, operational processes,
 - local file storage only
 - in-memory rate limiting only
 - manual storage cleanup and backup responsibility
+- no Product Documentation authoring or Loom-style Video implementation
 
 ## Help Wanted
 

@@ -1,6 +1,6 @@
 # Security Policy
 
-Demo Composer is currently alpha/unreleased.
+Ossie is currently alpha/unreleased.
 
 ## Reporting A Vulnerability
 

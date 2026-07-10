@@ -1,6 +1,8 @@
-# Demo Composer Context
+# Ossie Context
 
-Demo Composer captures real software workflows and turns those captures into shareable guides and interactive demos. This context owns the shared product language for capture, composition, and publishing.
+Ossie captures real software workflows and currently turns those captures into shareable Guides and Interactive Demos. Its accepted direction is a project-organized internal knowledge platform that adds version-aware governance before Product Documentation and, later, Video.
+
+This context owns canonical product language. It contains both implemented alpha concepts and accepted target terms from Master Plan `005`; inclusion here does not mean a target capability has shipped. `docs/project-zoomout-status.md` and `docs/roadmap.md` own the current-versus-planned implementation boundary.
 
 ## Language
 
@@ -53,11 +55,11 @@ A capture asset that stores serialized page structure for future replay or inspe
 _Avoid_: Screenshot
 
 **Instance**:
-A hosted Demo Composer deployment that the extension and apps connect to.
+A hosted Ossie deployment that the extension and apps connect to. Technical configuration may retain the former name for compatibility.
 _Avoid_: Workspace, organization
 
 **Extension Session**:
-An extension-scoped authenticated session for one Demo Composer instance.
+An extension-scoped authenticated session for one Ossie instance.
 _Avoid_: Web session
 
 **Guide**:
@@ -157,7 +159,7 @@ A team or company that owns users, projects, captures, guides, and interactive d
 _Avoid_: Company when referring to the tenant
 
 **User**:
-A login-capable person using Demo Composer.
+A login-capable person using Ossie.
 _Avoid_: Organization user when referring to authentication identity
 
 **Organization Member**:
@@ -189,7 +191,7 @@ The browser-based first-run setup screen for self-hosted instances.
 _Avoid_: Hosted signup page
 
 **Portal App**:
-The React web application used by authenticated Demo Composer users.
+The React web application used by authenticated Ossie users.
 _Avoid_: Backend static pages
 
 **API Server**:
