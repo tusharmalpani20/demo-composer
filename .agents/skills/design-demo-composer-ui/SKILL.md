@@ -58,6 +58,11 @@ toolbars, editors, and viewers do not shift or overlap.
 ## Visual And Interaction Rules
 
 - Optimize for repeated work, scanning, comparison, and predictable navigation.
+- Build the usable operational workflow first. Do not turn portal surfaces into
+  marketing pages, oversized hero compositions, or feature-explanation screens.
+- Do not add navigation, tabs, buttons, or commands for unimplemented behavior.
+  A future artifact family belongs in qualified direction documentation until an
+  accepted implementation child owns the complete workflow.
 - Keep typography proportional to its container. Do not scale font size with the
   viewport and keep letter spacing neutral unless an accepted token says otherwise.
 - Avoid nested cards, floating page-section cards, decorative gradient/orb
@@ -79,6 +84,10 @@ toolbars, editors, and viewers do not shift or overlap.
 
 - Use `impeccable` for broad product-design critique and later design-context
   workflows, but keep hooks disabled and do not run `init` before child `121`.
+- For a read-only review or when Impeccable's browser/subagent/evidence capability
+  is unavailable, read the relevant installed guidance and perform a scoped
+  repository review without running its scripts or persisting `.impeccable/`
+  state. Mark unavailable evidence honestly.
 - Use `emil-design-eng` for restraint and interaction polish.
 - Use `review-animations` and `animation-vocabulary` for motion review and shared
   terminology.

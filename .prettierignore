@@ -1,0 +1,8 @@
+# Pinned third-party agent skills. Update through docs/agent-workflow.md.
+.agents/skills/accessibility/
+.agents/skills/animation-vocabulary/
+.agents/skills/apple-design/
+.agents/skills/emil-design-eng/
+.agents/skills/impeccable/
+.agents/skills/react-best-practices/
+.agents/skills/review-animations/

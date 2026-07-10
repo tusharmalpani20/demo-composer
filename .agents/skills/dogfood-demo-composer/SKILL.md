@@ -13,8 +13,9 @@ available browser capability.
 1. Read the active child plan and its exact browser acceptance requirements.
 2. Read `docs/development-setup.md`, `docs/v1-dogfood-smoke-suite.md`,
    `docs/operations.md`, and `apps/extension/README.md` as applicable.
-3. Inspect current package scripts and running services instead of assuming ports
-   or startup commands.
+3. Discover current startup commands, ports, and running-service expectations for
+   `apps/server`, `apps/web`, `apps/docs`, and `apps/extension` from their current
+   package/config/docs surfaces. Do not assume every workflow needs every app.
 4. Use synthetic organizations, users, projects, captures, images, passwords, and
    public links. Never use production or customer data.
 5. Keep authenticated and public browser contexts isolated.

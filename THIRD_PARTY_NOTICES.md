@@ -17,8 +17,10 @@ A complete copy of the upstream Apache License is preserved at
 
 The installed Codex build was generated from the pinned source. The only local
 content change moves the generated unsupported top-level skill `version` value to
-`metadata.upstream-version`; no instruction content was changed. No hook manifest
-is installed.
+`metadata.upstream-version`. Repository invocation guidance also forces
+`IMPECCABLE_NO_UPDATE_CHECK=1` and replaces the upstream self-update instruction
+with the pinned review procedure, preventing network update checks and user-home
+update-cache writes. No hook manifest is installed.
 
 ## MIT Material
 
@@ -38,11 +40,15 @@ skill validator. Its instruction content is unchanged.
 
 - Source: <https://github.com/vercel-labs/agent-skills>
 - Commit: `f8a72b9603728bb92a217a879b7e62e43ad76c81`
-- Installed path: `react-best-practices`
+- Installed path: `react-best-practices`; discovery name:
+  `vercel-react-best-practices`
 - Upstream author metadata: Vercel
 
 The reviewed upstream README and skill frontmatter declare MIT. The reviewed
 commit does not include a standalone license file or copyright notice.
+
+Three broken relative links in the upstream compiled `AGENTS.md` were corrected
+to point to the installed `rules/` directory. No rule content was changed.
 
 ### Addy Osmani Accessibility Skill
 
@@ -50,6 +56,10 @@ commit does not include a standalone license file or copyright notice.
 - Commit: `95d6e255afe1596b557d7a8498517884438f5b3a`
 - Installed path: `accessibility`
 - Copyright 2026 Addy Osmani
+
+One reference to the uninstalled sibling `web-quality-audit` skill was replaced
+with a link to that file at the exact reviewed upstream commit. No accessibility
+instruction content was changed.
 
 ### MIT License Text
 

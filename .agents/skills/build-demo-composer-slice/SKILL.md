@@ -8,6 +8,19 @@ description: Expand, recheck, implement, verify, and close one Demo Composer mas
 Deliver one child-plan boundary completely. Do not implement the queue or
 overnight runner from this skill.
 
+## Select The Requested Mode
+
+- For an implementation-readiness, expansion, recheck, or planning-only request,
+  complete preflight, expansion, and decision classification, then return a
+  readiness report. Do not edit runtime code or continue into TDD.
+- For an explicit implementation request, continue through implementation,
+  verification, and same-child closeout.
+- For a closeout-only request, verify the existing result before updating status;
+  do not assume earlier implementation is complete.
+
+When the prompt does not identify a concrete child plan, provide the reusable
+checklist and state that plan-specific readiness remains unverified.
+
 ## 1. Preflight
 
 1. Read `AGENTS.md`, `CONTEXT.md`, relevant ADRs, the parent master plan, and the
