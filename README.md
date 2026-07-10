@@ -1,5 +1,9 @@
 # Ossie
 
+<p align="center">
+  <img src="docs/brand/ossie-horizontal-lockup.png" alt="Ossie purple octopus mascot and wordmark" width="720" />
+</p>
+
 Ossie is an alpha-stage, self-hosted open-source tool for turning browser workflows into two currently implemented outputs: Scribe-style step-by-step Guides and Storylane-style Interactive Demos. It is growing toward a project-organized internal knowledge platform, but the broader version, governance, Documentation, and Video direction described below is not shipped yet.
 
 > Alpha status: the core capture-to-guide and capture-to-demo paths exist, but the project still needs more dogfooding, packaging, editor polish, and extension reliability work before it should be treated as production-ready.

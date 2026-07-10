@@ -664,8 +664,10 @@ Closure record:
 Accepted outcome:
 
 - Display brand: `Ossie`.
-- Character direction: original octopus with all eight arms visible; child `121`
-  owns actual logo/design acceptance.
+- Character direction: original octopus with all eight arms visible. A selected
+  GPT-generated Calm & Premium raster set was integrated post-closeout on
+  2026-07-11 as the working identity; child `121` still owns review, refinement
+  or replacement, and final logo/design/accessibility acceptance.
 - Applied now: Layer 1 human-facing documentation, portal, extension, Docs App,
   issue-template, package-prose, and OpenAPI metadata.
 - Applied after closeout on 2026-07-11: GitHub repository slug, Git `origin`, and

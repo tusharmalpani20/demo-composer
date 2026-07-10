@@ -21,10 +21,17 @@ The product display name is **Ossie**.
   persistent identifiers
 
 The accepted character direction is an original octopus with all eight arms
-visible. The character may use a purple-led palette, but child plan `121` owns
-the actual mark, palette, typography, accessibility review, and visual-system
-acceptance. It must not copy the Oswald animated character, WALL-E, or any other
-existing character design.
+visible. On 2026-07-11, the user selected the GPT-generated Calm & Premium
+purple octopus raster set as the working identity and instructed repository and
+runtime integration. The renamed source exports and usage constraints are
+recorded in `docs/brand/README.md`.
+
+This working raster identity is not final visual-system acceptance. Child plan
+`121` still owns review, refinement or replacement of the mark, palette,
+typography, accessibility, small-size behavior, and the broader visual system.
+In particular, the current raster artwork does not unambiguously demonstrate
+all eight arms at every size. It must not be represented as an editable vector
+master or as trademark/logo clearance.
 
 The user selected Ossie after being shown the collision risks below. Selection
 does not convert preliminary research into trademark, domain, or legal
@@ -178,8 +185,9 @@ than user-facing brand claims.
 - Resolve the Apache Ossie collision deliberately; do not assume different
   implementation scope removes confusion risk.
 - Decide domain and social-handle strategy only after clearance.
-- Child `121` must create an original octopus mark and verify recognizability,
-  eight-arm visibility, accessibility, small-size behavior, and independence
-  from existing character art.
+- Child `121` must review, refine, or replace the integrated working octopus
+  raster identity and verify recognizability, eight-arm visibility,
+  accessibility, small-size behavior, and independence from existing character
+  art before final design acceptance.
 - A separate accepted technical-rename plan is required before changing any
   retained identifier or moving the repository directory.

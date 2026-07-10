@@ -1031,9 +1031,15 @@ not rewritten.
 
 - Obtain professional trademark/brand clearance before commercial launch,
   especially against Apache Ossie and confusingly similar marks.
-- Child `121` must design and accept the original eight-armed octopus logo,
-  purple-led palette if retained, typography, tokens, and small-size/accessibility
-  behavior without deriving from Oswald, WALL-E, or another character.
+- Post-closeout on 2026-07-11, the user selected and instructed integration of
+  the GPT-generated Calm & Premium purple octopus raster set as Ossie's working
+  identity. Renamed source files and runtime derivatives are recorded in
+  `docs/brand/README.md`; the earlier repository-made SVG studies were removed.
+- Child `121` must review, refine, or replace that working raster identity and
+  accept the original eight-armed octopus logo, purple-led palette if retained,
+  typography, tokens, and small-size/accessibility behavior without deriving
+  from Oswald, WALL-E, or another character. Current integration is not final
+  vector-system or logo acceptance.
 - A whole-directory/package/config/persistent rename requires a separate accepted
   technical plan. The user independently renamed the GitHub repository on
   2026-07-11 and authorized the Git remote plus active source/raw link update;
