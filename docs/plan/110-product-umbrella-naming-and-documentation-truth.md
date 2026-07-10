@@ -38,6 +38,16 @@ Child `110` may begin only when:
 
 Child `111` is already complete and must not be expanded or implemented again between `109` and `110`.
 
+Entry-gate status at this recheck:
+
+- child `109` is complete, its closeout is committed, and the worktree is clean;
+- root guidance, the four repository-local skills, and the accepted pinned external skills are available;
+- `web-design-guidelines` was deliberately rejected by child `109`, and its intended review coverage is supplied by repository-local UI guidance, Impeccable, and accessibility guidance;
+- child `111`, `CONTEXT.md`, and ADRs `0021` through `0026` remain the accepted version-domain source.
+
+The child is therefore ready to execute. The naming decision remains a mandatory
+in-child user gate and is not satisfied by this planning recheck.
+
 ## Expansion And Recheck Findings
 
 This plan was expanded on 2026-07-10 against Master Plan `005`, the current docs/app metadata, current alpha evidence, completed child `111`, and the repository's visible/technical naming surfaces.
@@ -46,12 +56,14 @@ Current documentation facts:
 
 - `README.md` already has `What Works Today` and `Intentionally Deferred`, but its product model still ends at Capture -> Guide/Interactive Demo -> Publish Link and does not explain the accepted broader platform direction.
 - `docs/product-idea.md` still frames the product primarily as two outputs, uses the ambiguous heading `Guide / Doc`, and does not include Project Version, Documentation as a distinct future artifact family, or later Video.
-- `docs/system-design-pattern.md` accurately describes the current domain-package style but its main model predates Project Versions, Editions, Revisions, Publications, Audit/Access Evidence, and Project Membership.
+- `docs/system-design-pattern.md` contains useful current domain-package guidance, but it still speaks as if v2 may be scrapped/restarted, omits `apps/docs` from its initial app shape, prescribes React Query even though it is not installed or accepted, and predates Project Versions, Editions, Revisions, Publications, Audit/Access Evidence, and Project Membership.
 - `docs/roadmap.md` and `docs/project-zoomout-status.md` still recommend alpha hardening as the next phase and do not point to Master Plan `005` as the accepted next track.
 - `docs/oss-alpha-summary.md`, `CONTRIBUTING.md`, and `docs/contributor-guide.md` describe the current two-artifact alpha but not the broader accepted direction.
 - `apps/docs` correctly presents itself as a compact repository documentation hub, but its content has at least one stale extension limitation and no explicit `Next Platform Direction` band.
 - `CONTEXT.md` already contains the accepted Project Version, Artifact Edition, Revision, Publication, Carry-Forward, membership, audit, access, and protected-asset terms, while its opening product summary still names only guides and interactive demos.
 - Current alpha screenshots remain valid current-product evidence. They must not be relabeled as screenshots of unimplemented Project Version or Documentation workflows.
+- The master umbrella diagram is a navigation summary, not the final ownership model. Accepted child `111` semantics place stable Guide/Demo Artifact identity at Project scope, one Artifact Edition in each applicable Project Version, and Captures in one Project Version. Product docs must not flatten those relationships into a misleading database tree.
+- The formerly documented Turbo root test command is invalid because the graph has no root `test` task. Broad non-DB verification must use the actual recursive workspace test scripts.
 
 Current naming facts:
 
@@ -106,11 +118,11 @@ Only behavior implemented and evidenced in the current alpha:
 
 Accepted direction that is not current runtime behavior:
 
-- Organization -> Project -> Project Version context;
+- Organization -> Project navigation with real Project Version context;
 - Project Membership and inherited Project Version permissions;
 - comprehensive relational Audit and Access Evidence;
 - Project Version-scoped Captures;
-- stable Guide/Interactive Demo Artifact identities with Editions, Working Drafts, Revisions, and Publications;
+- stable Project-owned Guide/Interactive Demo Artifact identities spanning Project Versions through version-scoped Editions, Working Drafts, Revisions, and Publications;
 - Carry-Forward and protected shared assets;
 - independently configured multi-version Publish Links;
 - Quiet Versioned Workbench and workflow-by-workflow UI modernization;
@@ -134,6 +146,9 @@ Use these distinctions consistently:
 
 - **Guide**: current Scribe-style ordered authored artifact.
 - **Interactive Demo**: current scene/hotspot/transition authored artifact.
+- **Artifact**: accepted stable identity for one Guide or Interactive Demo across Project Versions; it is not itself a version-scoped content row.
+- **Artifact Edition**: accepted authored representation of one Artifact in one Project Version; its Working Draft, Revisions, and Publications remain distinct.
+- **Capture Session**: current source recording concept that becomes owned by one Project Version after version-scoping implementation; it is not an Artifact Edition.
 - **Product Documentation** or **Documentation artifact family**: future customer-authored documentation sites/knowledge bases whose exact model is deferred to child `131`.
 - **Repository documentation**: Markdown files under the repository root and `docs/`.
 - **Docs App**: `apps/docs`, the compact repository/open-source documentation hub.
@@ -205,9 +220,17 @@ apps/docs/app/layout.tsx
 apps/docs/package.json
 ```
 
-Conditional display-name surfaces, read only after a new display name/layer is accepted:
+Display-name surfaces to inspect read-only during Stage A and edit only after a
+new display name and Layer 1 are explicitly accepted:
 
 ```text
+docs/agent-workflow.md
+THIRD_PARTY_NOTICES.md
+SECURITY.md
+docs/backend-route-inventory.md
+docs/operations.md
+docs/production-readiness-checklist.md
+docs/self-hosting.md
 apps/web/src/App.tsx
 apps/web/src/App.test.tsx
 apps/web/src/features/auth/LoginPage.tsx
@@ -216,21 +239,34 @@ apps/web/src/features/setup/FirstRunSetupPage.test.tsx
 apps/web/src/features/organization/InviteAcceptPage.tsx
 apps/web/src/features/portal/PortalTopbar.tsx
 apps/web/src/features/portal/PortalTopbar.test.tsx
+apps/web/src/features/guide/PublicGuideReaderPage.test.tsx
+apps/docs/app/layout.tsx
 apps/extension/public/manifest.json
 apps/extension/index.html
 apps/extension/src/App.tsx
+apps/extension/README.md
 apps/server/src/app.ts
 apps/server/src/app.test.ts
 .github/ISSUE_TEMPLATE/bug_report.md
+packages/file-domain/README.md
 ```
+
+Stage A must build a literal-occurrence inventory with path, current text,
+audience, rename layer, proposed action, and affected test. This inventory is
+required in the decision packet; postponing surface discovery until after user
+acceptance is not allowed.
 
 Technical-identifier inventory, inspect but do not change by default:
 
 ```text
 package.json
 pnpm-lock.yaml
+turbo.json
 docker-compose.yml
 .github/workflows/ci.yml
+AGENTS.md
+.agents/skills/**/*
+apps/server/.env-cmdrc.example
 apps/server/src/config/**/*
 apps/server/src/modules/authentication/session-cookie.ts
 apps/server/src/modules/authentication/request-session-token.ts
@@ -239,6 +275,11 @@ apps/extension/src/lib/content-click-capture.ts
 apps/docs/next.config.js
 apps/docs/app/docs-content.ts
 ```
+
+`LICENSE` also contains the current product name in its copyright notice. Treat
+that as legal attribution, not ordinary display copy: include it in the naming
+inventory, preserve it by default, and change it only through an explicitly
+accepted legal-attribution decision outside this child.
 
 ## Required Affected Files
 
@@ -275,6 +316,13 @@ Conditional accepted display-name files:
 
 ```text
 apps/docs/app/layout.tsx
+docs/agent-workflow.md
+THIRD_PARTY_NOTICES.md
+SECURITY.md
+docs/backend-route-inventory.md
+docs/operations.md
+docs/production-readiness-checklist.md
+docs/self-hosting.md
 apps/web/src/App.tsx
 apps/web/src/App.test.tsx
 apps/web/src/features/auth/LoginPage.tsx
@@ -283,6 +331,7 @@ apps/web/src/features/setup/FirstRunSetupPage.test.tsx
 apps/web/src/features/organization/InviteAcceptPage.tsx
 apps/web/src/features/portal/PortalTopbar.tsx
 apps/web/src/features/portal/PortalTopbar.test.tsx
+apps/web/src/features/guide/PublicGuideReaderPage.test.tsx
 apps/extension/README.md
 apps/extension/public/manifest.json
 apps/extension/index.html
@@ -290,16 +339,17 @@ apps/extension/src/App.tsx
 apps/server/src/app.ts
 apps/server/src/app.test.ts
 .github/ISSUE_TEMPLATE/bug_report.md
-packages/*/README.md
+packages/file-domain/README.md
 ```
 
-Conditional compatibility artifact if the accepted decision includes any later technical layer:
+Required compatibility artifact whenever a new display name is accepted, even
+when only Layer 1 is approved for immediate application:
 
 ```text
 docs/rename-compatibility-checklist.md
 ```
 
-Do not create a compatibility checklist when the decision is simply to keep the current name.
+The checklist must inventory every deliberately retained repository/package/config/persistent identifier, classify its layer, and state that future changes remain unapproved until a separate plan is accepted. Do not create it when the decision is simply to keep the current name.
 
 ## Files And Surfaces Out Of Scope
 
@@ -320,7 +370,9 @@ apps/web route structure
 apps/extension capture contracts
 ```
 
-Do not change in this child unless the user explicitly accepts a separate technical rename layer:
+Do not change any Layer 2 through Layer 5 identifier in this child. User
+acceptance may authorize a separately planned follow-up, but it does not expand
+child `110` implementation scope:
 
 - repository directory or GitHub repository slug;
 - root/app/package `name` fields;
@@ -352,7 +404,7 @@ Do not:
 - Preserve the opening alpha/current capability summary.
 - Keep and update `What Works Today` using only current evidence.
 - Split the current `Product Shape` into clearly labeled current flow and `Next Platform Direction` umbrella.
-- Add the accepted Organization -> Project -> Project Version -> Captures/Guides/Interactive Demos/Documentation/Video-later model as future direction, not current navigation/schema.
+- Add the accepted navigation umbrella as future direction without presenting it as a database ownership tree: Projects have Project Versions; Captures become version-scoped; stable Guide/Demo Artifacts span Project Versions through Editions; Product Documentation is next to grill; Video is later and unmodeled.
 - Explain Editions/Revisions/Publications briefly only by linking to `CONTEXT.md`/Master Plan `005`; do not turn README into the full glossary.
 - Keep `Intentionally Deferred` and add explicit Loom-style Video deferral.
 - Clarify that Documentation is next to grill/build after the foundation, while `apps/docs` remains repository documentation.
@@ -362,6 +414,7 @@ Do not:
 
 - Update only the opening product-context description and accepted naming references needed for a display-name decision.
 - Preserve the accepted glossary/relationships/ambiguity resolutions from child `111`.
+- State near the opening that the glossary contains both current concepts and accepted target terms, while current implementation status is owned by the status/roadmap documents. Do not annotate every accepted target term as shipped.
 - Do not add a Documentation content model or Video domain terms beyond the already accepted artifact-family direction.
 - If a display name changes, update human product references consistently while retaining technical identifier language where technically qualified.
 
@@ -372,15 +425,19 @@ Do not:
 - Replace `Guide / Doc` with `Guide`.
 - Add separate future sections for Product Documentation and later Video without specifying ungrilled schemas.
 - Add Project Version/Edition/Revision/Publication relationships from accepted decisions.
+- Recast stale proposed-v2/rebuild language and the high-level model into `Available Today` versus accepted target direction; do not preserve old proposal text as if implementation has not begun.
 - Preserve Capture Session as reusable source and Guide/Demo distinct content models.
 - Mark HTML capture, AI, analytics, and Video as deferred accurately.
 - Reconcile or remove stale open questions already resolved by child `111`; do not invent answers to child `131` questions.
 
 ### `docs/system-design-pattern.md`
 
-- Preserve the implemented Fastify/REST/Zod/SQL/domain-package architecture.
+- Replace the stale "restart/scrap v2" premise with a truthful current-architecture and accepted-target document.
+- Preserve the implemented Fastify/REST/Zod/SQL/domain-package architecture and include the existing `apps/docs` surface where current app ownership is summarized.
 - Label current package/runtime structure separately from accepted target domain direction.
 - Add a target ownership diagram for Project Version, membership, Audit/Access Evidence, type-specific Artifact Editions/Revisions/Publications, and protected assets.
+- Remove React Query as a prescribed current frontend pattern. Child `122`, not this truth update, owns the evidence-based routing/data-library decision.
+- Keep ORCA references only as historical engineering inspiration; do not imply that ORCA code or domains are runtime dependencies.
 - Do not list nonexistent Project Version/Documentation/Video packages as current folders.
 - Keep Documentation renderer/tooling and Video architecture undecided.
 - Keep explicit relational persistence and no generic core-domain JSON/JSONB target visible.
@@ -417,6 +474,23 @@ Do not:
 - Explain current capability versus accepted platform direction.
 - Point domain terminology changes to `CONTEXT.md` and durable decisions to ADRs.
 - Clarify that new Documentation/Video runtime work is blocked by the master-plan gates.
+
+### Active Docs Under A Display Rename
+
+`docs/backend-route-inventory.md`, `docs/operations.md`,
+`docs/production-readiness-checklist.md`, and `docs/self-hosting.md` remain out of
+scope for future-direction restructuring. If a new display name is accepted,
+update only human-facing product-name prose/headings in those active documents;
+preserve clone URLs, commands, environment variables, cookie/header names,
+service identifiers, and historical evidence.
+
+In `docs/agent-workflow.md`, update only active narrative references to the
+display brand. Keep repository-local skill directory/discovery names and pinned
+third-party provenance stable. In `THIRD_PARTY_NOTICES.md`, update only the
+active application-name sentence; preserve all legal attribution and source text.
+`SECURITY.md` may update its human-facing application name. Preserve `LICENSE`
+copyright attribution unless a separate explicit legal decision authorizes a
+change.
 
 ### `docs/plan/master/005-knowledge-platform-and-ui-foundation-master-plan.md`
 
@@ -460,17 +534,19 @@ Use wording such as `accepted target`, `next platform direction`, `planned found
 
 Create `docs/product-naming.md` with:
 
-1. Current-name assessment.
-2. Accepted product scope and audience.
-3. Naming criteria from Master Plan `005`.
-4. Naming territories explored.
-5. Candidate-generation method.
-6. Evidence matrix.
-7. Rejected candidates with concise reasons.
-8. Shortlist and recommendation.
-9. User decision and date.
-10. Accepted rename layers.
-11. Risks, legal caveat, and staged follow-up.
+1. Decision status: `Researching`, `Awaiting User Decision`, or `Accepted`.
+2. Current-name assessment.
+3. Accepted product scope and audience.
+4. Naming criteria from Master Plan `005`.
+5. Naming territories explored.
+6. Candidate-generation method.
+7. Dated evidence matrix and jurisdiction assumptions.
+8. Rejected candidates with concise reasons.
+9. Shortlist and recommendation.
+10. Literal display/technical/legal occurrence inventory and proposed rename layers.
+11. User decision and acceptance date.
+12. Accepted spelling, short form, immediate layer, and deferred layers.
+13. Risks, legal caveat, and staged follow-up.
 
 ### Candidate Process
 
@@ -500,6 +576,7 @@ Use current internet research during implementation. For each serious finalist, 
 Rules:
 
 - Link the dated primary evidence used.
+- Record an as-of timestamp and the trademark/domain jurisdiction assumptions for each finalist packet.
 - Distinguish `no obvious collision found` from `available` or `legally clear`.
 - Domain/handle availability is transient and must be timestamped.
 - Do not purchase domains, create accounts, reserve handles, file trademarks, or contact owners.
@@ -531,6 +608,7 @@ Present the user with:
 - the proposed rename layers;
 - exact files/surfaces affected now;
 - exact technical identifiers intentionally retained;
+- the literal occurrence inventory and every active display surface proposed for change;
 - risks and follow-up needs.
 
 The accepted decision must be one of:
@@ -543,12 +621,20 @@ Default plan recommendation if a broader name is accepted:
 
 - apply the display brand only;
 - keep repository URL/slug and package/import/config/persistent identifiers stable;
-- create a compatibility checklist for later layers;
+- create a compatibility checklist that inventories retained later-layer identifiers without authorizing their change;
 - update visual identity/tokens later in child `121`.
 
 Record the exact accepted spelling, capitalization, short form, and whether possessive/plural variants are allowed. Do not infer those details later.
 
+No answer or timeout is acceptance. If the user does not explicitly choose an
+outcome and exact immediate layer, leave the brief at `Awaiting User Decision`,
+leave the plan incomplete, and stop execution.
+
 ## Rename-Layer Contract
+
+Only Layer 1 is executable in child `110`. Layers 2 through 5 are inventory and
+future-planning boundaries even if the user approves creation of a staged
+technical rename plan.
 
 ### Layer 1: Display Brand
 
@@ -562,7 +648,12 @@ Eligible for this child after explicit acceptance:
 - issue-template display copy;
 - tests asserting those visible strings.
 
-Technical values embedded in the same files remain unchanged unless separately accepted.
+Technical values embedded in the same files remain unchanged in child `110`.
+Separate acceptance can authorize a future plan, not an in-child technical rename.
+
+For the Chrome extension, human-facing manifest `name`, `short_name`, page title,
+and popup brand copy are Layer 1. Extension IDs, protocol headers/messages,
+storage keys, build/package identity, and distribution identifiers are not.
 
 ### Layer 2: Repository Identity
 
@@ -573,7 +664,7 @@ Not changed automatically:
 - badges/source links;
 - project directory name.
 
-If later approved, document redirects/link updates and deployment implications in `docs/rename-compatibility-checklist.md`.
+If a new display name is accepted, document possible redirects/link updates and deployment implications in `docs/rename-compatibility-checklist.md`; do not execute them here.
 
 ### Layer 3: Package Identity
 
@@ -634,7 +725,7 @@ The Docs App direction band is content work, not the modern UI redesign.
 - Do not add dead Documentation/Video navigation or commands.
 - Keep future direction visually distinct from current capability and limitations without relying on color alone.
 - Preserve responsive layout, neutral letter spacing, and non-viewport-scaled typography tests.
-- If `page.tsx` or CSS changes, validate desktop and narrow mobile rendering with `agent-browser` using safe public content.
+- Validate the required `page.tsx` direction-band change at desktop and narrow mobile widths with `agent-browser` using safe public content.
 - Do not apply Impeccable redesign commands; child `121` owns the design-system foundation.
 
 ## Implementation Sequence
@@ -644,8 +735,9 @@ The Docs App direction band is content work, not the modern UI redesign.
 1. Confirm child `109` is complete and the worktree is clean.
 2. Record starting commit and baseline verification.
 3. Build a current/future/deferred claim matrix for every required document.
-4. Cross-check current claims against route inventory, smoke evidence, current app code, and completed plans.
-5. Identify stale statements without changing excluded current-runtime source documents unnecessarily.
+4. Build the complete literal product-name occurrence inventory across active docs, visible app/extension/server metadata, tests, and technical identifiers; classify every occurrence by rename layer and proposed action.
+5. Cross-check current claims against route inventory, smoke evidence, current app code, and completed plans.
+6. Identify stale statements without changing excluded current-runtime source documents unnecessarily.
 
 ### Phase 2: Naming Research And Recommendation
 
@@ -654,7 +746,7 @@ The Docs App direction band is content work, not the modern UI redesign.
 3. Perform dated collision/domain/package/trademark research.
 4. Score finalists and the keep-current baseline.
 5. Record recommendation, risks, proposed rename layers, and exact affected surfaces.
-6. Commit the research/brief separately if useful before waiting.
+6. Mark the brief `Awaiting User Decision` and commit Stage A as a separate durable checkpoint before waiting.
 
 ### Phase 3: Mandatory User Decision
 
@@ -662,6 +754,7 @@ The Docs App direction band is content work, not the modern UI redesign.
 2. Stop without applying a new name.
 3. Record the accepted outcome, spelling, and rename layers.
 4. Recheck the affected-file matrix against that exact decision.
+5. If a new display name is accepted, create `docs/rename-compatibility-checklist.md` before applying Layer 1 and record every retained Layer 2 through Layer 5 identifier as unapproved future work.
 
 ### Phase 4: Documentation Truth Update
 
@@ -670,12 +763,12 @@ The Docs App direction band is content work, not the modern UI redesign.
 3. Update the Docs App content and tests.
 4. Keep Product Documentation, repository docs, Docs App, and Video distinct.
 5. Apply accepted display-name changes only if approved.
-6. Create a compatibility checklist only if later rename layers were accepted for separate execution.
+6. Preserve historical evidence and every retained technical identifier according to the accepted Layer 1 boundary.
 
 ### Phase 5: Verification And Closeout
 
 1. Run doc/reference/name scans.
-2. Run focused Docs App tests/build and browser checks when page composition changed.
+2. Run focused Docs App tests/build and the required browser checks for the rendered direction band.
 3. Run conditional web/extension/server checks when accepted display surfaces changed.
 4. Run repository-wide non-DB regression checks.
 5. Recheck active docs against current behavior and the master.
@@ -703,6 +796,23 @@ rtk rg -n 'Documentation.*implemented|Video.*implemented|Loom.*implemented' READ
 
 Interpret scan results; historical grill/ADR/plan text and explicitly qualified current database terminology may legitimately contain otherwise ambiguous phrases.
 
+Display-name inventory and residual scan:
+
+```bash
+rtk rg -n --hidden --glob '!.git/**' -i 'demo[ _-]?composer' .
+rtk rg --files --hidden --glob '!.git/**' | rtk rg -i 'demo[ _-]?composer'
+```
+
+Before the decision, classify every result as display, repository, package,
+runtime configuration, persistent identifier, repository-local tooling, legal
+attribution, or historical evidence. After an
+accepted display rename, rerun it and account for every retained old-name result;
+an unclassified content or path result blocks closeout. The naming brief itself
+may retain `Demo Composer` as the scored baseline and historical
+plans/ADRs/grills may retain the name used at the time. `LICENSE` attribution,
+repository-local skill names, and other legal or technical names must be
+classified explicitly rather than silently replaced.
+
 Docs App focused checks:
 
 ```bash
@@ -720,12 +830,13 @@ rtk pnpm --filter extension test
 rtk pnpm --filter server test
 rtk pnpm --filter web check-types
 rtk pnpm --filter extension check-types
+rtk pnpm --filter server check-types
 ```
 
 Repository-wide checks:
 
 ```bash
-rtk pnpm turbo run test
+rtk pnpm -r --if-present test
 rtk pnpm check-types
 rtk pnpm lint
 rtk pnpm build
@@ -734,7 +845,8 @@ rtk git diff --check
 
 No DB-backed test is required for documentation-only changes. Run focused DB/smoke tests only if the accepted display-name work unexpectedly touches server behavior; such a change should normally be rejected as out of scope.
 
-Browser validation when `apps/docs/app/page.tsx` or layout styles change:
+Docs App browser validation is required because this child adds a rendered
+direction band to `apps/docs/app/page.tsx`:
 
 - start the Docs App on an available local port;
 - validate at one desktop and one narrow mobile viewport;
@@ -743,11 +855,19 @@ Browser validation when `apps/docs/app/page.tsx` or layout styles change:
 - use only existing safe synthetic evidence;
 - record screenshots as temporary verification evidence unless an active docs screenshot is deliberately refreshed.
 
+Conditional browser/display validation after an accepted new display name:
+
+- verify the web login, setup, portal shell, and one public reader at desktop and narrow mobile widths;
+- verify browser titles, visible labels, accessible names, long-name wrapping, and the absence of accidental technical-identifier changes;
+- build the extension and verify manifest `name`/`short_name`, page title, and popup brand copy. Record whether evidence came from a normal extension page or a true toolbar popup; a functional toolbar-popup claim requires the latter, while this display-only rename does not;
+- verify Docs App metadata/title and OpenAPI human-facing metadata when those surfaces are included in the accepted Layer 1 inventory;
+- check console errors and failed requests and use only safe local/synthetic content.
+
 ## Commit Strategy
 
 Keep the decision boundary visible:
 
-1. Naming research/decision brief before user acceptance, if a durable checkpoint is useful.
+1. Naming research/decision brief in a durable Stage A checkpoint before waiting for user acceptance.
 2. Product documentation truth updates and Docs App content.
 3. Accepted display-brand changes and their focused tests, only when a new display name is approved.
 4. Final closeout docs only if verification produces later corrections.
@@ -758,18 +878,21 @@ Do not mix the post-`110` overnight-runner program, child `112+` skeletons, or r
 
 - Every primary product document distinguishes Available Today, Next Platform Direction, and Intentionally Deferred where appropriate.
 - Current alpha capability and limitations remain accurate.
-- The umbrella direction is Organization -> Project -> Project Version -> distinct artifact families.
+- The navigation direction is Organization -> Project -> Project Version context -> distinct artifact families, while stable Guide/Demo Artifact identity remains Project-owned and each Edition belongs to one Project Version.
 - Guides, Interactive Demos, Product Documentation, repository docs, Docs App, and later Video cannot be confused.
 - Accepted Project Version/Edition/Revision/Publication language is used without claiming it is implemented.
 - `docs/product-idea.md` no longer treats `Guide / Doc` as one ambiguous artifact.
 - Architecture docs do not invent runtime packages, routes, tables, or renderers.
 - Roadmap/status docs point to Master Plan `005` as the next track.
 - The Docs App fixes stale current evidence and displays a clearly qualified next-direction band.
-- `docs/product-naming.md` records dated evidence, shortlist, recommendation, accepted outcome, risks, and rename layers.
+- `docs/product-naming.md` records its status transitions, dated evidence, shortlist, recommendation, accepted outcome, risks, literal occurrence inventory, and rename layers.
 - The user explicitly accepts the keep/rename decision and exact layers.
 - Any display-name change updates only accepted human-facing surfaces and tests.
-- Technical identifiers and migration history remain unchanged unless deferred in a separate compatibility checklist.
+- If a new display name is accepted, `docs/rename-compatibility-checklist.md` accounts for every retained Layer 2 through Layer 5 identifier without authorizing its change.
+- Layer 2 through Layer 5 identifiers and migration history remain unchanged in this child.
+- Every residual old-name occurrence is classified as an accepted display reference, retained technical/tooling identifier, legal attribution, naming-brief baseline, or historical evidence.
 - Historical plans/ADRs/evidence remain historically accurate.
+- Required Docs App browser evidence passes at desktop and narrow mobile widths; conditional renamed web/extension/server surfaces receive their focused checks and browser evidence.
 - Focused and broad verification passes or unrelated pre-existing failures are recorded.
 - Master Plan `005` marks only child `110` complete.
 
@@ -790,6 +913,7 @@ Do not mix the post-`110` overnight-runner program, child `112+` skeletons, or r
 - [ ] Child `109` dependency verified complete.
 - [ ] Starting commit and clean worktree recorded.
 - [ ] Current/future/deferred claim matrix completed.
+- [ ] Literal product-name occurrence inventory completed and classified before the naming decision.
 - [ ] Naming criteria and territories confirmed from Master Plan `005`.
 - [ ] Candidate collision/domain/package/trademark research completed and dated.
 - [ ] Naming brief and recommendation written.
@@ -802,9 +926,12 @@ Do not mix the post-`110` overnight-runner program, child `112+` skeletons, or r
 - [ ] `CONTEXT.md` opening/name references updated without speculative terms.
 - [ ] Docs App current evidence corrected and direction band added.
 - [ ] Accepted display-name surfaces updated, or intentional keep decision recorded.
-- [ ] Technical identifiers confirmed unchanged or deferred explicitly.
+- [ ] New-name compatibility checklist created, or keep-current outcome recorded with no unnecessary checklist.
+- [ ] Technical identifiers confirmed unchanged and any future rename work left unapproved.
+- [ ] Residual old-name scan completed and every result classified.
 - [ ] Focused docs/app tests passed.
-- [ ] Conditional browser/display-name checks passed.
+- [ ] Required Docs App desktop/mobile browser checks passed.
+- [ ] Conditional display-name checks and browser evidence passed when a new name was applied.
 - [ ] Repository-wide non-DB checks passed.
 - [ ] Implementation log, decision, verification, and leftovers recorded.
 - [ ] Master Plan `005` updated only for completed child `110` items.
@@ -819,12 +946,13 @@ Implementation must record:
 - starting and ending commits;
 - claim-audit findings and stale statements corrected;
 - naming candidates researched and evidence dates;
-- user decision, exact spelling, and accepted layers;
+- naming-brief status transitions, user decision, exact spelling, and accepted layers;
+- literal occurrence inventory and final residual-name classifications;
 - files changed under each layer;
-- technical identifiers deliberately retained;
+- technical identifiers deliberately retained and the compatibility checklist when a new display name is accepted;
 - verification commands and outcomes;
-- browser evidence when applicable;
-- leftovers for child `121`, the technical rename checklist, and the overnight runner.
+- required Docs App browser evidence and conditional renamed-surface browser evidence;
+- leftovers for child `121`, any future technical-rename work, and the overnight runner.
 
 ## Handoff After Child 110
 

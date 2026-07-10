@@ -23,7 +23,7 @@ Organization
       -> Videos (later)
 ```
 
-That diagram expresses product navigation, not a final database schema. A Project Version is expected to provide release context. Guides, Interactive Demos, Documentation, and future Videos also need their own authoring history and publication history. Those concepts must be named and modeled separately instead of overloading the word `version`.
+That diagram expresses product navigation, not a final database schema. Child `111` accepted stable Project-owned Guide and Interactive Demo Artifact identities, with one Edition for each applicable Project Version; Captures belong to exactly one Project Version. Documentation ownership remains unresolved until child `131`, and Video remains unmodeled. These concepts must be named and modeled separately instead of overloading the word `version`.
 
 This master plan covers the work from the current alpha baseline through an accepted Documentation-domain grilling session. Documentation implementation begins only after this plan's final gate. Loom-style recording and video-library implementation remain deliberately deferred.
 
@@ -71,11 +71,11 @@ Baseline reviewed on 2026-07-10:
 - Master plans `001` through `004` are complete. This track begins at child `109`; child `110` is now the next executable unit.
 - Known extension and production-readiness leftovers from master plan `004` remain real unless a child plan explicitly closes them.
 
-Before child plan `109` begins, its baseline must re-run and record:
+Each implementation child must re-run and record the applicable non-database baseline. The broad workspace test command is recursive because this Turbo graph has no root `test` task:
 
 ```bash
 rtk git status --short
-rtk pnpm turbo run test
+rtk pnpm -r --if-present test
 rtk pnpm check-types
 rtk pnpm lint
 rtk pnpm build
@@ -382,7 +382,7 @@ Child `109` classified each capability as **repository-installed**, **agent-envi
 
 ### External Skills Reviewed And Installed
 
-Candidate installer shapes, subject to child-plan verification and replacement with an exact reviewed tag or commit where the installer supports it:
+Historical candidate installer shapes reviewed by child `109` are shown below for provenance only. Do not execute them; the outcome table and `docs/agent-workflow.md` are authoritative:
 
 ```bash
 npx impeccable install
@@ -416,7 +416,7 @@ Expected roles:
 - **animation-vocabulary**: shared terminology for discussing motion; it does not make product decisions.
 - **apple-design**: reference for direct manipulation, gestures, springs, wayfinding, and accessibility; it must not turn the portal into an imitation of consumer Apple surfaces.
 - **Vercel React best practices**: React rendering, state ownership, bundle, data-flow, and component-quality review.
-- **Vercel web-design-guidelines**: a second-pass interface review for usability, responsive behavior, accessibility, and common web UI problems.
+- **Vercel web-design-guidelines (rejected)**: do not invoke it because its effective rules are fetched from an unpinned branch; repository-local UI guidance, Impeccable, and accessibility review cover the accepted need.
 - **Accessibility skill**: semantic structure, keyboard behavior, focus, labels, contrast, reduced motion, and screen-reader review.
 - **agent-browser**: real-browser dogfood, screenshots, responsive validation, keyboard flows, and regression investigation.
 - **test-driven-development**: red/green/refactor discipline for versioning and workflow behavior.
@@ -516,7 +516,7 @@ A rename must distinguish:
 
 1. **Display brand**: headings, app title, metadata, UI copy, screenshots, and product narrative.
 2. **Repository identity**: GitHub repository name, clone URLs, badges, issue links, and deployment docs.
-3. **Package identity**: root package name, package scopes, imports, lockfile entries, container/image names, and extension metadata.
+3. **Package/distribution identity**: root package name, package scopes, imports, lockfile entries, container/image names, and technical extension distribution identifiers. Human-facing extension manifest names/titles belong to Layer 1.
 4. **Runtime configuration**: environment-variable prefixes, cookie names, storage directories, telemetry labels, and deployment secrets.
 5. **Persistent identifiers**: database schemas/tables, migration history, published URL shapes, API paths, and stored external references.
 
@@ -653,7 +653,7 @@ Goal:
 Scope:
 
 - Add `Available Today`, `Next Platform Direction`, and `Intentionally Deferred` distinctions where appropriate.
-- Update the umbrella model to Organization -> Project -> Project Version -> artifact families.
+- Present Organization -> Project -> Project Version context -> artifact families as navigation, while preserving the accepted Project-owned Artifact and Project Version-scoped Edition/Capture ownership model.
 - Explain that Guides, Interactive Demos, Documentation, and Videos are distinct artifact families with shared project context.
 - Document Documentation as next and Video as later.
 - Use the accepted child `111` vocabulary in direction/architecture docs while keeping current-state docs explicit that the runtime implementation has not shipped.
@@ -661,25 +661,31 @@ Scope:
 - Create a naming brief from section 11.
 - Research shortlisted names across active products, trademarks at a preliminary level, domains, GitHub, npm, package scopes, and obvious search collisions.
 - Record a keep/rename decision and the approved rename layers.
-- If a new display name is accepted, create a separate compatibility checklist before changing technical identifiers.
+- If a new display name is accepted, create a compatibility checklist before applying Layer 1; technical identifier changes remain outside child `110` and require a separate accepted plan.
 
 Expected affected areas:
 
 - `README.md`
 - `CONTEXT.md`
+- `CONTRIBUTING.md`
 - `docs/product-idea.md`
 - `docs/system-design-pattern.md`
 - `docs/roadmap.md`
 - `docs/project-zoomout-status.md`
 - `docs/oss-alpha-summary.md`
 - `docs/contributor-guide.md`
+- `docs/product-naming.md`
+- `apps/docs/README.md`
 - `apps/docs/app/docs-content.ts`
-- app/package metadata only if an accepted display-name change explicitly includes it
+- `apps/docs/app/docs-content.test.ts`
+- `apps/docs/app/page.tsx`
+- `apps/docs/app/page.test.ts`
+- human-facing docs/app/extension/OpenAPI display surfaces and `docs/rename-compatibility-checklist.md` only when a new Layer 1 display name is accepted
 
 Must not change merely for future direction:
 
 - `docs/backend-route-inventory.md`
-- live OpenAPI descriptions
+- OpenAPI operation/route descriptions solely to describe future direction; only accepted Layer 1 title/summary metadata may change
 - self-hosting/runtime commands
 - database migrations or schema identifiers
 - current screenshots and captions, except to keep current product naming truthful after an accepted display rename
@@ -691,6 +697,9 @@ Acceptance:
 - Video is visible as a deferred direction but is not presented as committed implementation.
 - Canonical `CONTEXT.md` contains only current or grill-accepted terms, not speculative versioning definitions.
 - The name decision, evidence, risks, and migration boundary are recorded.
+- Only Layer 1 display surfaces may change in child `110`; Layer 2 through Layer 5 identifiers remain unchanged and are merely inventoried for a separately accepted future plan.
+- Every current-name occurrence and retained old-name result is classified, and a new display name always produces a compatibility checklist before Layer 1 changes.
+- The rendered Docs App direction band and any renamed browser-visible surfaces have focused real-browser evidence.
 - No existing ADR is rewritten to manufacture a new decision.
 
 ### 111: Project Version And Artifact Edition Grill
