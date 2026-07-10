@@ -13,20 +13,15 @@ describe("PortalTopbar", () => {
         context="Project workspace"
         navigate={navigate}
         performLogout={performLogout}
-      />,
+      />
     );
 
-    expect(screen.getByRole("link", { name: "Ossie" })).toHaveAttribute(
-      "href",
-      "/projects",
-    );
+    expect(screen.getByRole("link", { name: "Ossie" })).toHaveAttribute("href", "/projects");
     expect(screen.getByText("Project workspace")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
 
-    expect(
-      await screen.findByRole("button", { name: "Signing out..." }),
-    ).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Signing out..." })).toBeDisabled();
     expect(performLogout).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledWith("/login");
   });
@@ -42,7 +37,7 @@ describe("PortalTopbar", () => {
         context="Project workspace"
         navigate={navigate}
         performLogout={performLogout}
-      />,
+      />
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Sign out" }));

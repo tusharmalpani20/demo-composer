@@ -11,10 +11,7 @@ import {
 } from "../../lib/api";
 import { signInUrl } from "../auth/navigation";
 import type { AuthResponse } from "../auth/types";
-import type {
-  AcceptOrganizationInviteInput,
-  PublicOrganizationInvite,
-} from "./types";
+import type { AcceptOrganizationInviteInput, PublicOrganizationInvite } from "./types";
 import styles from "./InviteAcceptPage.module.css";
 
 type LoadState =
@@ -26,21 +23,21 @@ type LoadState =
 type InviteAcceptPageProps = {
   token: string;
   loadInvite?: (token: string) => Promise<{ invite: PublicOrganizationInvite }>;
-  acceptInvite?: (
-    token: string,
-    input: AcceptOrganizationInviteInput,
-  ) => Promise<AuthResponse>;
+  acceptInvite?: (token: string, input: AcceptOrganizationInviteInput) => Promise<AuthResponse>;
   navigate?: (path: string) => void;
 };
 
-const unavailableError = (error: unknown) =>
-  error instanceof ApiClientError &&
-  (error.kind === "not_found" ||
-    error.status === 410 ||
-    error.type === "invite_not_found" ||
-    error.type === "invite_expired" ||
-    error.type === "invite_revoked" ||
-    error.type === "invite_accepted");
+const unavailableError = (error: unknown) => (
+  error instanceof ApiClientError
+  && (
+    error.kind === "not_found"
+    || error.status === 410
+    || error.type === "invite_not_found"
+    || error.type === "invite_expired"
+    || error.type === "invite_revoked"
+    || error.type === "invite_accepted"
+  )
+);
 
 const invitePath = (token: string) => `/invites/${encodeURIComponent(token)}`;
 
@@ -68,11 +65,7 @@ export const InviteAcceptPage = ({
       })
       .catch((loadError: unknown) => {
         if (active) {
-          setState(
-            unavailableError(loadError)
-              ? { status: "unavailable" }
-              : { status: "error" },
-          );
+          setState(unavailableError(loadError) ? { status: "unavailable" } : { status: "error" });
         }
       });
 
@@ -89,10 +82,7 @@ export const InviteAcceptPage = ({
       await acceptInvite(token, input);
       navigate("/projects");
     } catch (acceptError: unknown) {
-      if (
-        acceptError instanceof ApiClientError &&
-        acceptError.kind === "unauthenticated"
-      ) {
+      if (acceptError instanceof ApiClientError && acceptError.kind === "unauthenticated") {
         setError("Sign in before accepting this invite.");
       } else if (unavailableError(acceptError)) {
         setState({ status: "unavailable" });
@@ -163,73 +153,52 @@ export const InviteAcceptPage = ({
           <h1 className={styles.title}>Join {invite.organization_name}</h1>
         </CardHeader>
         <CardContent>
-          <div className={styles.details}>
-            <div>
-              <span>Email</span>
-              <strong>{invite.email}</strong>
-            </div>
-            <div>
-              <span>Role</span>
-              <strong>{invite.role}</strong>
+        <div className={styles.details}>
+          <div>
+            <span>Email</span>
+            <strong>{invite.email}</strong>
+          </div>
+          <div>
+            <span>Role</span>
+            <strong>{invite.role}</strong>
+          </div>
+        </div>
+        {error ? <Alert className={styles.error} variant="destructive">{error}</Alert> : null}
+
+        {invite.requires_login ? (
+          <div className={styles.existingUser}>
+            <p className={styles.copy}>This email already has an account. Sign in first, then return to accept the invite.</p>
+            <div className={styles.actions}>
+              <a className={styles.secondaryLink} href={signInUrl(invitePath(token))}>Sign in to accept</a>
+              <Button
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => void accept({})}
+              >
+                {isSubmitting ? "Accepting..." : "Accept with current session"}
+              </Button>
             </div>
           </div>
-          {error ? (
-            <Alert className={styles.error} variant="destructive">
-              {error}
-            </Alert>
-          ) : null}
-
-          {invite.requires_login ? (
-            <div className={styles.existingUser}>
-              <p className={styles.copy}>
-                This email already has an account. Sign in first, then return to
-                accept the invite.
-              </p>
-              <div className={styles.actions}>
-                <a
-                  className={styles.secondaryLink}
-                  href={signInUrl(invitePath(token))}
-                >
-                  Sign in to accept
-                </a>
-                <Button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => void accept({})}
-                >
-                  {isSubmitting
-                    ? "Accepting..."
-                    : "Accept with current session"}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <form className={styles.form} noValidate onSubmit={submitNewUser}>
-              <Label className={styles.field}>
-                <span>Display name</span>
-                <Input
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                />
-              </Label>
-              <Label className={styles.field}>
-                <span>Password</span>
-                <Input
-                  required
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-              </Label>
-              <Button
-                className={styles.submitButton}
-                type="submit"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Accepting..." : "Accept invite"}
-              </Button>
-            </form>
-          )}
+        ) : (
+          <form className={styles.form} noValidate onSubmit={submitNewUser}>
+            <Label className={styles.field}>
+              <span>Display name</span>
+              <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+            </Label>
+            <Label className={styles.field}>
+              <span>Password</span>
+              <Input
+                required
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </Label>
+            <Button className={styles.submitButton} type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Accepting..." : "Accept invite"}
+            </Button>
+          </form>
+        )}
         </CardContent>
       </Card>
     </InviteShell>
@@ -239,9 +208,7 @@ export const InviteAcceptPage = ({
 const InviteShell = ({ children }: { children: React.ReactNode }) => (
   <div className={styles.page}>
     <header className={styles.topbar}>
-      <a className={styles.brand} href="/projects">
-        Ossie
-      </a>
+      <a className={styles.brand} href="/projects">Ossie</a>
     </header>
     <main className={styles.main}>{children}</main>
   </div>

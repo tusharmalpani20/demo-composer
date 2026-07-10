@@ -36,10 +36,10 @@ const setupGuardedRouteTypes = new Set<PortalRoute["type"]>([
   "interactive_demo_detail",
 ]);
 
-const shouldCheckSetup = (route: PortalRoute) =>
-  setupGuardedRouteTypes.has(route.type);
-const shouldCheckSetupInBackground = (route: PortalRoute) =>
-  route.type === "login" || shouldCheckSetup(route);
+const shouldCheckSetup = (route: PortalRoute) => setupGuardedRouteTypes.has(route.type);
+const shouldCheckSetupInBackground = (route: PortalRoute) => (
+  route.type === "login" || shouldCheckSetup(route)
+);
 
 export default function App() {
   const currentPath = `${window.location.pathname}${window.location.search}`;
@@ -47,7 +47,7 @@ export default function App() {
   const setupCheckRequired = shouldCheckSetup(route);
   const backgroundSetupCheckRequired = shouldCheckSetupInBackground(route);
   const [setupGateState, setSetupGateState] = useState<SetupGateState>(
-    setupCheckRequired ? "checking" : "ready",
+    setupCheckRequired ? "checking" : "ready"
   );
 
   useEffect(() => {
@@ -83,50 +83,60 @@ export default function App() {
   }, [backgroundSetupCheckRequired, currentPath, route.type]);
 
   if (setupGateState === "setup_required") {
-    return <FirstRunSetupPage />;
+    return (
+      <FirstRunSetupPage />
+    );
   }
 
   if (route.type === "login") {
     return (
       <LoginPage
-        nextPath={
-          new URLSearchParams(window.location.search).get("next") ?? "/projects"
-        }
+        nextPath={new URLSearchParams(window.location.search).get("next") ?? "/projects"}
       />
     );
   }
 
   if (route.type === "setup") {
-    return <FirstRunSetupPage />;
+    return (
+      <FirstRunSetupPage />
+    );
   }
 
   if (route.type === "public_guide_reader") {
-    return <PublicGuideReaderPage slug={route.slug} />;
+    return (
+      <PublicGuideReaderPage slug={route.slug} />
+    );
   }
 
   if (route.type === "public_guide_embed") {
-    return <PublicGuideReaderPage slug={route.slug} mode="embed" />;
+    return (
+      <PublicGuideReaderPage slug={route.slug} mode="embed" />
+    );
   }
 
   if (route.type === "public_interactive_demo_reader") {
-    return <PublicInteractiveDemoViewerPage slug={route.slug} />;
+    return (
+      <PublicInteractiveDemoViewerPage slug={route.slug} />
+    );
   }
 
   if (route.type === "public_interactive_demo_embed") {
-    return <PublicInteractiveDemoViewerPage slug={route.slug} mode="embed" />;
+    return (
+      <PublicInteractiveDemoViewerPage slug={route.slug} mode="embed" />
+    );
   }
 
   if (route.type === "organization_invite_accept") {
-    return <InviteAcceptPage token={route.token} />;
+    return (
+      <InviteAcceptPage token={route.token} />
+    );
   }
 
   if (setupGateState === "checking") {
     return (
       <div className={styles.page}>
         <header className={styles.topbar}>
-          <a className={styles.brand} href="/projects">
-            Ossie
-          </a>
+          <a className={styles.brand} href="/projects">Ossie</a>
         </header>
         <main className={styles.main}>
           <Card className={styles.emptyState}>
@@ -146,16 +156,12 @@ export default function App() {
     return (
       <div className={styles.page}>
         <header className={styles.topbar}>
-          <a className={styles.brand} href="/projects">
-            Ossie
-          </a>
+          <a className={styles.brand} href="/projects">Ossie</a>
         </header>
         <main className={styles.main}>
           <Card className={styles.emptyState}>
             <CardHeader>
-              <CardTitle className={styles.title}>
-                Setup status unavailable
-              </CardTitle>
+              <CardTitle className={styles.title}>Setup status unavailable</CardTitle>
             </CardHeader>
             <CardContent>
               <p>Could not load instance setup status.</p>
@@ -167,11 +173,15 @@ export default function App() {
   }
 
   if (route.type === "project_list") {
-    return <ProjectListPage currentPath={currentPath} />;
+    return (
+      <ProjectListPage currentPath={currentPath} />
+    );
   }
 
   if (route.type === "organization_members") {
-    return <OrganizationMembersPage currentPath={currentPath} />;
+    return (
+      <OrganizationMembersPage currentPath={currentPath} />
+    );
   }
 
   if (route.type === "project_workspace") {
@@ -262,9 +272,7 @@ export default function App() {
   return (
     <div className={styles.page}>
       <header className={styles.topbar}>
-        <a className={styles.brand} href="/projects">
-          Ossie
-        </a>
+        <a className={styles.brand} href="/projects">Ossie</a>
       </header>
       <main className={styles.main}>
         <Card className={styles.emptyState}>
@@ -272,11 +280,7 @@ export default function App() {
             <CardTitle className={styles.title}>Ossie portal</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>
-              Open the project list, a project workspace, capture session list,
-              capture session, guide list, guide link, or interactive demo link
-              to continue.
-            </p>
+          <p>Open the project list, a project workspace, capture session list, capture session, guide list, guide link, or interactive demo link to continue.</p>
           </CardContent>
         </Card>
       </main>

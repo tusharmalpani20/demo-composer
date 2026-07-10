@@ -18,10 +18,11 @@ type LoginPageProps = {
   navigate?: (path: string) => void;
 };
 
-const errorMessage = (error: unknown) =>
+const errorMessage = (error: unknown) => (
   error instanceof ApiClientError && error.type === "invalid_credentials"
     ? "Email or password is incorrect."
-    : "Could not sign in.";
+    : "Could not sign in."
+);
 
 export const LoginPage = ({
   nextPath = "/projects",
@@ -54,19 +55,13 @@ export const LoginPage = ({
   return (
     <div className={styles.page}>
       <header className={styles.topbar}>
-        <a className={styles.brand} href="/projects">
-          Ossie
-        </a>
+        <a className={styles.brand} href="/projects">Ossie</a>
       </header>
       <main className={styles.main}>
         <Card className={styles.panel} aria-labelledby="login-heading">
           <CardHeader>
-            <h1 className={styles.title} id="login-heading">
-              Sign in
-            </h1>
-            <p className={styles.copy}>
-              Access your projects, capture sessions, guides, and demos.
-            </p>
+            <h1 className={styles.title} id="login-heading">Sign in</h1>
+            <p className={styles.copy}>Access your projects, capture sessions, guides, and demos.</p>
           </CardHeader>
           <CardContent>
             <form className={styles.form} onSubmit={handleSubmit}>

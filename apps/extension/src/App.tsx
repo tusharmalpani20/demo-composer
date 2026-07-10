@@ -24,15 +24,9 @@ import {
   type UploadCaptureAssetInput,
   uploadCaptureAsset,
 } from "./lib/api";
-import {
-  getCurrentTabSnapshot,
-  type CurrentTabSnapshot,
-} from "./lib/current-tab";
+import { getCurrentTabSnapshot, type CurrentTabSnapshot } from "./lib/current-tab";
 import { openPortalUrl } from "./lib/navigation";
-import {
-  captureVisibleTabScreenshot,
-  type ScreenshotCapture,
-} from "./lib/screenshot";
+import { captureVisibleTabScreenshot, type ScreenshotCapture } from "./lib/screenshot";
 import {
   chromeLocalStorage,
   clearActiveCapture,
@@ -72,33 +66,19 @@ type Dependencies = {
     eventIndex?: number;
     mode?: "manual" | "automatic";
   }) => Promise<void>;
-  saveActiveCaptureMode: (input: {
-    mode: "manual" | "automatic";
-    paused: boolean;
-  }) => Promise<void>;
+  saveActiveCaptureMode: (input: { mode: "manual" | "automatic"; paused: boolean }) => Promise<void>;
   saveActiveCaptureEventIndex: (eventIndex: number) => Promise<void>;
-  saveManualCaptureDiagnostic: (
-    diagnostic: ManualCaptureDiagnostic | null,
-  ) => Promise<void>;
+  saveManualCaptureDiagnostic: (diagnostic: ManualCaptureDiagnostic | null) => Promise<void>;
   clearActiveCapture: () => Promise<void>;
   clearSettings: () => Promise<void>;
-  getCurrentAuth: (
-    instanceUrl: string,
-    sessionToken: string,
-  ) => Promise<AuthResponse>;
-  login: (
-    instanceUrl: string,
-    data: { email: string; password: string },
-  ) => Promise<LoginResponse>;
-  listProjects: (
-    instanceUrl: string,
-    sessionToken: string,
-  ) => Promise<ProjectListResponse>;
+  getCurrentAuth: (instanceUrl: string, sessionToken: string) => Promise<AuthResponse>;
+  login: (instanceUrl: string, data: { email: string; password: string }) => Promise<LoginResponse>;
+  listProjects: (instanceUrl: string, sessionToken: string) => Promise<ProjectListResponse>;
   createCaptureSession: (
     instanceUrl: string,
     sessionToken: string,
     projectId: string,
-    data: CreateCaptureSessionInput,
+    data: CreateCaptureSessionInput
   ) => Promise<CaptureSessionResponse>;
   getCurrentTabSnapshot: () => Promise<CurrentTabSnapshot>;
   captureVisibleTabScreenshot: () => Promise<ScreenshotCapture>;
@@ -107,20 +87,20 @@ type Dependencies = {
     sessionToken: string,
     projectId: string,
     captureSessionId: string,
-    data: UploadCaptureAssetInput,
+    data: UploadCaptureAssetInput
   ) => Promise<CaptureAssetResponse>;
   createCaptureEvent: (
     instanceUrl: string,
     sessionToken: string,
     projectId: string,
     captureSessionId: string,
-    data: CreateCaptureEventInput,
+    data: CreateCaptureEventInput
   ) => Promise<CaptureEventResponse>;
   completeCaptureSession: (
     instanceUrl: string,
     sessionToken: string,
     projectId: string,
-    captureSessionId: string,
+    captureSessionId: string
   ) => Promise<CompleteCaptureSessionResponse>;
   openPortalUrl: (url: string) => Promise<void>;
   logout: (instanceUrl: string, sessionToken: string) => Promise<void>;
@@ -135,14 +115,11 @@ type ViewState =
   | { status: "unconfigured"; settings: ExtensionSettings }
   | { status: "signed_out"; settings: ExtensionSettings }
   | {
-      status: "signed_in";
-      settings: ExtensionSettings & {
-        instanceUrl: string;
-        sessionToken: string;
-      };
-      auth: AuthResponse["auth"];
-      projects: Project[];
-    }
+    status: "signed_in";
+    settings: ExtensionSettings & { instanceUrl: string; sessionToken: string };
+    auth: AuthResponse["auth"];
+    projects: Project[];
+  }
   | { status: "error"; settings: ExtensionSettings; message: string };
 
 const buildDefaultDependencies = (): Dependencies => {
@@ -153,14 +130,11 @@ const buildDefaultDependencies = (): Dependencies => {
     saveInstanceUrl: (instanceUrl) => saveInstanceUrl(storage, instanceUrl),
     savePortalUrl: (portalUrl) => savePortalUrl(storage, portalUrl),
     saveSessionToken: (sessionToken) => saveSessionToken(storage, sessionToken),
-    saveSelectedProjectId: (projectId) =>
-      saveSelectedProjectId(storage, projectId),
+    saveSelectedProjectId: (projectId) => saveSelectedProjectId(storage, projectId),
     saveActiveCapture: (input) => saveActiveCapture(storage, input),
     saveActiveCaptureMode: (input) => saveActiveCaptureMode(storage, input),
-    saveActiveCaptureEventIndex: (eventIndex) =>
-      saveActiveCaptureEventIndex(storage, eventIndex),
-    saveManualCaptureDiagnostic: (diagnostic) =>
-      saveManualCaptureDiagnostic(storage, diagnostic),
+    saveActiveCaptureEventIndex: (eventIndex) => saveActiveCaptureEventIndex(storage, eventIndex),
+    saveManualCaptureDiagnostic: (diagnostic) => saveManualCaptureDiagnostic(storage, diagnostic),
     clearActiveCapture: () => clearActiveCapture(storage),
     clearSettings: () => clearSettings(storage),
     getCurrentAuth,
@@ -178,13 +152,10 @@ const buildDefaultDependencies = (): Dependencies => {
 };
 
 export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
-  const dependencies = useMemo<Dependencies>(
-    () => ({
-      ...buildDefaultDependencies(),
-      ...(dependencyOverrides ?? {}),
-    }),
-    [dependencyOverrides],
-  );
+  const dependencies = useMemo<Dependencies>(() => ({
+    ...buildDefaultDependencies(),
+    ...(dependencyOverrides ?? {}),
+  }), [dependencyOverrides]);
   const [state, setState] = useState<ViewState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -211,19 +182,11 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
 
       try {
         const [authResponse, projectResponse] = await Promise.all([
-          dependencies.getCurrentAuth(
-            settings.instanceUrl,
-            settings.sessionToken,
-          ),
-          dependencies.listProjects(
-            settings.instanceUrl,
-            settings.sessionToken,
-          ),
+          dependencies.getCurrentAuth(settings.instanceUrl, settings.sessionToken),
+          dependencies.listProjects(settings.instanceUrl, settings.sessionToken),
         ]);
         const selectedProjectExists = settings.selectedProjectId
-          ? projectResponse.projects.some(
-              (project) => project.id === settings.selectedProjectId,
-            )
+          ? projectResponse.projects.some((project) => project.id === settings.selectedProjectId)
           : true;
         const nextSettings = selectedProjectExists
           ? settings
@@ -246,10 +209,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
           });
         }
       } catch (error: unknown) {
-        if (
-          error instanceof ApiClientError &&
-          error.type === "unauthenticated"
-        ) {
+        if (error instanceof ApiClientError && error.type === "unauthenticated") {
           await dependencies.saveSessionToken(null);
 
           if (active) {
@@ -297,11 +257,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
   const reload = () => setReloadKey((key) => key + 1);
 
   if (state.status === "loading") {
-    return (
-      <Shell>
-        <div className="state">Loading...</div>
-      </Shell>
-    );
+    return <Shell><div className="state">Loading...</div></Shell>;
   }
 
   if (state.status === "unconfigured") {
@@ -330,14 +286,11 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
             reload();
           }}
           onSignIn={async (data) => {
-            const result = await dependencies.login(
-              state.settings.instanceUrl ?? "",
-              data,
-            );
+            const result = await dependencies.login(state.settings.instanceUrl ?? "", data);
             await dependencies.saveSessionToken(result.session_token);
             const projectResponse = await dependencies.listProjects(
               state.settings.instanceUrl ?? "",
-              result.session_token,
+              result.session_token
             );
             setState({
               status: "signed_in",
@@ -396,9 +349,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
         activeCaptureEventIndex={state.settings.activeCaptureEventIndex}
         activeCaptureMode={state.settings.activeCaptureMode}
         activeCapturePaused={state.settings.activeCapturePaused}
-        automaticCaptureDiagnostic={
-          state.settings.automaticCaptureDiagnostic ?? null
-        }
+        automaticCaptureDiagnostic={state.settings.automaticCaptureDiagnostic ?? null}
         manualCaptureDiagnostic={state.settings.manualCaptureDiagnostic ?? null}
         onSelect={async (projectId) => {
           await dependencies.saveSelectedProjectId(projectId);
@@ -417,11 +368,9 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
             state.settings.sessionToken,
             projectId,
             buildCaptureSessionInput({
-              project:
-                state.projects.find((project) => project.id === projectId) ??
-                null,
+              project: state.projects.find((project) => project.id === projectId) ?? null,
               tab,
-            }),
+            })
           );
 
           await dependencies.saveActiveCapture({
@@ -491,7 +440,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
                   extension_version: "0.1.0",
                   capture_source: "extension_popup",
                 },
-              },
+              }
             );
             const result = await dependencies.createCaptureEvent(
               state.settings.instanceUrl,
@@ -511,18 +460,15 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
                   capture_source: "extension_popup",
                   asset_type: "screenshot",
                 },
-              },
+              }
             );
             await dependencies.saveActiveCaptureEventIndex(input.eventIndex);
-            await persistManualCaptureDiagnostic(
-              dependencies.saveManualCaptureDiagnostic,
-              {
-                status: "success",
-                message: null,
-                eventIndex: result.capture_event.event_index,
-                occurredAt: screenshot.capturedAt,
-              },
-            );
+            await persistManualCaptureDiagnostic(dependencies.saveManualCaptureDiagnostic, {
+              status: "success",
+              message: null,
+              eventIndex: result.capture_event.event_index,
+              occurredAt: screenshot.capturedAt,
+            });
             setState({
               ...state,
               settings: {
@@ -539,15 +485,12 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
 
             return result;
           } catch (error: unknown) {
-            await persistManualCaptureDiagnostic(
-              dependencies.saveManualCaptureDiagnostic,
-              {
-                status: "failed",
-                message: errorMessage(error, "Could not capture screenshot."),
-                eventIndex: null,
-                occurredAt: new Date().toISOString(),
-              },
-            );
+            await persistManualCaptureDiagnostic(dependencies.saveManualCaptureDiagnostic, {
+              status: "failed",
+              message: errorMessage(error, "Could not capture screenshot."),
+              eventIndex: null,
+              occurredAt: new Date().toISOString(),
+            });
             throw error;
           }
         }}
@@ -556,14 +499,14 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
             state.settings.instanceUrl,
             state.settings.sessionToken,
             input.projectId,
-            input.captureSessionId,
+            input.captureSessionId
           );
           const portalUrl = buildPortalCaptureSessionUrl(
             state.settings.instanceUrl,
             state.settings.portalUrl,
             result.redirect.path,
             input.projectId,
-            input.captureSessionId,
+            input.captureSessionId
           );
 
           await dependencies.clearActiveCapture();
@@ -595,7 +538,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
             state.settings.portalUrl,
             null,
             input.projectId,
-            input.captureSessionId,
+            input.captureSessionId
           );
 
           try {
@@ -614,10 +557,7 @@ export const App = ({ dependencies: dependencyOverrides }: AppProps) => {
         }}
         onSignOut={async () => {
           try {
-            await dependencies.logout(
-              state.settings.instanceUrl,
-              state.settings.sessionToken,
-            );
+            await dependencies.logout(state.settings.instanceUrl, state.settings.sessionToken);
           } catch {
             // Local sign-out must still work when the instance is unreachable.
           }
@@ -640,10 +580,7 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
 const ConnectInstance = ({
   onSave,
 }: {
-  onSave: (input: {
-    instanceUrl: string;
-    portalUrl: string | null;
-  }) => Promise<void>;
+  onSave: (input: { instanceUrl: string; portalUrl: string | null }) => Promise<void>;
 }) => {
   const [instanceUrl, setInstanceUrl] = useState("");
   const [portalUrl, setPortalUrl] = useState("");
@@ -660,9 +597,7 @@ const ConnectInstance = ({
     }
 
     const portalUrlValue = portalUrl.trim();
-    const normalizedPortalUrl = portalUrlValue
-      ? normalizeInstanceUrl(portalUrlValue)
-      : null;
+    const normalizedPortalUrl = portalUrlValue ? normalizeInstanceUrl(portalUrlValue) : null;
     if (normalizedPortalUrl && !normalizedPortalUrl.ok) {
       setError("Enter a valid http:// or https:// portal URL.");
       return;
@@ -775,12 +710,7 @@ const SignIn = ({
           <Button type="submit" disabled={submitting}>
             {submitting ? "Signing in..." : "Sign in"}
           </Button>
-          <Button
-            variant="secondary"
-            className="secondary"
-            disabled={submitting}
-            onClick={() => void onChangeInstance()}
-          >
+          <Button variant="secondary" className="secondary" disabled={submitting} onClick={() => void onChangeInstance()}>
             Change instance
           </Button>
         </div>
@@ -822,10 +752,7 @@ const ProjectPicker = ({
   manualCaptureDiagnostic: ExtensionSettings["manualCaptureDiagnostic"];
   onSelect: (projectId: string) => Promise<void>;
   onStartCapture: (projectId: string) => Promise<void>;
-  onSetActiveCaptureMode: (input: {
-    mode: "manual" | "automatic";
-    paused: boolean;
-  }) => Promise<void>;
+  onSetActiveCaptureMode: (input: { mode: "manual" | "automatic"; paused: boolean }) => Promise<void>;
   onDiscardActiveCapture: () => Promise<void>;
   onCaptureScreenshot: (input: {
     projectId: string;
@@ -852,45 +779,29 @@ const ProjectPicker = ({
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [finishError, setFinishError] = useState<string | null>(null);
   const [portalOpenError, setPortalOpenError] = useState<string | null>(null);
-  const [lastCaptureEventIndex, setLastCaptureEventIndex] = useState<
-    number | null
-  >(null);
+  const [lastCaptureEventIndex, setLastCaptureEventIndex] = useState<number | null>(null);
   const selectedProject = selectedProjectId
-    ? (projects.find((project) => project.id === selectedProjectId) ?? null)
+    ? projects.find((project) => project.id === selectedProjectId) ?? null
     : null;
   const activeProject = activeCaptureProjectId
-    ? (projects.find((project) => project.id === activeCaptureProjectId) ??
-      null)
+    ? projects.find((project) => project.id === activeCaptureProjectId) ?? null
     : null;
-  const hasActiveCapture = Boolean(
-    activeCaptureSessionId && activeCaptureProjectId,
-  );
-  const busy =
-    starting ||
-    capturingScreenshot ||
-    finishing ||
-    openingPortal ||
-    changingCaptureMode;
+  const hasActiveCapture = Boolean(activeCaptureSessionId && activeCaptureProjectId);
+  const busy = starting || capturingScreenshot || finishing || openingPortal || changingCaptureMode;
   const resolvedCaptureMode = activeCaptureMode ?? "manual";
   const isAutomaticCapture = resolvedCaptureMode === "automatic";
-  const automaticCaptureDiagnosticMessage =
-    automaticCaptureDiagnostic?.status === "failed"
-      ? `Automatic click capture failed: ${automaticCaptureDiagnostic.message ?? "Check extension permissions and supported pages."}`
-      : null;
-  const automaticCaptureSuccessMessage =
-    automaticCaptureDiagnostic?.status === "success" &&
-    automaticCaptureDiagnostic.eventIndex
-      ? `Automatic capture event recorded: step ${automaticCaptureDiagnostic.eventIndex}`
-      : null;
-  const manualCaptureDiagnosticMessage =
-    manualCaptureDiagnostic?.status === "failed"
-      ? `Manual screenshot failed: ${manualCaptureDiagnostic.message ?? "Could not capture screenshot."}`
-      : null;
-  const manualCaptureSuccessMessage =
-    manualCaptureDiagnostic?.status === "success" &&
-    manualCaptureDiagnostic.eventIndex
-      ? `Manual screenshot recorded: step ${manualCaptureDiagnostic.eventIndex}`
-      : null;
+  const automaticCaptureDiagnosticMessage = automaticCaptureDiagnostic?.status === "failed"
+    ? `Automatic click capture failed: ${automaticCaptureDiagnostic.message ?? "Check extension permissions and supported pages."}`
+    : null;
+  const automaticCaptureSuccessMessage = automaticCaptureDiagnostic?.status === "success" && automaticCaptureDiagnostic.eventIndex
+    ? `Automatic capture event recorded: step ${automaticCaptureDiagnostic.eventIndex}`
+    : null;
+  const manualCaptureDiagnosticMessage = manualCaptureDiagnostic?.status === "failed"
+    ? `Manual screenshot failed: ${manualCaptureDiagnostic.message ?? "Could not capture screenshot."}`
+    : null;
+  const manualCaptureSuccessMessage = manualCaptureDiagnostic?.status === "success" && manualCaptureDiagnostic.eventIndex
+    ? `Manual screenshot recorded: step ${manualCaptureDiagnostic.eventIndex}`
+    : null;
 
   const heading = hasActiveCapture
     ? "Capture active"
@@ -980,9 +891,7 @@ const ProjectPicker = ({
       });
       setOpeningPortal(false);
     } catch (error: unknown) {
-      setPortalOpenError(
-        errorMessage(error, "Could not open capture in portal."),
-      );
+      setPortalOpenError(errorMessage(error, "Could not open capture in portal."));
       setOpeningPortal(false);
     }
   };
@@ -1004,9 +913,7 @@ const ProjectPicker = ({
       });
       setChangingCaptureMode(false);
     } catch (error: unknown) {
-      setScreenshotError(
-        errorMessage(error, "Could not update automatic capture state."),
-      );
+      setScreenshotError(errorMessage(error, "Could not update automatic capture state."));
       setChangingCaptureMode(false);
     }
   };
@@ -1020,20 +927,10 @@ const ProjectPicker = ({
           <p className="instance">{auth.organization.name}</p>
         </div>
         <div className="toolbarActions">
-          <Button
-            variant="secondary"
-            className="secondary"
-            disabled={busy}
-            onClick={() => void onChangeInstance()}
-          >
+          <Button variant="secondary" className="secondary" disabled={busy} onClick={() => void onChangeInstance()}>
             Change instance
           </Button>
-          <Button
-            variant="secondary"
-            className="secondary"
-            disabled={busy}
-            onClick={() => void onSignOut()}
-          >
+          <Button variant="secondary" className="secondary" disabled={busy} onClick={() => void onSignOut()}>
             Sign out
           </Button>
         </div>
@@ -1042,9 +939,7 @@ const ProjectPicker = ({
       {hasActiveCapture ? (
         <div className="captureState">
           <p className="captureMode">
-            {isAutomaticCapture
-              ? "Automatic click capture"
-              : "Manual screenshot capture"}
+            {isAutomaticCapture ? "Automatic click capture" : "Manual screenshot capture"}
           </p>
           <p className="captureHelp">
             {isAutomaticCapture
@@ -1053,72 +948,37 @@ const ProjectPicker = ({
                 : "Clicks on supported pages create ordered screenshot-backed steps."
               : "Capture one screenshot for each step you want in the guide."}
           </p>
-          <p className="captureProject">
-            {activeProject?.name ?? "Project unavailable"}
-          </p>
+          <p className="captureProject">{activeProject?.name ?? "Project unavailable"}</p>
           <p className="captureSession">Session {activeCaptureSessionId}</p>
-          {screenshotError ? (
-            <div className="error">{screenshotError}</div>
-          ) : null}
-          {automaticCaptureDiagnosticMessage ? (
-            <div className="error">{automaticCaptureDiagnosticMessage}</div>
-          ) : null}
-          {manualCaptureDiagnosticMessage ? (
-            <div className="error">{manualCaptureDiagnosticMessage}</div>
-          ) : null}
+          {screenshotError ? <div className="error">{screenshotError}</div> : null}
+          {automaticCaptureDiagnosticMessage ? <div className="error">{automaticCaptureDiagnosticMessage}</div> : null}
+          {manualCaptureDiagnosticMessage ? <div className="error">{manualCaptureDiagnosticMessage}</div> : null}
           {finishError ? <div className="error">{finishError}</div> : null}
-          {portalOpenError ? (
-            <div className="error">{portalOpenError}</div>
-          ) : null}
-          {automaticCaptureSuccessMessage ? (
-            <p className="success">{automaticCaptureSuccessMessage}</p>
-          ) : null}
-          {manualCaptureSuccessMessage && !lastCaptureEventIndex ? (
-            <p className="success">{manualCaptureSuccessMessage}</p>
-          ) : null}
-          {lastCaptureEventIndex ? (
-            <p className="success">
-              Capture event recorded: step {lastCaptureEventIndex}
-            </p>
-          ) : null}
+          {portalOpenError ? <div className="error">{portalOpenError}</div> : null}
+          {automaticCaptureSuccessMessage ? <p className="success">{automaticCaptureSuccessMessage}</p> : null}
+          {manualCaptureSuccessMessage && !lastCaptureEventIndex ? <p className="success">{manualCaptureSuccessMessage}</p> : null}
+          {lastCaptureEventIndex ? <p className="success">Capture event recorded: step {lastCaptureEventIndex}</p> : null}
           <div className="actions">
             {isAutomaticCapture ? (
               <Button
                 className="secondary"
                 variant="secondary"
                 disabled={busy}
-                onClick={() =>
-                  void handleSetAutomaticPaused(!activeCapturePaused)
-                }
+                onClick={() => void handleSetAutomaticPaused(!activeCapturePaused)}
               >
-                {activeCapturePaused
-                  ? "Resume automatic capture"
-                  : "Pause automatic capture"}
+                {activeCapturePaused ? "Resume automatic capture" : "Pause automatic capture"}
               </Button>
             ) : null}
-            <Button
-              disabled={busy}
-              onClick={() => void handleCaptureScreenshot()}
-            >
+            <Button disabled={busy} onClick={() => void handleCaptureScreenshot()}>
               {capturingScreenshot ? "Capturing..." : "Capture screenshot"}
             </Button>
-            <Button
-              variant="secondary"
-              className="secondary"
-              disabled={busy}
-              onClick={() => void handleOpenActiveCapture()}
-            >
+            <Button variant="secondary" className="secondary" disabled={busy} onClick={() => void handleOpenActiveCapture()}>
               {openingPortal ? "Opening..." : "Open in portal"}
             </Button>
             <Button disabled={busy} onClick={() => void handleFinishCapture()}>
               {finishing ? "Finishing..." : "Finish capture"}
             </Button>
-            <Button
-              variant="secondary"
-              className="secondary"
-              disabled={busy}
-              onClick={() => void onDiscardActiveCapture()}
-            >
+            <Button variant="secondary" className="secondary" disabled={busy} onClick={() => void onDiscardActiveCapture()}>
               Discard local capture state
             </Button>
           </div>
@@ -1128,12 +988,8 @@ const ProjectPicker = ({
       {!hasActiveCapture && selectedProject ? (
         <div className="captureState">
           <p className="captureMode">Automatic click capture</p>
-          <p className="captureHelp">
-            Clicks on supported pages create ordered screenshot-backed steps.
-          </p>
-          <p className="captureHelp">
-            Manual screenshots remain available after capture starts.
-          </p>
+          <p className="captureHelp">Clicks on supported pages create ordered screenshot-backed steps.</p>
+          <p className="captureHelp">Manual screenshots remain available after capture starts.</p>
           <p className="captureProject">{selectedProject.name}</p>
           {startError ? <div className="error">{startError}</div> : null}
           {finishError ? <div className="error">{finishError}</div> : null}
@@ -1152,18 +1008,12 @@ const ProjectPicker = ({
           {projects.map((project) => (
             <Button
               variant="secondary"
-              className={
-                project.id === selectedProjectId
-                  ? "project selected"
-                  : "project"
-              }
+              className={project.id === selectedProjectId ? "project selected" : "project"}
               disabled={busy}
               key={project.id}
               onClick={() => void onSelect(project.id)}
             >
-              <span>
-                Use <strong>{project.name}</strong>
-              </span>
+              <span>Use <strong>{project.name}</strong></span>
               <small>{project.status}</small>
             </Button>
           ))}
