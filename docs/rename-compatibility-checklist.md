@@ -2,15 +2,19 @@
 
 Date: 2026-07-10
 
-Status: Layer 1 display rename accepted; technical rename is **not approved**.
+Last reviewed: 2026-07-11
+
+Status: Layer 1 display rename and the GitHub repository slug/remote portion of
+Layer 2 are complete. Other technical rename work is **not approved**.
 
 ## Purpose
 
-Ossie is the product display brand. Child plan `110` deliberately leaves
-repository, package, runtime configuration, and persistent identifiers stable.
-This prevents a documentation change from breaking clone URLs, local scripts,
-deployments, browser-extension protocols, sessions, storage, public links, or
-migration history.
+Ossie is the product display brand. Child plan `110` initially left repository,
+package, runtime configuration, and persistent identifiers stable. On 2026-07-11,
+the user renamed the GitHub repository and authorized its remote/link update.
+Other identifiers remain stable to avoid breaking local scripts, deployments,
+browser-extension protocols, sessions, storage, public links, or migration
+history.
 
 This checklist is an inventory, not authorization to rename the items below.
 
@@ -29,18 +33,21 @@ This checklist is an inventory, not authorization to rename the items below.
 
 ## Layer 2: Repository Identity
 
+Completed on 2026-07-11:
+
+- [x] GitHub repository slug is `tusharmalpani20/ossie`.
+- [x] Git `origin` fetch/push URL is `git@github.com:tusharmalpani20/ossie.git`.
+- [x] Active Docs App GitHub source and raw alpha-asset URLs use `ossie`.
+
 Retained:
 
 - local directory `/home/tm/Desktop/work/demo_composer_v2`;
 - root Git repository working-tree identity;
-- GitHub slug and source links under `tusharmalpani20/demo-composer`;
-- clone, raw asset, badge, and Docs App repository URLs; and
 - historical file paths and commit references.
 
-A future repository-identity plan must verify remote rename/redirect behavior,
-CI checkout, badges, raw asset URLs, deployment integrations, contributor
-clones, local workspace moves, and all external links. Moving the local
-directory while tools are running is explicitly prohibited.
+Any further repository-identity plan must verify CI checkout, badges, deployment
+integrations, contributor clones, local workspace moves, and external links.
+Moving the local directory while tools are running is explicitly prohibited.
 
 ## Layer 3: Package Identity
 

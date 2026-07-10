@@ -1034,12 +1034,23 @@ not rewritten.
 - Child `121` must design and accept the original eight-armed octopus logo,
   purple-led palette if retained, typography, tokens, and small-size/accessibility
   behavior without deriving from Oswald, WALL-E, or another character.
-- A whole-directory/repository/package/config/persistent rename requires a
-  separate accepted technical plan. None is authorized by this closeout.
+- A whole-directory/package/config/persistent rename requires a separate accepted
+  technical plan. The user independently renamed the GitHub repository on
+  2026-07-11 and authorized the Git remote plus active source/raw link update;
+  no other technical rename was authorized.
 - Existing alpha screenshots remain labeled pre-rename historical evidence until
   their owning UI children refresh them.
 - The next executable activity is the unnumbered overnight-runner tooling
   checkpoint, not child `112` implementation.
+
+### Post-Closeout Repository Identity Update
+
+On 2026-07-11, the user renamed the GitHub repository to
+`tusharmalpani20/ossie`. Git `origin` was updated to
+`git@github.com:tusharmalpani20/ossie.git`, active Docs App GitHub source/raw
+links were updated with failing-then-passing focused coverage, and the
+compatibility checklist was narrowed accordingly. The local directory and all
+other Layer 2 through Layer 5 identifiers remain unchanged.
 
 ## Handoff After Child 110
 

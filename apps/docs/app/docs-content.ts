@@ -1,7 +1,6 @@
-const repositoryBaseUrl =
-  "https://github.com/tusharmalpani20/demo-composer/blob/main";
+const repositoryBaseUrl = "https://github.com/tusharmalpani20/ossie/blob/main";
 const alphaAssetBaseUrl =
-  "https://raw.githubusercontent.com/tusharmalpani20/demo-composer/main/docs/assets/alpha";
+  "https://raw.githubusercontent.com/tusharmalpani20/ossie/main/docs/assets/alpha";
 
 export const siteSummary = {
   name: "Ossie",

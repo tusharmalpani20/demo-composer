@@ -18,6 +18,12 @@ describe("docs content", () => {
   });
 
   it("links to the source-of-truth markdown docs", () => {
+    expect(siteSummary.readmeHref).toContain(
+      "github.com/tusharmalpani20/ossie/",
+    );
+    expect(siteSummary.selfHostingHref).toContain(
+      "github.com/tusharmalpani20/ossie/",
+    );
     expect(docsLinks).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

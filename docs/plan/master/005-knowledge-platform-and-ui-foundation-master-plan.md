@@ -68,7 +68,7 @@ Baseline reviewed on 2026-07-10:
 - Current pages still rely heavily on CSS Modules, hard-coded slate/hex values, repeated control styling, and only minimal global tokens. The UI track is therefore a consolidation and product-design effort, not a fresh Tailwind or icon migration.
 - Child `109` installed the accepted external design guidance as pinned, optional repository tooling and documented provenance, compatibility changes, update/removal procedure, and rejected sources in `docs/agent-workflow.md`. It remains outside application dependencies and runtime behavior.
 - The current UI works at alpha level but does not yet provide the consistency, hierarchy, density, responsive behavior, accessibility, or navigation expected from a daily internal tool.
-- Master plans `001` through `004` are complete. This track begins at child `109`; child `110` is now the next executable unit.
+- Master plans `001` through `004` are complete. Children `109`, `110`, and `111` are complete; the overnight-runner tooling checkpoint is now the next executable activity.
 - Known extension and production-readiness leftovers from master plan `004` remain real unless a child plan explicitly closes them.
 
 Each implementation child must re-run and record the applicable non-database baseline. The broad workspace test command is recursive because this Turbo graph has no root `test` task:
@@ -487,11 +487,13 @@ Reasons:
 - The intended platform must comfortably contain Guides, Interactive Demos, Documentation, and future Videos without one feeling secondary.
 - A broader name will reduce explanation cost when positioning the product to organizations.
 
-Child `110` applied Layer 1 display branding only. The existing repository
-directory/slug, package names, runtime configuration, cookies, headers, service
-identifiers, storage, routes, database objects, migration history, legal
-attribution, historical records, and repository-local skill names remain stable.
-`docs/rename-compatibility-checklist.md` inventories those boundaries.
+Child `110` applied Layer 1 display branding. On 2026-07-11, the user renamed the
+GitHub repository to `tusharmalpani20/ossie` and authorized updating Git `origin`
+and active source/raw links. The local repository directory, package names,
+runtime configuration, cookies, headers, service identifiers, storage, routes,
+database objects, migration history, legal attribution, historical records, and
+repository-local skill names remain stable. `docs/rename-compatibility-checklist.md`
+inventories those boundaries.
 
 Preliminary research found a material collision with active Apache Ossie in the
 semantic-metadata software space. The user accepted the name with that risk
@@ -666,8 +668,10 @@ Accepted outcome:
   owns actual logo/design acceptance.
 - Applied now: Layer 1 human-facing documentation, portal, extension, Docs App,
   issue-template, package-prose, and OpenAPI metadata.
-- Deferred and unapproved: Layers 2 through 5, including the physical workspace
-  directory and technical identifiers.
+- Applied after closeout on 2026-07-11: GitHub repository slug, Git `origin`, and
+  active source/raw repository links.
+- Deferred and unapproved: the remaining Layer 2 local directory and all Layer 3
+  through Layer 5 technical identifiers.
 - Product, architecture, roadmap, status, contributor, operator, and Docs App
   truth bands now distinguish current alpha, accepted foundation, Product
   Documentation next, and Video later.
