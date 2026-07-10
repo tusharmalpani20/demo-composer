@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dogfood Demo Composer"
+  short_description: "Validate browser workflows with evidence"
+  default_prompt: "Use $dogfood-demo-composer to validate this workflow with safe browser evidence."

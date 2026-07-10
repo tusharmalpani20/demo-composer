@@ -21,6 +21,12 @@ packages/       shared constants, API contracts, domain policies, UI primitives,
 - Update docs when code behavior, setup, security posture, or product scope changes.
 - Keep shared package changes behind focused plans and tests; app-local contracts should stay near their owners until they pass the reuse gate.
 
+Optional agent-assisted work starts with the repository-relative guidance in
+`AGENTS.md` and the skill/provenance registry in `docs/agent-workflow.md`. Agent
+tools are not required for ordinary contribution. `CONTEXT.md` remains the
+canonical product glossary, accepted ADRs remain the durable decision record,
+and current implementation/tests remain the source for shipped runtime facts.
+
 ## Test Commands
 
 Use the narrowest relevant checks while developing:

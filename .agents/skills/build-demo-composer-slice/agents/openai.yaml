@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Demo Composer Slice"
+  short_description: "Deliver one child plan end to end"
+  default_prompt: "Use $build-demo-composer-slice to expand, implement, verify, and close the active child plan."

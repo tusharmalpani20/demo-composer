@@ -1,0 +1,4 @@
+interface:
+  display_name: "Model Demo Composer Domain"
+  short_description: "Resolve product domain language safely"
+  default_prompt: "Use $model-demo-composer-domain to analyze this domain terminology question against canonical repository decisions."
