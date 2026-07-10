@@ -2,13 +2,13 @@
 
 Date: 2026-07-10
 
-Status: In progress. The Project Version and Artifact Edition grill completed on 2026-07-10; runtime implementation has not started.
+Status: In progress. Children `109`, `110`, and `111` are complete; runtime foundation implementation has not started.
 
 Master plan number: 005.
 
 ## 1. Purpose
 
-Demo Composer has proved its first alpha workflow: a team can create a project, capture a browser workflow, turn the capture into a Guide or Interactive Demo, and publish an immutable snapshot. The next track should not immediately add another isolated artifact type. It should first establish the product model, repository guidance, version foundation, and application experience needed for a broader internal knowledge platform.
+Ossie has proved its first alpha workflow: a team can create a project, capture a browser workflow, turn the capture into a Guide or Interactive Demo, and publish an immutable snapshot. The next track should not immediately add another isolated artifact type. It should first establish the product model, repository guidance, version foundation, and application experience needed for a broader internal knowledge platform.
 
 The intended umbrella is:
 
@@ -475,9 +475,10 @@ External skills support this pattern but do not choose it: Impeccable supplies t
 
 ## 11. Product Naming Decision
 
-### Recommendation
+### Accepted Outcome
 
-The product should probably move away from **Demo Composer** before the broader public identity and modern UI are finalized.
+On 2026-07-10, the user accepted **Ossie** as the product display name and an
+original octopus with all eight arms visible as the character direction.
 
 Reasons:
 
@@ -486,7 +487,16 @@ Reasons:
 - The intended platform must comfortably contain Guides, Interactive Demos, Documentation, and future Videos without one feeling secondary.
 - A broader name will reduce explanation cost when positioning the product to organizations.
 
-This is not a recommendation for an immediate blind rename. **Demo Composer remains the working name until child plan `110` records an accepted name decision.**
+Child `110` applied Layer 1 display branding only. The existing repository
+directory/slug, package names, runtime configuration, cookies, headers, service
+identifiers, storage, routes, database objects, migration history, legal
+attribution, historical records, and repository-local skill names remain stable.
+`docs/rename-compatibility-checklist.md` inventories those boundaries.
+
+Preliminary research found a material collision with active Apache Ossie in the
+semantic-metadata software space. The user accepted the name with that risk
+visible. This is not legal clearance; professional trademark and logo review is
+required before commercial launch.
 
 ### Naming Criteria
 
@@ -500,7 +510,7 @@ The selected name should:
 - avoid collision with active software products, major trademarks, npm packages, GitHub organizations/repositories, and reasonable domain options;
 - remain usable if the product later adds search, comments, approvals, and video.
 
-### Naming Territories To Explore
+### Naming Territories Explored
 
 The naming exercise should explore concepts rather than jumping to unverified names:
 
@@ -538,27 +548,28 @@ Name availability and trademark research is risk reduction, not legal clearance.
 109 skills and agent workflow
   -> 110 product umbrella, naming, and documentation truth
     -> 111 Project Version and Artifact Edition grill
-      -> 112 Audit Evidence core
-        -> 113 existing-mutation Audit coverage
-          -> 114 Access Evidence and compliance timelines
-            -> 115 Project Membership foundation
-              -> 116 Project Version foundation
-                -> 117 Capture source version scoping
-                  -> 118 Guide/Demo Edition and Working Draft relational foundation
-                    -> 119 Guide/Demo Revision, Carry-Forward, and protected assets
-                      -> 120 Publication and multi-version Publish Link integration
-                        -> 121 design-system foundation
-                          -> 122 portal architecture and application shell
-                            -> 123 authentication, setup, and organization UI
-                              -> 124 project, version, and library UI
-                                -> 125 capture portal UI
-                                  -> 126 extension UI
-                                    -> 127 Guide authoring and reader UI
-                                      -> 128 Interactive Demo authoring and viewer UI
-                                        -> 129 accessibility, motion, and browser dogfood
-                                          -> 130 pre-Documentation closeout
-                                            -> 131 Documentation-domain grill
-                                              -> Documentation implementation begins in 132+
+      -> operational checkpoint: build/test overnight runner and create 112-131 skeletons
+        -> 112 Audit Evidence core
+          -> 113 existing-mutation Audit coverage
+            -> 114 Access Evidence and compliance timelines
+              -> 115 Project Membership foundation
+                -> 116 Project Version foundation
+                  -> 117 Capture source version scoping
+                    -> 118 Guide/Demo Edition and Working Draft relational foundation
+                      -> 119 Guide/Demo Revision, Carry-Forward, and protected assets
+                        -> 120 Publication and multi-version Publish Link integration
+                          -> 121 design-system foundation
+                            -> 122 portal architecture and application shell
+                              -> 123 authentication, setup, and organization UI
+                                -> 124 project, version, and library UI
+                                  -> 125 capture portal UI
+                                    -> 126 extension UI
+                                      -> 127 Guide authoring and reader UI
+                                        -> 128 Interactive Demo authoring and viewer UI
+                                          -> 129 accessibility, motion, and browser dogfood
+                                            -> 130 pre-Documentation closeout
+                                              -> 131 Documentation-domain grill
+                                                -> Documentation implementation begins in 132+
 ```
 
 Hard gates:
@@ -640,7 +651,28 @@ Completed outcome:
 
 ### 110: Product Umbrella, Naming, And Documentation Truth
 
-Status: Not started.
+Status: Complete on 2026-07-10.
+
+Closure record:
+
+- `docs/plan/110-product-umbrella-naming-and-documentation-truth.md`
+- `docs/product-naming.md`
+- `docs/rename-compatibility-checklist.md`
+
+Accepted outcome:
+
+- Display brand: `Ossie`.
+- Character direction: original octopus with all eight arms visible; child `121`
+  owns actual logo/design acceptance.
+- Applied now: Layer 1 human-facing documentation, portal, extension, Docs App,
+  issue-template, package-prose, and OpenAPI metadata.
+- Deferred and unapproved: Layers 2 through 5, including the physical workspace
+  directory and technical identifiers.
+- Product, architecture, roadmap, status, contributor, operator, and Docs App
+  truth bands now distinguish current alpha, accepted foundation, Product
+  Documentation next, and Video later.
+- Focused and broad tests, types, lint, builds, desktop/mobile browser evidence,
+  reflow, console/network checks, and residual-name classification passed.
 
 Planned file:
 
@@ -1789,7 +1821,7 @@ Mitigation: document Video as deferred and do not create Video nav, tables, pack
 
 - [x] Create master plan `005`.
 - [x] Create, expand, recheck, implement, and close child plan `109`.
-- [ ] Create, expand, recheck, implement, and close child plan `110`.
+- [x] Create, expand, recheck, implement, and close child plan `110`.
 - [x] Create, conduct, document, and accept the versioning grill in child plan `111`.
 - [ ] Create, expand, recheck, implement, and close child plan `112`.
 - [ ] Create, expand, recheck, implement, and close child plan `113`.
@@ -1848,6 +1880,14 @@ This master plan is complete when:
 
 ## 19. Immediate Next Action
 
-The next executable unit is child plan `110`, not a migration, screen redesign, Documentation table, or rename sweep.
+The next executable activity is the separate overnight-runner tooling checkpoint,
+not child `112`, a product migration, a screen redesign, a Documentation table,
+or a Layer 2 through Layer 5 rename.
 
-Child plan `109` has established the repository workflow, and child plan `111` was deliberately completed early to settle the version foundation. Child `110` now updates product/naming truth and requires explicit naming acceptance. After `110`, the separate overnight-runner tooling checkpoint occurs before execution proceeds through `112` Audit Evidence Core, `113` Existing Mutation Audit Coverage, and `114` Access Evidence and Compliance Timelines. Project Membership begins at `115`, and Project Version begins at `116`.
+Children `109`, `110`, and the deliberately early `111` grill are complete. The
+runner must be designed, version-controlled, and tested in the shared
+prompt-generator tooling; reserved skeletons for `112` through `131` then follow.
+Only after that checkpoint may sequential execution begin with `112` Audit
+Evidence Core, `113` Existing Mutation Audit Coverage, and `114` Access Evidence
+and Compliance Timelines. Project Membership begins at `115`, and Project
+Version begins at `116`.

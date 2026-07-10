@@ -4,7 +4,7 @@ Date: 2026-07-10
 
 Last reviewed: 2026-07-10
 
-Status: Not started.
+Status: Complete on 2026-07-10.
 
 ## Parent Master Plan
 
@@ -45,8 +45,10 @@ Entry-gate status at this recheck:
 - `web-design-guidelines` was deliberately rejected by child `109`, and its intended review coverage is supplied by repository-local UI guidance, Impeccable, and accessibility guidance;
 - child `111`, `CONTEXT.md`, and ADRs `0021` through `0026` remain the accepted version-domain source.
 
-The child is therefore ready to execute. The naming decision remains a mandatory
-in-child user gate and is not satisfied by this planning recheck.
+The child was ready to execute. Before implementation edits began, the user
+explicitly selected `Ossie`, accepted the original eight-armed octopus direction,
+and instructed execution of this plan. Layer 1 display branding was applied;
+Layers 2 through 5 remain deliberately unchanged and unapproved.
 
 ## Expansion And Recheck Findings
 
@@ -910,49 +912,134 @@ Do not mix the post-`110` overnight-runner program, child `112+` skeletons, or r
 
 ## Completion Checklist
 
-- [ ] Child `109` dependency verified complete.
-- [ ] Starting commit and clean worktree recorded.
-- [ ] Current/future/deferred claim matrix completed.
-- [ ] Literal product-name occurrence inventory completed and classified before the naming decision.
-- [ ] Naming criteria and territories confirmed from Master Plan `005`.
-- [ ] Candidate collision/domain/package/trademark research completed and dated.
-- [ ] Naming brief and recommendation written.
-- [ ] User naming decision and exact rename layers accepted.
-- [ ] README truth bands updated.
-- [ ] Product idea umbrella and qualified artifact families updated.
-- [ ] System design current/target boundary updated.
-- [ ] Roadmap and project status next direction updated.
-- [ ] OSS/contributor docs synchronized.
-- [ ] `CONTEXT.md` opening/name references updated without speculative terms.
-- [ ] Docs App current evidence corrected and direction band added.
-- [ ] Accepted display-name surfaces updated, or intentional keep decision recorded.
-- [ ] New-name compatibility checklist created, or keep-current outcome recorded with no unnecessary checklist.
-- [ ] Technical identifiers confirmed unchanged and any future rename work left unapproved.
-- [ ] Residual old-name scan completed and every result classified.
-- [ ] Focused docs/app tests passed.
-- [ ] Required Docs App desktop/mobile browser checks passed.
-- [ ] Conditional display-name checks and browser evidence passed when a new name was applied.
-- [ ] Repository-wide non-DB checks passed.
-- [ ] Implementation log, decision, verification, and leftovers recorded.
-- [ ] Master Plan `005` updated only for completed child `110` items.
-- [ ] Post-`110` overnight-runner handoff recorded.
+- [x] Child `109` dependency verified complete.
+- [x] Starting commit and clean worktree recorded.
+- [x] Current/future/deferred claim matrix completed.
+- [x] Literal product-name occurrence inventory completed and classified before the naming decision.
+- [x] Naming criteria and territories confirmed from Master Plan `005`.
+- [x] Candidate collision/domain/package/trademark research completed and dated.
+- [x] Naming brief and recommendation written.
+- [x] User naming decision and exact rename layers accepted.
+- [x] README truth bands updated.
+- [x] Product idea umbrella and qualified artifact families updated.
+- [x] System design current/target boundary updated.
+- [x] Roadmap and project status next direction updated.
+- [x] OSS/contributor docs synchronized.
+- [x] `CONTEXT.md` opening/name references updated without speculative terms.
+- [x] Docs App current evidence corrected and direction band added.
+- [x] Accepted display-name surfaces updated, or intentional keep decision recorded.
+- [x] New-name compatibility checklist created, or keep-current outcome recorded with no unnecessary checklist.
+- [x] Technical identifiers confirmed unchanged and any future rename work left unapproved.
+- [x] Residual old-name scan completed and every result classified.
+- [x] Focused docs/app tests passed.
+- [x] Required Docs App desktop/mobile browser checks passed.
+- [x] Conditional display-name checks and browser evidence passed when a new name was applied.
+- [x] Repository-wide non-DB checks passed.
+- [x] Implementation log, decision, verification, and leftovers recorded.
+- [x] Master Plan `005` updated only for completed child `110` items.
+- [x] Post-`110` overnight-runner handoff recorded.
 
 ## Implementation Log
 
-Not started.
+### Baseline
 
-Implementation must record:
+- Starting commit: `6cc777d` (`docs: harden plan 110 naming and truth contract`).
+- The worktree was clean.
+- Child `109`, repository guidance, local/reviewed skills, completed child `111`,
+  its grill record, and ADRs `0021` through `0026` were present.
+- Baseline tests passed: Docs App 8, web 306, extension 92, and server non-DB 255.
 
-- starting and ending commits;
-- claim-audit findings and stale statements corrected;
-- naming candidates researched and evidence dates;
-- naming-brief status transitions, user decision, exact spelling, and accepted layers;
-- literal occurrence inventory and final residual-name classifications;
-- files changed under each layer;
-- technical identifiers deliberately retained and the compatibility checklist when a new display name is accepted;
-- verification commands and outcomes;
-- required Docs App browser evidence and conditional renamed-surface browser evidence;
-- leftovers for child `121`, any future technical-rename work, and the overnight runner.
+### Naming Decision And Research
+
+- The interactive naming exercise covered descriptive knowledge/path names,
+  plants/flowers/animals, octopus names, and warm character names.
+- The user accepted exact display spelling `Ossie` on 2026-07-10 and instructed
+  Plan `110` implementation. No alternate short form was accepted.
+- The accepted character direction is an original octopus with all eight arms
+  visible. Child `121` owns the mark and visual-system work.
+- Immediate boundary: Layer 1 display brand. Layers 2 through 5 were not
+  authorized. Because the user decision preceded repository edits, no artificial
+  Stage A wait commit was created.
+- `docs/product-naming.md` records dated scoring, product/GitHub/npm/domain
+  signals, jurisdiction assumptions, rejected candidates, the display occurrence
+  inventory, and the explicit legal caveat.
+- The most important unresolved risk is active Apache Ossie, an adjacent
+  semantic-metadata project. User acceptance does not constitute clearance.
+
+### Documentation And Display Work
+
+- `README.md`, `CONTEXT.md`, product/design/roadmap/status/OSS/contributor docs,
+  and active operator docs now use Ossie and keep current, target, and deferred
+  behavior distinct.
+- `docs/product-idea.md` and `docs/system-design-pattern.md` were replaced with
+  current/target documents; stale `Guide / Doc`, restart/scrap, React Query, and
+  two-output-only framing was removed.
+- The Docs App now renders a qualified `Next Platform Direction` band and fixes
+  stale extension evidence.
+- Portal, setup, login, invite, shell, Docs App, extension, issue template,
+  package prose, and OpenAPI Layer 1 labels use Ossie. Browser dogfood found and
+  closed one missed generic `Web` document-title/description surface with a
+  focused test.
+- `docs/rename-compatibility-checklist.md` inventories every retained technical,
+  persistent, legal, historical, and repository-local-tooling layer.
+- Implementation commit: `1bebffc` (`docs: adopt Ossie display brand and
+platform truth`). This plan/master update is the follow-up closeout commit.
+
+### Residual Classification
+
+The final case-insensitive `demo[ _-]?composer` scan was classified as:
+
+- historical plans, ADRs, grills, dogfood records, and screenshot evidence;
+- repository-local skill names and discovery metadata;
+- Layer 2 repository paths/URLs and the root package name;
+- Layer 4 environment variables, cookies, headers, service identifiers,
+  extension message/storage strings, Docker/database/storage/test names;
+- Layer 5 migrations, API/persistence references, and historical identifiers;
+- legal attribution in `LICENSE`; and
+- the explicit old-name baseline in the naming/compatibility documents.
+
+No unclassified active Layer 1 display occurrence remains. Migration history,
+technical protocols, repository-local skill paths, and legal attribution were
+not rewritten.
+
+### Verification
+
+- Focused red-green evidence: Docs App rename/direction assertions failed before
+  implementation and then passed; the portal document metadata test failed on
+  generic `Web` and then passed after the Ossie update.
+- Focused final: Docs App 10 tests/types/lint/build; web 307 tests/types;
+  extension 92 tests/types/build; server 255 non-DB tests/types.
+- Broad final: `rtk pnpm -r --if-present test`, `rtk pnpm check-types`,
+  `rtk pnpm lint`, `rtk pnpm build`, and `rtk git diff --check` all passed.
+- Docs App browser: Chromium via `agent-browser`, `1440x900`, `390x844`, and
+  `195px` reflow-equivalent coverage; correct Ossie title, explicit current/next
+  bands, keyboard-first link, no horizontal overflow, no console errors, and all
+  three synthetic images loaded at natural width `1080`.
+- Web browser: Ossie portal shell/login at desktop and mobile; setup at desktop
+  and mobile using a same-origin synthetic public-instance response; public Guide
+  not-found state against the real local API; correct title/labels, no overflow,
+  no application console errors, and only expected unauthenticated `401`/missing
+  publication `404` responses.
+- Extension browser: normal extension-page evidence at `420x640` showed Ossie in
+  the title and popup brand with no overflow or console errors. This is not a
+  true toolbar-popup claim; the built manifest independently contains `name` and
+  `short_name` as Ossie.
+- Temporary screenshots were stored under `/tmp/ossie-plan110/` and were not
+  committed.
+
+### Leftovers
+
+- Obtain professional trademark/brand clearance before commercial launch,
+  especially against Apache Ossie and confusingly similar marks.
+- Child `121` must design and accept the original eight-armed octopus logo,
+  purple-led palette if retained, typography, tokens, and small-size/accessibility
+  behavior without deriving from Oswald, WALL-E, or another character.
+- A whole-directory/repository/package/config/persistent rename requires a
+  separate accepted technical plan. None is authorized by this closeout.
+- Existing alpha screenshots remain labeled pre-rename historical evidence until
+  their owning UI children refresh them.
+- The next executable activity is the unnumbered overnight-runner tooling
+  checkpoint, not child `112` implementation.
 
 ## Handoff After Child 110
 
