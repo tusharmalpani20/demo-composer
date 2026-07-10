@@ -14,6 +14,11 @@ describe("docs page component", () => {
     );
   });
 
+  it("shows the selected Ossie mascot in the first viewport", () => {
+    expect(pageSource).toContain('src="/brand/ossie-app-icon-256.png"');
+    expect(pageSource).toContain('alt="Ossie purple octopus mascot"');
+  });
+
   it("does not repeat the hero evidence image in the lazy evidence grid", () => {
     expect(pageSource).toContain("evidenceItems.slice(1).map");
   });

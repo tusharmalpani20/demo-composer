@@ -13,6 +13,7 @@ import { signInUrl } from "../auth/navigation";
 import type { AuthResponse } from "../auth/types";
 import type { AcceptOrganizationInviteInput, PublicOrganizationInvite } from "./types";
 import styles from "./InviteAcceptPage.module.css";
+import { OssieBrand } from "../../components/OssieBrand";
 
 type LoadState =
   | { status: "loading" }
@@ -208,7 +209,7 @@ export const InviteAcceptPage = ({
 const InviteShell = ({ children }: { children: React.ReactNode }) => (
   <div className={styles.page}>
     <header className={styles.topbar}>
-      <a className={styles.brand} href="/projects">Ossie</a>
+      <a className={styles.brand} href="/projects"><OssieBrand /></a>
     </header>
     <main className={styles.main}>{children}</main>
   </div>

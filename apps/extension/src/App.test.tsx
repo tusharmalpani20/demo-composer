@@ -313,6 +313,10 @@ describe("extension popup App", () => {
     const dependencies = renderApp();
 
     expect(await screen.findByRole("heading", { name: "Connect instance" })).toBeInTheDocument();
+    expect(document.querySelector(".brand img")).toHaveAttribute(
+      "src",
+      "/icons/ossie-32.png",
+    );
     expect(screen.getByLabelText("Instance URL")).toHaveAttribute("placeholder", "http://localhost:3002");
     expect(screen.getByLabelText("Portal URL (optional)")).toHaveAttribute("placeholder", "http://localhost:3000");
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@repo/ui/button";
 import { logout } from "../../lib/api";
+import { OssieBrand } from "../../components/OssieBrand";
 import styles from "./PortalTopbar.module.css";
 
 type PortalTopbarProps = {
@@ -34,7 +35,7 @@ export const PortalTopbar = ({
   return (
     <header className={styles.topbar}>
       <div>
-        <a className={styles.brand} href="/projects">Ossie</a>
+        <a className={styles.brand} href="/projects"><OssieBrand /></a>
         <div className={styles.context}>{context}</div>
       </div>
       <div className={styles.actions}>

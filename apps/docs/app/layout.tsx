@@ -14,6 +14,10 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "Ossie Docs",
   description: "Alpha repository documentation hub for self-hosted Ossie.",
+  icons: {
+    icon: "/brand/ossie-app-icon-256.png",
+    apple: "/brand/ossie-app-icon-256.png",
+  },
 };
 
 export default function RootLayout({

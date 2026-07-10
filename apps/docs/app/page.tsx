@@ -15,7 +15,17 @@ export default function Home() {
       <section className={styles.hero} aria-labelledby="page-title">
         <div className={styles.heroText}>
           <p className={styles.eyebrow}>Alpha documentation hub</p>
-          <h1 id="page-title">{siteSummary.name}</h1>
+          <div className={styles.brandHeading}>
+            <Image
+              className={styles.brandIcon}
+              src="/brand/ossie-app-icon-256.png"
+              alt="Ossie purple octopus mascot"
+              width={72}
+              height={72}
+              priority
+            />
+            <h1 id="page-title">{siteSummary.name}</h1>
+          </div>
           <p className={styles.status}>{siteSummary.status}</p>
           <p className={styles.lede}>{siteSummary.positioning}</p>
           <div className={styles.heroActions}>

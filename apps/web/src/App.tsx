@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/card";
+import { OssieBrand } from "./components/OssieBrand";
 import { CaptureSessionDetailPage } from "./features/capture-session/CaptureSessionDetailPage";
 import { ProjectCaptureSessionListPage } from "./features/capture-session/ProjectCaptureSessionListPage";
 import { LoginPage } from "./features/auth/LoginPage";
@@ -136,7 +137,7 @@ export default function App() {
     return (
       <div className={styles.page}>
         <header className={styles.topbar}>
-          <a className={styles.brand} href="/projects">Ossie</a>
+          <a className={styles.brand} href="/projects"><OssieBrand /></a>
         </header>
         <main className={styles.main}>
           <Card className={styles.emptyState}>
@@ -156,7 +157,7 @@ export default function App() {
     return (
       <div className={styles.page}>
         <header className={styles.topbar}>
-          <a className={styles.brand} href="/projects">Ossie</a>
+          <a className={styles.brand} href="/projects"><OssieBrand /></a>
         </header>
         <main className={styles.main}>
           <Card className={styles.emptyState}>
@@ -272,7 +273,7 @@ export default function App() {
   return (
     <div className={styles.page}>
       <header className={styles.topbar}>
-        <a className={styles.brand} href="/projects">Ossie</a>
+        <a className={styles.brand} href="/projects"><OssieBrand /></a>
       </header>
       <main className={styles.main}>
         <Card className={styles.emptyState}>

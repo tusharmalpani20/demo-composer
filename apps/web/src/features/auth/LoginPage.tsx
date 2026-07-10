@@ -6,6 +6,7 @@ import { Input } from "@repo/ui/input";
 import { Label } from "@repo/ui/label";
 import { ApiClientError, login } from "../../lib/api";
 import { safeNextPath } from "./navigation";
+import { OssieBrand } from "../../components/OssieBrand";
 import type { AuthResponse } from "./types";
 import styles from "./LoginPage.module.css";
 
@@ -55,7 +56,7 @@ export const LoginPage = ({
   return (
     <div className={styles.page}>
       <header className={styles.topbar}>
-        <a className={styles.brand} href="/projects">Ossie</a>
+        <a className={styles.brand} href="/projects"><OssieBrand /></a>
       </header>
       <main className={styles.main}>
         <Card className={styles.panel} aria-labelledby="login-heading">

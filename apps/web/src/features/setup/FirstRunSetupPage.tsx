@@ -12,6 +12,7 @@ import {
 } from "../../lib/api";
 import type { FirstRunSetupInput } from "./types";
 import type { FirstRunSetupResponse } from "@repo/types/setup";
+import { OssieBrand } from "../../components/OssieBrand";
 import styles from "./FirstRunSetupPage.module.css";
 
 type FirstRunSetupPageProps = {
@@ -47,7 +48,7 @@ const setupErrorMessage = (error: unknown) => {
 const Shell = ({ children }: { children: React.ReactNode }) => (
   <div className={styles.page}>
     <header className={styles.topbar}>
-      <a className={styles.brand} href="/projects">Ossie</a>
+      <a className={styles.brand} href="/projects"><OssieBrand /></a>
     </header>
     <main className={styles.main}>
       <Card className={styles.panel}>

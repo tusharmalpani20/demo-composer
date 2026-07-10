@@ -14,5 +14,6 @@ describe("portal document metadata", () => {
   it("uses the Ossie display brand", () => {
     expect(documentSource).toContain("<title>Ossie</title>");
     expect(documentSource).toContain('content="Ossie web portal"');
+    expect(documentSource).toContain('href="/brand/ossie-app-icon-64.png"');
   });
 });

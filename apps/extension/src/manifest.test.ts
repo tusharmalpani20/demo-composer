@@ -4,10 +4,14 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 type ExtensionManifest = {
+  action?: {
+    default_icon?: Record<string, string>;
+  };
   content_scripts?: Array<{
     matches?: string[];
   }>;
   host_permissions?: string[];
+  icons?: Record<string, string>;
   permissions?: string[];
 };
 
@@ -16,6 +20,16 @@ const manifest = JSON.parse(
 ) as ExtensionManifest;
 
 describe("extension manifest", () => {
+  it("uses the selected Ossie icon set", () => {
+    expect(manifest.icons).toEqual({
+      "16": "icons/ossie-16.png",
+      "32": "icons/ossie-32.png",
+      "48": "icons/ossie-48.png",
+      "128": "icons/ossie-128.png",
+    });
+    expect(manifest.action?.default_icon).toEqual(manifest.icons);
+  });
+
   it("declares the persistent host permission required by background screenshot capture", () => {
     expect(manifest.host_permissions).toEqual(["<all_urls>"]);
     expect([...(manifest.permissions ?? [])].sort()).toEqual(["activeTab", "storage", "tabs"]);

@@ -16,7 +16,12 @@ describe("PortalTopbar", () => {
       />
     );
 
-    expect(screen.getByRole("link", { name: "Ossie" })).toHaveAttribute("href", "/projects");
+    const brandLink = screen.getByRole("link", { name: "Ossie" });
+    expect(brandLink).toHaveAttribute("href", "/projects");
+    expect(brandLink.querySelector("img")).toHaveAttribute(
+      "src",
+      "/brand/ossie-app-icon-64.png",
+    );
     expect(screen.getByText("Project workspace")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
