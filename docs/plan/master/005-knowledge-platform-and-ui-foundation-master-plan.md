@@ -66,9 +66,9 @@ Baseline reviewed on 2026-07-10:
 - `apps/web` and `apps/extension` already use Tailwind CSS 4, and `packages/ui` already owns source-level Alert, Badge, Button, Card, Code, Input, Label, Select, Separator, and Textarea primitives using CVA-style variants and shared class utilities.
 - Lucide is already the shared icon dependency. The repository does not currently depend on Radix, React Router, TanStack Query, Sonner, or React Hook Form; child plans must justify any of them against a concrete workflow need.
 - Current pages still rely heavily on CSS Modules, hard-coded slate/hex values, repeated control styling, and only minimal global tokens. The UI track is therefore a consolidation and product-design effort, not a fresh Tailwind or icon migration.
-- The external design skills listed in section 10 are candidates, not repository-installed dependencies. Child `109` must review, pin, install locally, and document them before later children rely on their commands.
+- Child `109` installed the accepted external design guidance as pinned, optional repository tooling and documented provenance, compatibility changes, update/removal procedure, and rejected sources in `docs/agent-workflow.md`. It remains outside application dependencies and runtime behavior.
 - The current UI works at alpha level but does not yet provide the consistency, hierarchy, density, responsive behavior, accessibility, or navigation expected from a daily internal tool.
-- Master plans `001` through `004` are complete. New child plans should begin at `109`.
+- Master plans `001` through `004` are complete. This track begins at child `109`; child `110` is now the next executable unit.
 - Known extension and production-readiness leftovers from master plan `004` remain real unless a child plan explicitly closes them.
 
 Before child plan `109` begins, its baseline must re-run and record:
@@ -376,11 +376,11 @@ Every expanded child plan must specify:
 
 ## 10. Skills And Agent Workflow Strategy
 
-Child plan `109` owns installation and repository setup. No third-party skill should be trusted or committed before reading its instructions, license, generated files, and update behavior.
+Child plan `109` completed installation and repository setup on 2026-07-10. No third-party skill should be trusted or updated before reading its instructions, license, generated files, and update behavior.
 
-Child `109` must classify each capability as **repository-installed**, **agent-environment provided**, or **repository-local**. The four design sources below should be evaluated for pinned repository-local installation. `agent-browser`, `test-driven-development`, `grill-with-docs`, and `skill-creator` are available in the current agent environment, but the repository must not silently assume every contributor has the same global setup: `AGENTS.md` must name the requirement, provide a discovery/installation or procedural fallback where licensing permits, and keep application build/runtime independent from all agent tooling.
+Child `109` classified each capability as **repository-installed**, **agent-environment provided**, or **repository-local**. `agent-browser`, `test-driven-development`, `grill-with-docs`, and `skill-creator` remain environment capabilities rather than repository/runtime dependencies. Root `AGENTS.md` and `docs/agent-workflow.md` define fallbacks, precedence, and the application boundary.
 
-### External Skills To Evaluate And Install
+### External Skills Reviewed And Installed
 
 Candidate installer shapes, subject to child-plan verification and replacement with an exact reviewed tag or commit where the installer supports it:
 
@@ -399,14 +399,14 @@ Do not execute an unpinned installer merely because it appears in this master pl
 
 Verification snapshot on 2026-07-10, to be re-resolved by child `109` rather than treated as a permanent pin:
 
-| Source                          | Reviewed HEAD                              | Repository/license posture                                                                     | Plan decision                                                                                                                                                            |
-| ------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pbakaus/impeccable`            | `da99645a58400ed7acb201e6904f9413efd89c6e` | Primary project-design workflow; current CLI requires Node 24 and can optionally install hooks | Evaluate/install as repository tooling without raising the application's `node >=18` runtime contract; do not accept hooks without a separate diff and explicit approval |
-| `emilkowalski/skills`           | `f76beceb7d3fc8c43309cefad5a095a206103a4e` | MIT; exact focused skills requested by the project; no release tag was available during review | Pin the reviewed commit or vendored content and record provenance                                                                                                        |
-| `vercel-labs/agent-skills`      | `f8a72b9603728bb92a217a879b7e62e43ad76c81` | MIT; official React and web-design review skills                                               | Install only the named React and web-design skills, not unrelated repository content                                                                                     |
-| `addyosmani/web-quality-skills` | `95d6e255afe1596b557d7a8498517884438f5b3a` | MIT; dedicated accessibility/performance/web-quality guidance                                  | Start with accessibility; add other focused skills only when a later plan owns their verification                                                                        |
+| Source                          | Reviewed HEAD                              | Repository/license posture                                                                      | Plan decision                                                                                                                                        |
+| ------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pbakaus/impeccable`            | `da99645a58400ed7acb201e6904f9413efd89c6e` | Apache-2.0; reviewed npm CLI `3.2.1` requires Node `>=22.12.0` and can install hooks            | Installed a pinned source-built Codex skill without hooks or runtime dependencies; repository invocation disables the update network/home-cache path |
+| `emilkowalski/skills`           | `f76beceb7d3fc8c43309cefad5a095a206103a4e` | MIT; exact focused skills requested by the project; no release tag was available during review  | Installed the four named skills from the reviewed commit and recorded one Codex frontmatter compatibility change                                     |
+| `vercel-labs/agent-skills`      | `f8a72b9603728bb92a217a879b7e62e43ad76c81` | Upstream declares MIT; static React guidance plus a web-design skill that fetches mutable rules | Installed only `vercel-react-best-practices`; rejected `web-design-guidelines` because its runtime rules are not pinned by this commit               |
+| `addyosmani/web-quality-skills` | `95d6e255afe1596b557d7a8498517884438f5b3a` | MIT; dedicated accessibility/performance/web-quality guidance                                   | Installed only accessibility; other focused skills remain deferred until a later plan owns their verification                                        |
 
-The current developer machine runs Node 26, so it can execute the reviewed Impeccable CLI. That convenience must remain a tooling boundary: child `109` may document a Node 24+ prerequisite for that optional design command, but must not silently change the monorepo's application/runtime engine requirement. Do not install a generic overlapping “UI/UX mega-skill” merely to increase the skill count; add one only when an expanded child plan identifies a concrete gap that the reviewed set does not cover.
+The current developer machine runs Node 26, so it can execute the reviewed Impeccable CLI. That convenience remains a tooling boundary: the optional reviewed CLI requires Node `>=22.12.0`, while the monorepo application/runtime contract remains `node >=18`. No generic overlapping UI/UX bundle was installed; add one only when an expanded child plan identifies a concrete gap that the reviewed set does not cover.
 
 Expected roles:
 
@@ -591,7 +591,7 @@ Decision-session policy:
 
 ### 109: Agent Skills And Repository Workflow
 
-Status: Not started.
+Status: Complete on 2026-07-10.
 
 Planned file:
 
@@ -630,6 +630,13 @@ Acceptance:
 - Skills are procedural, small, testable, and free of duplicated product truth.
 - Every installed external skill has recorded provenance and license.
 - Removing a skill would not break the application build or runtime.
+
+Completed outcome:
+
+- Root `AGENTS.md`, `docs/agent-workflow.md`, four repository-local skills, pinned external skills, and `THIRD_PARTY_NOTICES.md` are installed and validated.
+- Impeccable hooks and self-update behavior remain disabled; no application dependency or runtime surface changed.
+- `web-design-guidelines` was rejected because its effective rules are fetched from an unpinned default branch at invocation time.
+- Exact commits, compatibility changes, forward-test evidence, verification, and leftovers are recorded in child plan `109`.
 
 ### 110: Product Umbrella, Naming, And Documentation Truth
 
@@ -1772,7 +1779,7 @@ Mitigation: document Video as deferred and do not create Video nav, tables, pack
 ## 16. Master Plan Checklist
 
 - [x] Create master plan `005`.
-- [ ] Create, expand, recheck, implement, and close child plan `109`.
+- [x] Create, expand, recheck, implement, and close child plan `109`.
 - [ ] Create, expand, recheck, implement, and close child plan `110`.
 - [x] Create, conduct, document, and accept the versioning grill in child plan `111`.
 - [ ] Create, expand, recheck, implement, and close child plan `112`.
@@ -1832,6 +1839,6 @@ This master plan is complete when:
 
 ## 19. Immediate Next Action
 
-The next executable unit is child plan `109`, not a migration, screen redesign, Documentation table, or rename sweep.
+The next executable unit is child plan `110`, not a migration, screen redesign, Documentation table, or rename sweep.
 
-Child plan `111` was deliberately completed early to settle the foundation. After `109` establishes repository workflow and `110` updates product/naming truth, execution proceeds through `112` Audit Evidence Core, `113` Existing Mutation Audit Coverage, and `114` Access Evidence and Compliance Timelines. Project Membership begins at `115`, and Project Version begins at `116`.
+Child plan `109` has established the repository workflow, and child plan `111` was deliberately completed early to settle the version foundation. Child `110` now updates product/naming truth and requires explicit naming acceptance. After `110`, the separate overnight-runner tooling checkpoint occurs before execution proceeds through `112` Audit Evidence Core, `113` Existing Mutation Audit Coverage, and `114` Access Evidence and Compliance Timelines. Project Membership begins at `115`, and Project Version begins at `116`.

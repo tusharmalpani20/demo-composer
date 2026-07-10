@@ -4,7 +4,7 @@ Date: 2026-07-10
 
 Last reviewed: 2026-07-10
 
-Status: Not started.
+Status: Complete on 2026-07-10.
 
 ## Parent Master Plan
 
@@ -622,36 +622,104 @@ Do not mix child `110` product-documentation or naming changes into these commit
 
 ## Completion Checklist
 
-- [ ] Baseline and starting commit recorded.
-- [ ] External revisions, package versions, integrity, licenses, and installer behavior re-resolved.
-- [ ] Root `AGENTS.md` created.
-- [ ] `docs/agent-workflow.md` created.
-- [ ] Contributor guide linked to the workflow.
-- [ ] Four local skills initialized and completed.
-- [ ] Local skill structural validation passed.
-- [ ] Local skill dry runs passed.
-- [ ] Approved external skills installed one source at a time.
-- [ ] External provenance and attribution recorded.
-- [ ] Hook/global/runtime/package changes absent or rejected.
-- [ ] Secret and absolute-path scans passed.
-- [ ] Application regression checks passed.
-- [ ] Implementation log and verification evidence recorded.
-- [ ] Master Plan `005` updated only for completed child `109` items.
-- [ ] Child `110` handoff recorded.
+- [x] Baseline and starting commit recorded.
+- [x] External revisions, package versions, integrity, licenses, and installer behavior re-resolved.
+- [x] Root `AGENTS.md` created.
+- [x] `docs/agent-workflow.md` created.
+- [x] Contributor guide linked to the workflow.
+- [x] Four local skills initialized and completed.
+- [x] Local skill structural validation passed.
+- [x] Local skill dry runs passed.
+- [x] Approved external skills installed one source at a time.
+- [x] External provenance and attribution recorded.
+- [x] Hook/global/runtime/package changes absent or rejected.
+- [x] Secret and absolute-path scans passed.
+- [x] Application regression checks passed.
+- [x] Implementation log and verification evidence recorded.
+- [x] Master Plan `005` updated only for completed child `109` items.
+- [x] Child `110` handoff recorded.
 
 ## Implementation Log
 
-Not started.
+Completed on 2026-07-10.
 
-Implementation must record:
+### Baseline And Commits
 
-- starting and ending commits;
-- every reviewed source revision/package integrity;
-- every installed/rejected file change;
-- local and external skill validation results;
-- exact verification commands and outcomes;
-- any unavailable environment capability;
-- leftovers for child `110`, child `121`, and the post-`110` overnight-runner design.
+- Planning checkpoint and clean implementation start: `2334e32` (`docs: add knowledge platform child plans`).
+- Repository guidance and local skills: `fd80c44`.
+- Emil skills: `2f0532e`.
+- Vercel React guidance: `6d1ada3`.
+- Accessibility skill: `241e455`.
+- Impeccable Codex build and notices: `ce3b674`.
+- Forward-test and supply-chain hardening: `b70d7b6`.
+- Implementation end before this closeout: `b70d7b6`; the following documentation commit records completion.
+
+The initial clean baseline passed `check-types`, lint, build, and whitespace. The
+master's `rtk pnpm turbo run test` command failed before implementation because
+the root Turbo configuration has no `test` task. The actual non-DB workspace test
+scripts were therefore used for final regression evidence.
+
+### Reviewed Sources And Dispositions
+
+| Source                          | Exact reviewed source                                                                                                                                                                                                                  | Result                                                                                                                                                                                                                                                     |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pbakaus/impeccable`            | commit `da99645a58400ed7acb201e6904f9413efd89c6e`; generated skill `3.9.1`; npm CLI `3.2.1`; integrity `sha512-Lnh8BeLNj493iYuKRijVLP5nvdeKvReYtqGeov6tfsqECiKDSHBY5JfkxzfsC912AASMreCwzha0ZY3PC2pw+g==`; Node `>=22.12.0`; Apache-2.0 | Built from the pinned checkout with lifecycle scripts disabled. Installed only the generated Codex repository skill plus its license. No hook manifest. The context command forces `IMPECCABLE_NO_UPDATE_CHECK=1`; `impeccable update` remains prohibited. |
+| `emilkowalski/skills`           | commit `f76beceb7d3fc8c43309cefad5a095a206103a4e`; MIT                                                                                                                                                                                 | Installed the four named skills with the generic skill installer. Removed only the unsupported `disable-model-invocation` key from `review-animations`.                                                                                                    |
+| `vercel-labs/agent-skills`      | commit `f8a72b9603728bb92a217a879b7e62e43ad76c81`; upstream declares MIT                                                                                                                                                               | Installed the static React skill, whose discovery name is `vercel-react-best-practices`, and corrected three broken compiled rule links. Rejected `web-design-guidelines` because it fetches mutable `main` rules at runtime.                              |
+| `addyosmani/web-quality-skills` | commit `95d6e255afe1596b557d7a8498517884438f5b3a`; MIT                                                                                                                                                                                 | Installed only `accessibility` and replaced one missing sibling-skill link with an exact-commit upstream link.                                                                                                                                             |
+
+`docs/agent-workflow.md` records file locations, invocation restrictions,
+installation/update/removal procedures, network/executable behavior, and
+precedence. `THIRD_PARTY_NOTICES.md` preserves attribution and license text.
+Pinned external directories are excluded from repository formatting to prevent
+silent vendor rewrites.
+
+### Validation Evidence
+
+- All 11 repository-local and installed external skills passed the current
+  `skill-creator` structural validator through an ephemeral PyYAML environment.
+- Four independent, fresh-agent read-only dry runs passed: domain terminology,
+  child-plan preflight, operational UI critique, and public-reader browser matrix.
+- Follow-up dry runs confirmed the preflight-only mode, no-dead-navigation and
+  operational-composition rules, read-only Impeccable fallback, and app startup
+  discovery fixes.
+- External-skill review passed provenance, discovery-name, precedence, missing
+  link, hook-manifest, package-reference, and conflict-scenario checks.
+- Every local Markdown link under `.agents/skills/` resolves; the one intentional
+  external accessibility link is pinned to an exact commit.
+- `IMPECCABLE_NO_UPDATE_CHECK=1 node .../context.mjs` ran successfully, and no
+  user-home update-cache file was created.
+- No tracked hook manifest, executable Git hook, application package/lock change,
+  app/shared-package change, personal absolute path, credential, or secret value
+  was introduced. Upstream Impeccable code contains expected token/API-key
+  identifier names and placeholders but no credential value.
+- `rtk pnpm -r --if-present test`: 112 test files and 760 tests passed across all
+  actual non-DB workspace test scripts.
+- `rtk pnpm check-types`, `rtk pnpm lint`, and `rtk pnpm build`: passed.
+- Focused Prettier checks for child-owned files and `rtk git diff --check`: passed.
+- Repository-wide Prettier check: pre-existing failure in 325 unrelated application
+  and historical documentation files. No unrelated formatting rewrite was made.
+- DB-backed tests and browser automation were not required because this child
+  changes no persistence, runtime behavior, or product screen. Browser-oriented
+  skill behavior was validated through the required read-only forward test.
+
+### Removal And Boundaries
+
+No package, Turbo, workspace, Docker, application, shared package, or workflow
+configuration references `AGENTS.md`, `.agents/skills/`, or
+`docs/agent-workflow.md`. Removing or ignoring agent tooling therefore leaves
+dependency resolution and application build inputs unchanged.
+
+### Leftovers
+
+- Child `110` owns product/current/future documentation truth and the explicit
+  keep/rename naming decision.
+- Child `121` must create accepted `PRODUCT.md` and `DESIGN.md`, then update and
+  revalidate `design-demo-composer-ui`.
+- The overnight runner remains unimplemented and is designed only after child
+  `110` closes.
+- Impeccable hooks remain disabled. A later explicit plan is required before any
+  hook or self-update behavior can be accepted.
 
 ## Handoff To Child 110
 
