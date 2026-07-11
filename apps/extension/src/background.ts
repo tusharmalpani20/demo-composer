@@ -20,7 +20,7 @@ type RuntimeApi = {
 };
 
 const isPageClickCaptureMessage = (message: RuntimeMessage): message is PageClickCaptureMessage => (
-  message.type === "demo_composer:page_click"
+  message.type === "ossie:page_click"
 );
 
 const runtime = (globalThis as { chrome?: RuntimeApi }).chrome?.runtime;

@@ -62,7 +62,7 @@ describe("content click capture", () => {
 
     expect(shouldCaptureClick(event)).toBe(true);
     expect(buildClickCaptureMessage(event)).toEqual({
-      type: "demo_composer:page_click",
+      type: "ossie:page_click",
       payload: {
         page_url: "http://localhost:3000/",
         page_title: null,
@@ -162,7 +162,7 @@ describe("content click capture", () => {
     expect(getCaptureState).toHaveBeenCalledTimes(3);
     expect(sendMessage).toHaveBeenCalledTimes(1);
     expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
-      type: "demo_composer:page_click",
+      type: "ossie:page_click",
     }));
   });
 

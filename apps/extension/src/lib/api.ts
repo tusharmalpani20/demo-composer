@@ -171,7 +171,7 @@ export const login = async (
     headers: {
       ...authHeaders(),
       "content-type": "application/json",
-      "x-demo-composer-client": "extension",
+      "x-ossie-client": "extension",
     },
     body: JSON.stringify(data),
   })
@@ -219,7 +219,7 @@ export const createCaptureSession = async (
       headers: {
         ...authHeaders(sessionToken),
         "content-type": "application/json",
-        "x-demo-composer-client": "extension",
+        "x-ossie-client": "extension",
       },
       body: JSON.stringify({
         ...data,
@@ -256,7 +256,7 @@ export const uploadCaptureAsset = async (
       method: "POST",
       headers: {
         ...authHeaders(sessionToken),
-        "x-demo-composer-client": "extension",
+        "x-ossie-client": "extension",
       },
       body: formData,
     }
@@ -278,7 +278,7 @@ export const createCaptureEvent = async (
       headers: {
         ...authHeaders(sessionToken),
         "content-type": "application/json",
-        "x-demo-composer-client": "extension",
+        "x-ossie-client": "extension",
       },
       body: JSON.stringify({
         ...data,
@@ -301,7 +301,7 @@ export const completeCaptureSession = async (
       method: "POST",
       headers: {
         ...authHeaders(sessionToken),
-        "x-demo-composer-client": "extension",
+        "x-ossie-client": "extension",
       },
     }
   )

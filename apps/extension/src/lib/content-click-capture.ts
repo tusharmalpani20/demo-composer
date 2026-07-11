@@ -21,7 +21,7 @@ export type PageClickCapturePayload = {
 };
 
 export type PageClickCaptureMessage = {
-  type: "demo_composer:page_click";
+  type: "ossie:page_click";
   payload: PageClickCapturePayload;
 };
 
@@ -250,7 +250,7 @@ export const buildClickCaptureMessage = (event: MouseEvent): PageClickCaptureMes
   }
 
   return {
-    type: "demo_composer:page_click",
+    type: "ossie:page_click",
     payload: {
       page_url: location.href || null,
       page_title: truncateSafeText(document.title),

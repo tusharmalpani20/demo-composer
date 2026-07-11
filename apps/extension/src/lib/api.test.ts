@@ -163,7 +163,7 @@ describe("extension API client", () => {
       headers: {
         accept: "application/json",
         "content-type": "application/json",
-        "x-demo-composer-client": "extension",
+        "x-ossie-client": "extension",
       },
       body: JSON.stringify({
         email: "owner@example.com",
@@ -257,7 +257,7 @@ describe("extension API client", () => {
           accept: "application/json",
           authorization: "Bearer extension-session-token",
           "content-type": "application/json",
-          "x-demo-composer-client": "extension",
+          "x-ossie-client": "extension",
         },
         body: JSON.stringify({
           name: "Capture from Example Page",
@@ -314,7 +314,7 @@ describe("extension API client", () => {
       headers: {
         accept: "application/json",
         authorization: "Bearer extension-session-token",
-        "x-demo-composer-client": "extension",
+        "x-ossie-client": "extension",
       },
     });
     expect((init as RequestInit).headers).not.toHaveProperty("content-type");
@@ -377,7 +377,7 @@ describe("extension API client", () => {
           accept: "application/json",
           authorization: "Bearer extension-session-token",
           "content-type": "application/json",
-          "x-demo-composer-client": "extension",
+          "x-ossie-client": "extension",
         },
         body: JSON.stringify({
           event_type: "capture",
@@ -510,7 +510,7 @@ describe("extension API client", () => {
         headers: {
           accept: "application/json",
           authorization: "Bearer extension-session-token",
-          "x-demo-composer-client": "extension",
+          "x-ossie-client": "extension",
         },
       }
     );

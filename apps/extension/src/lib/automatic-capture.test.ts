@@ -87,7 +87,7 @@ const capture_event_response: CaptureEventResponse = {
 };
 
 const click_message: AutomaticClickMessage = {
-  type: "demo_composer:page_click",
+  type: "ossie:page_click",
   payload: {
     page_url: "https://example.com/path",
     page_title: "Example Page",

@@ -103,7 +103,7 @@ POST {instance_url}/api/v1/authentication/login
 with:
 
 ```text
-x-demo-composer-client: extension
+x-ossie-client: extension
 ```
 
 The server keeps normal portal cookie behavior unchanged and additionally returns `session_token` for extension-marked login requests. Extension API calls then send:
@@ -126,7 +126,7 @@ with:
 
 ```text
 Authorization: Bearer <session_token>
-x-demo-composer-client: extension
+x-ossie-client: extension
 ```
 
 The extension sends `source_type: "extension"` and safe current-tab metadata when available. Current-tab metadata is limited to the active tab URL/title and only stores `http://` or `https://` URLs.
@@ -171,7 +171,7 @@ with:
 
 ```text
 Authorization: Bearer <session_token>
-x-demo-composer-client: extension
+x-ossie-client: extension
 ```
 
 The upload includes the screenshot file, captured timestamp, visible image dimensions when available, device pixel ratio when available, and safe current-tab URL/title metadata. The extension does not inspect page DOM or read form field values.
@@ -186,7 +186,7 @@ with:
 
 ```text
 Authorization: Bearer <session_token>
-x-demo-composer-client: extension
+x-ossie-client: extension
 ```
 
 The event uses `event_type: "capture"`, links to the uploaded screenshot asset, and uses the next locally stored event index for the active capture session. The extension sends `input_value_redacted: true` and does not send raw input fields. Screenshot pixel dimensions remain on the asset record; the event does not pretend those pixels are CSS viewport dimensions.
@@ -217,7 +217,7 @@ with:
 
 ```text
 Authorization: Bearer <session_token>
-x-demo-composer-client: extension
+x-ossie-client: extension
 ```
 
 After backend completion succeeds, the extension clears only the local active capture fields and preserves the selected project. It then opens the portal capture session detail page on the configured portal URL when present, using the backend's relative redirect path when safe, or a locally constructed project/capture-session route as fallback. Session tokens are never included in the portal URL.
