@@ -35,7 +35,7 @@ const setup_owner = async () => {
 
   await app.close();
   expect(response.statusCode).toBe(201);
-  const session_cookie = response.cookies.find((cookie) => cookie.name === "demo_composer_session");
+  const session_cookie = response.cookies.find((cookie) => cookie.name === "ossie_session");
   expect(session_cookie?.value).toEqual(expect.any(String));
   return session_cookie?.value ?? "";
 };
@@ -104,7 +104,7 @@ describe("DB-backed project foundation API", () => {
       method: "POST",
       url: "/api/v1/projects",
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         name: "Onboarding Demo",
@@ -136,21 +136,21 @@ describe("DB-backed project foundation API", () => {
       method: "GET",
       url: "/api/v1/projects",
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     const get_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     const update_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         name: "Updated Demo",
@@ -162,7 +162,7 @@ describe("DB-backed project foundation API", () => {
       method: "GET",
       url: "/api/v1/projects?status=archived",
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
 
@@ -211,7 +211,7 @@ describe("DB-backed project foundation API", () => {
       method: "POST",
       url: "/api/v1/projects",
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         name: "Onboarding Demo",
@@ -224,7 +224,7 @@ describe("DB-backed project foundation API", () => {
       method: "POST",
       url: "/api/v1/projects",
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         name: "onboarding demo",
@@ -234,7 +234,7 @@ describe("DB-backed project foundation API", () => {
       method: "POST",
       url: "/api/v1/projects",
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         name: "Second Demo",
@@ -251,7 +251,7 @@ describe("DB-backed project foundation API", () => {
       method: "PATCH",
       url: `/api/v1/projects/${first_project_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         status: "archived",
@@ -261,7 +261,7 @@ describe("DB-backed project foundation API", () => {
       method: "POST",
       url: "/api/v1/projects",
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         name: "Onboarding Demo",
@@ -276,14 +276,14 @@ describe("DB-backed project foundation API", () => {
       method: "GET",
       url: `/api/v1/projects/${cross_org_project_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     const cross_org_update_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${cross_org_project_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         name: "Should Not Update",
@@ -304,7 +304,7 @@ describe("DB-backed project foundation API", () => {
       method: "POST",
       url: "/api/v1/projects",
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         name: "Disposable Demo",
@@ -319,7 +319,7 @@ describe("DB-backed project foundation API", () => {
       method: "DELETE",
       url: `/api/v1/projects/${project_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     expect(delete_response.statusCode).toBe(204);
@@ -351,21 +351,21 @@ describe("DB-backed project foundation API", () => {
       method: "GET",
       url: "/api/v1/projects",
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     const get_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     const update_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         name: "Should Not Update",
@@ -375,7 +375,7 @@ describe("DB-backed project foundation API", () => {
       method: "DELETE",
       url: `/api/v1/projects/${project_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
 
@@ -396,7 +396,7 @@ describe("DB-backed project foundation API", () => {
       method: "DELETE",
       url: `/api/v1/projects/${cross_org_project_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     expect(cross_org_delete_response.statusCode).toBe(404);

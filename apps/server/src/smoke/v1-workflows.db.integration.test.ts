@@ -13,7 +13,7 @@ const multipart_payload = (
     content_type?: string;
   }>,
 ) => {
-  const boundary = "----demo-composer-v1-smoke-boundary";
+  const boundary = "----ossie-v1-smoke-boundary";
   const chunks: Buffer[] = [];
 
   for (const part of parts) {
@@ -78,27 +78,27 @@ describe("v1 dogfood smoke workflow", () => {
 
   beforeEach(async () => {
     storage_root = await mkdtemp(
-      path.join(tmpdir(), "demo-composer-v1-smoke-"),
+      path.join(tmpdir(), "ossie-v1-smoke-"),
     );
-    previous_storage_root = process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT;
+    previous_storage_root = process.env.OSSIE_LOCAL_STORAGE_ROOT;
     previous_max_upload_bytes =
-      process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES;
-    process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT = storage_root;
-    process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES = "1048576";
+      process.env.OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES;
+    process.env.OSSIE_LOCAL_STORAGE_ROOT = storage_root;
+    process.env.OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES = "1048576";
     await reset_v1_smoke_tables();
   });
 
   afterEach(async () => {
     if (previous_storage_root === undefined) {
-      delete process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT;
+      delete process.env.OSSIE_LOCAL_STORAGE_ROOT;
     } else {
-      process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT = previous_storage_root;
+      process.env.OSSIE_LOCAL_STORAGE_ROOT = previous_storage_root;
     }
 
     if (previous_max_upload_bytes === undefined) {
-      delete process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES;
+      delete process.env.OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES;
     } else {
-      process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES =
+      process.env.OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES =
         previous_max_upload_bytes;
     }
 
@@ -124,7 +124,7 @@ describe("v1 dogfood smoke workflow", () => {
     expect(health_response.statusCode).toBe(200);
     expect(health_response.json()).toMatchObject({
       status: "ok",
-      service: "demo-composer-api",
+      service: "ossie-api",
     });
     expect(readiness_response.statusCode).toBe(200);
     expect(readiness_response.json()).toMatchObject({
@@ -153,14 +153,14 @@ describe("v1 dogfood smoke workflow", () => {
     expect(setup_response.statusCode).toBe(201);
     const owner_session =
       setup_response.cookies.find(
-        (cookie) => cookie.name === "demo_composer_session",
+        (cookie) => cookie.name === "ossie_session",
       )?.value ?? "";
     expect(owner_session).not.toBe("");
 
     const project_response = await app.inject({
       method: "POST",
       url: "/api/v1/projects",
-      cookies: { demo_composer_session: owner_session },
+      cookies: { ossie_session: owner_session },
       payload: {
         name: "V1 Dogfood Project",
         description: "Smoke source project",
@@ -174,7 +174,7 @@ describe("v1 dogfood smoke workflow", () => {
     const capture_session_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions`,
-      cookies: { demo_composer_session: owner_session },
+      cookies: { ossie_session: owner_session },
       payload: {
         name: "Create department workflow",
         description: "Dogfood capture for guides and interactive demos",
@@ -197,7 +197,7 @@ describe("v1 dogfood smoke workflow", () => {
     const upload_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/upload`,
-      cookies: { demo_composer_session: owner_session },
+      cookies: { ossie_session: owner_session },
       ...multipart_payload([
         {
           name: "file",
@@ -219,7 +219,7 @@ describe("v1 dogfood smoke workflow", () => {
     const capture_event_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: owner_session },
+      cookies: { ossie_session: owner_session },
       payload: {
         event_type: "click",
         event_index: 1,
@@ -247,7 +247,7 @@ describe("v1 dogfood smoke workflow", () => {
     const complete_capture_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}`,
-      cookies: { demo_composer_session: owner_session },
+      cookies: { ossie_session: owner_session },
       payload: {
         status: "completed",
       },
@@ -262,7 +262,7 @@ describe("v1 dogfood smoke workflow", () => {
     const guide_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/guides/from-capture-session/${capture_session_id}`,
-      cookies: { demo_composer_session: owner_session },
+      cookies: { ossie_session: owner_session },
       payload: {
         title: "Department setup guide",
         selected_capture_event_ids: [capture_event_id],
@@ -283,7 +283,7 @@ describe("v1 dogfood smoke workflow", () => {
     const guide_publish_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/guides/${guide_id}/publish`,
-      cookies: { demo_composer_session: owner_session },
+      cookies: { ossie_session: owner_session },
     });
 
     expect(guide_publish_response.statusCode).toBe(201);
@@ -326,7 +326,7 @@ describe("v1 dogfood smoke workflow", () => {
     const demo_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/interactive-demos`,
-      cookies: { demo_composer_session: owner_session },
+      cookies: { ossie_session: owner_session },
       payload: {},
     });
 
@@ -351,7 +351,7 @@ describe("v1 dogfood smoke workflow", () => {
     const hotspot_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${scene_id}/hotspots`,
-      cookies: { demo_composer_session: owner_session },
+      cookies: { ossie_session: owner_session },
       payload: {
         hotspot_type: "info",
         label: "Add Department",
@@ -373,7 +373,7 @@ describe("v1 dogfood smoke workflow", () => {
     const demo_publish_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/publish`,
-      cookies: { demo_composer_session: owner_session },
+      cookies: { ossie_session: owner_session },
     });
 
     expect(demo_publish_response.statusCode).toBe(201);
@@ -422,7 +422,7 @@ describe("v1 dogfood smoke workflow", () => {
     const invite_response = await app.inject({
       method: "POST",
       url: "/api/v1/organization/invites",
-      cookies: { demo_composer_session: owner_session },
+      cookies: { ossie_session: owner_session },
       payload: {
         email: "teammate@example.com",
         role: "member",
@@ -445,7 +445,7 @@ describe("v1 dogfood smoke workflow", () => {
     expect(accept_invite_response.statusCode).toBe(200);
     const teammate_session =
       accept_invite_response.cookies.find(
-        (cookie) => cookie.name === "demo_composer_session",
+        (cookie) => cookie.name === "ossie_session",
       )?.value ?? "";
     expect(teammate_session).not.toBe("");
     expect(accept_invite_response.json().auth.org_user.role).toBe("member");
@@ -453,7 +453,7 @@ describe("v1 dogfood smoke workflow", () => {
     const teammate_projects_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects",
-      cookies: { demo_composer_session: teammate_session },
+      cookies: { ossie_session: teammate_session },
     });
 
     expect(teammate_projects_response.statusCode).toBe(200);

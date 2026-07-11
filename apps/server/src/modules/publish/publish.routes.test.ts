@@ -236,17 +236,17 @@ describe("publish routes", () => {
     const publish_response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/publish",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const status_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/publish",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const access_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/publish/access",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         visibility: "restricted",
         expires_at: null,
@@ -255,13 +255,13 @@ describe("publish routes", () => {
     const password_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/publish/password",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { password: "shared password" },
     });
     const revoke_response = await app.inject({
       method: "DELETE",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/publish",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(publish_response.statusCode).toBe(201);
@@ -356,17 +356,17 @@ describe("publish routes", () => {
     const publish_response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/guides/guide_1/publish",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const status_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/guides/guide_1/publish",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const revoke_response = await app.inject({
       method: "DELETE",
       url: "/api/v1/projects/project_1/guides/guide_1/publish",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(publish_response.statusCode).toBe(201);
@@ -480,13 +480,13 @@ describe("publish routes", () => {
     const set_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/publish/password",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { password: "shared password" },
     });
     const clear_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/publish/password",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { password: null },
     });
 
@@ -552,16 +552,16 @@ describe("publish routes", () => {
     const resolve_response = await app.inject({
       method: "GET",
       url: "/api/v1/public/publish-links/abc123",
-      cookies: { demo_composer_public_viewer: "viewer-token" },
+      cookies: { ossie_public_viewer: "viewer-token" },
     });
     const asset_response = await app.inject({
       method: "GET",
       url: "/api/v1/public/publish-links/abc123/assets/asset_1/file",
-      cookies: { demo_composer_public_viewer: "viewer-token" },
+      cookies: { ossie_public_viewer: "viewer-token" },
     });
 
     expect(session_response.statusCode).toBe(204);
-    expect(session_response.cookies.find((cookie) => cookie.name === "demo_composer_public_viewer")?.value)
+    expect(session_response.cookies.find((cookie) => cookie.name === "ossie_public_viewer")?.value)
       .toBe("viewer-token");
     expect(resolve_response.statusCode).toBe(200);
     expect(resolve_response.json()).not.toHaveProperty("publish_link_id");
@@ -589,7 +589,7 @@ describe("publish routes", () => {
     const response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/guides/guide_1/publish",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(response.statusCode).toBe(200);
@@ -628,7 +628,7 @@ describe("publish routes", () => {
     const response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/publish/access",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         visibility: "restricted",
         expires_at: null,
@@ -664,12 +664,12 @@ describe("publish routes", () => {
     const missing_body_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/publish/access",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const invalid_visibility_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/publish/access",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         visibility: "private",
         expires_at: null,
@@ -678,7 +678,7 @@ describe("publish routes", () => {
     const invalid_expiry_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/publish/access",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         visibility: "public",
         expires_at: "not-a-date",
@@ -735,7 +735,7 @@ describe("publish routes", () => {
       const authenticated_response = await app.inject({
         method: "POST",
         url: "/api/v1/projects/project_1/guides/guide_1/publish",
-        cookies: { demo_composer_session: "session-token" },
+        cookies: { ossie_session: "session-token" },
       });
       const public_response = await app.inject({
         method: "GET",

@@ -155,7 +155,7 @@ describe("capture event routes", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         organization_id: "attacker_org",
         project_id: "attacker_project",
@@ -324,17 +324,17 @@ describe("capture event routes", () => {
     const list_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events?event_type=click",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const get_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const delete_response = await app.inject({
       method: "DELETE",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(list_response.statusCode).toBe(200);
@@ -364,7 +364,7 @@ describe("capture event routes", () => {
     const response = await app.inject({
       method: "PUT",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/order",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         organization_id: "attacker_org",
         event_ids: ["capture_event_2", "capture_event_1"],
@@ -415,7 +415,7 @@ describe("capture event routes", () => {
     const response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         page_title: "Department list",
         page_url: "https://example.internal/app/departments",
@@ -490,7 +490,7 @@ describe("capture event routes", () => {
       const response = await app.inject({
         method: "POST",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events",
-        cookies: { demo_composer_session: "session-token" },
+        cookies: { ossie_session: "session-token" },
         payload: { event_type: "note", event_index: 1, note: "Hello" },
       });
 
@@ -500,7 +500,7 @@ describe("capture event routes", () => {
       const reorder_response = await app.inject({
         method: "PUT",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/order",
-        cookies: { demo_composer_session: "session-token" },
+        cookies: { ossie_session: "session-token" },
         payload: { event_ids: ["capture_event_1"] },
       });
 
@@ -510,7 +510,7 @@ describe("capture event routes", () => {
       const update_response = await app.inject({
         method: "PATCH",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1",
-        cookies: { demo_composer_session: "session-token" },
+        cookies: { ossie_session: "session-token" },
         payload: { page_title: "Department" },
       });
 
@@ -531,7 +531,7 @@ describe("capture event routes", () => {
       const response = await app.inject({
         method: "POST",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events",
-        cookies: { demo_composer_session: "session-token" },
+        cookies: { ossie_session: "session-token" },
         payload,
       });
 
@@ -547,7 +547,7 @@ describe("capture event routes", () => {
       const response = await app.inject({
         method: "PUT",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/order",
-        cookies: { demo_composer_session: "session-token" },
+        cookies: { ossie_session: "session-token" },
         payload,
       });
 
@@ -563,7 +563,7 @@ describe("capture event routes", () => {
       const response = await app.inject({
         method: "PATCH",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1",
-        cookies: { demo_composer_session: "session-token" },
+        cookies: { ossie_session: "session-token" },
         payload,
       });
 

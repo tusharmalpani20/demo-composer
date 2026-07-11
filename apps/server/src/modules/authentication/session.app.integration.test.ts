@@ -11,12 +11,12 @@ describe("authentication session app routes", () => {
       headers: {
         origin: "chrome-extension://extension-id",
         "access-control-request-method": "POST",
-        "access-control-request-headers": "content-type,x-demo-composer-client",
+        "access-control-request-headers": "content-type,x-ossie-client",
       },
     });
 
     expect(response.statusCode).toBe(204);
-    expect(String(response.headers["access-control-allow-headers"]).toLowerCase()).toContain("x-demo-composer-client");
+    expect(String(response.headers["access-control-allow-headers"]).toLowerCase()).toContain("x-ossie-client");
 
     await app.close();
   });
@@ -58,7 +58,7 @@ describe("authentication session app routes", () => {
       method: "GET",
       url: "/api/v1/authentication/me",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
 

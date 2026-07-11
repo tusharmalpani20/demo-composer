@@ -144,7 +144,7 @@ describe("publish app integration", () => {
     const publish_response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/guides/guide_1/publish",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const public_response = await app.inject({
       method: "GET",

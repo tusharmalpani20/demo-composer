@@ -58,7 +58,7 @@ describe("authentication session routes", () => {
       method: "GET",
       url: "/api/v1/authentication/me",
       cookies: {
-        demo_composer_session: "valid-session-token",
+        ossie_session: "valid-session-token",
       },
     });
 
@@ -164,7 +164,7 @@ describe("authentication session routes", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.cookies).toContainEqual(expect.objectContaining({
-      name: "demo_composer_session",
+      name: "ossie_session",
       value: "login-session-token",
       httpOnly: true,
       path: "/",
@@ -211,7 +211,7 @@ describe("authentication session routes", () => {
       method: "POST",
       url: "/api/v1/authentication/login",
       headers: {
-        "x-demo-composer-client": "extension",
+        "x-ossie-client": "extension",
       },
       payload: {
         email: "owner@example.com",
@@ -229,7 +229,7 @@ describe("authentication session routes", () => {
       },
     });
     expect(response.cookies).toContainEqual(expect.objectContaining({
-      name: "demo_composer_session",
+      name: "ossie_session",
       value: "extension-session-token",
     }));
 
@@ -383,14 +383,14 @@ describe("authentication session routes", () => {
       method: "POST",
       url: "/api/v1/authentication/logout",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
 
     expect(response.statusCode).toBe(204);
     expect(seen_session_tokens).toEqual(["session-token"]);
     expect(response.cookies).toContainEqual(expect.objectContaining({
-      name: "demo_composer_session",
+      name: "ossie_session",
       value: "",
       path: "/",
     }));
@@ -448,7 +448,7 @@ describe("authentication session routes", () => {
     expect(response.statusCode).toBe(204);
     expect(seen_session_tokens).toEqual([undefined]);
     expect(response.cookies).toContainEqual(expect.objectContaining({
-      name: "demo_composer_session",
+      name: "ossie_session",
       value: "",
       path: "/",
     }));

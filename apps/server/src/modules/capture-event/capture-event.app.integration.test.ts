@@ -68,7 +68,7 @@ describe("capture event app integration", () => {
     const response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(response.statusCode).toBe(200);
@@ -77,7 +77,7 @@ describe("capture event app integration", () => {
     const update_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/events/capture_event_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         page_title: "Department list",
         note: "Open the department list.",

@@ -78,7 +78,7 @@ describe("guide app integration", () => {
     const response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/guides",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(response.statusCode).toBe(200);

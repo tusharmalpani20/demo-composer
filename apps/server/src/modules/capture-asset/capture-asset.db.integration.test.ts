@@ -12,7 +12,7 @@ const multipart_payload = (parts: Array<{
   filename?: string;
   content_type?: string;
 }>) => {
-  const boundary = "----demo-composer-db-test-boundary";
+  const boundary = "----ossie-db-test-boundary";
   const chunks: Buffer[] = [];
 
   for (const part of parts) {
@@ -75,7 +75,7 @@ const setup_owner = async () => {
 
   await app.close();
   expect(response.statusCode).toBe(201);
-  const session_cookie = response.cookies.find((cookie) => cookie.name === "demo_composer_session");
+  const session_cookie = response.cookies.find((cookie) => cookie.name === "ossie_session");
   expect(session_cookie?.value).toEqual(expect.any(String));
   return session_cookie?.value ?? "";
 };
@@ -102,7 +102,7 @@ const create_project = async (session_token: string) => {
     method: "POST",
     url: "/api/v1/projects",
     cookies: {
-      demo_composer_session: session_token,
+      ossie_session: session_token,
     },
     payload: {
       name: "Onboarding Demo",
@@ -120,7 +120,7 @@ const create_capture_session = async (session_token: string, project_id: string)
     method: "POST",
     url: `/api/v1/projects/${project_id}/capture-sessions`,
     cookies: {
-      demo_composer_session: session_token,
+      ossie_session: session_token,
     },
     payload: {
       name: "Create department workflow",
@@ -137,15 +137,15 @@ describe("DB-backed capture asset API", () => {
   let storage_root: string;
 
   beforeEach(async () => {
-    storage_root = await mkdtemp(path.join(tmpdir(), "demo-composer-db-storage-"));
-    process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT = storage_root;
-    process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES = "1048576";
+    storage_root = await mkdtemp(path.join(tmpdir(), "ossie-db-storage-"));
+    process.env.OSSIE_LOCAL_STORAGE_ROOT = storage_root;
+    process.env.OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES = "1048576";
     await reset_foundation_tables();
   });
 
   afterEach(async () => {
-    delete process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT;
-    delete process.env.DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES;
+    delete process.env.OSSIE_LOCAL_STORAGE_ROOT;
+    delete process.env.OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES;
     await rm(storage_root, { recursive: true, force: true });
   });
 
@@ -179,7 +179,7 @@ describe("DB-backed capture asset API", () => {
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/upload`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       ...upload_body,
     });
@@ -228,7 +228,7 @@ describe("DB-backed capture asset API", () => {
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${capture_asset_id}/file`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
 
@@ -242,7 +242,7 @@ describe("DB-backed capture asset API", () => {
       method: "DELETE",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${capture_asset_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     expect(delete_response.statusCode).toBe(204);
@@ -251,7 +251,7 @@ describe("DB-backed capture asset API", () => {
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${capture_asset_id}/file`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     expect(read_deleted_response.statusCode).toBe(404);
@@ -271,7 +271,7 @@ describe("DB-backed capture asset API", () => {
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         asset_type: "screenshot",
@@ -364,21 +364,21 @@ describe("DB-backed capture asset API", () => {
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets?asset_type=screenshot`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     const get_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${capture_asset_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     const duplicate_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         asset_type: "screenshot",
@@ -393,7 +393,7 @@ describe("DB-backed capture asset API", () => {
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         asset_type: "html_snapshot",
@@ -408,7 +408,7 @@ describe("DB-backed capture asset API", () => {
       method: "POST",
       url: `/api/v1/projects/missing_project/capture-sessions/${capture_session_id}/assets`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         asset_type: "screenshot",
@@ -423,7 +423,7 @@ describe("DB-backed capture asset API", () => {
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/missing_capture_session/assets`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
       payload: {
         asset_type: "screenshot",
@@ -438,7 +438,7 @@ describe("DB-backed capture asset API", () => {
       method: "DELETE",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${capture_asset_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
 
@@ -491,14 +491,14 @@ describe("DB-backed capture asset API", () => {
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
     const hidden_get_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets/${capture_asset_id}`,
       cookies: {
-        demo_composer_session: session_token,
+        ossie_session: session_token,
       },
     });
 
@@ -520,7 +520,7 @@ describe("DB-backed capture asset API", () => {
     const first_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${first_capture_session_id}/assets`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         asset_type: "screenshot",
         captured_at: "2026-06-05T10:00:00.000Z",
@@ -535,7 +535,7 @@ describe("DB-backed capture asset API", () => {
     const second_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${second_capture_session_id}/assets`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         asset_type: "screenshot",
         captured_at: "2026-06-05T10:05:00.000Z",
@@ -554,7 +554,7 @@ describe("DB-backed capture asset API", () => {
     const project_list_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-assets?asset_type=screenshot`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
 
     expect(project_list_response.statusCode).toBe(200);

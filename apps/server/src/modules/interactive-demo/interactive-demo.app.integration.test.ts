@@ -95,7 +95,7 @@ describe("interactive demo app routes", () => {
       method: "POST",
       url: "/api/v1/projects/project_1/interactive-demos",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         title: "Product Tour",

@@ -66,7 +66,7 @@ describe("project app routes", () => {
       method: "POST",
       url: "/api/v1/projects",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         name: "Onboarding Demo",

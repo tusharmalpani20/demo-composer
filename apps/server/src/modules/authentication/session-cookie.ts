@@ -1,6 +1,6 @@
 import type { FastifyReply } from "fastify";
 
-export const web_session_cookie_name = "demo_composer_session";
+export const web_session_cookie_name = "ossie_session";
 
 export const web_session_cookie_options = {
   httpOnly: true,

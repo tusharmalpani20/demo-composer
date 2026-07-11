@@ -119,7 +119,7 @@ describe("first-run setup app route", () => {
     expect(response.statusCode).toBe(201);
     expect(response.json().auth.organization.name).toBe("Acme");
     expect(response.cookies).toContainEqual(expect.objectContaining({
-      name: "demo_composer_session",
+      name: "ossie_session",
       value: "session-token",
     }));
 
@@ -127,8 +127,8 @@ describe("first-run setup app route", () => {
   });
 
   it("keeps public instance status and first-run setup route aligned in signup mode", async () => {
-    process.env.DEMO_COMPOSER_DEPLOYMENT_MODE = "hosted";
-    process.env.DEMO_COMPOSER_ONBOARDING_MODE = "signup";
+    process.env.OSSIE_DEPLOYMENT_MODE = "hosted";
+    process.env.OSSIE_ONBOARDING_MODE = "signup";
     const repository = build_repository();
     const app = build({
       logger: false,

@@ -35,7 +35,7 @@ const setup_owner = async () => {
 
   await app.close();
   expect(response.statusCode).toBe(201);
-  const session_cookie = response.cookies.find((cookie) => cookie.name === "demo_composer_session");
+  const session_cookie = response.cookies.find((cookie) => cookie.name === "ossie_session");
   expect(session_cookie?.value).toEqual(expect.any(String));
   return session_cookie?.value ?? "";
 };
@@ -62,7 +62,7 @@ describe("DB-backed authentication session", () => {
       method: "GET",
       url: "/api/v1/authentication/me",
       cookies: {
-        demo_composer_session: setup_session_token,
+        ossie_session: setup_session_token,
       },
     });
 
@@ -97,7 +97,7 @@ describe("DB-backed authentication session", () => {
     });
 
     expect(login_response.statusCode).toBe(200);
-    const login_session_token = login_response.cookies.find((cookie) => cookie.name === "demo_composer_session")?.value ?? "";
+    const login_session_token = login_response.cookies.find((cookie) => cookie.name === "ossie_session")?.value ?? "";
     expect(login_session_token).toEqual(expect.any(String));
     expect(login_session_token).not.toBe(setup_session_token);
     expect(await count_sessions()).toBe(2);
@@ -112,7 +112,7 @@ describe("DB-backed authentication session", () => {
       method: "GET",
       url: "/api/v1/authentication/me",
       cookies: {
-        demo_composer_session: login_session_token,
+        ossie_session: login_session_token,
       },
     });
 
@@ -128,13 +128,13 @@ describe("DB-backed authentication session", () => {
       method: "POST",
       url: "/api/v1/authentication/logout",
       cookies: {
-        demo_composer_session: login_session_token,
+        ossie_session: login_session_token,
       },
     });
 
     expect(logout_response.statusCode).toBe(204);
     expect(logout_response.cookies).toContainEqual(expect.objectContaining({
-      name: "demo_composer_session",
+      name: "ossie_session",
       value: "",
       path: "/",
     }));
@@ -143,7 +143,7 @@ describe("DB-backed authentication session", () => {
       method: "GET",
       url: "/api/v1/authentication/me",
       cookies: {
-        demo_composer_session: login_session_token,
+        ossie_session: login_session_token,
       },
     });
     expect(logged_out_me_response.statusCode).toBe(401);
@@ -152,7 +152,7 @@ describe("DB-backed authentication session", () => {
       method: "GET",
       url: "/api/v1/authentication/me",
       cookies: {
-        demo_composer_session: setup_session_token,
+        ossie_session: setup_session_token,
       },
     });
     expect(setup_still_active_response.statusCode).toBe(200);
@@ -201,7 +201,7 @@ describe("DB-backed authentication session", () => {
       method: "GET",
       url: "/api/v1/authentication/me",
       cookies: {
-        demo_composer_session: setup_session_token,
+        ossie_session: setup_session_token,
       },
     });
 
@@ -220,7 +220,7 @@ describe("DB-backed authentication session", () => {
       method: "GET",
       url: "/api/v1/authentication/me",
       cookies: {
-        demo_composer_session: setup_session_token,
+        ossie_session: setup_session_token,
       },
     });
     const disabled_user_login_response = await app.inject({
@@ -242,7 +242,7 @@ describe("DB-backed authentication session", () => {
       method: "GET",
       url: "/api/v1/authentication/me",
       cookies: {
-        demo_composer_session: setup_session_token,
+        ossie_session: setup_session_token,
       },
     });
     const disabled_organization_login_response = await app.inject({
@@ -264,7 +264,7 @@ describe("DB-backed authentication session", () => {
       method: "GET",
       url: "/api/v1/authentication/me",
       cookies: {
-        demo_composer_session: setup_session_token,
+        ossie_session: setup_session_token,
       },
     });
     const disabled_membership_login_response = await app.inject({

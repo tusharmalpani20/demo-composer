@@ -83,7 +83,7 @@ describe("capture asset app integration", () => {
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
 

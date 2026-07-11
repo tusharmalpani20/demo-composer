@@ -41,7 +41,7 @@ const setup_owner = async () => {
 
   await app.close();
   expect(response.statusCode).toBe(201);
-  const session_cookie = response.cookies.find((cookie) => cookie.name === "demo_composer_session");
+  const session_cookie = response.cookies.find((cookie) => cookie.name === "ossie_session");
   expect(session_cookie?.value).toEqual(expect.any(String));
   return session_cookie?.value ?? "";
 };
@@ -67,7 +67,7 @@ const create_project = async (session_token: string) => {
   const response = await app.inject({
     method: "POST",
     url: "/api/v1/projects",
-    cookies: { demo_composer_session: session_token },
+    cookies: { ossie_session: session_token },
     payload: { name: "Onboarding Demo" },
   });
 
@@ -85,7 +85,7 @@ const create_capture_session = async (
   const response = await app.inject({
     method: "POST",
     url: `/api/v1/projects/${project_id}/capture-sessions`,
-    cookies: { demo_composer_session: session_token },
+    cookies: { ossie_session: session_token },
     payload: {
       name: "Create department workflow",
       source_type,
@@ -106,7 +106,7 @@ const create_capture_asset = async (
   const response = await app.inject({
     method: "POST",
     url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/assets`,
-    cookies: { demo_composer_session: session_token },
+    cookies: { ossie_session: session_token },
     payload: {
       asset_type: "screenshot",
       width: 1440,
@@ -152,7 +152,7 @@ describe("DB-backed capture event API", () => {
     const click_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "click",
         event_index: 2,
@@ -172,7 +172,7 @@ describe("DB-backed capture event API", () => {
     const note_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "note",
         event_index: 1,
@@ -206,22 +206,22 @@ describe("DB-backed capture event API", () => {
     const list_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
     const click_list_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events?event_type=click`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
     const get_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
     const duplicate_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "note",
         event_index: 1,
@@ -231,7 +231,7 @@ describe("DB-backed capture event API", () => {
     const missing_project_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/missing_project/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "note",
         event_index: 3,
@@ -241,7 +241,7 @@ describe("DB-backed capture event API", () => {
     const missing_capture_session_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/missing_capture_session/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "note",
         event_index: 3,
@@ -251,7 +251,7 @@ describe("DB-backed capture event API", () => {
     const invalid_asset_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "capture",
         event_index: 3,
@@ -266,7 +266,7 @@ describe("DB-backed capture event API", () => {
     const deleted_asset_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "capture",
         event_index: 3,
@@ -281,7 +281,7 @@ describe("DB-backed capture event API", () => {
     const raw_value_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "input",
         event_index: 3,
@@ -292,7 +292,7 @@ describe("DB-backed capture event API", () => {
     const unredacted_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "input",
         event_index: 3,
@@ -303,7 +303,7 @@ describe("DB-backed capture event API", () => {
     const delete_response = await app.inject({
       method: "DELETE",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
 
     expect(list_response.statusCode).toBe(200);
@@ -364,7 +364,7 @@ describe("DB-backed capture event API", () => {
     const hidden_get_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
 
     expect(hidden_get_response.statusCode).toBe(404);
@@ -382,7 +382,7 @@ describe("DB-backed capture event API", () => {
     const first_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "note",
         event_index: 1,
@@ -392,7 +392,7 @@ describe("DB-backed capture event API", () => {
     const second_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "note",
         event_index: 2,
@@ -402,7 +402,7 @@ describe("DB-backed capture event API", () => {
     const third_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "note",
         event_index: 3,
@@ -427,7 +427,7 @@ describe("DB-backed capture event API", () => {
     const reorder_response = await app.inject({
       method: "PUT",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/order`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_ids: [third_id, first_id],
       },
@@ -435,13 +435,13 @@ describe("DB-backed capture event API", () => {
     const list_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
     const invalid_extension_session_id = await create_capture_session(session_token, project_id, "extension");
     const extension_reorder_response = await app.inject({
       method: "PUT",
       url: `/api/v1/projects/${project_id}/capture-sessions/${invalid_extension_session_id}/events/order`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_ids: [third_id, first_id],
       },
@@ -475,7 +475,7 @@ describe("DB-backed capture event API", () => {
     const create_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "note",
         event_index: 1,
@@ -488,7 +488,7 @@ describe("DB-backed capture event API", () => {
     const update_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         page_title: " Department list ",
         page_url: " https://example.internal/app/departments ",
@@ -552,7 +552,7 @@ describe("DB-backed capture event API", () => {
     const partial_update_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         page_title: "Department list v2",
       },
@@ -569,7 +569,7 @@ describe("DB-backed capture event API", () => {
     const create_guide_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/guides/from-capture-session/${capture_session_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         title: "Department guide",
       },
@@ -585,7 +585,7 @@ describe("DB-backed capture event API", () => {
     const extension_event_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${extension_session_id}/events`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         event_type: "note",
         event_index: 1,
@@ -596,7 +596,7 @@ describe("DB-backed capture event API", () => {
     const extension_update_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/capture-sessions/${extension_session_id}/events/${extension_event_response.json().capture_event.id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         note: "Should not update",
       },
@@ -612,7 +612,7 @@ describe("DB-backed capture event API", () => {
     const archived_update_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/capture-sessions/${capture_session_id}/events/${capture_event_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         note: "Should not update archived session",
       },

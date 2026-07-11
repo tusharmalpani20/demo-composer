@@ -41,7 +41,7 @@ const setup_owner = async () => {
 
   await app.close();
   expect(response.statusCode).toBe(201);
-  const session_cookie = response.cookies.find((cookie) => cookie.name === "demo_composer_session");
+  const session_cookie = response.cookies.find((cookie) => cookie.name === "ossie_session");
   expect(session_cookie?.value).toEqual(expect.any(String));
   return session_cookie?.value ?? "";
 };
@@ -52,7 +52,7 @@ const create_project = async (session_token: string) => {
     method: "POST",
     url: "/api/v1/projects",
     cookies: {
-      demo_composer_session: session_token,
+      ossie_session: session_token,
     },
     payload: {
       name: "Interactive Demo Project",
@@ -269,7 +269,7 @@ describe("DB-backed interactive demo API", () => {
     const create_demo_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         title: "Product Tour",
         description: "Internal walkthrough",
@@ -292,7 +292,7 @@ describe("DB-backed interactive demo API", () => {
     const first_scene_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         title: "Welcome",
         background_capture_asset_id: capture_asset_id,
@@ -301,7 +301,7 @@ describe("DB-backed interactive demo API", () => {
     const second_scene_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         title: "Dashboard",
         background_capture_asset_id: capture_asset_id,
@@ -322,7 +322,7 @@ describe("DB-backed interactive demo API", () => {
     const create_hotspot_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         hotspot_type: "click",
         label: "Continue",
@@ -337,7 +337,7 @@ describe("DB-backed interactive demo API", () => {
     const invalid_hotspot_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         hotspot_type: "info",
         x: 0.95,
@@ -367,7 +367,7 @@ describe("DB-backed interactive demo API", () => {
     const second_hotspot_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         hotspot_type: "info",
         label: "Read this",
@@ -384,7 +384,7 @@ describe("DB-backed interactive demo API", () => {
     const partial_reorder_response = await app.inject({
       method: "PUT",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/order`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         scene_ids: [second_scene_id],
       },
@@ -392,7 +392,7 @@ describe("DB-backed interactive demo API", () => {
     const reorder_response = await app.inject({
       method: "PUT",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/order`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         scene_ids: [second_scene_id, first_scene_id],
       },
@@ -400,7 +400,7 @@ describe("DB-backed interactive demo API", () => {
     const update_demo_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         title: "Updated Tour",
         description: "",
@@ -410,17 +410,17 @@ describe("DB-backed interactive demo API", () => {
     const list_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/interactive-demos`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
     const scenes_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
     const update_hotspot_response = await app.inject({
       method: "PATCH",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots/${first_hotspot_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         label: "Updated hotspot",
         target_scene_id: null,
@@ -429,7 +429,7 @@ describe("DB-backed interactive demo API", () => {
     const reorder_hotspot_response = await app.inject({
       method: "PUT",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots/order`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         hotspot_ids: [second_hotspot_id, first_hotspot_id],
       },
@@ -437,7 +437,7 @@ describe("DB-backed interactive demo API", () => {
     const hotspots_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
 
     expect(partial_reorder_response.statusCode).toBe(400);
@@ -485,22 +485,22 @@ describe("DB-backed interactive demo API", () => {
     const delete_hotspot_response = await app.inject({
       method: "DELETE",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}/hotspots/${first_hotspot_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
     const delete_scene_response = await app.inject({
       method: "DELETE",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes/${first_scene_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
     const delete_demo_response = await app.inject({
       method: "DELETE",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
     const get_deleted_response = await app.inject({
       method: "GET",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
     });
 
     expect(delete_hotspot_response.statusCode).toBe(204);
@@ -519,13 +519,13 @@ describe("DB-backed interactive demo API", () => {
     const first_demo_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: { title: "First demo" },
     });
     const second_demo_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: { title: "Second demo" },
     });
     expect(first_demo_response.statusCode).toBe(201);
@@ -604,7 +604,7 @@ describe("DB-backed interactive demo API", () => {
     const response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${source.capture_session_id}/interactive-demos`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         title: "Request title should be ignored",
         description: "",
@@ -654,7 +654,7 @@ describe("DB-backed interactive demo API", () => {
     const second_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/capture-sessions/${source.capture_session_id}/interactive-demos`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {},
     });
     expect(second_response.statusCode).toBe(201);
@@ -695,7 +695,7 @@ describe("DB-backed interactive demo API", () => {
     const demo_response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: { title: "Product Tour" },
     });
     const interactive_demo_id = demo_response.json().interactive_demo.id as string;
@@ -703,7 +703,7 @@ describe("DB-backed interactive demo API", () => {
     const response = await app.inject({
       method: "POST",
       url: `/api/v1/projects/${project_id}/interactive-demos/${interactive_demo_id}/scenes`,
-      cookies: { demo_composer_session: session_token },
+      cookies: { ossie_session: session_token },
       payload: {
         title: "Invalid asset",
         background_capture_asset_id: "missing_asset",

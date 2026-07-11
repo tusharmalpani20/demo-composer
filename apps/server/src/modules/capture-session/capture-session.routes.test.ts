@@ -228,7 +228,7 @@ describe("capture session routes", () => {
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
 
@@ -278,7 +278,7 @@ describe("capture session routes", () => {
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {},
     });
@@ -286,7 +286,7 @@ describe("capture session routes", () => {
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         completed_at: "2026-06-05T00:00:00.000Z",
@@ -299,7 +299,7 @@ describe("capture session routes", () => {
         "content-type": "application/json",
       },
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: "null",
     });
@@ -310,7 +310,7 @@ describe("capture session routes", () => {
         "content-type": "application/json",
       },
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: "[]",
     });
@@ -348,7 +348,7 @@ describe("capture session routes", () => {
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         name: "Create department workflow",
@@ -415,7 +415,7 @@ describe("capture session routes", () => {
       url: "/api/v1/projects/project_1/capture-sessions",
       headers: {
         authorization: "Bearer extension-session-token",
-        "x-demo-composer-client": "extension",
+        "x-ossie-client": "extension",
       },
       payload: {
         name: "Capture from Example Page",
@@ -500,21 +500,21 @@ describe("capture session routes", () => {
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions?status=completed",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
     const get_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
     const update_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         name: "Updated Capture",
@@ -526,7 +526,7 @@ describe("capture session routes", () => {
       method: "DELETE",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
 
@@ -606,7 +606,7 @@ describe("capture session routes", () => {
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/detail",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
 
@@ -661,24 +661,24 @@ describe("capture session routes", () => {
     const project_not_found_response = await project_not_found_app.inject({
       method: "POST",
       url: "/api/v1/projects/missing/capture-sessions",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { name: "Capture" },
     });
     const capture_not_found_response = await capture_not_found_app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/missing",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const empty_update_response = await empty_update_app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {},
     });
     const not_completable_response = await not_completable_app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const detail_not_found_app = await build_test_app({
       capture_session_service: {
@@ -697,12 +697,12 @@ describe("capture session routes", () => {
     const detail_not_found_response = await detail_not_found_app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/missing/detail",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const detail_project_not_found_response = await detail_project_not_found_app.inject({
       method: "GET",
       url: "/api/v1/projects/missing/capture-sessions/capture_session_1/detail",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(project_not_found_response.statusCode).toBe(404);
@@ -755,7 +755,7 @@ describe("capture session routes", () => {
         method: "POST",
         url: "/api/v1/projects/project_1/capture-sessions",
         cookies: {
-          demo_composer_session: "session-token",
+          ossie_session: "session-token",
         },
         payload,
       });
@@ -777,7 +777,7 @@ describe("capture session routes", () => {
         method: "PATCH",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1",
         cookies: {
-          demo_composer_session: "session-token",
+          ossie_session: "session-token",
         },
         payload,
       });

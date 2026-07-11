@@ -81,7 +81,7 @@ describe("first-run setup routes", () => {
 
     expect(response.statusCode).toBe(201);
     expect(response.cookies).toContainEqual(expect.objectContaining({
-      name: "demo_composer_session",
+      name: "ossie_session",
       value: "session-token",
       httpOnly: true,
       path: "/",

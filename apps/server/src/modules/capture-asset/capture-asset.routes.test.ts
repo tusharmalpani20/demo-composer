@@ -118,7 +118,7 @@ const multipart_payload = (parts: Array<{
   filename?: string;
   content_type?: string;
 }>) => {
-  const boundary = "----demo-composer-test-boundary";
+  const boundary = "----ossie-test-boundary";
   const chunks: Buffer[] = [];
 
   for (const part of parts) {
@@ -217,7 +217,7 @@ describe("capture asset routes", () => {
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/upload",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       ...request_body,
     });
@@ -339,7 +339,7 @@ describe("capture asset routes", () => {
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1/file",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
 
@@ -411,13 +411,13 @@ describe("capture asset routes", () => {
         ? {
           method: "POST",
           url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/upload",
-          cookies: { demo_composer_session: "session-token" },
+          cookies: { ossie_session: "session-token" },
           ...request_body,
         }
         : {
           method: "GET",
           url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1/file",
-          cookies: { demo_composer_session: "session-token" },
+          cookies: { ossie_session: "session-token" },
         });
 
       expect(response.statusCode).toBe(test_case.status);
@@ -504,7 +504,7 @@ describe("capture asset routes", () => {
         method: "POST",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/upload",
         cookies: {
-          demo_composer_session: "session-token",
+          ossie_session: "session-token",
         },
         ...multipart_payload(test_case.parts),
       });
@@ -538,7 +538,7 @@ describe("capture asset routes", () => {
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         asset_type: "screenshot",
@@ -631,21 +631,21 @@ describe("capture asset routes", () => {
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets?asset_type=screenshot",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
     const get_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
     const delete_response = await app.inject({
       method: "DELETE",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets/capture_asset_1",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
 
@@ -735,7 +735,7 @@ describe("capture asset routes", () => {
         method: "POST",
         url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets",
         cookies: {
-          demo_composer_session: "session-token",
+          ossie_session: "session-token",
         },
         payload: {
           asset_type: "screenshot",
@@ -760,7 +760,7 @@ describe("capture asset routes", () => {
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/assets",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         asset_type: "screenshot",

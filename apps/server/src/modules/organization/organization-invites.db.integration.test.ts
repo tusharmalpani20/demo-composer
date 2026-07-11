@@ -36,7 +36,7 @@ const setup_owner = async () => {
   await app.close();
 
   expect(response.statusCode).toBe(201);
-  return response.cookies.find((cookie) => cookie.name === "demo_composer_session")?.value ?? "";
+  return response.cookies.find((cookie) => cookie.name === "ossie_session")?.value ?? "";
 };
 
 describe("DB-backed organization invites", () => {
@@ -56,7 +56,7 @@ describe("DB-backed organization invites", () => {
       method: "POST",
       url: "/api/v1/organization/invites",
       cookies: {
-        demo_composer_session: owner_session,
+        ossie_session: owner_session,
       },
       payload: {
         email: " Teammate@Example.com ",
@@ -104,7 +104,7 @@ describe("DB-backed organization invites", () => {
     });
 
     expect(accept_response.statusCode).toBe(200);
-    const teammate_session = accept_response.cookies.find((cookie) => cookie.name === "demo_composer_session")?.value ?? "";
+    const teammate_session = accept_response.cookies.find((cookie) => cookie.name === "ossie_session")?.value ?? "";
     expect(teammate_session).toEqual(expect.any(String));
     expect(accept_response.json().auth).toMatchObject({
       user: {
@@ -123,7 +123,7 @@ describe("DB-backed organization invites", () => {
       method: "GET",
       url: "/api/v1/organization/members",
       cookies: {
-        demo_composer_session: owner_session,
+        ossie_session: owner_session,
       },
     });
     expect(members_response.statusCode).toBe(200);
@@ -136,7 +136,7 @@ describe("DB-backed organization invites", () => {
       method: "GET",
       url: "/api/v1/authentication/me",
       cookies: {
-        demo_composer_session: teammate_session,
+        ossie_session: teammate_session,
       },
     });
     expect(teammate_me_response.statusCode).toBe(200);

@@ -222,7 +222,7 @@ const multipart_payload = (parts: Array<{
   filename?: string;
   content_type?: string;
 }>) => {
-  const boundary = "----demo-composer-test-boundary";
+  const boundary = "----ossie-test-boundary";
   const chunks: Buffer[] = [];
 
   for (const part of parts) {
@@ -271,7 +271,7 @@ describe("guide routes", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/guides/from-capture-session/capture_session_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         title: "Department guide",
         description: null,
@@ -309,12 +309,12 @@ describe("guide routes", () => {
     const list_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/guides",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const get_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/guides/guide_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(list_response.statusCode).toBe(200);
@@ -349,7 +349,7 @@ describe("guide routes", () => {
     const response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/guides/guide_1/export/markdown?organization_id=attacker",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(response.statusCode).toBe(200);
@@ -388,7 +388,7 @@ describe("guide routes", () => {
     const response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/guides/guide_1/export/html.zip?organization_id=attacker",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(response.statusCode).toBe(200);
@@ -423,7 +423,7 @@ describe("guide routes", () => {
     const response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         title: "Updated",
         description: null,
@@ -471,7 +471,7 @@ describe("guide routes", () => {
     const step_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/steps/step_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         title: "Updated step",
         body: "Details",
@@ -481,7 +481,7 @@ describe("guide routes", () => {
     const reorder_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks/reorder",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         block_ids: ["block_2", "block_1"],
       },
@@ -489,7 +489,7 @@ describe("guide routes", () => {
     const delete_response = await app.inject({
       method: "DELETE",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(step_response.statusCode).toBe(200);
@@ -565,7 +565,7 @@ describe("guide routes", () => {
     const create_response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         block_type: "tip",
         position: {
@@ -583,7 +583,7 @@ describe("guide routes", () => {
     const update_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_tip",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         content: {
           title: "Updated tip",
@@ -676,7 +676,7 @@ describe("guide routes", () => {
     const paragraph_response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         block_type: "paragraph",
         position: {
@@ -691,7 +691,7 @@ describe("guide routes", () => {
     const divider_response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         block_type: "divider",
         position: {
@@ -756,7 +756,7 @@ describe("guide routes", () => {
     const replace_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/screenshot",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         capture_asset_id: "asset_2",
         organization_id: "attacker",
@@ -766,7 +766,7 @@ describe("guide routes", () => {
     const remove_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/screenshot",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         capture_asset_id: null,
       },
@@ -842,7 +842,7 @@ describe("guide routes", () => {
     const response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/annotations",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         annotations: [{
           id: "client_managed",
@@ -939,7 +939,7 @@ describe("guide routes", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/screenshot-upload",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       ...request_body,
     });
 
@@ -1039,7 +1039,7 @@ describe("guide routes", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks/missing_block/screenshot-upload",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       ...request_body,
     });
 
@@ -1073,7 +1073,7 @@ describe("guide routes", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/guides/guide_1/blocks/block_1/screenshot-upload",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       ...request_body,
     });
 
@@ -1124,7 +1124,7 @@ describe("guide routes", () => {
       const response = await app.inject({
         method: "POST",
         url: "/api/v1/projects/project_1/guides/from-capture-session/capture_session_1",
-        cookies: { demo_composer_session: "session-token" },
+        cookies: { ossie_session: "session-token" },
         payload: { title: "Guide" },
       });
 

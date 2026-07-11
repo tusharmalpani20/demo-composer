@@ -134,12 +134,12 @@ describe("organization invites routes", () => {
     const members_response = await app.inject({
       method: "GET",
       url: "/api/v1/organization/members",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const invites_response = await app.inject({
       method: "GET",
       url: "/api/v1/organization/invites",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(members_response.statusCode).toBe(200);
@@ -206,7 +206,7 @@ describe("organization invites routes", () => {
   });
 
   it("builds invite URLs from the configured browser-facing portal origin", async () => {
-    process.env.DEMO_COMPOSER_PUBLIC_WEB_URL = "https://portal.example.com/";
+    process.env.OSSIE_PUBLIC_WEB_URL = "https://portal.example.com/";
     const app = await build_test_app({
       organization_invites_service: {
         create_invite: async () => ({
@@ -309,7 +309,7 @@ describe("organization invites routes", () => {
     });
     expect(accept_response.statusCode).toBe(200);
     expect(accept_response.cookies).toContainEqual(expect.objectContaining({
-      name: "demo_composer_session",
+      name: "ossie_session",
       value: "accepted-session-token",
       httpOnly: true,
       path: "/",

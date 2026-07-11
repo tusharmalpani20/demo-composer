@@ -50,7 +50,7 @@ describe("DB-backed first-run setup", () => {
     });
 
     expect(setup_response.statusCode).toBe(201);
-    const session_cookie = setup_response.cookies.find((cookie) => cookie.name === "demo_composer_session");
+    const session_cookie = setup_response.cookies.find((cookie) => cookie.name === "ossie_session");
     expect(session_cookie?.value).toEqual(expect.any(String));
     expect(setup_response.json()).toMatchObject({
       auth: {

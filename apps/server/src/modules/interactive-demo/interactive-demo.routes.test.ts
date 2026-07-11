@@ -180,7 +180,7 @@ describe("interactive demo routes", () => {
     const create_response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/interactive-demos",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         title: "Product Tour",
         description: "Internal walkthrough",
@@ -191,23 +191,23 @@ describe("interactive demo routes", () => {
     const list_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/interactive-demos",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const get_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const update_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { title: "Updated Tour" },
     });
     const delete_response = await app.inject({
       method: "DELETE",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(create_response.statusCode).toBe(201);
@@ -257,7 +257,7 @@ describe("interactive demo routes", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/interactive-demos",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         title: "Attacker supplied title",
         description: "Attacker supplied description",
@@ -308,7 +308,7 @@ describe("interactive demo routes", () => {
     const create_response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         title: "Welcome",
         background_capture_asset_id: "capture_asset_1",
@@ -320,24 +320,24 @@ describe("interactive demo routes", () => {
     const list_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const update_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { title: "Updated Scene" },
     });
     const reorder_response = await app.inject({
       method: "PUT",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/order",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { scene_ids: ["demo_scene_1"] },
     });
     const delete_response = await app.inject({
       method: "DELETE",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(create_response.statusCode).toBe(201);
@@ -377,7 +377,7 @@ describe("interactive demo routes", () => {
     const create_response = await app.inject({
       method: "POST",
       url: base_url,
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         hotspot_type: "click",
         label: "Continue",
@@ -393,24 +393,24 @@ describe("interactive demo routes", () => {
     const list_response = await app.inject({
       method: "GET",
       url: base_url,
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const update_response = await app.inject({
       method: "PATCH",
       url: `${base_url}/demo_hotspot_1`,
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { label: "Updated hotspot" },
     });
     const reorder_response = await app.inject({
       method: "PUT",
       url: `${base_url}/order`,
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { hotspot_ids: ["demo_hotspot_1"] },
     });
     const delete_response = await app.inject({
       method: "DELETE",
       url: `${base_url}/demo_hotspot_1`,
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(create_response.statusCode).toBe(201);
@@ -478,53 +478,53 @@ describe("interactive demo routes", () => {
     const missing_project = await app.inject({
       method: "POST",
       url: "/api/v1/projects/missing_project/interactive-demos",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { title: "Demo" },
     });
     const empty_update = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {},
     });
     const missing_demo = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const invalid_scene = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { background_capture_asset_id: "missing_asset" },
     });
     const missing_scene = await app.inject({
       method: "DELETE",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const missing_capture_session = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/missing_capture_session/interactive-demos",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { title: "Demo" },
     });
     const invalid_hotspot = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1/hotspots",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { hotspot_type: "click", x: 2, y: 0.1, width: 0.2, height: 0.1 },
     });
     const empty_hotspot_update = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1/hotspots/demo_hotspot_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {},
     });
     const missing_hotspot = await app.inject({
       method: "DELETE",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1/hotspots/demo_hotspot_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(missing_project.statusCode).toBe(404);
@@ -561,7 +561,7 @@ describe("interactive demo routes", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/interactive-demos/interactive_demo_1/scenes/demo_scene_1/hotspots",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {
         hotspot_type: "click",
         x: 0.1,
@@ -590,7 +590,7 @@ describe("interactive demo routes", () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/interactive-demos",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { title: "Demo" },
     });
 

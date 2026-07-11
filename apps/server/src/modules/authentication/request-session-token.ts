@@ -18,5 +18,5 @@ export const session_token_from_request = (request: FastifyRequest) => {
 };
 
 export const is_extension_client_request = (request: FastifyRequest) => (
-  request.headers["x-demo-composer-client"] === "extension"
+  request.headers["x-ossie-client"] === "extension"
 );

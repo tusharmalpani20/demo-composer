@@ -136,7 +136,7 @@ describe("capture session app routes", () => {
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         name: "Create department workflow",
@@ -150,7 +150,7 @@ describe("capture session app routes", () => {
       method: "POST",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/complete",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
 
@@ -169,7 +169,7 @@ describe("capture session app routes", () => {
       method: "GET",
       url: "/api/v1/projects/project_1/capture-sessions/capture_session_1/detail",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
 

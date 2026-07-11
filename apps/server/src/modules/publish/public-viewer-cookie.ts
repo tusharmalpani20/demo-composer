@@ -1,6 +1,6 @@
 import type { FastifyReply } from "fastify";
 
-export const public_viewer_cookie_name = "demo_composer_public_viewer";
+export const public_viewer_cookie_name = "ossie_public_viewer";
 
 export const public_viewer_cookie_options = {
   httpOnly: true,

@@ -140,7 +140,7 @@ describe("project routes", () => {
       method: "POST",
       url: "/api/v1/projects",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         name: "Onboarding Demo",
@@ -175,21 +175,21 @@ describe("project routes", () => {
       method: "GET",
       url: "/api/v1/projects?status=archived",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
     const get_response = await app.inject({
       method: "GET",
       url: "/api/v1/projects/project_1",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
     const update_response = await app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         name: "Updated Demo",
@@ -247,7 +247,7 @@ describe("project routes", () => {
       method: "DELETE",
       url: "/api/v1/projects/project_1",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
     });
 
@@ -304,30 +304,30 @@ describe("project routes", () => {
     const name_conflict_response = await name_conflict_app.inject({
       method: "POST",
       url: "/api/v1/projects",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { name: "Onboarding Demo" },
     });
     const slug_conflict_response = await slug_conflict_app.inject({
       method: "POST",
       url: "/api/v1/projects",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: { name: "Onboarding Demo" },
     });
     const not_found_response = await not_found_app.inject({
       method: "GET",
       url: "/api/v1/projects/missing",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
     const empty_update_response = await empty_update_app.inject({
       method: "PATCH",
       url: "/api/v1/projects/project_1",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
       payload: {},
     });
     const delete_not_found_response = await delete_not_found_app.inject({
       method: "DELETE",
       url: "/api/v1/projects/missing",
-      cookies: { demo_composer_session: "session-token" },
+      cookies: { ossie_session: "session-token" },
     });
 
     expect(name_conflict_response.statusCode).toBe(409);
@@ -360,7 +360,7 @@ describe("project routes", () => {
       method: "POST",
       url: "/api/v1/projects",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         name: "   ",
@@ -370,7 +370,7 @@ describe("project routes", () => {
       method: "PATCH",
       url: "/api/v1/projects/project_1",
       cookies: {
-        demo_composer_session: "session-token",
+        ossie_session: "session-token",
       },
       payload: {
         name: "   ",
