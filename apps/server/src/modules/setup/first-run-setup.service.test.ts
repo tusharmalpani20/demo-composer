@@ -113,8 +113,8 @@ describe("first-run setup service", () => {
   });
 
   it("rejects first-run setup when onboarding mode is signup", async () => {
-    process.env.DEMO_COMPOSER_DEPLOYMENT_MODE = "hosted";
-    process.env.DEMO_COMPOSER_ONBOARDING_MODE = "signup";
+    process.env.OSSIE_DEPLOYMENT_MODE = "hosted";
+    process.env.OSSIE_ONBOARDING_MODE = "signup";
     const repository = build_repository();
     const service = build_first_run_setup_service(repository);
 

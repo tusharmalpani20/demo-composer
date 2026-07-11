@@ -24,7 +24,7 @@ describe("local file storage provider", () => {
   let root: string;
 
   beforeEach(async () => {
-    root = await mkdtemp(path.join(tmpdir(), "demo-composer-storage-"));
+    root = await mkdtemp(path.join(tmpdir(), "ossie-storage-"));
   });
 
   afterEach(async () => {

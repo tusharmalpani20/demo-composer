@@ -142,7 +142,7 @@ export class ApiClientError extends Error {
   }
 }
 
-const apiBaseUrl = () => import.meta.env.VITE_DEMO_COMPOSER_API_URL ?? "";
+const apiBaseUrl = () => import.meta.env.VITE_OSSIE_API_URL ?? "";
 
 const joinUrl = (baseUrl: string, path: string) => {
   if (!baseUrl) {

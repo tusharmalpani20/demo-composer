@@ -74,27 +74,27 @@ const assert_production_public_api_url = () => {
 
 const validate_production_startup_config = () => {
     assert_production_enum_env(
-        "DEMO_COMPOSER_DEPLOYMENT_MODE",
+        "OSSIE_DEPLOYMENT_MODE",
         [...DEPLOYMENT_MODES],
-        "DEMO_COMPOSER_DEPLOYMENT_MODE must be explicitly set in production",
-        "DEMO_COMPOSER_DEPLOYMENT_MODE must be self_hosted or hosted"
+        "OSSIE_DEPLOYMENT_MODE must be explicitly set in production",
+        "OSSIE_DEPLOYMENT_MODE must be self_hosted or hosted"
     );
     assert_production_enum_env(
-        "DEMO_COMPOSER_ONBOARDING_MODE",
+        "OSSIE_ONBOARDING_MODE",
         [...ONBOARDING_MODES],
-        "DEMO_COMPOSER_ONBOARDING_MODE must be explicitly set in production",
-        "DEMO_COMPOSER_ONBOARDING_MODE must be first_run_setup or signup"
+        "OSSIE_ONBOARDING_MODE must be explicitly set in production",
+        "OSSIE_ONBOARDING_MODE must be first_run_setup or signup"
     );
 
-    const local_storage_root = process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT;
+    const local_storage_root = process.env.OSSIE_LOCAL_STORAGE_ROOT;
 
     if (!local_storage_root || local_storage_root === "./storage") {
-        throw new Error("DEMO_COMPOSER_LOCAL_STORAGE_ROOT must be set to a durable storage path in production");
+        throw new Error("OSSIE_LOCAL_STORAGE_ROOT must be set to a durable storage path in production");
     }
 
     if (!path.isAbsolute(local_storage_root)) {
         throw new Error(
-            "DEMO_COMPOSER_LOCAL_STORAGE_ROOT must be set to an absolute durable storage path in production"
+            "OSSIE_LOCAL_STORAGE_ROOT must be set to an absolute durable storage path in production"
         );
     }
 

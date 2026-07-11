@@ -1,7 +1,7 @@
 import { FastifyCookieOptions } from '@fastify/cookie'
 import { is_production_runtime } from "./runtime.config";
 
-const local_cookie_secret = "demo-composer-local-cookie-secret";
+const local_cookie_secret = "ossie-local-cookie-secret";
 
 export const get_cookie_config = (): FastifyCookieOptions => {
     const production = is_production_runtime();

@@ -4,7 +4,7 @@ const allowed_headers = [
     'Content-Type',
     'Authorization',
     'X-Requested-With',
-    'X-Demo-Composer-Client',
+    'X-Ossie-Client',
 ];
 
 const parse_origins = (value: string | undefined) => (
@@ -16,10 +16,10 @@ const parse_origins = (value: string | undefined) => (
 
 export const get_cors_config = () => {
     const production = is_production_runtime();
-    const allowed_origins = parse_origins(process.env.DEMO_COMPOSER_CORS_ALLOWED_ORIGINS);
+    const allowed_origins = parse_origins(process.env.OSSIE_CORS_ALLOWED_ORIGINS);
 
     if (production && allowed_origins.length === 0) {
-        throw new Error("DEMO_COMPOSER_CORS_ALLOWED_ORIGINS must be defined in production");
+        throw new Error("OSSIE_CORS_ALLOWED_ORIGINS must be defined in production");
     }
 
     const is_origin_allowed = (origin: string | undefined) => {

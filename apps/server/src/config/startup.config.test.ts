@@ -10,7 +10,7 @@ const valid_required_env = {
   DB_PORT: "5432",
   DB_USER: "demo",
   DB_PASSWORD: "demo",
-  DB_NAME: "demo_composer",
+  DB_NAME: "ossie",
   DB_MAX_POOL: "10",
 };
 
@@ -34,11 +34,11 @@ describe("startup config", () => {
     process.env = {
       ...original_env,
       ...valid_required_env,
-      DEMO_COMPOSER_PUBLIC_WEB_URL: "https://portal.example.com/app",
+      OSSIE_PUBLIC_WEB_URL: "https://portal.example.com/app",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_PUBLIC_WEB_URL must be an origin without a path, query, or hash"
+      "OSSIE_PUBLIC_WEB_URL must be an origin without a path, query, or hash"
     );
   });
 
@@ -91,11 +91,11 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "",
+      OSSIE_CORS_ALLOWED_ORIGINS: "",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_CORS_ALLOWED_ORIGINS must be defined in production"
+      "OSSIE_CORS_ALLOWED_ORIGINS must be defined in production"
     );
   });
 
@@ -106,7 +106,7 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
@@ -121,12 +121,12 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
-      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
-      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
-      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_DEPLOYMENT_MODE: "self_hosted",
+      OSSIE_ONBOARDING_MODE: "first_run_setup",
+      OSSIE_LOCAL_STORAGE_ROOT: "/var/lib/ossie/storage",
       API_URL: "https://api.example.com",
-      DEMO_COMPOSER_PUBLIC_WEB_URL: "https://portal.example.com",
+      OSSIE_PUBLIC_WEB_URL: "https://portal.example.com",
     };
 
     expect(() => validate_server_startup_config()).not.toThrow();
@@ -139,13 +139,13 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
-      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_LOCAL_STORAGE_ROOT: "/var/lib/ossie/storage",
       API_URL: "https://api.example.com",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_DEPLOYMENT_MODE must be explicitly set in production"
+      "OSSIE_DEPLOYMENT_MODE must be explicitly set in production"
     );
 
     process.env = {
@@ -154,14 +154,14 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
-      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
-      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_DEPLOYMENT_MODE: "self_hosted",
+      OSSIE_LOCAL_STORAGE_ROOT: "/var/lib/ossie/storage",
       API_URL: "https://api.example.com",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_ONBOARDING_MODE must be explicitly set in production"
+      "OSSIE_ONBOARDING_MODE must be explicitly set in production"
     );
   });
 
@@ -172,15 +172,15 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
-      DEMO_COMPOSER_DEPLOYMENT_MODE: "private_cloud",
-      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
-      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_DEPLOYMENT_MODE: "private_cloud",
+      OSSIE_ONBOARDING_MODE: "first_run_setup",
+      OSSIE_LOCAL_STORAGE_ROOT: "/var/lib/ossie/storage",
       API_URL: "https://api.example.com",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_DEPLOYMENT_MODE must be self_hosted or hosted"
+      "OSSIE_DEPLOYMENT_MODE must be self_hosted or hosted"
     );
 
     process.env = {
@@ -189,15 +189,15 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
-      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
-      DEMO_COMPOSER_ONBOARDING_MODE: "invite_only",
-      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_DEPLOYMENT_MODE: "self_hosted",
+      OSSIE_ONBOARDING_MODE: "invite_only",
+      OSSIE_LOCAL_STORAGE_ROOT: "/var/lib/ossie/storage",
       API_URL: "https://api.example.com",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_ONBOARDING_MODE must be first_run_setup or signup"
+      "OSSIE_ONBOARDING_MODE must be first_run_setup or signup"
     );
   });
 
@@ -208,15 +208,15 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
-      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
-      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
-      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "./storage",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_DEPLOYMENT_MODE: "self_hosted",
+      OSSIE_ONBOARDING_MODE: "first_run_setup",
+      OSSIE_LOCAL_STORAGE_ROOT: "./storage",
       API_URL: "https://api.example.com",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_LOCAL_STORAGE_ROOT must be set to a durable storage path in production"
+      "OSSIE_LOCAL_STORAGE_ROOT must be set to a durable storage path in production"
     );
 
     process.env = {
@@ -225,15 +225,15 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
-      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
-      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
-      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "storage",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_DEPLOYMENT_MODE: "self_hosted",
+      OSSIE_ONBOARDING_MODE: "first_run_setup",
+      OSSIE_LOCAL_STORAGE_ROOT: "storage",
       API_URL: "https://api.example.com",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_LOCAL_STORAGE_ROOT must be set to an absolute durable storage path in production"
+      "OSSIE_LOCAL_STORAGE_ROOT must be set to an absolute durable storage path in production"
     );
   });
 
@@ -244,10 +244,10 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
-      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
-      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
-      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_DEPLOYMENT_MODE: "self_hosted",
+      OSSIE_ONBOARDING_MODE: "first_run_setup",
+      OSSIE_LOCAL_STORAGE_ROOT: "/var/lib/ossie/storage",
       API_URL: "/api",
     };
 
@@ -263,16 +263,16 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
-      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
-      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
-      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_DEPLOYMENT_MODE: "self_hosted",
+      OSSIE_ONBOARDING_MODE: "first_run_setup",
+      OSSIE_LOCAL_STORAGE_ROOT: "/var/lib/ossie/storage",
       API_URL: "https://api.example.com",
-      DEMO_COMPOSER_PUBLIC_WEB_URL: "/portal",
+      OSSIE_PUBLIC_WEB_URL: "/portal",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_PUBLIC_WEB_URL must be an absolute http(s) URL when set"
+      "OSSIE_PUBLIC_WEB_URL must be an absolute http(s) URL when set"
     );
 
     process.env = {
@@ -281,16 +281,16 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
-      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
-      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
-      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_DEPLOYMENT_MODE: "self_hosted",
+      OSSIE_ONBOARDING_MODE: "first_run_setup",
+      OSSIE_LOCAL_STORAGE_ROOT: "/var/lib/ossie/storage",
       API_URL: "https://api.example.com",
-      DEMO_COMPOSER_PUBLIC_WEB_URL: "ftp://portal.example.com",
+      OSSIE_PUBLIC_WEB_URL: "ftp://portal.example.com",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_PUBLIC_WEB_URL must be an absolute http(s) URL when set"
+      "OSSIE_PUBLIC_WEB_URL must be an absolute http(s) URL when set"
     );
 
     process.env = {
@@ -299,16 +299,16 @@ describe("startup config", () => {
       NODE_ENV: "production",
       DEV_TYPE: "production",
       COOKIE_SECRET: "a-very-strong-cookie-secret",
-      DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
-      DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
-      DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
-      DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
+      OSSIE_CORS_ALLOWED_ORIGINS: "https://portal.example.com",
+      OSSIE_DEPLOYMENT_MODE: "self_hosted",
+      OSSIE_ONBOARDING_MODE: "first_run_setup",
+      OSSIE_LOCAL_STORAGE_ROOT: "/var/lib/ossie/storage",
       API_URL: "https://api.example.com",
-      DEMO_COMPOSER_PUBLIC_WEB_URL: "https://portal.example.com/app",
+      OSSIE_PUBLIC_WEB_URL: "https://portal.example.com/app",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_PUBLIC_WEB_URL must be an origin without a path, query, or hash"
+      "OSSIE_PUBLIC_WEB_URL must be an origin without a path, query, or hash"
     );
   });
 
@@ -316,31 +316,31 @@ describe("startup config", () => {
     process.env = {
       ...original_env,
       ...valid_required_env,
-      DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES: "0",
+      OSSIE_JSON_BODY_LIMIT_BYTES: "0",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES must be a positive integer"
+      "OSSIE_JSON_BODY_LIMIT_BYTES must be a positive integer"
     );
 
     process.env = {
       ...original_env,
       ...valid_required_env,
-      DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES: "not-a-number",
+      OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES: "not-a-number",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES must be a positive integer"
+      "OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES must be a positive integer"
     );
 
     process.env = {
       ...original_env,
       ...valid_required_env,
-      DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS: "-1",
+      OSSIE_RATE_LIMIT_MAX_ATTEMPTS: "-1",
     };
 
     expect(() => validate_server_startup_config()).toThrow(
-      "DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS must be a positive integer"
+      "OSSIE_RATE_LIMIT_MAX_ATTEMPTS must be a positive integer"
     );
   });
 });

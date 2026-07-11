@@ -48,7 +48,7 @@ describe("cookie config", () => {
 
     const config = get_cookie_config();
 
-    expect(config.secret).toBe("demo-composer-local-cookie-secret");
+    expect(config.secret).toBe("ossie-local-cookie-secret");
     expect(config.parseOptions).toMatchObject({
       httpOnly: false,
       secure: false,

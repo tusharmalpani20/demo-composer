@@ -15,14 +15,14 @@ const positive_integer_from_env = (name: string, default_value: number) => {
 };
 
 export const get_json_body_limit_bytes = () => (
-  positive_integer_from_env("DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES", 1024 * 1024)
+  positive_integer_from_env("OSSIE_JSON_BODY_LIMIT_BYTES", 1024 * 1024)
 );
 
 export const get_max_screenshot_upload_bytes = () => (
-  positive_integer_from_env("DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES", 10 * 1024 * 1024)
+  positive_integer_from_env("OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES", 10 * 1024 * 1024)
 );
 
 export const get_rate_limit_config = () => ({
-  max_attempts: positive_integer_from_env("DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS", 20),
-  window_ms: positive_integer_from_env("DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS", 60_000),
+  max_attempts: positive_integer_from_env("OSSIE_RATE_LIMIT_MAX_ATTEMPTS", 20),
+  window_ms: positive_integer_from_env("OSSIE_RATE_LIMIT_WINDOW_MS", 60_000),
 });

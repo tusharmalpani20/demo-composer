@@ -11,7 +11,7 @@ describe("cors config", () => {
   it("allows any browser origin outside production", () => {
     process.env.NODE_ENV = "development";
     process.env.DEV_TYPE = "development";
-    delete process.env.DEMO_COMPOSER_CORS_ALLOWED_ORIGINS;
+    delete process.env.OSSIE_CORS_ALLOWED_ORIGINS;
 
     const config = get_cors_config();
 
@@ -22,17 +22,17 @@ describe("cors config", () => {
   it("rejects missing production allowed origins", () => {
     process.env.NODE_ENV = "production";
     process.env.DEV_TYPE = "production";
-    delete process.env.DEMO_COMPOSER_CORS_ALLOWED_ORIGINS;
+    delete process.env.OSSIE_CORS_ALLOWED_ORIGINS;
 
     expect(() => get_cors_config()).toThrow(
-      "DEMO_COMPOSER_CORS_ALLOWED_ORIGINS must be defined in production"
+      "OSSIE_CORS_ALLOWED_ORIGINS must be defined in production"
     );
   });
 
   it("allows only configured production origins including chrome extension origins", () => {
     process.env.NODE_ENV = "production";
     process.env.DEV_TYPE = "production";
-    process.env.DEMO_COMPOSER_CORS_ALLOWED_ORIGINS = [
+    process.env.OSSIE_CORS_ALLOWED_ORIGINS = [
       "https://portal.example.com",
       "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
     ].join(",");

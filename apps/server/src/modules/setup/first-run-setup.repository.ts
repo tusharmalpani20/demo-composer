@@ -150,7 +150,7 @@ export const build_first_run_setup_repository = (
 
     try {
       await client.query("BEGIN");
-      await client.query("SELECT pg_advisory_xact_lock(hashtext('demo_composer:first_run_setup'))");
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('ossie:first_run_setup'))");
       const result = await callback(build_transactional_repository(client));
       await client.query("COMMIT");
       return result;

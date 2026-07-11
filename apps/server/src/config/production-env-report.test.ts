@@ -10,20 +10,20 @@ const valid_production_env = {
   DB_PORT: "5432",
   DB_USER: "demo",
   DB_PASSWORD: "super-secret-db-password",
-  DB_NAME: "demo_composer",
+  DB_NAME: "ossie",
   DB_MAX_POOL: "10",
   COOKIE_SECRET: "super-secret-cookie-value",
   COOKIE_DOMAIN: "demo.example.com",
-  DEMO_COMPOSER_CORS_ALLOWED_ORIGINS: "https://demo.example.com,chrome-extension://abcdefghijklmnopabcdefghijklmnop",
-  DEMO_COMPOSER_DEPLOYMENT_MODE: "self_hosted",
-  DEMO_COMPOSER_ONBOARDING_MODE: "first_run_setup",
-  DEMO_COMPOSER_LOCAL_STORAGE_ROOT: "/var/lib/demo-composer/storage",
-  DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES: "10485760",
-  DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES: "1048576",
-  DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS: "20",
-  DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS: "60000",
+  OSSIE_CORS_ALLOWED_ORIGINS: "https://demo.example.com,chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+  OSSIE_DEPLOYMENT_MODE: "self_hosted",
+  OSSIE_ONBOARDING_MODE: "first_run_setup",
+  OSSIE_LOCAL_STORAGE_ROOT: "/var/lib/ossie/storage",
+  OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES: "10485760",
+  OSSIE_JSON_BODY_LIMIT_BYTES: "1048576",
+  OSSIE_RATE_LIMIT_MAX_ATTEMPTS: "20",
+  OSSIE_RATE_LIMIT_WINDOW_MS: "60000",
   API_URL: "https://api.example.com",
-  DEMO_COMPOSER_PUBLIC_WEB_URL: "https://demo.example.com",
+  OSSIE_PUBLIC_WEB_URL: "https://demo.example.com",
 };
 
 describe("production env report", () => {
@@ -97,7 +97,7 @@ describe("production env report", () => {
     expect(serialized).not.toContain("super-secret-db-password");
     expect(serialized).not.toContain("COOKIE_SECRET");
     expect(serialized).not.toContain("DB_PASSWORD");
-    expect(serialized).not.toContain("/var/lib/demo-composer/storage");
+    expect(serialized).not.toContain("/var/lib/ossie/storage");
   });
 
   it("fails through startup validation when production config is invalid", () => {

@@ -13,7 +13,7 @@ describe("app configuration", () => {
     process.env.NODE_ENV = "production";
     process.env.DEV_TYPE = "production";
     process.env.COOKIE_SECRET = "a-very-strong-cookie-secret";
-    process.env.DEMO_COMPOSER_CORS_ALLOWED_ORIGINS = [
+    process.env.OSSIE_CORS_ALLOWED_ORIGINS = [
       "https://portal.example.com",
       "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
     ].join(",");
@@ -26,7 +26,7 @@ describe("app configuration", () => {
       headers: {
         origin: "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
         "access-control-request-method": "POST",
-        "access-control-request-headers": "content-type,x-demo-composer-client",
+        "access-control-request-headers": "content-type,x-ossie-client",
       },
     });
     const blocked_response = await app.inject({
@@ -35,7 +35,7 @@ describe("app configuration", () => {
       headers: {
         origin: "https://evil.example.com",
         "access-control-request-method": "POST",
-        "access-control-request-headers": "content-type,x-demo-composer-client",
+        "access-control-request-headers": "content-type,x-ossie-client",
       },
     });
 
@@ -68,7 +68,7 @@ describe("app configuration", () => {
     const unavailable_app = build({
       logger: false,
       readiness_check: async () => {
-        throw new Error("postgres://user:secret@db.internal/demo_composer");
+        throw new Error("postgres://user:secret@db.internal/ossie");
       },
     });
 
@@ -88,7 +88,7 @@ describe("app configuration", () => {
     expect(liveness_response.statusCode).toBe(200);
     expect(liveness_response.json()).toEqual({
       status: "ok",
-      service: "demo-composer-api",
+      service: "ossie-api",
     });
     expect(readiness_response.statusCode).toBe(200);
     expect(readiness_response.json()).toEqual({
@@ -111,8 +111,8 @@ describe("app configuration", () => {
   });
 
   it("rate limits repeated login attempts by route and client", async () => {
-    process.env.DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS = "2";
-    process.env.DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS = "60000";
+    process.env.OSSIE_RATE_LIMIT_MAX_ATTEMPTS = "2";
+    process.env.OSSIE_RATE_LIMIT_WINDOW_MS = "60000";
 
     const app = build({
       logger: false,
@@ -158,8 +158,8 @@ describe("app configuration", () => {
   });
 
   it("does not share rate limit buckets across app instances", async () => {
-    process.env.DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS = "1";
-    process.env.DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS = "60000";
+    process.env.OSSIE_RATE_LIMIT_MAX_ATTEMPTS = "1";
+    process.env.OSSIE_RATE_LIMIT_WINDOW_MS = "60000";
 
     const auth_service = {
       get_current_auth_context: async () => {
@@ -200,8 +200,8 @@ describe("app configuration", () => {
   });
 
   it("rate limits setup, public password unlock, and invite acceptance routes", async () => {
-    process.env.DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS = "1";
-    process.env.DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS = "60000";
+    process.env.OSSIE_RATE_LIMIT_MAX_ATTEMPTS = "1";
+    process.env.OSSIE_RATE_LIMIT_WINDOW_MS = "60000";
 
     const app = build({ logger: false });
     const request = async (url: string, ip: string) => (
@@ -229,7 +229,7 @@ describe("app configuration", () => {
   });
 
   it("uses the configured JSON body limit", async () => {
-    process.env.DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES = "32";
+    process.env.OSSIE_JSON_BODY_LIMIT_BYTES = "32";
 
     const app = build({ logger: false });
     const response = await app.inject({

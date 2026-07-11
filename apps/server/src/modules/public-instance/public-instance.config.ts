@@ -24,13 +24,13 @@ const read_enum = <Value extends string>(
 
 export const get_public_instance_config = () => {
   const deployment_mode = read_enum(
-    process.env.DEMO_COMPOSER_DEPLOYMENT_MODE,
+    process.env.OSSIE_DEPLOYMENT_MODE,
     deployment_modes,
     "self_hosted"
   );
   const default_onboarding_mode = deployment_mode === "hosted" ? "signup" : "first_run_setup";
   const onboarding_mode = read_enum(
-    process.env.DEMO_COMPOSER_ONBOARDING_MODE,
+    process.env.OSSIE_ONBOARDING_MODE,
     onboarding_modes,
     default_onboarding_mode
   );

@@ -86,7 +86,7 @@ const unsafe_passwords = new Set([
   "admin",
   "changeme",
   "demo",
-  "democomposer",
+  "ossie",
   "password",
 ]);
 

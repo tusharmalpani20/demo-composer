@@ -1,4 +1,4 @@
-const public_web_url_env = "DEMO_COMPOSER_PUBLIC_WEB_URL";
+const public_web_url_env = "OSSIE_PUBLIC_WEB_URL";
 
 const absolute_http_url_error = `${public_web_url_env} must be an absolute http(s) URL when set`;
 const origin_only_error = `${public_web_url_env} must be an origin without a path, query, or hash`;

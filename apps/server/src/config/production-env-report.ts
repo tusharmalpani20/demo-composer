@@ -83,7 +83,7 @@ export const build_production_env_report = (): ProductionEnvReport => {
   validate_server_startup_config();
 
   const runtime_mode = get_runtime_mode();
-  const local_storage_root = process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT || "";
+  const local_storage_root = process.env.OSSIE_LOCAL_STORAGE_ROOT || "";
   const rate_limit = get_rate_limit_config();
 
   return {
@@ -92,8 +92,8 @@ export const build_production_env_report = (): ProductionEnvReport => {
     startup_config: "valid",
     generated_at: new Date().toISOString(),
     deployment: {
-      mode: process.env.DEMO_COMPOSER_DEPLOYMENT_MODE || null,
-      onboarding_mode: process.env.DEMO_COMPOSER_ONBOARDING_MODE || null,
+      mode: process.env.OSSIE_DEPLOYMENT_MODE || null,
+      onboarding_mode: process.env.OSSIE_ONBOARDING_MODE || null,
     },
     database: {
       host_configured: Boolean(process.env.DB_HOST),
@@ -109,8 +109,8 @@ export const build_production_env_report = (): ProductionEnvReport => {
       secure_cookies: runtime_mode === "production",
     },
     cors: {
-      allowed_origins_count: parse_origins(process.env.DEMO_COMPOSER_CORS_ALLOWED_ORIGINS).length,
-      allowed_origins: parse_origins(process.env.DEMO_COMPOSER_CORS_ALLOWED_ORIGINS),
+      allowed_origins_count: parse_origins(process.env.OSSIE_CORS_ALLOWED_ORIGINS).length,
+      allowed_origins: parse_origins(process.env.OSSIE_CORS_ALLOWED_ORIGINS),
     },
     urls: {
       api_url: origin_from_env_url(process.env.API_URL),

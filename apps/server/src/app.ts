@@ -100,7 +100,7 @@ type BuildOptions = FastifyServerOptions & {
 };
 
 const default_local_storage_root = () => (
-    process.env.DEMO_COMPOSER_LOCAL_STORAGE_ROOT || "./storage"
+    process.env.OSSIE_LOCAL_STORAGE_ROOT || "./storage"
 );
 
 const production_hardened_routes = [
@@ -213,7 +213,7 @@ export const build = (opts: BuildOptions = {}) => {
   app.get("/healthz", async (_request, reply) => (
       reply.status(200).send({
           status: "ok",
-          service: "demo-composer-api",
+          service: "ossie-api",
       })
   ));
 
@@ -305,10 +305,10 @@ export const build = (opts: BuildOptions = {}) => {
                   content: () => app.swagger(),
               },
               metaData: {
-                  title: 'DEMO COMPOSER API Documentation',
-                  description: 'DEMO COMPOSER API Documentation',
-                  ogDescription: 'DEMO COMPOSER API Documentation',
-                  ogTitle: 'DEMO COMPOSER API Documentation',
+                  title: 'OSSIE API Documentation',
+                  description: 'OSSIE API Documentation',
+                  ogDescription: 'OSSIE API Documentation',
+                  ogTitle: 'OSSIE API Documentation',
                   // ogImage: 'https://example.com/image.png',
                   // twitterCard: 'summary_large_image',
                   // // Add more...
