@@ -2,9 +2,8 @@
 
 Date: 2026-07-10
 
-Status: In progress. Children `109` and `111` are complete; child `110` is
-reopened for the Ossie technical identity migration, and runtime foundation
-implementation has not started.
+Status: In progress. Children `109`, `110`, and `111` are complete; runtime
+foundation implementation has not started.
 
 Master plan number: 005.
 
@@ -655,7 +654,7 @@ Completed outcome:
 
 ### 110: Product Umbrella, Naming, And Documentation Truth
 
-Status: Reopened on 2026-07-11 for the Ossie technical identity migration.
+Status: Complete. Reopened Phase 6 closed on 2026-07-11.
 
 Closure record:
 
@@ -1840,7 +1839,7 @@ Mitigation: document Video as deferred and do not create Video nav, tables, pack
 
 - [x] Create master plan `005`.
 - [x] Create, expand, recheck, implement, and close child plan `109`.
-- [ ] Reopen, implement, verify, and close child plan `110` technical identity
+- [x] Reopen, implement, verify, and close child plan `110` technical identity
       migration. Original naming/documentation work completed on 2026-07-10.
 - [x] Create, conduct, document, and accept the versioning grill in child plan `111`.
 - [ ] Create, expand, recheck, implement, and close child plan `112`.
@@ -1902,7 +1901,7 @@ This master plan is complete when:
 
 The next executable activity is the separate overnight-runner tooling checkpoint,
 not child `112`, a product migration, a screen redesign, a Documentation table,
-or a Layer 2 through Layer 5 rename.
+or further identity migration.
 
 Children `109`, `110`, and the deliberately early `111` grill are complete. The
 runner must be designed, version-controlled, and tested in the shared

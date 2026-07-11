@@ -5,8 +5,8 @@ Date: 2026-07-10
 Last reviewed: 2026-07-11
 
 Status: Layer 1 and the active Layer 2 through Layer 4 clean-break migration are
-complete in reopened child plan `110`. The final local-directory move and Plan
-110 closeout remain pending.
+complete. Reopened child plan `110` is closed; the approved local-directory move
+is the immediate external handoff after its closeout commit.
 
 ## Purpose
 
@@ -60,7 +60,7 @@ Completed on 2026-07-11:
 - [x] Git `origin` fetch/push URL is `git@github.com:tusharmalpani20/ossie.git`.
 - [x] Active Docs App GitHub source and raw alpha-asset URLs use `ossie`.
 
-Pending external handoff:
+Approved external handoff after the closeout commit:
 
 - move local directory `/home/tm/Desktop/work/demo_composer_v2` to
   `/home/tm/Desktop/work/ossie` after all commits and tool shutdown.
@@ -125,7 +125,7 @@ concrete product or operational reason.
 Completed:
 
 - [x] User explicitly accepted `Ossie` and `Copyright (C) 2026 Ossie
-    contributors` in `LICENSE`; AGPL-3.0-only terms remain unchanged.
+  contributors` in `LICENSE`; AGPL-3.0-only terms remain unchanged.
 - [x] Repository-local skills are renamed to `model-ossie-domain`,
       `build-ossie-slice`, `design-ossie-ui`, and `dogfood-ossie`.
 
@@ -148,5 +148,5 @@ The reopened execution satisfied these gates:
 3. [x] Define backward compatibility, redirects, aliases, rollout, rollback, and
        operator communication.
 4. [x] Add tests before changing behavior.
-5. [ ] Prove portal, API, extension, docs, CI, database, and deployment workflows.
+5. [x] Prove portal, API, extension, docs, CI, database, and deployment workflows.
 6. [x] Keep migrations append-only and public URLs compatible.

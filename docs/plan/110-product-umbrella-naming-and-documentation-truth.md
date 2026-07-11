@@ -4,7 +4,7 @@ Date: 2026-07-10
 
 Last reviewed: 2026-07-11
 
-Status: Reopened on 2026-07-11 for the Ossie technical identity migration.
+Status: Complete. Reopened Phase 6 closed on 2026-07-11.
 
 ## Parent Master Plan
 
@@ -1135,20 +1135,20 @@ Do not mix the post-`110` overnight-runner program, child `112+` skeletons, or r
 - [x] Master Plan `005` updated only for completed child `110` items.
 - [x] Post-`110` overnight-runner handoff recorded.
 - [x] User explicitly reopened Plan `110` for technical identity migration.
-- [ ] Phase 6 residual occurrence inventory completed and classified.
-- [ ] Active package, environment, Docker, database, service, storage, and CI
+- [x] Phase 6 residual occurrence inventory completed and classified.
+- [x] Active package, environment, Docker, database, service, storage, and CI
       identifiers migrated to Ossie.
-- [ ] Active cookie, header, extension message, and extension storage contracts
+- [x] Active cookie, header, extension message, and extension storage contracts
       migrated with test-first coverage.
-- [ ] Repository-local skills and active agent/tooling references migrated.
-- [ ] Active operational documentation and examples synchronized.
-- [ ] Legal attribution decision recorded; `LICENSE` changed only if explicitly
+- [x] Repository-local skills and active agent/tooling references migrated.
+- [x] Active operational documentation and examples synchronized.
+- [x] Legal attribution decision recorded; `LICENSE` changed only if explicitly
       accepted.
-- [ ] Focused non-DB, DB-backed, extension-build, broad, and browser verification
+- [x] Focused non-DB, DB-backed, extension-build, broad, and browser verification
       completed.
-- [ ] Residual old-name scan contains only approved historical, migration,
+- [x] Residual old-name scan contains only approved historical, migration,
       quotation, or legal occurrences.
-- [ ] Master Plan `005` and Plan `110` closed again with implementation evidence.
+- [x] Master Plan `005` and Plan `110` closed again with implementation evidence.
 
 ## Implementation Log
 
@@ -1281,6 +1281,67 @@ other Layer 2 through Layer 5 identifiers remain unchanged.
 - Historical evidence and migration history remain preserved.
 - Legal attribution and the physical local-directory move retain explicit
   gates described in the Reopened Scope Amendment.
+
+### Reopened Phase 6 Implementation
+
+- `b511ea1` reopened the child and parent records with the accepted clean-break
+  contract.
+- `12e99d9` migrated the root package, Turbo/Vite/server environment contracts,
+  Docker/database/storage defaults, CI configuration, service identity, and
+  active configuration examples. Source-level regression tests prevent the old
+  identifiers from returning to active configuration.
+- `39f06bf` migrated the authenticated and public-viewer cookies, extension
+  attribution header, setup advisory-lock label, and related tests using a
+  red-green sequence.
+- `3f51f54` migrated the extension header and page-click message protocol, its
+  tests, documentation, and built output using a red-green sequence.
+- `c4b3852` renamed the four repository-local skills and their discovery
+  metadata, synchronized active operator documentation, and applied the
+  explicitly accepted `Copyright (C) 2026 Ossie contributors` attribution. The
+  AGPL-3.0-only terms did not change.
+- The ignored local development fixture now uses `ossie_dev`, while the ignored
+  test fixture uses `ossie_test`. The previous local databases and Docker
+  volumes were not deleted.
+
+### Reopened Phase 6 Verification
+
+- Broad non-DB regression: 115 test files and 784 tests passed across the
+  workspace, including server 263, web 307, extension 93, and Docs App 12.
+- DB-backed regression: all 14 preserved migrations applied to the Ossie test
+  database; 11 integration files and 46 tests passed. The smoke workflow also
+  passed independently during implementation.
+- `rtk pnpm check-types`, `rtk pnpm lint`, `rtk pnpm build`, and
+  `rtk git diff --check` passed. The extension build contains no active former
+  protocol identifier.
+- Browser verification used Chromium through `agent-browser` with synthetic
+  local state. The real web/API pair rendered the Ossie first-run setup at
+  desktop and `390x844`; `/api/v1/public/instance` returned `200`, the brand
+  image loaded, and the mobile document width equaled the viewport width. The
+  Docs App rendered Ossie and its current/next bands at desktop and `390x844`
+  without overflow. The live OpenAPI UI rendered `OSSIE API Documentation` and
+  Ossie navigation. No application console errors or failed required requests
+  were observed.
+- The official skill validator could not run because its Python environment
+  lacks the `yaml` module. All renamed skill and agent YAML files parsed with
+  Ruby's YAML parser, and their active names/references passed residual scans.
+- The final active-source scan permits only explicit negative regression
+  assertions, the naming brief's before-state inventory, and the README's
+  labeled pre-rename screenshot note. Historical plans, ADRs, grills, dated
+  evidence, applied migrations, and external quotations remain intentionally
+  unchanged.
+
+### Reopened Phase 6 Closeout And Leftovers
+
+- Active Layer 2 through Layer 4 identity is Ossie. Layer 5 routes, schemas,
+  migration history, public URLs, and generic domain/package names remain
+  unchanged by design.
+- The local workspace move to `/home/tm/Desktop/work/ossie` is the final external
+  handoff immediately after this closeout commit and service shutdown. It does
+  not alter repository content or acceptance evidence.
+- Trademark/brand clearance and final visual-system acceptance remain future
+  work. Child `121` still owns the production design system and logo review.
+- The next executable activity remains the unnumbered overnight-runner tooling
+  checkpoint; child `112` does not begin from this closeout.
 
 ## Handoff After Child 110
 
