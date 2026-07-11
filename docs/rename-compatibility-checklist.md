@@ -4,9 +4,9 @@ Date: 2026-07-10
 
 Last reviewed: 2026-07-11
 
-Status: Layer 1 and the active Layer 2 through Layer 4 clean-break migration are
-complete. Reopened child plan `110` is closed; the approved local-directory move
-is the immediate external handoff after its closeout commit.
+Status: Complete. Layer 1, the active Layer 2 through Layer 4 clean-break
+migration, and the external local-directory move are complete. Reopened child
+plan `110` is closed.
 
 ## Purpose
 
@@ -19,10 +19,10 @@ migration history. On 2026-07-11 the user confirmed that the early-stage
 repository has no production compatibility requirement and selected reopened
 child plan `110` as the owner of the active technical migration.
 
-This checklist remains the pre-implementation inventory. The Reopened Scope
-Amendment and Phase 6 in child plan `110` authorize active Layer 2 through Layer
-4 changes, while historical evidence, migration history, legal attribution, and
-the external local-directory operation retain their explicit protections.
+This checklist preserves the pre-implementation inventory and records its final
+outcome. The Reopened Scope Amendment and Phase 6 in child plan `110` authorized
+active Layer 2 through Layer 4 changes, while historical evidence and migration
+history retained their explicit protections.
 
 ## Reopened Execution Boundary
 
@@ -36,8 +36,8 @@ the external local-directory operation retain their explicit protections.
   rewritten solely for branding.
 - `LICENSE` attribution changes only after the exact replacement line receives
   explicit user acceptance.
-- The final local path target is `/home/tm/Desktop/work/ossie`; that move occurs
-  only after implementation commits and shutdown of active tools.
+- The local workspace moved to `/home/tm/Desktop/work/ossie` only after the
+  implementation and closeout commits and shutdown of active tools.
 
 ## Layer 1: Display Brand
 
@@ -60,10 +60,8 @@ Completed on 2026-07-11:
 - [x] Git `origin` fetch/push URL is `git@github.com:tusharmalpani20/ossie.git`.
 - [x] Active Docs App GitHub source and raw alpha-asset URLs use `ossie`.
 
-Approved external handoff after the closeout commit:
-
-- move local directory `/home/tm/Desktop/work/demo_composer_v2` to
-  `/home/tm/Desktop/work/ossie` after all commits and tool shutdown.
+- [x] Local workspace moved to `/home/tm/Desktop/work/ossie` after all commits
+      and tool shutdown.
 
 Preserved:
 
@@ -71,7 +69,6 @@ Preserved:
 
 Any further repository-identity plan must verify CI checkout, badges, deployment
 integrations, contributor clones, local workspace moves, and external links.
-Moving the local directory while tools are running is explicitly prohibited.
 
 ## Layer 3: Package Identity
 
@@ -124,8 +121,8 @@ concrete product or operational reason.
 
 Completed:
 
-- [x] User explicitly accepted `Ossie` and `Copyright (C) 2026 Ossie
-  contributors` in `LICENSE`; AGPL-3.0-only terms remain unchanged.
+- [x] User accepted the Ossie contributor attribution in `LICENSE`;
+      AGPL-3.0-only terms remain unchanged.
 - [x] Repository-local skills are renamed to `model-ossie-domain`,
       `build-ossie-slice`, `design-ossie-ui`, and `dogfood-ossie`.
 

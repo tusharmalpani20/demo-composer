@@ -1335,9 +1335,9 @@ other Layer 2 through Layer 5 identifiers remain unchanged.
 - Active Layer 2 through Layer 4 identity is Ossie. Layer 5 routes, schemas,
   migration history, public URLs, and generic domain/package names remain
   unchanged by design.
-- The local workspace move to `/home/tm/Desktop/work/ossie` is the final external
-  handoff immediately after this closeout commit and service shutdown. It does
-  not alter repository content or acceptance evidence.
+- The local workspace move to `/home/tm/Desktop/work/ossie` completed after the
+  closeout commit and service shutdown. It did not alter repository content or
+  acceptance evidence.
 - Trademark/brand clearance and final visual-system acceptance remain future
   work. Child `121` still owns the production design system and logo review.
 - The next executable activity remains the unnumbered overnight-runner tooling

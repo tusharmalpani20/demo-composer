@@ -178,9 +178,9 @@ requires backward compatibility.
 The root package, environment variables, cookies, headers, extension messages,
 service identifiers, Docker/database defaults, storage/fixture names, CI, and
 repository-local skills now use Ossie. Public routes, domain schema, and applied
-migration history remain unchanged. The final external local-directory move to
-`/home/tm/Desktop/work/ossie` occurs only after implementation commits and
-shutdown of active tools. Exact outcomes are recorded in
+migration history remain unchanged. After the closeout commit and service
+shutdown, the local workspace moved to `/home/tm/Desktop/work/ossie`. Exact
+outcomes are recorded in
 `docs/rename-compatibility-checklist.md`.
 
 ## Remaining Risk And Follow-Up
@@ -193,5 +193,3 @@ shutdown of active tools. Exact outcomes are recorded in
   raster identity and verify recognizability, eight-arm visibility,
   accessibility, small-size behavior, and independence from existing character
   art before final design acceptance.
-- Complete the final external local-directory move after Plan `110` closeout and
-  restart tooling from `/home/tm/Desktop/work/ossie`.
