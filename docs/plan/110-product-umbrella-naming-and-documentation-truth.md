@@ -2,9 +2,9 @@
 
 Date: 2026-07-10
 
-Last reviewed: 2026-07-10
+Last reviewed: 2026-07-11
 
-Status: Complete on 2026-07-10.
+Status: Reopened on 2026-07-11 for the Ossie technical identity migration.
 
 ## Parent Master Plan
 
@@ -25,6 +25,73 @@ Make repository product documentation tell one truthful story about:
 - whether the product keeps the **Demo Composer** display name or adopts a broader name before brand-level UI work.
 
 This plan includes research and an explicit naming decision gate. It must not silently choose or apply a new product name without user acceptance.
+
+## 2026-07-11 Reopened Scope Amendment
+
+The original documentation-truth and Layer 1 display-brand work completed on
+2026-07-10 remains accepted historical work. After reviewing the residual
+technical identifiers on 2026-07-11, the user explicitly instructed that this
+same child plan, rather than a separate numbered or unnumbered plan, own the
+remaining active Ossie technical identity migration.
+
+This amendment is authoritative for the reopened execution. Where earlier
+sections say that Layers 2 through 5 require a separate plan, remain unapproved,
+or are non-goals, read those statements as the boundary that governed the
+original completed phase. They do not prohibit Reopened Phase 6 below.
+
+The reopened child is a prerequisite checkpoint. Do not build the overnight
+runner, create child `112-131` skeletons, or begin child `112` until Plan `110`
+is closed again and the parent master checklist is restored to complete.
+
+### Accepted Migration Boundary
+
+The active technical identity will move from Demo Composer to Ossie using a
+clean break because the repository is still in its building phase and has no
+production deployment or historical customer data requiring compatibility.
+Do not add dual-name aliases or deprecation windows merely for hypothetical
+consumers.
+
+Rename active identifiers consistently:
+
+- root package/repository metadata from `demo_composer_v2` to `ossie` where the
+  value is current identity rather than historical evidence;
+- `DEMO_COMPOSER_*` to `OSSIE_*` and `VITE_DEMO_COMPOSER_*` to `VITE_OSSIE_*`;
+- session/public-viewer cookies to `ossie_session` and
+  `ossie_public_viewer`;
+- `x-demo-composer-client` to `x-ossie-client`;
+- extension messages and active storage/protocol keys from
+  `demo_composer:*` to `ossie:*`;
+- active Docker container, database, volume, service, storage, test-fixture,
+  temporary-path, and generated-artifact names to Ossie equivalents;
+- active server service/OpenAPI identifiers and package metadata;
+- repository-local skill names, directories, discovery metadata, AGENTS
+  references, and active workflow documentation from `*-demo-composer-*` to
+  `*-ossie-*`;
+- all active tests, examples, setup files, operational documentation, and CI
+  configuration that assert or consume those renamed contracts; and
+- the four missed human-facing `DEMO COMPOSER API Documentation` strings.
+
+Preserve rather than rewrite:
+
+- accepted historical plans, ADRs, grills, dogfood records, screenshots, and
+  dated evidence when the old name is historically accurate;
+- applied database migration filenames, ordering, checksums, and historical
+  SQL solely for branding cleanup;
+- public routes, database domain names, tables, columns, IDs, and artifact URLs
+  that do not contain the old product name; and
+- external source quotations and third-party notices.
+
+`LICENSE` attribution is a critical legal boundary. Do not change `Demo
+Composer contributors` until the user explicitly accepts the exact replacement
+copyright line. Changing that attribution never changes the AGPL-3.0-only
+license terms.
+
+The local directory rename from
+`/home/tm/Desktop/work/demo_composer_v2` to
+`/home/tm/Desktop/work/ossie` is a final external operation, not an in-session
+file edit. It may happen only after all repository changes are committed,
+development servers and agents are stopped, and a new tool session can be
+launched from the destination path.
 
 ## Dependency And Entry Gate
 
@@ -47,10 +114,11 @@ Entry-gate status at this recheck:
 
 The child was ready to execute. Before implementation edits began, the user
 explicitly selected `Ossie`, accepted the original eight-armed octopus direction,
-and instructed execution of this plan. Layer 1 display branding was applied;
-Layers 2 through 5 remain deliberately unchanged and unapproved.
+and instructed execution of this plan. The original phase applied Layer 1
+display branding and initially retained Layers 2 through 5. The Reopened Scope
+Amendment now approves active Layer 2 through Layer 4 migration under Phase 6.
 
-## Expansion And Recheck Findings
+## Original 2026-07-10 Expansion And Recheck Findings
 
 This plan was expanded on 2026-07-10 against Master Plan `005`, the current docs/app metadata, current alpha evidence, completed child `111`, and the repository's visible/technical naming surfaces.
 
@@ -78,7 +146,7 @@ No Project Version, Project Membership, Audit/Access Evidence, Artifact Edition,
 
 ## Execution Shape And Mandatory Decision Gate
 
-The plan has two stages:
+The original plan had two stages and the reopened plan adds Stage C:
 
 ```text
 Stage A: truth audit and naming research
@@ -88,7 +156,13 @@ Stage A: truth audit and naming research
 
 Stage B: apply accepted documentation and display-name outcome
   -> verify every truth band and affected display surface
-    -> close plan and hand off to overnight-runner work
+    -> original closeout
+
+Stage C: migrate active technical identity to Ossie
+  -> inventory and establish failing contract tests
+    -> rename active runtime/package/tooling identifiers in coherent slices
+      -> verify residual historical/legal allowlist
+        -> close Plan 110 again and hand off to overnight-runner work
 ```
 
 Rules:
@@ -98,7 +172,9 @@ Rules:
 - If the user has not accepted a naming outcome and exact rename layers, set this plan to `Awaiting naming decision`; do not mark it complete.
 - If the decision is to keep `Demo Composer`, record that as intentional and do not perform speculative rename churn.
 - If a new display name is accepted, change only the accepted display surfaces in this child.
-- If repository/package/config/persistent identifier changes are requested, record a separate compatibility checklist and staged follow-up; do not mix a broad technical rename into this documentation-truth child.
+- The earlier separate-plan rule governed Stages A and B. The explicit
+  2026-07-11 user decision reopens this child and authorizes Stage C according
+  to the Reopened Scope Amendment.
 
 ## Truth-Band Model
 
@@ -353,7 +429,10 @@ docs/rename-compatibility-checklist.md
 
 The checklist must inventory every deliberately retained repository/package/config/persistent identifier, classify its layer, and state that future changes remain unapproved until a separate plan is accepted. Do not create it when the decision is simply to keep the current name.
 
-## Files And Surfaces Out Of Scope
+## Original Stages A/B Files And Surfaces Out Of Scope
+
+This section records the boundary used for the completed display-name phase.
+The Reopened Scope Amendment and Phase 6 control current execution.
 
 Do not change merely to describe future direction:
 
@@ -632,7 +711,11 @@ No answer or timeout is acceptance. If the user does not explicitly choose an
 outcome and exact immediate layer, leave the brief at `Awaiting User Decision`,
 leave the plan incomplete, and stop execution.
 
-## Rename-Layer Contract
+## Original Stages A/B Rename-Layer Contract
+
+This contract explains why the first closeout retained technical identifiers.
+It is superseded for active technical identity work by the Reopened Scope
+Amendment and Phase 6, while its historical and migration protections remain.
 
 Only Layer 1 is executable in child `110`. Layers 2 through 5 are inventory and
 future-planning boundaries even if the user approves creation of a staged
@@ -778,6 +861,84 @@ The Docs App direction band is content work, not the modern UI redesign.
 7. Mark only child `110` complete in Master Plan `005`.
 8. Hand off to the separate overnight-runner tooling checkpoint before child `112` skeleton creation/execution.
 
+### Phase 6: Reopened Ossie Technical Identity Migration
+
+#### 6.1 Recheck And Baseline
+
+1. Record starting commit `3d91e42` and confirm the worktree is clean.
+2. Build a machine-readable or reviewable inventory of every remaining
+   case-insensitive `demo[ _-]?composer` content and path occurrence.
+3. Classify each occurrence as active display, package, configuration,
+   protocol, deployment, test/fixture, repository tooling, legal attribution,
+   migration history, or historical evidence.
+4. Record current environment-variable, cookie, header, extension-message,
+   Docker, database, volume, storage, service, and skill-name contracts before
+   editing them.
+5. Run the broad non-DB baseline and record any pre-existing failure.
+
+#### 6.2 Test-First Contract Migration
+
+1. Add failing tests for `OSSIE_*`/`VITE_OSSIE_*` configuration and the absence
+   of active `DEMO_COMPOSER_*` consumption.
+2. Add failing authentication tests for the renamed session and public-viewer
+   cookies, including Set-Cookie, request extraction, and logout behavior.
+3. Add failing extension/server contract tests for `x-ossie-client`,
+   `ossie:page_click`, manifest/build output, and any renamed persisted
+   extension key that is still active.
+4. Add failing configuration/source checks for root package, Docker/database,
+   service, OpenAPI, storage, CI, and repository-local skill identity.
+5. Change the smallest coherent production slice after each failing test and
+   keep focused tests green before continuing.
+
+#### 6.3 Active Documentation And Tooling
+
+1. Update `.env-cmdrc` examples, self-hosting, development, operations,
+   production-readiness, extension, and backend-route documentation to the new
+   active names.
+2. Rename repository-local skill directories and their declared `name` values;
+   update root `AGENTS.md`, `.agents/skills/*/agents/openai.yaml`,
+   `docs/agent-workflow.md`, plan-runner prompts, and active references.
+3. Update temporary paths and test fixtures only where they represent current
+   execution rather than historical evidence.
+4. Keep completed historical plan commands and screenshots unchanged unless
+   they are still copied as an active command that a contributor is instructed
+   to run today.
+5. Update `docs/rename-compatibility-checklist.md` from a deferred inventory to
+   an executed clean-break record with explicit preserved exceptions.
+
+#### 6.4 Deployment And Local-State Semantics
+
+1. Treat renamed cookies as intentional local-session invalidation; no session
+   migration is required.
+2. Treat renamed extension storage/protocol keys as an intentional local
+   extension reset unless inspection proves an active key can be renamed
+   without adding dead compatibility code.
+3. Treat renamed Docker database/volume/container names as a fresh development
+   environment. Do not silently delete old volumes or storage; document the
+   operator cleanup command separately and never run destructive cleanup as
+   part of implementation.
+4. Do not rewrite database migration history. If a current bootstrap/default
+   database name changes, update configuration and tests around it.
+5. Defer the physical local-directory rename to the final external handoff.
+
+#### 6.5 Verification And Second Closeout
+
+1. Run focused tests after every contract slice, then all workspace tests,
+   types, lint, and builds.
+2. Run DB-backed authentication/publish tests because cookie contracts change.
+3. Build and inspect the extension because message/header/storage contracts
+   change.
+4. Browser-check setup, login, authenticated portal shell, public reader,
+   extension popup, and Docs App using safe local fixtures; record expected
+   session reset behavior.
+5. Re-run content and path scans. Every remaining old-name occurrence must be
+   an explicitly approved historical, migration, external quotation, or legal
+   attribution entry; unclassified active occurrences block closeout.
+6. Update the implementation log, this plan's status, the parent master status,
+   verification evidence, commit list, leftovers, and exact handoff.
+7. Commit the planning checkpoint separately before implementation, then use
+   coherent implementation commits and a final closeout commit.
+
 ## Verification Commands
 
 Baseline and formatting:
@@ -845,6 +1006,29 @@ rtk pnpm build
 rtk git diff --check
 ```
 
+Reopened technical-identity checks:
+
+```bash
+rtk rg -n --hidden --glob '!.git/**' --glob '!**/node_modules/**' --glob '!**/.next/**' --glob '!**/dist/**' -i 'demo[ _-]?composer' .
+rtk rg --files --hidden --glob '!.git/**' | rtk rg -i 'demo[ _-]?composer'
+rtk pnpm --filter server test
+rtk pnpm --filter server check-types
+rtk pnpm --filter extension test
+rtk pnpm --filter extension check-types
+rtk pnpm --filter extension build
+rtk pnpm --filter web test
+rtk pnpm --filter web check-types
+rtk pnpm -r --if-present test
+rtk pnpm check-types
+rtk pnpm lint
+rtk pnpm build
+rtk git diff --check
+```
+
+Run the repository's configured DB integration and smoke commands discovered
+during the Phase 6 recheck. Do not invent a root `test` command or claim DB
+coverage when PostgreSQL is unavailable.
+
 No DB-backed test is required for documentation-only changes. Run focused DB/smoke tests only if the accepted display-name work unexpectedly touches server behavior; such a change should normally be rejected as out of scope.
 
 Docs App browser validation is required because this child adds a rendered
@@ -874,6 +1058,15 @@ Keep the decision boundary visible:
 3. Accepted display-brand changes and their focused tests, only when a new display name is approved.
 4. Final closeout docs only if verification produces later corrections.
 
+For reopened Phase 6, continue with these additional boundaries:
+
+5. Planning checkpoint: this reopened plan and the parent master status only.
+6. Configuration/package/Docker rename and focused tests.
+7. Cookie/authentication rename and focused DB/non-DB tests.
+8. Extension header/message/storage rename and built-extension evidence.
+9. Repository-local skill/tooling rename and active documentation sync.
+10. Residual scan, verification evidence, and second Plan 110 closeout.
+
 Do not mix the post-`110` overnight-runner program, child `112+` skeletons, or runtime versioning implementation into these commits.
 
 ## Acceptance Criteria
@@ -891,12 +1084,14 @@ Do not mix the post-`110` overnight-runner program, child `112+` skeletons, or r
 - The user explicitly accepts the keep/rename decision and exact layers.
 - Any display-name change updates only accepted human-facing surfaces and tests.
 - If a new display name is accepted, `docs/rename-compatibility-checklist.md` accounts for every retained Layer 2 through Layer 5 identifier without authorizing its change.
-- Layer 2 through Layer 5 identifiers and migration history remain unchanged in this child.
+- Reopened Phase 6 migrates approved active Layer 2 through Layer 4 identifiers
+  using the clean-break contract; Layer 5 migration history remains unchanged.
 - Every residual old-name occurrence is classified as an accepted display reference, retained technical/tooling identifier, legal attribution, naming-brief baseline, or historical evidence.
 - Historical plans/ADRs/evidence remain historically accurate.
 - Required Docs App browser evidence passes at desktop and narrow mobile widths; conditional renamed web/extension/server surfaces receive their focused checks and browser evidence.
 - Focused and broad verification passes or unrelated pre-existing failures are recorded.
-- Master Plan `005` marks only child `110` complete.
+- Master Plan `005` marks child `110` reopened during Phase 6 and complete again
+  only after the second closeout.
 
 ## Non-Goals
 
@@ -906,7 +1101,8 @@ Do not mix the post-`110` overnight-runner program, child `112+` skeletons, or r
 - Building the overnight runner.
 - Creating child `112-131` files.
 - Redesigning the portal, editors, readers, extension, or Docs App.
-- Renaming technical identifiers, packages, schemas, migrations, routes, cookies, headers, service IDs, or environment variables without a separate accepted plan.
+- Rewriting historical migrations, public routes, domain schemas, or dated
+  evidence solely to remove the former name.
 - Purchasing domains, reserving accounts/handles, filing trademarks, or claiming legal clearance.
 - Rewriting historical decision/evidence documents solely for branding.
 
@@ -938,6 +1134,21 @@ Do not mix the post-`110` overnight-runner program, child `112+` skeletons, or r
 - [x] Implementation log, decision, verification, and leftovers recorded.
 - [x] Master Plan `005` updated only for completed child `110` items.
 - [x] Post-`110` overnight-runner handoff recorded.
+- [x] User explicitly reopened Plan `110` for technical identity migration.
+- [ ] Phase 6 residual occurrence inventory completed and classified.
+- [ ] Active package, environment, Docker, database, service, storage, and CI
+      identifiers migrated to Ossie.
+- [ ] Active cookie, header, extension message, and extension storage contracts
+      migrated with test-first coverage.
+- [ ] Repository-local skills and active agent/tooling references migrated.
+- [ ] Active operational documentation and examples synchronized.
+- [ ] Legal attribution decision recorded; `LICENSE` changed only if explicitly
+      accepted.
+- [ ] Focused non-DB, DB-backed, extension-build, broad, and browser verification
+      completed.
+- [ ] Residual old-name scan contains only approved historical, migration,
+      quotation, or legal occurrences.
+- [ ] Master Plan `005` and Plan `110` closed again with implementation evidence.
 
 ## Implementation Log
 
@@ -1058,9 +1269,22 @@ links were updated with failing-then-passing focused coverage, and the
 compatibility checklist was narrowed accordingly. The local directory and all
 other Layer 2 through Layer 5 identifiers remain unchanged.
 
+### Reopened Technical Identity Decision
+
+- Reopened on 2026-07-11 at starting commit `3d91e42`
+  (`fix(docs): allow evidence from Ossie repository`).
+- The worktree was clean and `main` was three commits ahead of `origin/main`.
+- The user chose this existing Plan `110` as the implementation owner rather
+  than creating a separate technical-rename plan.
+- The accepted direction is a clean break for active technical identifiers,
+  with no hypothetical compatibility aliases and no production-data backfill.
+- Historical evidence and migration history remain preserved.
+- Legal attribution and the physical local-directory move retain explicit
+  gates described in the Reopened Scope Amendment.
+
 ## Handoff After Child 110
 
-After `110` is complete:
+After reopened Phase 6 is complete and Plan `110` is closed again:
 
 1. Do not begin child `112` implementation immediately.
 2. Design and implement the reusable overnight master-plan runner in the shared prompt-generator tooling, using the accepted critical-versus-agent-decidable policy from child `109`.

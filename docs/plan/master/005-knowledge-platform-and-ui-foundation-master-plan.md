@@ -2,7 +2,9 @@
 
 Date: 2026-07-10
 
-Status: In progress. Children `109`, `110`, and `111` are complete; runtime foundation implementation has not started.
+Status: In progress. Children `109` and `111` are complete; child `110` is
+reopened for the Ossie technical identity migration, and runtime foundation
+implementation has not started.
 
 Master plan number: 005.
 
@@ -653,7 +655,7 @@ Completed outcome:
 
 ### 110: Product Umbrella, Naming, And Documentation Truth
 
-Status: Complete on 2026-07-10.
+Status: Reopened on 2026-07-11 for the Ossie technical identity migration.
 
 Closure record:
 
@@ -672,8 +674,10 @@ Accepted outcome:
   issue-template, package-prose, and OpenAPI metadata.
 - Applied after closeout on 2026-07-11: GitHub repository slug, Git `origin`, and
   active source/raw repository links.
-- Deferred and unapproved: the remaining Layer 2 local directory and all Layer 3
-  through Layer 5 technical identifiers.
+- Reopened scope: active Layer 2 through Layer 4 technical identifiers now move
+  to Ossie through the clean-break Phase 6 contract in child `110`; historical
+  evidence and migration history remain preserved, while legal attribution and
+  the physical local-directory move retain explicit gates.
 - Product, architecture, roadmap, status, contributor, operator, and Docs App
   truth bands now distinguish current alpha, accepted foundation, Product
   Documentation next, and Video later.
@@ -699,7 +703,10 @@ Scope:
 - Create a naming brief from section 11.
 - Research shortlisted names across active products, trademarks at a preliminary level, domains, GitHub, npm, package scopes, and obvious search collisions.
 - Record a keep/rename decision and the approved rename layers.
-- If a new display name is accepted, create a compatibility checklist before applying Layer 1; technical identifier changes remain outside child `110` and require a separate accepted plan.
+- The original display phase created a compatibility checklist before applying
+  Layer 1. On 2026-07-11 the user explicitly reopened child `110` and chose it,
+  rather than a separate plan, to migrate active Layer 2 through Layer 4
+  technical identity using the clean-break Phase 6 contract.
 
 Expected affected areas:
 
@@ -719,12 +726,16 @@ Expected affected areas:
 - `apps/docs/app/page.tsx`
 - `apps/docs/app/page.test.ts`
 - human-facing docs/app/extension/OpenAPI display surfaces and `docs/rename-compatibility-checklist.md` only when a new Layer 1 display name is accepted
+- reopened Phase 6 package/configuration, cookie, header, extension protocol,
+  Docker/database/storage/service, repository-local skill, active documentation,
+  test, and CI surfaces enumerated by child `110`
 
-Must not change merely for future direction:
+Original truth-phase exclusions, retained as Phase 6 protections where noted:
 
 - `docs/backend-route-inventory.md`
 - OpenAPI operation/route descriptions solely to describe future direction; only accepted Layer 1 title/summary metadata may change
-- self-hosting/runtime commands
+- self-hosting/runtime commands merely to describe future product direction;
+  Phase 6 must update active commands whose technical names change
 - database migrations or schema identifiers
 - current screenshots and captions, except to keep current product naming truthful after an accepted display rename
 
@@ -735,7 +746,9 @@ Acceptance:
 - Video is visible as a deferred direction but is not presented as committed implementation.
 - Canonical `CONTEXT.md` contains only current or grill-accepted terms, not speculative versioning definitions.
 - The name decision, evidence, risks, and migration boundary are recorded.
-- Only Layer 1 display surfaces may change in child `110`; Layer 2 through Layer 5 identifiers remain unchanged and are merely inventoried for a separately accepted future plan.
+- Original Stages A/B changed only Layer 1. Reopened Phase 6 migrates approved
+  active Layer 2 through Layer 4 identifiers; Layer 5 migration history and
+  historically accurate evidence remain preserved.
 - Every current-name occurrence and retained old-name result is classified, and a new display name always produces a compatibility checklist before Layer 1 changes.
 - The rendered Docs App direction band and any renamed browser-visible surfaces have focused real-browser evidence.
 - No existing ADR is rewritten to manufacture a new decision.
@@ -1827,7 +1840,8 @@ Mitigation: document Video as deferred and do not create Video nav, tables, pack
 
 - [x] Create master plan `005`.
 - [x] Create, expand, recheck, implement, and close child plan `109`.
-- [x] Create, expand, recheck, implement, and close child plan `110`.
+- [ ] Reopen, implement, verify, and close child plan `110` technical identity
+      migration. Original naming/documentation work completed on 2026-07-10.
 - [x] Create, conduct, document, and accept the versioning grill in child plan `111`.
 - [ ] Create, expand, recheck, implement, and close child plan `112`.
 - [ ] Create, expand, recheck, implement, and close child plan `113`.

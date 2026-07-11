@@ -5,18 +5,40 @@ Date: 2026-07-10
 Last reviewed: 2026-07-11
 
 Status: Layer 1 display rename and the GitHub repository slug/remote portion of
-Layer 2 are complete. Other technical rename work is **not approved**.
+Layer 2 are complete. Reopened child plan `110` now approves a clean-break
+migration of active Layer 2 through Layer 4 identifiers; implementation is
+pending.
 
 ## Purpose
 
 Ossie is the product display brand. Child plan `110` initially left repository,
 package, runtime configuration, and persistent identifiers stable. On 2026-07-11,
 the user renamed the GitHub repository and authorized its remote/link update.
-Other identifiers remain stable to avoid breaking local scripts, deployments,
-browser-extension protocols, sessions, storage, public links, or migration
-history.
+Other identifiers were initially retained to avoid breaking local scripts,
+deployments, browser-extension protocols, sessions, storage, public links, or
+migration history. On 2026-07-11 the user confirmed that the early-stage
+repository has no production compatibility requirement and selected reopened
+child plan `110` as the owner of the active technical migration.
 
-This checklist is an inventory, not authorization to rename the items below.
+This checklist remains the pre-implementation inventory. The Reopened Scope
+Amendment and Phase 6 in child plan `110` authorize active Layer 2 through Layer
+4 changes, while historical evidence, migration history, legal attribution, and
+the external local-directory operation retain their explicit protections.
+
+## Reopened Execution Boundary
+
+- Active package, environment, cookie, header, extension protocol/storage,
+  Docker, database default, volume, service, storage, fixture, CI, and
+  repository-local skill identities migrate to Ossie using a clean break.
+- No compatibility aliases, customer-data backfill, or production rollout is
+  required.
+- Existing Docker volumes and storage are not deleted automatically.
+- Database migration history and historically accurate plans/evidence are not
+  rewritten solely for branding.
+- `LICENSE` attribution changes only after the exact replacement line receives
+  explicit user acceptance.
+- The final local path target is `/home/tm/Desktop/work/ossie`; that move occurs
+  only after implementation commits and shutdown of active tools.
 
 ## Layer 1: Display Brand
 
