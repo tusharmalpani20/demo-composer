@@ -39,20 +39,20 @@ It does not print `COOKIE_SECRET`, `DB_PASSWORD`, raw cookies, bearer tokens, in
 Back up both durable stores together:
 
 - PostgreSQL database
-- `DEMO_COMPOSER_LOCAL_STORAGE_ROOT`
+- `OSSIE_LOCAL_STORAGE_ROOT`
 
 Before relying on a backup, rehearse restore into an isolated database and storage directory. Do not rehearse against the live production database or storage path.
 
 Example PostgreSQL backup:
 
 ```bash
-pg_dump --format=custom --file=demo_composer.dump "$DATABASE_URL"
+pg_dump --format=custom --file=ossie.dump "$DATABASE_URL"
 ```
 
 Example local storage backup:
 
 ```bash
-tar -czf demo_composer_storage.tgz /var/lib/demo-composer/storage
+tar -czf ossie_storage.tgz /var/lib/ossie/storage
 ```
 
 Take the database dump and storage archive close together in time. If you restore only one side, captures and published assets can point at files that do not exist.
@@ -62,16 +62,16 @@ Take the database dump and storage archive close together in time. If you restor
 Restore into a clean database and storage directory:
 
 ```bash
-createdb demo_composer_restore
-pg_restore --dbname=demo_composer_restore demo_composer.dump
-mkdir -p /var/lib/demo-composer/storage
-tar -xzf demo_composer_storage.tgz -C /
+createdb ossie_restore
+pg_restore --dbname=ossie_restore ossie.dump
+mkdir -p /var/lib/ossie/storage
+tar -xzf ossie_storage.tgz -C /
 ```
 
 After restore:
 
 - run migrations for the target application version
-- point `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` at the restored storage path
+- point `OSSIE_LOCAL_STORAGE_ROOT` at the restored storage path
 - set `API_URL` to the API origin used for the rehearsal environment
 - start the API
 - check `/readyz`
@@ -85,7 +85,7 @@ Record the backup timestamp, database dump name, storage archive name, restore t
 
 ## Storage Permissions
 
-The API process must be able to read and write `DEMO_COMPOSER_LOCAL_STORAGE_ROOT`.
+The API process must be able to read and write `OSSIE_LOCAL_STORAGE_ROOT`.
 
 Recommended production defaults:
 
@@ -104,7 +104,7 @@ Before deleting local files manually:
 - take a backup
 - prefer archiving whole old projects only after the product has built explicit deletion workflows
 
-Do not delete individual files from `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` unless you have verified they are unreferenced and have a restorable backup. A dry-run storage inventory command is still deferred.
+Do not delete individual files from `OSSIE_LOCAL_STORAGE_ROOT` unless you have verified they are unreferenced and have a restorable backup. A dry-run storage inventory command is still deferred.
 
 ## Migrations And Upgrades
 
@@ -125,7 +125,7 @@ Production deployments should terminate HTTPS before traffic reaches browsers.
 Configure the reverse proxy to:
 
 - forward the external API origin consistently
-- allow the deployed portal origin in `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS`
+- allow the deployed portal origin in `OSSIE_CORS_ALLOWED_ORIGINS`
 - add the Chrome extension origin when extension capture is used
 - set body-size limits that are no larger than the configured API limits
 - send liveness checks to `/healthz`
@@ -134,8 +134,8 @@ Configure the reverse proxy to:
 For split API/web deployments:
 
 - set server `API_URL` to the externally reachable API origin
-- set server `DEMO_COMPOSER_PUBLIC_WEB_URL` to the browser-facing portal origin, without a path, query, or hash
-- set the portal build `VITE_DEMO_COMPOSER_API_URL` to that API origin when the portal is not same-origin proxied
+- set server `OSSIE_PUBLIC_WEB_URL` to the browser-facing portal origin, without a path, query, or hash
+- set the portal build `VITE_OSSIE_API_URL` to that API origin when the portal is not same-origin proxied
 - configure the extension instance URL as the API origin
 - configure the extension portal URL as the browser-facing portal origin
 

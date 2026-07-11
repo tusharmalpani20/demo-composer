@@ -45,7 +45,7 @@ apps/server/src/modules/*
 | interactive demo publishing  | `/api/v1/projects/:project_id/interactive-demos/:interactive_demo_id/publish*`                                                           | `modules/publish`          |
 | public published artifacts   | `/api/v1/public/publish-links/:slug*`                                                                                                    | `modules/publish`          |
 
-The current authentication model is cookie-backed session auth through the `demo_composer_session` cookie. Project, capture, guide, interactive demo, organization, and authenticated publish routes derive organization scope from the current session.
+The current authentication model is cookie-backed session auth through the `ossie_session` cookie. Project, capture, guide, interactive demo, organization, and authenticated publish routes derive organization scope from the current session.
 
 ## Rate-Limited Route Groups
 

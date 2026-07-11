@@ -1,9 +1,9 @@
 ---
-name: build-demo-composer-slice
-description: Expand, recheck, implement, verify, and close one Demo Composer master-plan child from end to end. Use when creating or executing a child plan, resuming a partial child, checking whether a child is implementation-ready, closing its records, or preparing a stable handoff for later sequential or overnight execution.
+name: build-ossie-slice
+description: Expand, recheck, implement, verify, and close one Ossie master-plan child from end to end. Use when creating or executing a child plan, resuming a partial child, checking whether a child is implementation-ready, closing its records, or preparing a stable handoff for later sequential or overnight execution.
 ---
 
-# Build Demo Composer Slice
+# Build Ossie Slice
 
 Deliver one child-plan boundary completely. Do not implement the queue or
 overnight runner from this skill.
@@ -107,7 +107,7 @@ work into the same commit.
 - Run type checks, lint, build, and the broad non-database test set required by
   the child.
 - Run configured DB and smoke suites when persistence or server workflows change.
-- Use `dogfood-demo-composer` and a real browser for visible workflows.
+- Use `dogfood-ossie` and a real browser for visible workflows.
 - Verify loading, empty, error, permission, destructive, responsive, keyboard,
   zoom/reflow, console, and network states as applicable.
 - Record exact commands, outcomes, pre-existing failures, and unavailable

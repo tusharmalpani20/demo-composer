@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Ossie UI"
+  short_description: "Design coherent operational product UI"
+  default_prompt: "Use $design-ossie-ui to review and improve this product UI within repository design constraints."

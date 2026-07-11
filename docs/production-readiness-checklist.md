@@ -15,26 +15,26 @@ These settings are validated at server startup in production:
 - [ ] Set `TZ`.
 - [ ] Set `SERVER_PORT`.
 - [ ] Set `COOKIE_SECRET` to a strong secret with at least 20 characters.
-- [ ] Set `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS` to comma-separated allowed browser origins.
+- [ ] Set `OSSIE_CORS_ALLOWED_ORIGINS` to comma-separated allowed browser origins.
 - [ ] Set PostgreSQL variables: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_MAX_POOL`.
-- [ ] Set `DEMO_COMPOSER_DEPLOYMENT_MODE` to `self_hosted` or `hosted`.
-- [ ] Set `DEMO_COMPOSER_ONBOARDING_MODE` to `first_run_setup` or `signup`.
-- [ ] Set `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` to an absolute durable storage path.
-- [ ] Set `DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES`.
-- [ ] Set `DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES`.
-- [ ] Set `DEMO_COMPOSER_RATE_LIMIT_MAX_ATTEMPTS`.
-- [ ] Set `DEMO_COMPOSER_RATE_LIMIT_WINDOW_MS`.
+- [ ] Set `OSSIE_DEPLOYMENT_MODE` to `self_hosted` or `hosted`.
+- [ ] Set `OSSIE_ONBOARDING_MODE` to `first_run_setup` or `signup`.
+- [ ] Set `OSSIE_LOCAL_STORAGE_ROOT` to an absolute durable storage path.
+- [ ] Set `OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES`.
+- [ ] Set `OSSIE_JSON_BODY_LIMIT_BYTES`.
+- [ ] Set `OSSIE_RATE_LIMIT_MAX_ATTEMPTS`.
+- [ ] Set `OSSIE_RATE_LIMIT_WINDOW_MS`.
 - [ ] Set `API_URL` to the externally reachable API origin.
-- [ ] Set `DEMO_COMPOSER_PUBLIC_WEB_URL` to the browser-facing portal origin when the API and portal origins differ.
+- [ ] Set `OSSIE_PUBLIC_WEB_URL` to the browser-facing portal origin when the API and portal origins differ.
 
 These settings still require operator verification:
 
 - [ ] Run `rtk pnpm --filter server env:report` with the production API environment and confirm it exits successfully without printing secrets.
 - [ ] Set `COOKIE_DOMAIN` for the deployed portal domain if your cookie scope needs it.
-- [ ] Set `VITE_DEMO_COMPOSER_API_URL` for the portal build.
+- [ ] Set `VITE_OSSIE_API_URL` for the portal build.
 - [ ] For split API/web deployments, confirm the extension instance URL is the API origin and the extension portal URL is the browser-facing portal origin.
 - [ ] For split API/web deployments, create a teammate invite and confirm the copied invite link uses the browser-facing portal origin.
-- [ ] Confirm `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` is on durable storage with backup coverage.
+- [ ] Confirm `OSSIE_LOCAL_STORAGE_ROOT` is on durable storage with backup coverage.
 
 ## Database
 
@@ -64,11 +64,11 @@ rtk pnpm build
 ## Security And Access
 
 - [ ] Confirm CORS allows the deployed portal origin and rejects unconfigured browser origins.
-- [ ] If the Chrome extension is used, confirm its `chrome-extension://...` origin is configured in `DEMO_COMPOSER_CORS_ALLOWED_ORIGINS`.
+- [ ] If the Chrome extension is used, confirm its `chrome-extension://...` origin is configured in `OSSIE_CORS_ALLOWED_ORIGINS`.
 - [ ] Confirm cookies are secure on HTTPS.
 - [ ] Confirm `/healthz` returns `200` without a database dependency.
 - [ ] Confirm `/readyz` returns `200` only when the database is reachable.
-- [ ] Confirm reverse proxy body size limits are at least as strict as `DEMO_COMPOSER_JSON_BODY_LIMIT_BYTES` and `DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES`.
+- [ ] Confirm reverse proxy body size limits are at least as strict as `OSSIE_JSON_BODY_LIMIT_BYTES` and `OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES`.
 - [ ] Confirm login, first-run setup, public password unlock, and invite acceptance return `429` after repeated failed submissions.
 - [ ] Confirm first-run setup is disabled after owner creation.
 - [ ] If running in hosted/signup mode, confirm `/api/v1/setup/first-run` is blocked.

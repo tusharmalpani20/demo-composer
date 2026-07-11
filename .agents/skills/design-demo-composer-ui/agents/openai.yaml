@@ -1,4 +1,0 @@
-interface:
-  display_name: "Design Demo Composer UI"
-  short_description: "Design coherent operational product UI"
-  default_prompt: "Use $design-demo-composer-ui to review and improve this product UI within repository design constraints."

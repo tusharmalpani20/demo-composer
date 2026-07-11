@@ -40,22 +40,22 @@ TZ
 SERVER_PORT
 COOKIE_SECRET
 COOKIE_DOMAIN
-DEMO_COMPOSER_CORS_ALLOWED_ORIGINS
+OSSIE_CORS_ALLOWED_ORIGINS
 DB_HOST
 DB_PORT
 DB_USER
 DB_PASSWORD
 DB_NAME
 DB_MAX_POOL
-DEMO_COMPOSER_DEPLOYMENT_MODE
-DEMO_COMPOSER_ONBOARDING_MODE
-DEMO_COMPOSER_LOCAL_STORAGE_ROOT
-DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES
+OSSIE_DEPLOYMENT_MODE
+OSSIE_ONBOARDING_MODE
+OSSIE_LOCAL_STORAGE_ROOT
+OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES
 API_URL
-DEMO_COMPOSER_PUBLIC_WEB_URL
+OSSIE_PUBLIC_WEB_URL
 ```
 
-`DEMO_COMPOSER_CORS_ALLOWED_ORIGINS` is required in production and accepts comma-separated browser origins, including Chrome extension origins when needed:
+`OSSIE_CORS_ALLOWED_ORIGINS` is required in production and accepts comma-separated browser origins, including Chrome extension origins when needed:
 
 ```text
 https://portal.example.com,chrome-extension://<extension-id>
@@ -63,15 +63,15 @@ https://portal.example.com,chrome-extension://<extension-id>
 
 Development and test mode remain permissive for local browser/extension work, but keeping local origins in `.env-cmdrc` makes production parity easier.
 
-`API_URL` is the externally reachable API origin used for API-facing generated URLs. `DEMO_COMPOSER_PUBLIC_WEB_URL` is the browser-facing portal origin used for generated portal links such as organization invite URLs; set it to an origin only, without a path, query, or hash. In same-origin deployments it can be omitted; in split API/web development it should usually be `http://localhost:3000`.
+`API_URL` is the externally reachable API origin used for API-facing generated URLs. `OSSIE_PUBLIC_WEB_URL` is the browser-facing portal origin used for generated portal links such as organization invite URLs; set it to an origin only, without a path, query, or hash. In same-origin deployments it can be omitted; in split API/web development it should usually be `http://localhost:3000`.
 
 Common web variable:
 
 ```text
-VITE_DEMO_COMPOSER_API_URL
+VITE_OSSIE_API_URL
 ```
 
-The web dev server listens on `http://localhost:3000`. When `VITE_DEMO_COMPOSER_API_URL` is not set, it proxies `/api` requests to `http://localhost:3002`, matching the server example port.
+The web dev server listens on `http://localhost:3000`. When `VITE_OSSIE_API_URL` is not set, it proxies `/api` requests to `http://localhost:3002`, matching the server example port.
 
 ## Database
 
@@ -145,13 +145,13 @@ Local screenshot/file storage defaults to:
 Override with:
 
 ```text
-DEMO_COMPOSER_LOCAL_STORAGE_ROOT
+OSSIE_LOCAL_STORAGE_ROOT
 ```
 
 Limit screenshot upload size with:
 
 ```text
-DEMO_COMPOSER_MAX_SCREENSHOT_UPLOAD_BYTES
+OSSIE_MAX_SCREENSHOT_UPLOAD_BYTES
 ```
 
 Do not treat local storage as durable production backup by itself.
@@ -180,5 +180,5 @@ rtk pnpm --filter server run test:db
 
 - `test:db` fails to connect: check `.env-cmdrc` `testing` database credentials and make sure PostgreSQL is running.
 - migrations fail because the database is already in a bad state: reset the testing DB with `test:db:drop`, `test:db:create`, and `test:migrate`.
-- public guide images fail locally: check `DEMO_COMPOSER_LOCAL_STORAGE_ROOT` and make sure the server can read files written during upload.
+- public guide images fail locally: check `OSSIE_LOCAL_STORAGE_ROOT` and make sure the server can read files written during upload.
 - extension cannot authenticate: confirm the extension instance URL points to the running server and that cookies/credentials are accepted by the backend.

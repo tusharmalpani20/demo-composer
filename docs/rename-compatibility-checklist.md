@@ -4,10 +4,9 @@ Date: 2026-07-10
 
 Last reviewed: 2026-07-11
 
-Status: Layer 1 display rename and the GitHub repository slug/remote portion of
-Layer 2 are complete. Reopened child plan `110` now approves a clean-break
-migration of active Layer 2 through Layer 4 identifiers; implementation is
-pending.
+Status: Layer 1 and the active Layer 2 through Layer 4 clean-break migration are
+complete in reopened child plan `110`. The final local-directory move and Plan
+110 closeout remain pending.
 
 ## Purpose
 
@@ -61,10 +60,13 @@ Completed on 2026-07-11:
 - [x] Git `origin` fetch/push URL is `git@github.com:tusharmalpani20/ossie.git`.
 - [x] Active Docs App GitHub source and raw alpha-asset URLs use `ossie`.
 
-Retained:
+Pending external handoff:
 
-- local directory `/home/tm/Desktop/work/demo_composer_v2`;
-- root Git repository working-tree identity;
+- move local directory `/home/tm/Desktop/work/demo_composer_v2` to
+  `/home/tm/Desktop/work/ossie` after all commits and tool shutdown.
+
+Preserved:
+
 - historical file paths and commit references.
 
 Any further repository-identity plan must verify CI checkout, badges, deployment
@@ -73,35 +75,34 @@ Moving the local directory while tools are running is explicitly prohibited.
 
 ## Layer 3: Package Identity
 
-Retained:
+Completed:
 
-- root package name `demo_composer_v2`;
+- [x] Root package name is `ossie`.
+
+Retained because they are generic workspace roles rather than former-brand
+identifiers:
+
 - app package names `server`, `web`, `extension`, and `docs`;
 - `@repo/*` workspace package names and imports;
 - lockfile importer/package references; and
 - any future image or registry names derived from current package metadata.
 
-A future package plan must decide whether any change creates user value. The
-display brand does not require package churn by itself.
-
 ## Layer 4: Runtime Configuration
 
-Retained:
+Completed using a clean break:
 
-- every `DEMO_COMPOSER_*` environment variable;
-- `demo_composer_session` and public-viewer cookie names;
-- `x-demo-composer-client`;
-- `demo_composer:page_click` and other extension message/storage strings;
-- `demo-composer-api` and other service identifiers;
-- Docker container, database, volume, network, storage-root, and test-fixture
-  names;
-- CORS, public URL, cookie, and deployment configuration contracts; and
-- deployed secrets and operator configuration.
+- [x] `OSSIE_*` and `VITE_OSSIE_*` environment variables.
+- [x] `ossie_session` and `ossie_public_viewer` cookies.
+- [x] `x-ossie-client` extension attribution header.
+- [x] `ossie:page_click` extension message contract.
+- [x] `ossie-api` service identifier and Ossie API documentation metadata.
+- [x] Ossie Docker container, database default, volume key, storage-root,
+      temporary-path, and test-fixture names.
+- [x] CORS, public URL, cookie, deployment, CI, examples, and operator docs.
 
-A future runtime-configuration plan must use compatibility aliases and a
-documented deprecation window where operators could already depend on a name.
-It must not silently invalidate sessions, extension connections, storage, or
-deployment secrets.
+No compatibility aliases or deprecation window were added. Existing local web
+sessions and extension capture state are intentionally reset by the clean
+break. Existing Docker volumes and storage are not deleted automatically.
 
 ## Layer 5: Persistent Identifiers
 
@@ -112,7 +113,8 @@ Retained:
 - API route paths, request/response field names, and error types;
 - public slugs, published URLs, embeds, and external references;
 - storage object paths and keys; and
-- persisted extension/browser storage keys.
+- persisted extension/browser storage keys that never contained the former
+  product name.
 
 Existing migration history must never be rewritten for branding. A future plan
 may add a forward migration or compatibility behavior only when there is a
@@ -120,28 +122,31 @@ concrete product or operational reason.
 
 ## Legal And Historical Material
 
-Retained:
+Completed:
 
-- the `LICENSE` attribution naming Demo Composer contributors;
+- [x] User explicitly accepted `Ossie` and `Copyright (C) 2026 Ossie
+    contributors` in `LICENSE`; AGPL-3.0-only terms remain unchanged.
+- [x] Repository-local skills are renamed to `model-ossie-domain`,
+      `build-ossie-slice`, `design-ossie-ui`, and `dogfood-ossie`.
+
+Preserved:
+
 - accepted ADRs, completed plans, grill records, smoke evidence, and historical
   screenshots that accurately record the old display name;
-- repository-local skill directory names such as
-  `build-demo-composer-slice`; and
 - pinned external-skill provenance and quoted upstream material.
 
-Changing legal attribution requires an explicit legal decision. Historical
-records must not be rewritten to imply that Ossie was the name when those
-decisions or screenshots were created.
+Historical records are not rewritten to imply that Ossie was the name when
+those decisions or screenshots were created.
 
 ## Required Gate For A Technical Rename
 
-Before any unchecked layer changes:
+The reopened execution satisfied these gates:
 
-1. Accept a dedicated technical-rename plan and exact layer boundary.
-2. Re-run name, path, package, environment, cookie, header, extension-message,
-   storage, route, database, and external-link inventories.
-3. Define backward compatibility, redirects, aliases, rollout, rollback, and
-   operator communication.
-4. Add tests before changing behavior.
-5. Prove portal, API, extension, docs, CI, database, and deployment workflows.
-6. Keep migrations append-only and public URLs compatible.
+1. [x] Reopen child plan `110` and accept the exact clean-break boundary.
+2. [x] Re-run name, path, package, environment, cookie, header, extension-message,
+       storage, route, database, and external-link inventories.
+3. [x] Define backward compatibility, redirects, aliases, rollout, rollback, and
+       operator communication.
+4. [x] Add tests before changing behavior.
+5. [ ] Prove portal, API, extension, docs, CI, database, and deployment workflows.
+6. [x] Keep migrations append-only and public URLs compatible.

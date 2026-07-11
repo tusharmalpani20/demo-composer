@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dogfood Ossie"
+  short_description: "Validate browser workflows with evidence"
+  default_prompt: "Use $dogfood-ossie to validate this workflow with safe browser evidence."

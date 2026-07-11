@@ -1,0 +1,4 @@
+interface:
+  display_name: "Model Ossie Domain"
+  short_description: "Resolve product domain language safely"
+  default_prompt: "Use $model-ossie-domain to analyze this domain terminology question against canonical repository decisions."

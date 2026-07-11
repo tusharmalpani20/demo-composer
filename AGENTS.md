@@ -61,12 +61,12 @@ Do not describe accepted future direction as behavior that is already shipped.
 
 Prefer these procedural skills when their trigger matches:
 
-- `model-demo-composer-domain` for domain terminology and durable decisions.
-- `build-demo-composer-slice` for expanding, implementing, verifying, and
+- `model-ossie-domain` for domain terminology and durable decisions.
+- `build-ossie-slice` for expanding, implementing, verifying, and
   closing a child plan.
-- `design-demo-composer-ui` for product UI architecture, design, interaction,
+- `design-ossie-ui` for product UI architecture, design, interaction,
   motion, and review.
-- `dogfood-demo-composer` for browser-visible workflow validation and evidence.
+- `dogfood-ossie` for browser-visible workflow validation and evidence.
 
 Reviewed external skills under `.agents/skills/` provide supporting design,
 React, motion, and accessibility guidance. They are subordinate to this file,

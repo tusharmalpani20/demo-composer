@@ -1,9 +1,9 @@
 ---
-name: dogfood-demo-composer
-description: Validate Demo Composer browser-visible workflows with safe, reproducible evidence. Use for portal, public reader, embed, extension, authoring, setup, responsive, accessibility, console, network, or end-to-end dogfood work, and whenever an implementation plan requires browser screenshots or explicit evidence of real UI behavior.
+name: dogfood-ossie
+description: Validate Ossie browser-visible workflows with safe, reproducible evidence. Use for portal, public reader, embed, extension, authoring, setup, responsive, accessibility, console, network, or end-to-end dogfood work, and whenever an implementation plan requires browser screenshots or explicit evidence of real UI behavior.
 ---
 
-# Dogfood Demo Composer
+# Dogfood Ossie
 
 Validate the real workflow without exposing private data or overstating the
 available browser capability.

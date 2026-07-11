@@ -1,9 +1,9 @@
 ---
-name: design-demo-composer-ui
-description: Design, implement, or review Demo Composer product UI architecture, screen composition, interaction, motion, accessibility, and design-system work. Use for portal, editor, reader, extension, settings, activity, responsive, component, visual-polish, animation, or UX tasks where repository product context must govern external design guidance.
+name: design-ossie-ui
+description: Design, implement, or review Ossie product UI architecture, screen composition, interaction, motion, accessibility, and design-system work. Use for portal, editor, reader, extension, settings, activity, responsive, component, visual-polish, animation, or UX tasks where repository product context must govern external design guidance.
 ---
 
-# Design Demo Composer UI
+# Design Ossie UI
 
 Design a quiet, coherent operational product while preserving repository behavior
 and domain language.
@@ -105,7 +105,7 @@ evidence, not permission to change product semantics or framework boundaries.
 2. Compose existing primitives and tokens; add an abstraction only when it solves
    repeated real complexity.
 3. Run focused tests, type checks, lint, and builds.
-4. Use `dogfood-demo-composer` with a real browser at desktop and narrow mobile
+4. Use `dogfood-ossie` with a real browser at desktop and narrow mobile
    viewports.
 5. Check keyboard order, focus, 200% zoom/reflow, reduced motion, console errors,
    failed requests, image loading, text clipping, overlap, and layout shift.

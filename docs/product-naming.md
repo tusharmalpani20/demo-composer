@@ -170,14 +170,18 @@ grills, screenshots, and dated evidence retain the name used at the time.
 Layer 1 was applied by child plan `110`. On 2026-07-11, the user renamed the
 GitHub repository to `tusharmalpani20/ossie` and explicitly authorized updating
 the Git remote and active GitHub source/raw links. That narrow repository-identity
-part of Layer 2 is applied. The rest of Layer 2 and Layers 3 through 5 remain
-retained and inventoried in `docs/rename-compatibility-checklist.md`.
+part of Layer 2 was applied first. Later on 2026-07-11, the user reopened child
+plan `110` and authorized a clean-break migration of active Layer 2 through
+Layer 4 technical identifiers because no production deployment or customer data
+requires backward compatibility.
 
-The current repository directory is therefore still
-`/home/tm/Desktop/work/demo_composer_v2`. Package names, environment variables,
-cookie/header/message strings, service identifiers, storage paths, API routes,
-database objects, and migration history remain compatibility identifiers rather
-than user-facing brand claims.
+The root package, environment variables, cookies, headers, extension messages,
+service identifiers, Docker/database defaults, storage/fixture names, CI, and
+repository-local skills now use Ossie. Public routes, domain schema, and applied
+migration history remain unchanged. The final external local-directory move to
+`/home/tm/Desktop/work/ossie` occurs only after implementation commits and
+shutdown of active tools. Exact outcomes are recorded in
+`docs/rename-compatibility-checklist.md`.
 
 ## Remaining Risk And Follow-Up
 
@@ -189,5 +193,5 @@ than user-facing brand claims.
   raster identity and verify recognizability, eight-arm visibility,
   accessibility, small-size behavior, and independence from existing character
   art before final design acceptance.
-- A separate accepted technical-rename plan is required before changing any
-  retained identifier or moving the repository directory.
+- Complete the final external local-directory move after Plan `110` closeout and
+  restart tooling from `/home/tm/Desktop/work/ossie`.

@@ -1,9 +1,9 @@
 ---
-name: model-demo-composer-domain
-description: Resolve Demo Composer product and domain language, ownership, lifecycle, relationships, persistence meaning, and durable decision boundaries. Use when a task introduces or questions terms such as version, Project Version, Artifact, Edition, Working Draft, Revision, Publication, access, membership, audit, capture ownership, deletion, or when code and documentation appear to disagree about the domain model.
+name: model-ossie-domain
+description: Resolve Ossie product and domain language, ownership, lifecycle, relationships, persistence meaning, and durable decision boundaries. Use when a task introduces or questions terms such as version, Project Version, Artifact, Edition, Working Draft, Revision, Publication, access, membership, audit, capture ownership, deletion, or when code and documentation appear to disagree about the domain model.
 ---
 
-# Model Demo Composer Domain
+# Model Ossie Domain
 
 Resolve domain questions from repository truth before proposing a new model.
 

@@ -222,7 +222,7 @@ Do not use production accounts, customer systems, private URLs, or private scree
 ### 2026-06-22 Manual Extension Dogfood
 
 - Commit: `1da95db`
-- Environment: `.env-cmdrc` `testing`; disposable DB label `test-dc`; API instance URL `http://localhost:4021`; web portal `http://localhost:3000`; safe test page `http://127.0.0.1:4179`; extension build path `apps/extension/dist`; local storage root `apps/server/storage`
+- Environment: `.env-cmdrc` `testing`; disposable DB label `ossie_test`; API instance URL `http://localhost:4021`; web portal `http://localhost:3000`; safe test page `http://127.0.0.1:4179`; extension build path `apps/extension/dist`; local storage root `apps/server/storage`
 - Browser: Chrome `149.0.0.0` via `agent-browser`; unpacked extension id `cohepadogfeidambknedbdflmcjepaam`
 - Automated smoke: `rtk pnpm --filter extension test` passed; `rtk pnpm --filter extension build` passed; DB was reset and migrated before the browser run
 - Manual portal smoke: passed with non-blocking limitations in the 2026-06-22 portal entry
@@ -285,7 +285,7 @@ Do not use production accounts, customer systems, private URLs, or private scree
 ### 2026-06-22 Manual Portal Dogfood
 
 - Commit: `51d6b20`
-- Environment: `.env-cmdrc` `testing`; disposable DB label `test-dc`; API `http://localhost:4021`; web `http://localhost:3000`; web proxy override `VITE_DEMO_COMPOSER_API_URL=http://localhost:4021`; local storage root `apps/server/storage`
+- Environment: `.env-cmdrc` `testing`; disposable DB label `ossie_test`; API `http://localhost:4021`; web `http://localhost:3000`; web proxy override `VITE_OSSIE_API_URL=http://localhost:4021`; local storage root `apps/server/storage`
 - Browser: `agent-browser` isolated owner, public, and teammate sessions
 - Automated smoke: quick package baseline passed with `rtk pnpm --filter server test`, `rtk pnpm --filter web test`, `rtk pnpm --filter extension test`, and `rtk git diff --check`; DB was reset and migrated before the manual run
 - Manual portal smoke: passed with non-blocking limitations recorded in `docs/plan/071-manual-portal-dogfood.md`
